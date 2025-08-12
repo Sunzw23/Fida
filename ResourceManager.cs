@@ -39,7 +39,7 @@ namespace Fida
         {
             // 加载字体。确保你的字体文件名是"Font"
             // Load the font. Ensure your font filename is "Font"
-            Font = contentManager.Load<SpriteFont>("source_han_serif");
+            Font = contentManager.Load<SpriteFont>("source_han_sans");
             if (Font==null)
             {
                 throw new ContentLoadException("Failed to load font.");

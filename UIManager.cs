@@ -1,9 +1,11 @@
 ﻿// UIManager.cs 文件
+using Fida.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions; // For .Any() and .Where()
 
 
@@ -44,13 +46,13 @@ namespace Fida
         private GraphicsDevice _graphicsDevice;
         private SpriteBatch _spriteBatch; 
         private ResourceManager _resourceManager; // 引用资源管理器
-                                                  // Reference to the resource manager
 
         // 鼠标状态
         // Mouse state
         private MouseState _currentMouseState;
         private MouseState _previousMouseState;
 
+        private List<UIControl> uIControls = [];
 
         // 构造函数
         public UIManager(GraphicsDevice graphicsDevice, ResourceManager resourceManager)
@@ -60,91 +62,58 @@ namespace Fida
             _resourceManager = resourceManager; // 注入资源管理器实例
         }
 
-        /// <summary>
-        /// 绘制游戏界面。
-        /// Draws the game interface.
-        /// </summary>
-        /// <param name="gameManager">提供游戏状态的GameManager实例。</param>
-        /// <param name="gameManager">The GameManager instance providing game state.</param>
-        public void DrawGame(GameManager gameManager)
+        public void Clear()
         {
-            _graphicsDevice.Clear(Color.Black); // 清空屏幕
-                                                        
-
-            _spriteBatch.Begin();
-
-            // 绘制玩家信息
-            // Draw player information
-            foreach (var player in gameManager.Players)
-            {
-                player.Draw(_spriteBatch);
-            }
-
-            if (gameManager.CurrentGamePhase.SourcePlayerId == 0)
-            {
-                DrawGameMessage(gameManager.GameMessage);
-            }
-
-            
-
-
-            if (gameManager.CurrentGamePhase.Type == GamePhaseType.HandleSkillDoubleAttack)
-            {
-                if (gameManager.CurrentActionType == ActionType.DecideApply)
-                {
-                    DrawDecideButton("使用双倍攻击吗? ");
-                }
-            }
-
-            if (gameManager.CurrentGamePhase.Type == GamePhaseType.HandleSkillShen)
-            {
-                if (gameManager.CurrentActionType == ActionType.ChooseNumber)
-                {
-                    DrawChangeNumberForms("选择数字:");
-                }
-            }
-
-            if (gameManager.CurrentGamePhase.Type == GamePhaseType.HandleSkillMo)
-            {
-                if (gameManager.CurrentActionType == ActionType.DecideApply)
-                {
-                    DrawDecideButton("使用技能: 魔吗? ");
-                }
-            }
-
-            if (gameManager.CurrentGamePhase.Type == GamePhaseType.HandleSkillXian)
-            {
-                if (gameManager.CurrentActionType == ActionType.ChooseNumber)
-                {
-                    DrawChangeNumberForms("选择数字:");
-                }
-            }
-
-            if (gameManager.CurrentGamePhase.Type == GamePhaseType.HandleSkillTong)
-            {
-                if (gameManager.CurrentActionType == ActionType.DecideApply)
-                {
-                    DrawDecideButton("使用技能: 同变吗? ");
-                }
-
-                if (gameManager.CurrentActionType == ActionType.ChooseNumber)
-                {
-                    DrawChangeNumberForms("选择数字:");
-                }
-            }
-
-            if (gameManager.CurrentGamePhase.Type == GamePhaseType.HandleSkillDi)
-            {
-                if (gameManager.CurrentActionType == ActionType.ChooseNumber)
-                {
-                    DrawChangeNumberForms("选择数字:");
-                }
-            }
-
-
-
-            _spriteBatch.End();
+            uIControls = [];
         }
+
+
+        private void AddControl(UIControl control)
+        {
+            uIControls.Add(control);
+        }
+
+        public void BuildMainMenu()
+        {
+            Clear();
+
+            // 创建开始按钮
+            UIButton startButton = new UIButton(0, new Rectangle(400, 400, 200, 100), "开始", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(startButton);
+        }
+
+        public void BuildPlayingUI(GameManager gameManager)
+        {
+            Clear();
+
+            UILabel gameMessageLabel = new UILabel(0, gameManager.GameMessage, UIConfig.GameMessagePosition, _resourceManager.Font);
+            AddControl(gameMessageLabel);
+
+            for (int i = 0; i < gameManager.Players.Count; i++)
+            {
+                var player = gameManager.Players[i];
+                // 创建玩家UI控件
+                Character character = new Character(player.PlayerId, player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel);
+                AddControl(character);
+            }
+
+
+
+        }
+
+        public void BuildSettingsScreen()
+        {
+            Clear();
+            // 创建设置按钮
+
+        }
+
+        public void BuildRulesScreen()
+        {
+            Clear();
+
+        }
+
 
         /// <summary>
         /// 更新鼠标状态并检测点击的UI区域。
@@ -169,8 +138,6 @@ namespace Fida
                     return ActionChooseNumberIndex(gameManager);
                 case ActionType.ChooseTarget:
                     return ActionChooseTarget(gameManager);
-                case ActionType.DecideApply:
-                    return ActionDecideApply(gameManager);
                 case ActionType.ChooseNumber:
                     return ActionChooseNumber(gameManager);
                 default:
@@ -181,17 +148,16 @@ namespace Fida
 
         private Action ActionChooseNumberIndex(GameManager gameManager)
         {
-            foreach (Character player in gameManager.Players)
+            foreach (Character c in uIControls.OfType<Character>())
             {
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++) 
                 {
-                    
-                    if (CheckClickArea(player.GetNumberRectangle(i)))
+                    if (c.NumberButton[i].IsButtonPressed())
                     {
-                        return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = player.PlayerId, NumberIndex = i };
+                        return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = c.Player.PlayerId, NumberIndex = i };
                     }
                 }
-                
+
             }
             return new Action();
         }
@@ -199,27 +165,13 @@ namespace Fida
 
         private Action ActionChooseTarget(GameManager gameManager)
         {
-            foreach (Character player in gameManager.Players)
+            foreach (Character c in uIControls.OfType<Character>())
             {
-                if (CheckClickArea(player.GetTargetRectangle()))
+                if (c.HealthButton.IsButtonPressed())
                 {
-                    return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = player.PlayerId };
+                    return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = c.Player.PlayerId };
                 }
             }
-            return new Action();
-        }
-
-        private Action ActionDecideApply(GameManager gameManager)
-        {
-            if (CheckClickArea(new Rectangle(10, 100, 30, 30)))
-            {
-                return new Action { Type = ActionType.DecideApply, IsApply = true };
-            }
-            if (CheckClickArea(new Rectangle(10, 140, 30, 30)))
-            {
-                return new Action { Type = ActionType.DecideApply, IsApply = false };
-            }
-
             return new Action();
         }
 
@@ -239,45 +191,23 @@ namespace Fida
 
 
 
-        // 辅助方法：检查鼠标点击是否在指定区域内
-        // Helper method: Checks if the mouse click is within the specified area
+        /// <summary>
+        /// 辅助方法：检查鼠标是否在指定区域内
+        /// </summary>
+        /// <param name="area"></param>
+        /// <returns></returns>
         private bool CheckClickArea(Rectangle area)
         {
             return area.Contains(_currentMouseState.X, _currentMouseState.Y);
         }
 
 
-        private void DrawPlayerInfo(Character player)
-        {
-            // 绘制玩家名称
-            _spriteBatch.DrawString(_resourceManager.Font, "Name: " + player.Name, player.Position, Color.White);
-            // 绘制玩家生命值
-            _spriteBatch.DrawString(_resourceManager.Font, "Health: " + player.Health, player.HealthLocation, Color.Red);
-            // 绘制玩家数字
-            for (int i = 0; i < player.Numbers.Count; i++)
-            {
-                _spriteBatch.DrawString(_resourceManager.Font, player.Numbers[i].ToString(), player.NumberLocations[i], Color.White);
-            }
-        }
 
-        private void DrawDecideButton(string message)
-        {
-            _spriteBatch.DrawString(_resourceManager.Font, message, new Vector2(10, 50), Color.White);
-            _spriteBatch.DrawString(_resourceManager.Font, "Yes", new Vector2(10, 100), Color.Green);
-            _spriteBatch.DrawString(_resourceManager.Font, "No", new Vector2(10, 140), Color.Red);
-        }
 
-        private void DrawChangeNumberForms(string message)
-        {
-            _spriteBatch.DrawString(_resourceManager.Font, message, new Vector2(10, 50), Color.White);
-            for (int i = 0; i <= 9; i++)
-            {
-                int _x = i % 5;
-                int _y = i / 5;
-                _spriteBatch.DrawString(_resourceManager.Font, i.ToString(), new Vector2(10 + _x * 50, 100 + _y * 50), Color.White);
-            }
-        }
-
+        /// <summary>
+        /// 绘制游戏消息。
+        /// </summary>
+        /// <param name="message"></param>
         private void DrawGameMessage(string message)
         {
             _spriteBatch.DrawString(_resourceManager.Font, message, new Vector2(10, 10), Color.Gray);
@@ -286,17 +216,32 @@ namespace Fida
 
         
 
-        // 辅助方法：绘制矩形边框(用于模拟按钮或选择区域）
-        // Helper method: Draws a rectangle outline (used to simulate buttons or selection areas)
-        private void DrawRectangleOutline(Rectangle rect, Color color)
+
+        /// <summary>
+        /// 辅助方法：绘制矩形（用于填充或背景）
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <param name="color"></param>
+        private void DrawRectangle(Rectangle rect, Color color)
         {
-            // 绘制四个边
-            // Draw the four sides
-            _spriteBatch.Draw(_resourceManager.Pixel, new Rectangle(rect.Left, rect.Top, rect.Width, 1), color); // Top
-            _spriteBatch.Draw(_resourceManager.Pixel, new Rectangle(rect.Left, rect.Bottom, rect.Width, 1), color); // Bottom
-            _spriteBatch.Draw(_resourceManager.Pixel, new Rectangle(rect.Left, rect.Top, 1, rect.Height), color); // Left
-            _spriteBatch.Draw(_resourceManager.Pixel, new Rectangle(rect.Right, rect.Top, 1, rect.Height + 1), color); // Right
+            _spriteBatch.Draw(_resourceManager.Pixel, rect, color);
         }
+
+        /// <summary>
+        /// 辅助方法：在矩形内绘制字符串（用于按钮或标签）
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <param name="text"></param>
+        /// <param name="color"></param>
+        private void DrawStringInBox(Rectangle rect, string text, Color color)
+        {
+            var textSize = _resourceManager.Font.MeasureString(text);
+            var position = new Vector2(rect.X + (rect.Width - textSize.X) / 2, rect.Y + (rect.Height - textSize.Y) / 2);
+            _spriteBatch.DrawString(_resourceManager.Font, text, position, color);
+        }
+
+
+
 
         /// <summary>
         /// 清理资源。
@@ -307,7 +252,6 @@ namespace Fida
             _spriteBatch?.Dispose();
             _spriteBatch = null;
         }
-
 
 
     }

@@ -14,12 +14,15 @@ namespace Fida
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
+        private State _currentState;
         private ResourceManager _resourceManager; // 资源管理类
         private GameManager _gameManager; // 游戏逻辑管理类
         private UIManager _uiManager;     // UI绘制管理类
         private AgentManager _agentManager; // AI管理类
 
+
         private bool sceneLoaded = false;
+        private bool _isGameActive = true; // 游戏是否处于激活状态
 
         public Game1()
         {
@@ -32,15 +35,16 @@ namespace Fida
             _graphics.PreferredBackBufferHeight = 1200;
             _graphics.IsFullScreen = false;
             _graphics.ApplyChanges();
+
+            _currentState = State.Playing;
         }
 
         protected override void Initialize()
         {
             _resourceManager = new ResourceManager(GraphicsDevice);
-            _gameManager = new GameManager(_resourceManager);
+            _gameManager = new GameManager();
             _uiManager = new UIManager(GraphicsDevice, _resourceManager);
             _agentManager = new AgentManager();
-            _gameManager.InitializeGame(); // 初始化游戏逻辑
             base.Initialize();
         }
 
@@ -52,34 +56,30 @@ namespace Fida
 
         protected override void Update(GameTime gameTime)
         {
-            if (sceneLoaded == false)
+            if (_isGameActive)
             {
-                // 加载场景
-                _gameManager.LoadScene1();
-                sceneLoaded = true;
-            }
-            // 处理退出游戏
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+                if (sceneLoaded == false)
+                {
+                    // 加载场景
+                    sceneLoaded = true;
+                }
+                // 处理退出游戏
+                if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                    Exit();
 
-
-
-
-
-
-
-            // 更新游戏逻辑，并将鼠标点击信息传递给GameManager
-            if (_gameManager.CurrentGamePhase.SourcePlayerId == 0)
-            {
-                // 从UIManager获取鼠标点击信息
-                Action clickAction = _uiManager.UpdateMouseAndCheckClicks(_gameManager);
-                _gameManager.UpdateGame(clickAction);
-            }
-            else
-            {
-                // 从AgentManager获取AI模拟信息
-                Action agentAction = _agentManager.UpdateAction(_gameManager);
-                _gameManager.UpdateGame(agentAction);
+                // 更新游戏逻辑，并将鼠标点击信息传递给GameManager
+                if (_gameManager.CurrentGamePhase.SourcePlayerId == 0)
+                {
+                    // 从UIManager获取鼠标点击信息
+                    Action clickAction = _uiManager.UpdateMouseAndCheckClicks(_gameManager);
+                    _gameManager.UpdateGame(clickAction);
+                }
+                else
+                {
+                    // 从AgentManager获取AI模拟信息
+                    Action agentAction = _agentManager.UpdateAction(_gameManager);
+                    _gameManager.UpdateGame(agentAction);
+                }
             }
 
             base.Update(gameTime);
@@ -88,22 +88,82 @@ namespace Fida
         protected override void Draw(GameTime gameTime)
         {
             // 绘制游戏界面，将游戏状态从GameManager传递给UIManager
-            _uiManager.DrawGame(_gameManager);
+            _uiManager.Draw(gameTime);
 
             base.Draw(gameTime);
         }
 
-        protected override void OnActivated(object sender, System.EventArgs args)
+        public void SwitchToState(State newState)
         {
+            _currentState = newState;
+            _uiManager.Clear();
+
+            switch (newState)
+            {
+                case State.MainMenu:
+                    BuildMainMenu();
+                    break;
+
+                case State.Rules:
+                    BuildRulesScreen();
+                    break;
+
+                case State.Settings:
+                    BuildSettingsScreen();
+                    break;
+
+                case State.Playing:
+                    // 不需要 UIManager 显示主菜单，但可以加“返回主菜单”按钮
+                    LoadScene1();
+                    BuildPlayingUI();
+                    break;
+                case State.GameOver:
+                    break;
+            }
+
+        }
+
+        public void LoadScene1()
+        {
+            _gameManager.Initialize(SceneConfig.PlayersScene1.Players);
+        }
+
+        private void BuildMainMenu()
+        {
+            _uiManager.BuildMainMenu();
+        }
+
+        private void BuildRulesScreen()
+        {
+            _uiManager.BuildRulesScreen();
+        }
+
+        private void BuildSettingsScreen()
+        {
+            _uiManager.BuildSettingsScreen();
+        }
+
+        private void BuildPlayingUI()
+        {
+            _uiManager.BuildPlayingUI(_gameManager);
+
+
+        }
+
+
+
+        protected override void OnActivated(object sender, EventArgs args)
+        {
+            // 游戏恢复（如从后台返回）
+            _isGameActive = true; // 恢复游戏
             base.OnActivated(sender, args);
         }
 
-        protected override void OnDeactivated(object sender, System.EventArgs args)
+        protected override void OnDeactivated(object sender, EventArgs args)
         {
-            // 清理UIManager的资源
-            _resourceManager.Dispose();
-            _uiManager.Dispose();
-            _agentManager.Dispose();
+            // 游戏进入后台（如切换应用）
+            // 不再释放资源，仅暂停游戏
+            _isGameActive = false; // 暂停游戏
             base.OnDeactivated(sender, args);
         }
     }

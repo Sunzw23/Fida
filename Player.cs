@@ -9,7 +9,7 @@ using System;
 namespace Fida
 {
 
-    public enum SkillType
+    public enum Skill
     {
         DoubleAttack,
         DoubleDefence,
@@ -20,14 +20,10 @@ namespace Fida
         Gui,
         Tong,
         Di,
+        Long,
     }
 
 
-    public class Skill
-    {
-        public SkillType SkillType { get; set; }
-        public String SkillName { get; set; }
-    }
 
 
     /// <summary>
@@ -35,31 +31,29 @@ namespace Fida
     /// </summary>
     public class Player
     {
+        public String Name { get; set; } = "a"; // 玩家名称
         public int PlayerId { get; private set; } // 玩家ID
-        public List<int> Numbers { get; private set; } // 玩家拥有的两个数字
-        public int Health { get; set; } // 玩家生命值
-        public List<Skill> Skills { get; private set; } // 玩家拥有的技能
+        public List<int> Numbers { get; private set; } = [1, 1]; // 玩家拥有的两个数字
+        public int Health { get; set; } = 11; // 玩家生命值
+        public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
 
         public int MaxHealth {get; set;} // 生命值上限
 
         // 构造函数, 初始化玩家
-        public Player(int id, int health, List<Skill> skills)
+        public Player(int id, string name, int health, List<Skill> skills)
         {
             PlayerId = id;
-            Numbers = [1, 1]; // 初始数字为1, 1
+            Name = name; // 玩家名称
             MaxHealth = health; // 最大生命值为 health
             Health = health; // 初始生命值为 health
             Skills = skills; // 玩家拥有技能
         }
 
-        public Player(int id, int health)
+        public Player(int id, string name)
         {
             PlayerId = id;
-            Numbers = [1, 1]; // 初始数字为1, 1
-            MaxHealth = health; // 最大生命值为 health
-            Health = health; // 初始生命值为 health
-            Skills = []; // 玩家没有技能
+            Name = name;
         }
 
         /// <summary>
@@ -67,12 +61,9 @@ namespace Fida
         /// </summary>
         /// <param name="damage"></param>
         /// <returns></returns>
-        public string TakeDamage(int damage)
+        public void TakeDamage(int damage)
         {
-
             Health = CalNormalDamage(damage, Health); // 计算反弹后的生命值
-
-            return $"玩家 {PlayerId} 受到 {damage} 点伤害. 当前生命值: {Health}";
         }
 
 
@@ -81,11 +72,10 @@ namespace Fida
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
-        public string Heal(int amount)
+        public void Heal(int amount)
         {
             Health += amount;
             Health = Math.Clamp(Health, 0, MaxHealth); // 确保生命值不超出范围
-            return $"玩家 {PlayerId} 恢复 {amount} 点生命值. 当前生命值: {Health}";
         }
 
 
@@ -143,12 +133,9 @@ namespace Fida
             return Math.Abs(health - damage);
         }
 
-        public bool HasSkill(SkillType skillType)
+        public bool HasSkill(Skill skill)
         {
-            return Skills.Find(s => s.SkillType == skillType) != null;
+            return Skills.Contains(skill);
         }
-
-
-
     }
 }

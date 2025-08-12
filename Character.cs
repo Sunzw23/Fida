@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Fida.UI;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -9,85 +10,79 @@ using System.Threading.Tasks;
 
 namespace Fida
 {
-    public class Character : Player
+    public class Character : UI.UIControl
     {
-        public String Name { get; private set; }
+        public Player Player { get; private set; }
         public Vector2 Position { get; set; }
-        public List<Texture2D> Texture2Ds { get; private set; }
-        public List<Vector2> Texture2DLocations { get; private set; }
-        public List<Vector2> NumberLocations { get; private set; }
+        
         public SpriteFont Font { get; private set; }
-        public Color FontColor { get; private set; }
-        public Vector2 HealthLocation { get; private set; }
 
+        public UILabel NameLabel { get; private set; }
+        public List<UIButton> NumberButton { get; private set; }
+        public UIButton HealthButton { get; private set; }
 
-        public Character(int id, int health, string name, SpriteFont font, Color fontColor,
-            Vector2 position, List<Texture2D> texture2Ds, List<Vector2> texture2DLocations, 
-            List<Vector2> numberLocations, Vector2 healthLocation) : base(id, health)
+        public Character(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel): base(id)
         {
-            Name = name;
-            Font = font;
-            FontColor = fontColor;
             Position = position;
-            Texture2Ds = texture2Ds;
-            Texture2DLocations = texture2DLocations;
-            NumberLocations = numberLocations;
-            HealthLocation = healthLocation;
-        }
-
-
-        public Character(int id, int health, SpriteFont font, Vector2 position) :base(id, health)
-        {
-            Name = "Anonymous";
+            Player = player;
             Font = font;
-            FontColor = Color.White;
-            Position = position;
-            Texture2Ds = new List<Texture2D>();
-            Texture2DLocations = new List<Vector2>();
-            NumberLocations = [new Vector2(-100, 100), new Vector2(100, 100)];
-            HealthLocation = new Vector2(0, 200);
+            NameLabel = new UI.UILabel(0, player.Name, position + UIConfig.NamePosition, font);
+            NumberButton = [new UI.UIButton(1, TranslateRectangle(UIConfig.NumberAreas[0], position), Player.Numbers[0].ToString(), pixel, font), 
+                new UI.UIButton(2, TranslateRectangle(UIConfig.NumberAreas[1], position), Player.Numbers[1].ToString(), pixel, font)];
+            HealthButton = new UI.UIButton(3, TranslateRectangle(UIConfig.HealthArea, position), Player.Health.ToString(), pixel, font);
 
         }
+        
 
-
-        public void Draw(SpriteBatch spriteBatch, MouseState mouseState)
+        public Vector2 GetGlobalPosition()
         {
-            //spriteBatch.DrawString(Font, "名称: "+ Name, Position, FontColor);
-            
-
-
-            for (int i = 0; i < Texture2Ds.Count; i++)
-            {
-                spriteBatch.Draw(Texture2Ds[i], Texture2DLocations[i] + Position, Color.White);
-
-            }
-
-            spriteBatch.DrawString(Font, $"{Name}", Position, FontColor);
-
-            spriteBatch.DrawString(Font, "Health: " + Health, HealthLocation + Position, FontColor);
-
-            for (int i = 0; i < 2; i++)
-            {
-                if (GetNumberRectangle(i).Contains(mouseState.Position))
-                {
-                    spriteBatch.Draw()
-                }
-                spriteBatch.DrawString(Font, Numbers[i].ToString(), NumberLocations[i] + Position, FontColor);
-            }
-
-            
-
-
+            return Position;
         }
 
-        public Rectangle GetTargetRectangle()
+        private Rectangle TranslateRectangle(Rectangle rect, Vector2 vector)
         {
-            return new Rectangle((int)Position.X, (int)Position.Y, 100, 100);
+            return new Rectangle((int)(rect.X + vector.X), (int)(rect.Y + vector.Y), rect.Width, rect.Height);
         }
 
-        public Rectangle GetNumberRectangle(int index)
+        public override void Update(MouseState mouseState)
         {
-            return new Rectangle((int)(Position.X + NumberLocations[index].X), (int)(Position.Y + NumberLocations[index].Y), 100, 100);
+            // 更新逻辑可以在这里实现
+            // 例如处理鼠标事件、更新状态等
+            NumberButton[0].Update(mouseState);
+            NumberButton[1].Update(mouseState);
+            HealthButton.Update(mouseState);
         }
-    }
+
+        public void UpdateNumbers()
+        {
+            // 更新数字按钮的文本
+
+            NumberButton[0].Update(Player.Numbers[0].ToString());
+            NumberButton[1].Update(Player.Numbers[1].ToString());
+        }
+
+        public void UpdateHealth()
+        {
+            // 更新生命值按钮的文本
+            var _healthButton = HealthButton;
+            _healthButton.Update("Hp: " + Player.Health.ToString());
+        }
+
+        public override void Draw(SpriteBatch sb)
+        {
+            // 绘制角色的所有控件
+            NameLabel.Draw(sb);
+            NumberButton[0].Draw(sb);
+            NumberButton[1].Draw(sb);
+            HealthButton.Draw(sb);
+        }
+
+
+
+    };
+
+
+
 }
+
+

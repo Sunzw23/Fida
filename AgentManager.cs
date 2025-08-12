@@ -52,6 +52,7 @@ namespace Fida
                         _infer_number_index = _infer_number_index_1;
                     }
                     _action_index = _infer_number_index.InferActionIndex(_GetState(gameManager, sourcePlayerId, 0));
+                    System.Threading.Thread.Sleep(500); // 阻塞当前线程 1 秒
                     return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = _action_index / 3 };
                 }
                 else if (gameManager.CurrentGamePhase.Stage == 1)
@@ -70,13 +71,13 @@ namespace Fida
             }
             else if (gameManager.CurrentGamePhase.Type == GamePhaseType.TargetSelection)
             {
-                if (gameManager.GameMessage.Contains("治愈"))
-                {
-                    return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = sourcePlayerId };
-                }
-                else if (gameManager.GameMessage.Contains("攻击"))
+                if (gameManager.IsDamagingButHealing())
                 {
                     return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = 0 };
+                }
+                else
+                {
+                    return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = sourcePlayerId };
                 }
 
             }
