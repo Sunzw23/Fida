@@ -56,7 +56,7 @@ namespace Fida
 
     public class UIText
     {
-        public static string NameSpace(string name) => name;
+        public static string NameSpace(string name, List<Skill> skills) => $"{name} {string.Join(" ", skills.Select(s => GameText.SkillName(s)))}";
         public static string HealthSpace(int health) => $"Hp: {health}";
         public static string NumberSpace(int number) => number.ToString();
 

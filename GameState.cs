@@ -200,7 +200,7 @@ namespace Fida
                 {
                     SourcePlayerId = _sourcePlayerId,
                     RequiredActionType = ActionType.ChooseNumberIndex,
-                    ValidTargets = [ _sourcePlayerId ],
+                    ValidTargets = [_sourcePlayerId],
                     Message = _gameManager.GameMessage
                 });
             }
@@ -318,7 +318,7 @@ namespace Fida
         {
             _gameManager.SetGameMessage($"玩家 {_sourcePlayer.Name} 的数字变为 {_sourcePlayer.Numbers[numberIndex]}, 触发攻击! (造成{damage}点伤害)", _sourcePlayerId);
             _gameManager.ChangeNumber(_sourcePlayerId, numberIndex, 1);
-            _gameManager.PushState(new HandleStackState(_gameManager)); // 攻击完后处理栈
+            _gameManager.PushState(new ApplyingEffectState(_gameManager, _sourcePlayerId));
             _gameManager.TransitionTo(new OrderingAttackState(_gameManager, _sourcePlayerId, damage));
         }
 
@@ -334,7 +334,7 @@ namespace Fida
         {
             _gameManager.SetGameMessage($"玩家 {_sourcePlayer.Name} 的数字变为 7, 触发治愈! (恢复{healing}点生命值)", _sourcePlayerId);
             _gameManager.ChangeNumber(_sourcePlayerId, numberIndex, 1);
-            _gameManager.PushState(new HandleStackState(_gameManager)); // 治疗完后处理栈
+            _gameManager.PushState(new ApplyingEffectState(_gameManager, _sourcePlayerId));
             _gameManager.TransitionTo(new TargetSelectionState(_gameManager, _sourcePlayerId, 0, healing));
         }
 

@@ -15,7 +15,7 @@ namespace Fida
     // 用于生命值按钮点击的新委托，不传递任何参数，因为我们只需要知道它被按下了。
     public delegate void HealthButtonHandler();
 
-    public class Character : UI.UIControl
+    public class UIPlayer : UI.UIControl
     {
         // 声明两个更具体的事件，供外部订阅。
         public event NumberButtonHandler OnNumberButtonClick;
@@ -30,7 +30,7 @@ namespace Fida
         public List<UIButton> NumberButton { get; private set; }
         public UIButton HealthButton { get; private set; }
 
-        public Character(Player player, Vector2 position, SpriteFont font, Texture2D pixel)
+        public UIPlayer(Player player, Vector2 position, SpriteFont font, Texture2D pixel)
         {
             Position = position;
             Player = player;

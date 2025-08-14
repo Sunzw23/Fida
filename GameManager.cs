@@ -48,6 +48,7 @@ namespace Fida
 
             // 设置初始状态为 GameStart
             TransitionTo(new GameStartState(this));
+            
         }
 
         /// <summary>
@@ -60,11 +61,6 @@ namespace Fida
             _currentState?.Handle(action);
         }
 
-        public void UpdateGame()
-        {
-            if (CheckGameEnd()) return;
-            _currentState?.Handle(new Action());
-        }
 
         /// <summary>
         /// 转换到新的游戏状态
@@ -73,8 +69,6 @@ namespace Fida
         {
             _currentState = newState;
             _currentState?.Enter();
-            // 再次调用UpdateGame以处理新状态的Enter()中可能发生的即时状态转换
-            UpdateGame();
         }
 
         /// <summary>

@@ -128,7 +128,7 @@ namespace Fida
             {
                 var player = gameManager.Players[i];
                 // 创建玩家UI控件
-                Character character = new Character(player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel);
+                UIPlayer character = new UIPlayer(player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel);
                 AddControl(character);
 
                 // 订阅 Character 控件的 OnNumberButtonClick 事件，并将其向上层传递。
@@ -149,7 +149,7 @@ namespace Fida
         public void DisableAll()
         {
             // 禁用所有UI控件
-            foreach (var control in uIControls.OfType<Character>())
+            foreach (var control in uIControls.OfType<UIPlayer>())
             {
                 control.Disable();
             }
@@ -157,7 +157,7 @@ namespace Fida
 
         public void EnableNumbers(List<int> validTargets)
         {
-            foreach (var control in uIControls.OfType<Character>())
+            foreach (var control in uIControls.OfType<UIPlayer>())
             {
                 if (validTargets.Contains(control.Player.PlayerId))
                 {
@@ -173,7 +173,7 @@ namespace Fida
         public void EnableHealth(List<int> validTargets)
         {
             // 启用生命值按钮
-            foreach (var control in uIControls.OfType<Character>())
+            foreach (var control in uIControls.OfType<UIPlayer>())
             {
                 if (validTargets.Contains(control.Player.PlayerId))
                 {
@@ -198,10 +198,8 @@ namespace Fida
         public void UpdateAll()
         {
             // 更新所有UI控件的状态
-            foreach (UIControl control in uIControls)
-            {
-                control.Update(Mouse.GetState());
-            }
+            UpdateNumber();
+            UpdateHealth();
         }
 
 
@@ -209,7 +207,7 @@ namespace Fida
         public void UpdateNumber(int playerId)
         {
             // 更新指定玩家的数字按钮文本
-            var control = uIControls.OfType<Character>().FirstOrDefault(c => c.Player.PlayerId == playerId);
+            var control = uIControls.OfType<UIPlayer>().FirstOrDefault(c => c.Player.PlayerId == playerId);
             control.UpdateNumbers();
         }
 
@@ -217,7 +215,7 @@ namespace Fida
         public void UpdateNumber()
         {
             // 更新数字按钮的文本
-            foreach (var control in uIControls.OfType<Character>())
+            foreach (var control in uIControls.OfType<UIPlayer>())
             {
                 control.UpdateNumbers();
             }
@@ -226,14 +224,14 @@ namespace Fida
         public void UpdateHealth(int playerId)
         {
             // 更新指定玩家的生命值按钮文本
-            var control = uIControls.OfType<Character>().FirstOrDefault(c => c.Player.PlayerId == playerId);
+            var control = uIControls.OfType<UIPlayer>().FirstOrDefault(c => c.Player.PlayerId == playerId);
             control.UpdateHealth();
         }
 
         public void UpdateHealth()
         {
             // 更新所有玩家的生命值按钮文本
-            foreach (var control in uIControls.OfType<Character>())
+            foreach (var control in uIControls.OfType<UIPlayer>())
             {
                 control.UpdateHealth();
             }

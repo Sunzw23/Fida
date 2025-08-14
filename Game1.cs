@@ -43,6 +43,7 @@ namespace Fida
             _agentManager = new AgentManager(_gameManager);
             base.Initialize();
             SwitchToState(State.Playing);
+            
         }
 
         protected override void LoadContent()

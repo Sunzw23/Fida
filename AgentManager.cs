@@ -55,7 +55,7 @@ namespace Fida
 
         public void HandleChooseNumberIndex(int sourcePlayerId)
         {
-            System.Threading.Thread.Sleep(500); // 阻塞当前线程 1 秒
+            System.Threading.Thread.Sleep(10); // 阻塞当前线程 1 秒
             if (actionIndex == -1)
             {
                 // 选择第一个数字
@@ -65,7 +65,6 @@ namespace Fida
             }
             else
             {
-                actionIndex = -1;
                 // 选择第二个数字
                 if (actionIndex % 3 == 0)
                 {
@@ -75,6 +74,7 @@ namespace Fida
                 {
                     OnChooseNumberIndex?.Invoke(0, actionIndex % 3 - 1);
                 }
+                actionIndex = -1;
             }
         }
 

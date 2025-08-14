@@ -38,7 +38,7 @@ namespace Fida
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
 
-        public int MaxHealth {get; set;} // 生命值上限
+        public int MaxHealth { get; set; } = 11; // 生命值上限
 
         // 构造函数, 初始化玩家
         public Player(int id, string name, int health, List<Skill> skills)
