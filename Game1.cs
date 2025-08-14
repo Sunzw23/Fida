@@ -1,5 +1,4 @@
-﻿// Game1.cs 文件
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -9,9 +8,7 @@ using System.Resources; // 用于Linq查询
 
 namespace Fida
 {
-    // Player.cs 保持不变，请确保它在项目中存在
-
-    public class Game1 : Game
+    public class Fida : Game
     {
         private GraphicsDeviceManager _graphics;
         private State _currentState;
@@ -19,12 +16,12 @@ namespace Fida
         private GameManager _gameManager; // 游戏逻辑管理类
         private UIManager _uiManager;     // UI绘制管理类
         private AgentManager _agentManager; // AI管理类
-
+        private MouseState mouseState; // 鼠标状态
 
         private bool sceneLoaded = false;
         private bool _isGameActive = true; // 游戏是否处于激活状态
 
-        public Game1()
+        public Fida()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -41,19 +38,64 @@ namespace Fida
         protected override void Initialize()
         {
             _resourceManager = new ResourceManager(GraphicsDevice);
-            base.Initialize();
             _gameManager = new GameManager();
             _uiManager = new UIManager(GraphicsDevice, _resourceManager);
-            _agentManager = new AgentManager();
+            _agentManager = new AgentManager(_gameManager);
+            base.Initialize();
             SwitchToState(State.Playing);
-
         }
 
         protected override void LoadContent()
         {
             // 将UI资源的加载委托给UIManager
             _resourceManager.LoadContent(Content);
+            _gameManager.NumberChanged += (sender, e) => _uiManager.UpdateAll();
+            _gameManager.AttackExecuted += (sender, e) => _uiManager.UpdateAll();
+            _gameManager.HealExecuted += (sender, e) => _uiManager.UpdateAll();
+            _gameManager.MessageUpdated += (sender, e) => _uiManager.UpdateMessage(e.Message);
+            
+
+
+            _gameManager.PlayerActionRequired += (sender, e) =>
+            {
+                if (e.SourcePlayerId == 0)
+                {
+                    _uiManager.HandleActionRequired(e);
+                }
+                else
+                {
+                    _agentManager.HandleActionRequired(e);
+                }
+            };
+
+            _uiManager.OnStartButtonClick += () => SwitchToState(State.Playing);
+
+            _uiManager.OnChooseNumberIndex += (playerId, numberIndex) =>
+            {
+                // 当数字按钮被点击时，通知GameManager
+                _gameManager.UpdateGame(new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = playerId, NumberIndex = numberIndex });
+            };
+
+            _uiManager.OnChooseTarget += (targetPlayerId) =>
+            {
+                // 当生命值按钮被点击时，通知GameManager
+                _gameManager.UpdateGame(new Action { Type = ActionType.ChooseTarget, TargetPlayerId = targetPlayerId });
+            };
+
+            _agentManager.OnChooseNumberIndex += (playerId, numberIndex) =>
+            {
+                // 当数字按钮被点击时，通知GameManager
+                _gameManager.UpdateGame(new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = playerId, NumberIndex = numberIndex });
+            };
+
+            _agentManager.OnChooseTarget += (targetPlayerId) =>
+            {
+                // 当生命值按钮被点击时，通知GameManager
+                _gameManager.UpdateGame(new Action { Type = ActionType.ChooseTarget, TargetPlayerId = targetPlayerId });
+            };
+
         }
+
 
         protected override void Update(GameTime gameTime)
         {
@@ -63,21 +105,11 @@ namespace Fida
                 if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                     Exit();
 
-                _uiManager.Update();
+                // 获取当前鼠标状态
+                mouseState = Mouse.GetState();
 
-                // 更新游戏逻辑，并将鼠标点击信息传递给GameManager
-                if (_gameManager.CurrentGamePhase.SourcePlayerId == 0)
-                {
-                    // 从UIManager获取鼠标点击信息
-                    Action clickAction = _uiManager.UpdateMouseAndCheckClicks(_gameManager);
-                    _gameManager.UpdateGame(clickAction);
-                }
-                else
-                {
-                    // 从AgentManager获取AI模拟信息
-                    Action agentAction = _agentManager.UpdateAction(_gameManager);
-                    _gameManager.UpdateGame(agentAction);
-                }
+                _uiManager.Update(mouseState);
+
             }
 
             base.Update(gameTime);
@@ -90,6 +122,8 @@ namespace Fida
 
             base.Draw(gameTime);
         }
+
+
 
         public void SwitchToState(State newState)
         {

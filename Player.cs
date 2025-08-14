@@ -137,5 +137,16 @@ namespace Fida
         {
             return Skills.Contains(skill);
         }
+
+        public bool ConditionSatisfiedSkill(Skill skill)
+        {
+            switch (skill)
+            {
+                case Skill.Tong:
+                    return Numbers[0]==3 && Numbers[1]==3;
+                default:
+                    return true;
+            }
+        }
     }
 }

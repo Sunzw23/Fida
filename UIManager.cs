@@ -1,39 +1,18 @@
-﻿// UIManager.cs 文件
-using Fida.UI;
+﻿using Fida.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text.RegularExpressions; // For .Any() and .Where()
-
+using System.Text.RegularExpressions;
 
 namespace Fida
 {
 
-    public enum ActionType
-    {
-        ChooseNumberIndex,
-        ChooseTarget,
-        DecideApply,
-        ChooseNumber,
-        None,
-    }
 
-    public struct Action
-    {
-        public ActionType Type { get; set; }
-        public int TargetPlayerId { get; set; }
-        public int NumberIndex { get; set; }
-        public int Number { get; set; }
-        public bool IsApply { get; set; } 
 
-        public Action()
-        {
-            this.Type = ActionType.None;
-        }
-    }
 
 
 
@@ -43,14 +22,16 @@ namespace Fida
     /// </summary>
     public class UIManager
     {
-        private GraphicsDevice _graphicsDevice;
-        private SpriteBatch _spriteBatch; 
-        private ResourceManager _resourceManager; // 引用资源管理器
+        // 声明公共事件，供 GameManager 订阅。
+        public event StartButtonHandler OnStartButtonClick;
+        public event ChooseNumberIndexHandler OnChooseNumberIndex;
+        public event ChooseTargetHandler OnChooseTarget;
 
-        // 鼠标状态
-        // Mouse state
-        private MouseState _currentMouseState;
-        private MouseState _previousMouseState;
+
+        private readonly GraphicsDevice _graphicsDevice;
+        private SpriteBatch _spriteBatch;
+        private readonly ResourceManager _resourceManager; // 引用资源管理器
+
 
         private List<UIControl> uIControls = [];
 
@@ -62,6 +43,29 @@ namespace Fida
             _resourceManager = resourceManager; // 注入资源管理器实例
         }
 
+        public void HandleActionRequired(PlayerActionRequiredEventArgs e)
+        {
+            DisableAll();
+            switch (e.RequiredActionType)
+            { 
+                case ActionType.ChooseNumberIndex:
+                    // 如果是选择数字的操作，启用数字按钮
+                    EnableNumbers(e.ValidTargets);
+                    break;
+                case ActionType.ChooseTarget:
+                    // 如果是选择目标的操作，启用生命值按钮
+                    EnableHealth(e.ValidTargets);
+                    break;
+                default:
+                    // 对于其他操作，禁用所有按钮
+                    break;
+            }
+        }
+
+
+
+
+
         public void Clear()
         {
             uIControls = [];
@@ -69,7 +73,9 @@ namespace Fida
 
         public void Draw()
         {
+            _graphicsDevice.Clear(Color.Black);
             _spriteBatch.Begin();
+            // 清空
             foreach (UIControl c in uIControls)
             {
                 c.Draw(_spriteBatch);
@@ -77,11 +83,13 @@ namespace Fida
             _spriteBatch.End();
         }
 
-        public void Update()
+        public void Update(MouseState mouseState)
         {
+            // 在事件驱动模式下，Update方法只负责更新所有UI控件的状态。
+            // 控件内部会处理鼠标状态并触发事件。
             foreach (UIControl c in uIControls)
             {
-                c.Update(_currentMouseState);
+                c.Update(mouseState);
             }
         }
 
@@ -95,167 +103,154 @@ namespace Fida
             Clear();
 
             // 创建开始按钮
-            UIButton startButton = new UIButton(0, new Rectangle(400, 400, 200, 100), "开始", _resourceManager.Pixel, _resourceManager.Font);
+            UIButton startButton = new UIButton(new Rectangle(400, 400, 200, 100), "开始", _resourceManager.Pixel, _resourceManager.Font);
             AddControl(startButton);
+
+            // 订阅开始按钮的 OnClick 事件
+            startButton.OnClick += HandleStartButtonClick;
+            startButton.Enable();
+        }
+
+        private void HandleStartButtonClick(object sender)
+        {
+            // 当开始按钮被点击时，触发 UIManager 自己的 OnStartButtonClick 事件
+            OnStartButtonClick?.Invoke();
         }
 
         public void BuildPlayingUI(GameManager gameManager)
         {
             Clear();
 
-            UILabel gameMessageLabel = new UILabel(0, gameManager.GameMessage, UIConfig.GameMessagePosition, _resourceManager.Font);
+            UILabel gameMessageLabel = new UILabel(gameManager.GameMessage, UIConfig.GameMessagePosition, _resourceManager.Font);
             AddControl(gameMessageLabel);
 
             for (int i = 0; i < gameManager.Players.Count; i++)
             {
                 var player = gameManager.Players[i];
                 // 创建玩家UI控件
-                Character character = new Character(player.PlayerId, player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel);
+                Character character = new Character(player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel);
                 AddControl(character);
+
+                // 订阅 Character 控件的 OnNumberButtonClick 事件，并将其向上层传递。
+                character.OnNumberButtonClick += (numberIndex) => {
+                    // 当 Character 的数字按钮被点击时，触发 UIManager 自己的事件，并传递数字。
+                    OnChooseNumberIndex?.Invoke(player.PlayerId, numberIndex);
+
+
+                };
+                // 订阅 Character 控件的 OnHealthButtonClick 事件，并将其向上层传递。
+                character.OnHealthButtonClick += () => {
+                    // 当 Character 的生命值按钮被点击时，触发 UIManager 自己的事件，并传递玩家ID。
+                    OnChooseTarget?.Invoke(player.PlayerId);
+                };
             }
         }
+
+        public void DisableAll()
+        {
+            // 禁用所有UI控件
+            foreach (var control in uIControls.OfType<Character>())
+            {
+                control.Disable();
+            }
+        }
+
+        public void EnableNumbers(List<int> validTargets)
+        {
+            foreach (var control in uIControls.OfType<Character>())
+            {
+                if (validTargets.Contains(control.Player.PlayerId))
+                {
+                    // 如果玩家ID在有效目标列表中，则启用数字按钮
+                    control.NumberButton[0].Enable();
+                    control.NumberButton[1].Enable();
+                }
+            }
+        }
+
+        
+
+        public void EnableHealth(List<int> validTargets)
+        {
+            // 启用生命值按钮
+            foreach (var control in uIControls.OfType<Character>())
+            {
+                if (validTargets.Contains(control.Player.PlayerId))
+                {
+                    control.HealthButton.Enable();
+                }
+            }
+        }
+
+
+
+        public void UpdateMessage(string message)
+        {
+            // 更新游戏消息标签的文本
+            var messageLabel = uIControls.OfType<UILabel>().FirstOrDefault();
+            if (messageLabel != null)
+            {
+                messageLabel.UpdateText(message);
+            }
+        }
+
+
+        public void UpdateAll()
+        {
+            // 更新所有UI控件的状态
+            foreach (UIControl control in uIControls)
+            {
+                control.Update(Mouse.GetState());
+            }
+        }
+
+
+
+        public void UpdateNumber(int playerId)
+        {
+            // 更新指定玩家的数字按钮文本
+            var control = uIControls.OfType<Character>().FirstOrDefault(c => c.Player.PlayerId == playerId);
+            control.UpdateNumbers();
+        }
+
+
+        public void UpdateNumber()
+        {
+            // 更新数字按钮的文本
+            foreach (var control in uIControls.OfType<Character>())
+            {
+                control.UpdateNumbers();
+            }
+        }
+
+        public void UpdateHealth(int playerId)
+        {
+            // 更新指定玩家的生命值按钮文本
+            var control = uIControls.OfType<Character>().FirstOrDefault(c => c.Player.PlayerId == playerId);
+            control.UpdateHealth();
+        }
+
+        public void UpdateHealth()
+        {
+            // 更新所有玩家的生命值按钮文本
+            foreach (var control in uIControls.OfType<Character>())
+            {
+                control.UpdateHealth();
+            }
+        }
+
+
 
         public void BuildSettingsScreen()
         {
             Clear();
             // 创建设置按钮
-
         }
 
         public void BuildRulesScreen()
         {
             Clear();
-
         }
-
-
-        /// <summary>
-        /// 更新鼠标状态并检测点击的UI区域。
-        /// Updates mouse state and detects clicked UI areas.
-        /// </summary>
-        /// <returns>如果鼠标左键被点击，返回点击区域的Rectangle；否则返回null。</returns>
-        /// <returns>If the left mouse button is clicked, returns the clicked area's Rectangle; otherwise, returns null.</returns>
-        public Action UpdateMouseAndCheckClicks(GameManager gameManager)
-        {
-            _currentMouseState = Mouse.GetState();
-            bool leftClick = _currentMouseState.LeftButton == ButtonState.Pressed && _previousMouseState.LeftButton == ButtonState.Released;
-            _previousMouseState = _currentMouseState;
-
-            if (!leftClick)
-            {
-                return new Action { Type = ActionType.None }; // 鼠标左键未点击，返回空Action
-            }
-
-            switch (gameManager.CurrentActionType)
-            {
-                case ActionType.ChooseNumberIndex:
-                    return ActionChooseNumberIndex(gameManager);
-                case ActionType.ChooseTarget:
-                    return ActionChooseTarget(gameManager);
-                case ActionType.ChooseNumber:
-                    return ActionChooseNumber(gameManager);
-                default:
-                    break;
-            }
-            return new Action { Type = ActionType.None }; // 没有点击或点击在非交互区域
-        }
-
-        private Action ActionChooseNumberIndex(GameManager gameManager)
-        {
-            foreach (Character c in uIControls.OfType<Character>())
-            {
-                for (int i = 0; i < 2; i++) 
-                {
-
-                    if (c.NumberButton[i].IsButtonPressed())
-                    {
-                        return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = c.Player.PlayerId, NumberIndex = i };
-                    }
-                }
-
-            }
-            return new Action();
-        }
-
-
-        private Action ActionChooseTarget(GameManager gameManager)
-        {
-            foreach (Character c in uIControls.OfType<Character>())
-            {
-                
-                if (c.HealthButton.IsButtonPressed())
-                {
-                    return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = c.Player.PlayerId };
-                }
-            }
-            return new Action();
-        }
-
-        private Action ActionChooseNumber(GameManager gameManager)
-        {
-            for (int i = 0; i<=9; i++)
-            {
-                int _x = i % 5;
-                int _y = i / 5;
-                if (CheckClickArea(new Rectangle(10 + _x * 50, 100 + _y * 50, 50, 50)))
-                {
-                    return new Action { Type = ActionType.ChooseNumber, Number = i };
-                }
-            }
-            return new Action();
-        }
-
-
-
-        /// <summary>
-        /// 辅助方法：检查鼠标是否在指定区域内
-        /// </summary>
-        /// <param name="area"></param>
-        /// <returns></returns>
-        private bool CheckClickArea(Rectangle area)
-        {
-            return area.Contains(_currentMouseState.X, _currentMouseState.Y);
-        }
-
-
-
-
-        /// <summary>
-        /// 绘制游戏消息。
-        /// </summary>
-        /// <param name="message"></param>
-        private void DrawGameMessage(string message)
-        {
-            _spriteBatch.DrawString(_resourceManager.Font, message, new Vector2(10, 10), Color.Gray);
-        }
-
-
-        
-
-
-        /// <summary>
-        /// 辅助方法：绘制矩形（用于填充或背景）
-        /// </summary>
-        /// <param name="rect"></param>
-        /// <param name="color"></param>
-        private void DrawRectangle(Rectangle rect, Color color)
-        {
-            _spriteBatch.Draw(_resourceManager.Pixel, rect, color);
-        }
-
-        /// <summary>
-        /// 辅助方法：在矩形内绘制字符串（用于按钮或标签）
-        /// </summary>
-        /// <param name="rect"></param>
-        /// <param name="text"></param>
-        /// <param name="color"></param>
-        private void DrawStringInBox(Rectangle rect, string text, Color color)
-        {
-            var textSize = _resourceManager.Font.MeasureString(text);
-            var position = new Vector2(rect.X + (rect.Width - textSize.X) / 2, rect.Y + (rect.Height - textSize.Y) / 2);
-            _spriteBatch.DrawString(_resourceManager.Font, text, position, color);
-        }
-
 
 
 
@@ -268,7 +263,5 @@ namespace Fida
             _spriteBatch?.Dispose();
             _spriteBatch = null;
         }
-
-
     }
 }

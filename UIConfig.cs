@@ -56,6 +56,10 @@ namespace Fida
 
     public class UIText
     {
+        public static string NameSpace(string name) => name;
+        public static string HealthSpace(int health) => $"Hp: {health}";
+        public static string NumberSpace(int number) => number.ToString();
+
         public static string UseDoubleAttack => "使用双倍攻击吗?";
         public static string UseMo => "使用技能: 魔吗?";
         public static string UseTong => "使用技能: 同变吗?";

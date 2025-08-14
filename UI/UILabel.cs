@@ -6,14 +6,13 @@ namespace Fida.UI
 {
     public class UILabel: UIControl
     {
-        int Id { get; set; }
         string Text { get; set; }
         Color Color { get; set; } = Color.White;
         Vector2 Position { get; set; }
         SpriteFont Font { get; set; }
         
 
-        public UILabel(int id, string text, Vector2 position, SpriteFont font): base(id)
+        public UILabel(string text, Vector2 position, SpriteFont font)
         {
             Text = text;
             Position = position;
@@ -34,7 +33,7 @@ namespace Fida.UI
             sb.DrawString(Font, Text, pos, Color);
         }
 
-        public override void Update(string text)
+        public void UpdateText(string text)
         {
             Text = text; // 更新文本内容
         }

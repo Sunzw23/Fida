@@ -8,83 +8,96 @@ using System.Threading.Tasks;
 
 namespace Fida
 {
-    public class AgentManager: IDisposable
+    public class AgentManager : IDisposable
     {
-        int _action_index;
+        public event ChooseNumberIndexHandler OnChooseNumberIndex;
+        public event ChooseTargetHandler OnChooseTarget;
 
-        private OnnxInference _infer_number_index_0;
-        private OnnxInference _infer_number_index_1;
+        int actionIndex;
+
+        private List<OnnxInference> OnnxInferences = [];
+
+        private GameManager _gameManager;
 
         private bool loaded = false;
 
-        public AgentManager()
+        public AgentManager(GameManager gameManager)
         {
             this.loaded = true;
             LoadAgents();
+            _gameManager = gameManager;
         }
 
         public void LoadAgents()
         {
             string modelsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "onnx_models");
-            _infer_number_index_0 = new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_0.onnx"));
-            _infer_number_index_1 = new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_1.onnx"));
+            OnnxInferences.Add(new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_0.onnx")));
+            OnnxInferences.Add(new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_1.onnx")));
         }
 
-        public void Dispose()
+        public void HandleActionRequired(PlayerActionRequiredEventArgs e)
         {
-        }
-
-        public Action UpdateAction(GameManager gameManager)
-        {
-            var sourcePlayerId = gameManager.CurrentGamePhase.SourcePlayerId;
-            if (gameManager.CurrentGamePhase.Type == GamePhaseType.ChooseNumberIndex)
+            switch (e.RequiredActionType)
             {
-                if (gameManager.CurrentGamePhase.Stage == 0)
-                {
-                    // 选择第一个数字
-                    OnnxInference _infer_number_index;
-                    if (gameManager.CurrentGamePhase.SourcePlayerId == 1)
-                    {
-                        _infer_number_index = _infer_number_index_0;
-                    }
-                    else
-                    {
-                        _infer_number_index = _infer_number_index_1;
-                    }
-                    _action_index = _infer_number_index.InferActionIndex(_GetState(gameManager, sourcePlayerId, 0));
-                    System.Threading.Thread.Sleep(500); // 阻塞当前线程 1 秒
-                    return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = _action_index / 3 };
-                }
-                else if (gameManager.CurrentGamePhase.Stage == 1)
-                {
-                    // 选择第二个数字
-                    if (_action_index % 3 == 0)
-                    {
-                        return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = 1 - _action_index / 3 };
-                    }
-                    else
-                    {
-                        return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = 0, NumberIndex = _action_index % 3 - 1 };
-                    }
-                }
-                    
+                case ActionType.ChooseNumberIndex:
+                    // 如果是选择数字的操作，启用数字按钮
+                    HandleChooseNumberIndex();
+                    break;
+                case ActionType.ChooseTarget:
+                    // 如果是选择目标的操作，启用生命值按钮
+                    HandleChooseTarget();
+                    break;
+                default:
+                    // 对于其他操作，禁用所有按钮
+                    break;
             }
-            else if (gameManager.CurrentGamePhase.Type == GamePhaseType.TargetSelection)
+        }
+
+
+        public void HandleChooseNumberIndex()
+        {
+            var sourcePlayerId = _gameManager.CurrentGamePhase.SourcePlayerId;
+            System.Threading.Thread.Sleep(500); // 阻塞当前线程 1 秒
+            if (_gameManager.CurrentGamePhase.Stage == 0)
             {
-                if (gameManager.IsDamagingButHealing())
+                // 选择第一个数字
+                var onnxInference = GetOnnxInference();
+                actionIndex = onnxInference.InferActionIndex(_GetState(_gameManager, sourcePlayerId, 0));
+                OnChooseNumberIndex?.Invoke(sourcePlayerId, actionIndex / 3);
+            }
+            else if (_gameManager.CurrentGamePhase.Stage == 1)
+            {
+                // 选择第二个数字
+                if (actionIndex % 3 == 0)
                 {
-                    return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = 0 };
+                    OnChooseNumberIndex?.Invoke(sourcePlayerId, 1 - actionIndex / 3);
                 }
                 else
                 {
-                    return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = sourcePlayerId };
+                    OnChooseNumberIndex?.Invoke(0, actionIndex % 3 - 1);
                 }
-
             }
-
-            return new Action { Type = ActionType.None};
         }
-       
+
+        public void HandleChooseTarget()
+        {
+            if (_gameManager.IsDamagingButHealing())
+            {
+                OnChooseTarget?.Invoke(0);
+            }
+            else
+            {
+                OnChooseTarget?.Invoke(_gameManager.CurrentGamePhase.SourcePlayerId);
+            }
+        }
+
+
+
+        private OnnxInference GetOnnxInference()
+        {
+            return OnnxInferences[0];
+        }
+
 
         private float[] _GetState(GameManager gameManager, int sourcePlayerId, int targetPlayerId)
         {
@@ -101,8 +114,13 @@ namespace Fida
             return state;
         }
 
-    
-    }
-    
 
+
+        public void Dispose()
+        {
+        }
+
+
+
+    }
 }
