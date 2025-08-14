@@ -13,13 +13,12 @@ namespace Fida
         public event ChooseNumberIndexHandler OnChooseNumberIndex;
         public event ChooseTargetHandler OnChooseTarget;
 
-        int actionIndex;
+        int actionIndex = -1;
 
         private List<OnnxInference> OnnxInferences = [];
 
-        private GameManager _gameManager;
-
         private bool loaded = false;
+        private GameManager _gameManager;
 
         public AgentManager(GameManager gameManager)
         {
@@ -41,7 +40,7 @@ namespace Fida
             {
                 case ActionType.ChooseNumberIndex:
                     // 如果是选择数字的操作，启用数字按钮
-                    HandleChooseNumberIndex();
+                    HandleChooseNumberIndex(e.SourcePlayerId);
                     break;
                 case ActionType.ChooseTarget:
                     // 如果是选择目标的操作，启用生命值按钮
@@ -54,19 +53,19 @@ namespace Fida
         }
 
 
-        public void HandleChooseNumberIndex()
+        public void HandleChooseNumberIndex(int sourcePlayerId)
         {
-            var sourcePlayerId = _gameManager.CurrentGamePhase.SourcePlayerId;
             System.Threading.Thread.Sleep(500); // 阻塞当前线程 1 秒
-            if (_gameManager.CurrentGamePhase.Stage == 0)
+            if (actionIndex == -1)
             {
                 // 选择第一个数字
                 var onnxInference = GetOnnxInference();
                 actionIndex = onnxInference.InferActionIndex(_GetState(_gameManager, sourcePlayerId, 0));
                 OnChooseNumberIndex?.Invoke(sourcePlayerId, actionIndex / 3);
             }
-            else if (_gameManager.CurrentGamePhase.Stage == 1)
+            else
             {
+                actionIndex = -1;
                 // 选择第二个数字
                 if (actionIndex % 3 == 0)
                 {
@@ -81,14 +80,15 @@ namespace Fida
 
         public void HandleChooseTarget()
         {
-            if (_gameManager.IsDamagingButHealing())
-            {
-                OnChooseTarget?.Invoke(0);
-            }
-            else
-            {
-                OnChooseTarget?.Invoke(_gameManager.CurrentGamePhase.SourcePlayerId);
-            }
+            //if (_gameManager.IsDamagingButHealing())
+            //{
+            //    OnChooseTarget?.Invoke(0);
+            //}
+            //else
+            //{
+            //    OnChooseTarget?.Invoke(_gameManager.CurrentGamePhase.SourcePlayerId);
+            //}
+            OnChooseTarget?.Invoke(0); // 默认选择玩家0作为目标 TODO
         }
 
 
