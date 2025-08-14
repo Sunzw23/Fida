@@ -36,16 +36,17 @@ namespace Fida
             _graphics.IsFullScreen = false;
             _graphics.ApplyChanges();
 
-            _currentState = State.Playing;
         }
 
         protected override void Initialize()
         {
             _resourceManager = new ResourceManager(GraphicsDevice);
+            base.Initialize();
             _gameManager = new GameManager();
             _uiManager = new UIManager(GraphicsDevice, _resourceManager);
             _agentManager = new AgentManager();
-            base.Initialize();
+            SwitchToState(State.Playing);
+
         }
 
         protected override void LoadContent()
@@ -58,14 +59,11 @@ namespace Fida
         {
             if (_isGameActive)
             {
-                if (sceneLoaded == false)
-                {
-                    // 加载场景
-                    sceneLoaded = true;
-                }
                 // 处理退出游戏
                 if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                     Exit();
+
+                _uiManager.Update();
 
                 // 更新游戏逻辑，并将鼠标点击信息传递给GameManager
                 if (_gameManager.CurrentGamePhase.SourcePlayerId == 0)
@@ -88,7 +86,7 @@ namespace Fida
         protected override void Draw(GameTime gameTime)
         {
             // 绘制游戏界面，将游戏状态从GameManager传递给UIManager
-            _uiManager.Draw(gameTime);
+            _uiManager.Draw();
 
             base.Draw(gameTime);
         }

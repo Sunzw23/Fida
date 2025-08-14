@@ -67,6 +67,23 @@ namespace Fida
             uIControls = [];
         }
 
+        public void Draw()
+        {
+            _spriteBatch.Begin();
+            foreach (UIControl c in uIControls)
+            {
+                c.Draw(_spriteBatch);
+            }
+            _spriteBatch.End();
+        }
+
+        public void Update()
+        {
+            foreach (UIControl c in uIControls)
+            {
+                c.Update(_currentMouseState);
+            }
+        }
 
         private void AddControl(UIControl control)
         {
@@ -96,9 +113,6 @@ namespace Fida
                 Character character = new Character(player.PlayerId, player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel);
                 AddControl(character);
             }
-
-
-
         }
 
         public void BuildSettingsScreen()
@@ -152,6 +166,7 @@ namespace Fida
             {
                 for (int i = 0; i < 2; i++) 
                 {
+
                     if (c.NumberButton[i].IsButtonPressed())
                     {
                         return new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = c.Player.PlayerId, NumberIndex = i };
@@ -167,6 +182,7 @@ namespace Fida
         {
             foreach (Character c in uIControls.OfType<Character>())
             {
+                
                 if (c.HealthButton.IsButtonPressed())
                 {
                     return new Action { Type = ActionType.ChooseTarget, TargetPlayerId = c.Player.PlayerId };

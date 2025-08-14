@@ -29,7 +29,7 @@ namespace Fida
             NameLabel = new UI.UILabel(0, player.Name, position + UIConfig.NamePosition, font);
             NumberButton = [new UI.UIButton(1, TranslateRectangle(UIConfig.NumberAreas[0], position), Player.Numbers[0].ToString(), pixel, font), 
                 new UI.UIButton(2, TranslateRectangle(UIConfig.NumberAreas[1], position), Player.Numbers[1].ToString(), pixel, font)];
-            HealthButton = new UI.UIButton(3, TranslateRectangle(UIConfig.HealthArea, position), Player.Health.ToString(), pixel, font);
+            HealthButton = new UI.UIButton(3, TranslateRectangle(UIConfig.HealthArea, position), "Hp: " + Player.Health.ToString(), pixel, font);
 
         }
         
