@@ -10,7 +10,7 @@ namespace Fida
 {
     public class Fida : Game
     {
-        private GraphicsDeviceManager _graphics;
+        private readonly GraphicsDeviceManager _graphics;
         private State _currentState;
         private ResourceManager _resourceManager; // 资源管理类
         private GameManager _gameManager; // 游戏逻辑管理类
@@ -18,7 +18,6 @@ namespace Fida
         private AgentManager _agentManager; // AI管理类
         private MouseState mouseState; // 鼠标状态
 
-        private bool sceneLoaded = false;
         private bool _isGameActive = true; // 游戏是否处于激活状态
 
         private int _gameLevel = -1; // 当前游戏关卡

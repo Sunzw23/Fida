@@ -31,7 +31,7 @@ namespace Fida
 
         // 规则界面
 
-        public static Vector2 RulesTextPosition => new Vector2(500, 500);
+        public static Vector2 RulesTextPosition => new Vector2(800, 600);
         public static Rectangle ReturnToMainMenuButtonArea => new Rectangle(50, 50, 100, 60);
 
         // 选择关卡界面

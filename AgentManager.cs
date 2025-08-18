@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace Fida
 {
-    public class AgentManager : IDisposable
+    public class AgentManager
     {
         public event ChooseNumberIndexHandler OnChooseNumberIndex;
         public event ChooseTargetHandler OnChooseTarget;
 
         int actionIndex = -1;
 
-        private List<OnnxInference> OnnxInferences = [];
+        private readonly List<OnnxInference> OnnxInferences = [];
 
-        private bool loaded = false;
-        private GameManager _gameManager;
+        private readonly bool loaded = false;
+        private readonly GameManager _gameManager;
 
         public AgentManager(GameManager gameManager)
         {
@@ -59,7 +59,7 @@ namespace Fida
             {
                 // 选择第一个数字
                 var onnxInference = GetOnnxInference(sourcePlayerId);
-                actionIndex = onnxInference.InferActionIndex(_GetState(_gameManager, sourcePlayerId, 0));
+                actionIndex = onnxInference.InferActionIndex(GetState(_gameManager, sourcePlayerId, 0));
                 OnChooseNumberIndex?.Invoke(sourcePlayerId, actionIndex / 3);
             }
             else
@@ -101,7 +101,7 @@ namespace Fida
         }
 
 
-        private float[] _GetState(GameManager gameManager, int sourcePlayerId, int targetPlayerId)
+        private static float[] GetState(GameManager gameManager, int sourcePlayerId, int targetPlayerId)
         {
             float[] state = new float[6];
             var sourcePlayer = gameManager.Players.FirstOrDefault(p => p.PlayerId == sourcePlayerId);
@@ -117,10 +117,6 @@ namespace Fida
         }
 
 
-
-        public void Dispose()
-        {
-        }
 
 
 

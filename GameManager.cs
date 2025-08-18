@@ -30,6 +30,7 @@ namespace Fida
         // --- State Management ---
         private GameState _currentState;
         public Stack<GameState> StateStack { get; private set; }
+        public IEnumerator<SkillType> _enumerator;
         
         public GameManager()
         {

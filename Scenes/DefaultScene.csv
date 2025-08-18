@@ -1,4 +1,4 @@
 id,name,hp,skills,positionIndex
-0,你,6,,0
+0,你,6,"龙",0
 1,敌人1,6,,1
 2,敌人2,6,,2

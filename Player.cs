@@ -17,7 +17,7 @@ namespace Fida
     {
         public String Name { get; set; } = "a"; // 玩家名称
         public int PlayerId { get; private set; } // 玩家ID
-        public List<int> Numbers { get; private set; } = [1, 1]; // 玩家拥有的两个数字
+        public int[] Numbers { get; private set; } = [1, 1]; // 玩家拥有的两个数字
         public int Health { get; set; } = 11; // 玩家生命值
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
