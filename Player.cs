@@ -5,27 +5,11 @@ using System.Collections.Generic;
 using System.Globalization;
 
 using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Fida
 {
-
-    public enum Skill
-    {
-        DoubleAttack,
-        DoubleDefence,
-        TripleHealth,
-        Shen,
-        Xian,
-        Mo,
-        Gui,
-        Tong,
-        Di,
-        Long,
-    }
-
-
-
-
     /// <summary>
     /// 玩家类, 存储玩家的数据和行为
     /// </summary>
@@ -133,20 +117,43 @@ namespace Fida
             return Math.Abs(health - damage);
         }
 
-        public bool HasSkill(Skill skill)
+        public bool SkillAvaible(SkillType skillTpye)
         {
-            return Skills.Contains(skill);
+            var skill = Skills.FirstOrDefault(s => s.Type == skillTpye);
+            if (skill == null) { return false; }
+            
+            if ((skill.IsUnLimited || !skill.IsActivated) && SkillConditionSatisfied(skillTpye))
+            {
+                skill.IsActivated = true;
+                return true;
+            }
+            return false;
         }
 
-        public bool ConditionSatisfiedSkill(Skill skill)
+        public bool SkillConditionSatisfied(SkillType skillType)
         {
-            switch (skill)
+            switch (skillType)
             {
-                case Skill.Tong:
-                    return Numbers[0]==3 && Numbers[1]==3;
+                case SkillType.Tong:
+                    {
+                        return Numbers[0] == Numbers[1] && Numbers[0] != 1;
+                    }
                 default:
-                    return true;
+                    {
+                        return true; // The default skill condition is satisfied
+                    }
             }
         }
+
+
+        public void ResetPerTurnSkills()
+        {
+            foreach (Skill skill in Skills.FindAll(s => s.IsPerTurn = true))
+            {
+                skill.IsActivated = false;
+            }
+        }
+
+
     }
 }

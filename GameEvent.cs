@@ -38,7 +38,7 @@ namespace Fida
 
     public class SkillActivatedEventArgs : GameEventArgs
     {
-        public Skill SkillType { get; set; }
+        public SkillType SkillType { get; set; }
     }
 
     public class PlayerActionRequiredEventArgs : GameEventArgs

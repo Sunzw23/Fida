@@ -1,13 +1,14 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Runtime.CompilerServices;
 
 namespace Fida.UI
 {
     public class UIControl
     {
         SpriteFont Font;
-
+        public bool IsVisible = true;
 
         public virtual void Draw(SpriteBatch spriteBatch)
         {
@@ -22,6 +23,17 @@ namespace Fida.UI
         public virtual void SetFont(SpriteFont font)
         {
             Font = font; // 设置字体
+        }
+
+        
+        public virtual void Hide()
+        {
+            IsVisible = false; // 隐藏标签
+        }
+
+        public virtual void Show()
+        {
+            IsVisible = true; // 显示标签
         }
 
     }

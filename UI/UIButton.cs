@@ -53,6 +53,11 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb)
         {
+            // 如果按钮不可见，则不绘制。
+            if (!IsVisible)
+            {
+                return;
+            }
             // 根据按钮的当前状态确定背景颜色。
             Color currentBackColor = BackColor;
             if (!IsEnabled)
@@ -133,6 +138,12 @@ namespace Fida.UI
             IsEnabled = false;
             IsHovered = false;
             IsSelected = false;
+        }
+
+        public override void Hide()
+        {
+            base.Hide();
+            Disable(); // 隐藏时禁用按钮
         }
     }
 }

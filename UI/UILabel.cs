@@ -10,7 +10,6 @@ namespace Fida.UI
         Color Color { get; set; } = Color.White;
         Vector2 Position { get; set; }
         SpriteFont Font { get; set; }
-        
 
         public UILabel(string text, Vector2 position, SpriteFont font)
         {
@@ -21,6 +20,10 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb)
         {
+            if (!IsVisible)
+            {
+                return; // 如果不可见，则不绘制
+            }
             if (string.IsNullOrEmpty(Text))
             {
                 return; // 如果文本为空，则不绘制
@@ -32,6 +35,8 @@ namespace Fida.UI
             );
             sb.DrawString(Font, Text, pos, Color);
         }
+
+
 
         public void UpdateText(string text)
         {

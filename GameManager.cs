@@ -30,10 +30,10 @@ namespace Fida
         // --- State Management ---
         private GameState _currentState;
         public Stack<GameState> StateStack { get; private set; }
-
+        
         public GameManager()
         {
-            Players = new List<Player>();
+            Players = [];
             StateStack = new Stack<GameState>();
         }
 
@@ -44,11 +44,9 @@ namespace Fida
         {
             Players = players;
             CurrentPlayerIndex = 0;
+            GameMessage = string.Empty;
+            _currentState = null;
             StateStack.Clear();
-
-            // 设置初始状态为 GameStart
-            TransitionTo(new GameStartState(this));
-            
         }
 
         /// <summary>
@@ -139,6 +137,41 @@ namespace Fida
         }
 
         #endregion
+
+        #region State Information for Agents
+        public int CurrentPlayerId => Players[CurrentPlayerIndex].PlayerId;
+        public bool IsChooseFirstNumberIndexState()
+        {
+            if (_currentState is ChooseNumberIndexState chooseState && chooseState.Stage == 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool IsDamaging()
+        {
+            if (_currentState is TargetSelectionState targetSelectionState && (targetSelectionState.DamageValue > 0 || targetSelectionState.HealingValue < 0))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool IsHealing()
+        {
+            if (_currentState is TargetSelectionState targetSelectionState && targetSelectionState.HealingValue > 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
+
+
+        #endregion
+
+
 
 
         #region Event Invokers

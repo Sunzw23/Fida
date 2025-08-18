@@ -35,10 +35,9 @@ namespace Fida
             Position = position;
             Player = player;
             Font = font;
-            NameLabel = new UI.UILabel(player.Name, position + UIConfig.NamePosition, font);
+            NameLabel = new UI.UILabel(UIText.NameSpace(player.Name, player.Skills), position + UIConfig.NamePosition, font);
 
             // 使用事件驱动的UIButton，在构造函数中订阅 OnClick 事件。
-            // 注意：ID 可以是任意数字，因为我们不再依赖它来判断类型。
             NumberButton = [
                 new UI.UIButton(TranslateRectangle(UIConfig.NumberAreas[0], position), Player.Numbers[0].ToString(), pixel, font),
                 new UI.UIButton(TranslateRectangle(UIConfig.NumberAreas[1], position), Player.Numbers[1].ToString(), pixel, font)
@@ -49,11 +48,6 @@ namespace Fida
             NumberButton[0].OnClick += HandleButtonClick;
             NumberButton[1].OnClick += HandleButtonClick;
             HealthButton.OnClick += HandleButtonClick;
-
-            // 启用所有按钮。
-            NumberButton[0].Enable();
-            NumberButton[1].Enable();
-            HealthButton.Enable();
         }
 
         // 这是一个通用的事件处理方法，用于响应所有按钮的点击。

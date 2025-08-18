@@ -5,15 +5,20 @@ using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Text.RegularExpressions;
+using System;
 
 namespace Fida
 {
 
 
+    // 定义一个委托，用于处理开始按钮点击事件。
+    public delegate void StartButtonHandler();
+    public delegate void RelusButtonHandler();
+    public delegate void SkillsButtonHandler();
+    public delegate void ExitButtonHandler();
+    public delegate void LevelButtonHandler(int index);
 
-
+    public delegate void ReturnToMainMenuHandler();
 
 
     /// <summary>
@@ -23,10 +28,20 @@ namespace Fida
     public class UIManager
     {
         // 声明公共事件，供 GameManager 订阅。
+        // 开始界面相关事件
         public event StartButtonHandler OnStartButtonClick;
+        public event RelusButtonHandler OnRulesButtonClick;
+        public event SkillsButtonHandler OnSkillsButtonClick;
+        public event ExitButtonHandler OnExitButtonClick;
+        public event LevelButtonHandler OnLevelButtonClick;
+
+        public event ReturnToMainMenuHandler OnReturnToMainMenuClick;
+
+        // 游戏过程相关事件
         public event ChooseNumberIndexHandler OnChooseNumberIndex;
         public event ChooseTargetHandler OnChooseTarget;
-
+        public event DecideApplyHandler OnDecideApply;
+        public event ChooseNumberHandler OnChooseNumber;
 
         private readonly GraphicsDevice _graphicsDevice;
         private SpriteBatch _spriteBatch;
@@ -56,6 +71,14 @@ namespace Fida
                     // 如果是选择目标的操作，启用生命值按钮
                     EnableHealth(e.ValidTargets);
                     break;
+                case ActionType.DecideApply:
+                    DisableAll();
+                    BuildDecideApplyUI(e.Message);
+                    break;
+                case ActionType.ChooseNumber:
+                    DisableAll();
+                    BuildChooseNumberUI(e.Message);
+                    break;
                 default:
                     // 对于其他操作，禁用所有按钮
                     break;
@@ -69,6 +92,11 @@ namespace Fida
         public void Clear()
         {
             uIControls = [];
+        }
+
+        public void Clean()
+        {
+            uIControls.RemoveAll(c => !c.IsVisible);
         }
 
         public void Draw()
@@ -85,6 +113,7 @@ namespace Fida
 
         public void Update(MouseState mouseState)
         {
+            Clean();
             // 在事件驱动模式下，Update方法只负责更新所有UI控件的状态。
             // 控件内部会处理鼠标状态并触发事件。
             foreach (UIControl c in uIControls)
@@ -103,23 +132,89 @@ namespace Fida
             Clear();
 
             // 创建开始按钮
-            UIButton startButton = new UIButton(new Rectangle(400, 400, 200, 100), "开始", _resourceManager.Pixel, _resourceManager.Font);
+            UIButton startButton = new UIButton(UIConfig.StartButtonArea, "开始", _resourceManager.Pixel, _resourceManager.Font);
             AddControl(startButton);
 
             // 订阅开始按钮的 OnClick 事件
-            startButton.OnClick += HandleStartButtonClick;
+            startButton.OnClick += (sender) => OnStartButtonClick?.Invoke();
             startButton.Enable();
+
+            UIButton rulesButton = new UIButton(UIConfig.RulesButtonArea, "规则", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(rulesButton);
+            rulesButton.OnClick += (sender) => OnRulesButtonClick?.Invoke();
+            rulesButton.Enable();
+
+            UIButton skillsButton = new UIButton(UIConfig.SkillsButtonArea, "技能", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(skillsButton);
+            skillsButton.OnClick += (sender) => OnSkillsButtonClick?.Invoke();
+            skillsButton.Enable();
+
+            UIButton exitButton = new UIButton(UIConfig.ExitButtonArea, "退出", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(exitButton);
+            exitButton.OnClick += (sender) => OnExitButtonClick?.Invoke();
+            exitButton.Enable();
+
         }
 
-        private void HandleStartButtonClick(object sender)
-        {
-            // 当开始按钮被点击时，触发 UIManager 自己的 OnStartButtonClick 事件
-            OnStartButtonClick?.Invoke();
-        }
 
-        public void BuildPlayingUI(GameManager gameManager)
+        public void BuildRulesScreen()
         {
             Clear();
+
+            UILabel rulesText = new UILabel(GameText.Rules, UIConfig.RulesTextPosition, _resourceManager.Font);
+            AddControl(rulesText);
+
+            UIButton returnToMainMenuButton = new UIButton(UIConfig.ReturnToMainMenuButtonArea, "返回", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(returnToMainMenuButton);
+            returnToMainMenuButton.Enable();
+            returnToMainMenuButton.OnClick += (sender) => OnReturnToMainMenuClick();
+
+        }
+
+        public void BuildSkillsScreen()
+        {
+            Clear();
+            UILabel skillsText = new UILabel(GameText.Skills, UIConfig.SkillsTextPosition, _resourceManager.Font);
+            AddControl(skillsText);
+            UIButton returnToMainMenuButton = new UIButton(UIConfig.ReturnToMainMenuButtonArea, "返回", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(returnToMainMenuButton);
+            returnToMainMenuButton.Enable();
+            returnToMainMenuButton.OnClick += (sender) => OnReturnToMainMenuClick();
+        }
+
+        public void BuildLevelSelectScreen()
+        {
+            Clear();
+            for (int i = 0; i < 10; i++) 
+            {
+                int index = i;
+                UIButton levelButton = new UIButton(UIConfig.LevelButtonArea(i), i.ToString(), _resourceManager.Pixel, _resourceManager.Font);
+                AddControl(levelButton);
+                levelButton.Enable();
+                levelButton.OnClick += (sender) => {
+                    // 当点击关卡按钮时，触发 UIManager 的事件，并传递关卡索引。
+                    OnLevelButtonClick?.Invoke(index);
+                };
+            }
+
+
+
+
+            UIButton returnToMainMenuButton = new UIButton(UIConfig.ReturnToMainMenuButtonArea, "返回", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(returnToMainMenuButton);
+            returnToMainMenuButton.Enable();
+            returnToMainMenuButton.OnClick += (sender) => OnReturnToMainMenuClick();
+
+        }
+
+
+        public void BuildPlayingUI(GameManager gameManager, int level)
+        {
+            Clear();
+            UIButton returnToMainMenuButton = new UIButton(UIConfig.ReturnToMainMenuButtonArea, "返回", _resourceManager.Pixel, _resourceManager.Font);
+            AddControl(returnToMainMenuButton);
+            returnToMainMenuButton.Enable();
+            returnToMainMenuButton.OnClick += (sender) => OnReturnToMainMenuClick();
 
             UILabel gameMessageLabel = new UILabel(gameManager.GameMessage, UIConfig.GameMessagePosition, _resourceManager.Font);
             AddControl(gameMessageLabel);
@@ -128,7 +223,7 @@ namespace Fida
             {
                 var player = gameManager.Players[i];
                 // 创建玩家UI控件
-                UIPlayer character = new UIPlayer(player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel);
+                UIPlayer character = new UIPlayer(player, SceneConfig.PlayersScene(level).Positions[i], _resourceManager.Font, _resourceManager.Pixel);
                 AddControl(character);
 
                 // 订阅 Character 控件的 OnNumberButtonClick 事件，并将其向上层传递。
@@ -144,7 +239,48 @@ namespace Fida
                     OnChooseTarget?.Invoke(player.PlayerId);
                 };
             }
+
+            UIDicideApply decideApply = new UIDicideApply(_resourceManager.Pixel, _resourceManager.Font, "");
+            AddControl(decideApply);
+            decideApply.Hide(); // 初始时隐藏决定应用按钮
+
+            UIChooseNumber chooseNumber = new UIChooseNumber(_resourceManager.Pixel, _resourceManager.Font, "");
+            AddControl(chooseNumber);
+            chooseNumber.Hide(); // 初始时隐藏选择数字按钮
+
+
+
         }
+
+        private void BuildDecideApplyUI(string message)
+        {
+            var decideApply = uIControls.OfType<UIDicideApply>().FirstOrDefault();
+            decideApply.Show(); // 显示决定应用按钮
+            decideApply.UpdateText(message); // 更新决定应用按钮的文本
+            decideApply.Enable(); // 启用决定应用按钮
+            // 订阅决定应用的事件
+            decideApply.OnDecideApply += (decision) => {
+                // 当决定应用被点击时，触发 UIManager 自己的事件，并传递决策结果。
+                OnDecideApply?.Invoke(decision);
+                decideApply.Hide(); // 决定应用后隐藏按钮
+            };
+        }
+
+        private void BuildChooseNumberUI(string message)
+        {
+            var chooseNumber = uIControls.OfType<UIChooseNumber>().FirstOrDefault();
+            chooseNumber.Show(); // 显示选择数字按钮
+            chooseNumber.UpdateText(message); // 更新选择数字按钮的文本
+            chooseNumber.Enable(); // 启用选择数字按钮
+            // 订阅选择数字的事件
+            chooseNumber.OnChooseNumber += number => {
+                // 当选择数字被点击时，触发 UIManager 自己的事件，并传递选择的数字。
+                OnChooseNumber?.Invoke(number);
+                chooseNumber.Hide(); // 选择数字后隐藏按钮
+            };
+        }
+
+
 
         public void DisableAll()
         {
@@ -245,10 +381,7 @@ namespace Fida
             // 创建设置按钮
         }
 
-        public void BuildRulesScreen()
-        {
-            Clear();
-        }
+
 
 
 

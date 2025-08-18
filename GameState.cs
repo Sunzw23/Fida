@@ -33,23 +33,6 @@ namespace Fida
         /// 处理当前状态下的逻辑和玩家输入
         /// </summary>
         public virtual void Handle(Action action) { }
-
-        protected GamePhaseType GamePhaseOfSkill(Skill skill)
-        {
-            // 这个辅助方法可以保留在GameManager或一个辅助类中
-            // 为了方便，暂时放在这里
-            return skill switch
-            {
-                Skill.DoubleAttack => GamePhaseType.HandleSkillDoubleAttack,
-                Skill.Shen => GamePhaseType.HandleSkillShen,
-                Skill.Mo => GamePhaseType.HandleSkillMo,
-                Skill.Xian => GamePhaseType.HandleSkillXian,
-                Skill.Tong => GamePhaseType.HandleSkillTong,
-                Skill.Di => GamePhaseType.HandleSkillDi,
-                Skill.Long => GamePhaseType.HandleSkillLong,
-                _ => throw new ArgumentOutOfRangeException(nameof(skill), skill, null)
-            };
-        }
     }
 
     #region Concrete Game States
@@ -68,10 +51,27 @@ namespace Fida
 
             foreach (var player in _gameManager.Players)
             {
-                if (player.HasSkill(Skill.TripleHealth))
+                foreach (var skill in GameConfig.GameStartSkills)
                 {
-                    player.Health *= 3;
-                    player.MaxHealth *= 3;
+                    if (player.SkillAvaible(skill))
+                    {
+                        _gameManager.SetGameMessage(GameText.SkillActivated(player.Name, skill), player.PlayerId);
+                        _gameManager.OnSkillActivated(new SkillActivatedEventArgs
+                        {
+                            SourcePlayerId = player.PlayerId,
+                            SkillType = skill,
+                            Message = _gameManager.GameMessage
+                        });
+                        // 处理技能效果
+                        switch (skill)
+                        {
+                            case SkillType.TripleHealth:
+                                player.Health *= 3;
+                                player.MaxHealth *= 3;
+                                break;
+                            // 可以添加其他游戏开始技能的处理逻辑
+                        }
+                    }
                 }
             }
 
@@ -108,72 +108,36 @@ namespace Fida
     /// </summary>
     public class TurnStartState : GameState
     {
-        private int _skillCheckStage = 0;
 
         public TurnStartState(GameManager gameManager, int sourcePlayerId, int skillCheckStage = 0) : base(gameManager, sourcePlayerId)
         {
-            _skillCheckStage = skillCheckStage;
         }
 
         public override void Enter()
         {
             // 只有在检查第一个技能时才显示回合开始消息
-            if (_skillCheckStage == 0)
+            _gameManager.SetGameMessage(GameText.TurnStart(_sourcePlayer.Name), _sourcePlayerId);
+            _gameManager.OnTurnStarted(new TurnStartEventArgs
             {
-                _gameManager.SetGameMessage(GameText.TurnStart(_sourcePlayer.Name), _sourcePlayerId);
-                _gameManager.OnTurnStarted(new TurnStartEventArgs
-                {
-                    SourcePlayerId = _sourcePlayerId,
-                    Message = _gameManager.GameMessage
-                });
+                SourcePlayerId = _sourcePlayerId,
+                Message = _gameManager.GameMessage
+            });
+            
+
+            foreach (var player in _gameManager.Players)
+            {
+                player.ResetPerTurnSkills();
             }
 
-            // 检查回合开始时触发的技能
-            if (_skillCheckStage < GameConfig.TurnStartSkills.Count)
+            _gameManager.StateStack.Push(new ChooseNumberIndexState(_gameManager, _sourcePlayerId));
+            if (_sourcePlayer.SkillAvaible(SkillType.Tong))
             {
-                var currentSkill = GameConfig.TurnStartSkills[_skillCheckStage];
-                if (_sourcePlayer.HasSkill(currentSkill) && _sourcePlayer.ConditionSatisfiedSkill(currentSkill))
-                {
-                    _gameManager.SetGameMessage(GameText.SkillActivated(_sourcePlayer.Name, currentSkill), _sourcePlayerId);
-                    _gameManager.OnSkillActivated(new SkillActivatedEventArgs
-                    {
-                        SourcePlayerId = _sourcePlayerId,
-                        SkillType = currentSkill,
-                        Message = _gameManager.GameMessage
-                    });
-
-                    // 将下一个阶段的TurnStartState压入栈中，以便技能处理完后返回
-                    _gameManager.PushState(new TurnStartState(_gameManager, _sourcePlayerId, _skillCheckStage + 1));
-
-                    // 转换到对应的技能处理状态
-                    // 注意：这里需要一个从Skill枚举到GameState的映射
-                    // 为了简化，我们暂时手动创建
-                    GameState skillState = currentSkill switch
-                    {
-                        _ => null // 其他回合开始技能
-                    };
-
-                    if (skillState != null)
-                    {
-                        _gameManager.TransitionTo(skillState);
-                    }
-                    else
-                    {
-                        // 如果没有对应的技能状态，直接进入下一阶段检查
-                        _gameManager.TransitionTo(new TurnStartState(_gameManager, _sourcePlayerId, _skillCheckStage + 1));
-                    }
-                }
-                else
-                {
-                    // 如果不满足条件，直接进入下一阶段检查
-                    _gameManager.TransitionTo(new TurnStartState(_gameManager, _sourcePlayerId, _skillCheckStage + 1));
-                }
+                _gameManager.StateStack.Push(new TongSkillState(_gameManager, _sourcePlayerId));
             }
-            else
-            {
-                // 所有回合开始技能检查完毕，进入选择数字阶段
-                _gameManager.TransitionTo(new ChooseNumberIndexState(_gameManager, _sourcePlayerId));
-            }
+
+
+            // 所有回合开始技能检查完毕，进入选择数字阶段
+            _gameManager.TransitionTo(new HandleStackState(_gameManager));
         }
     }
 
@@ -184,12 +148,16 @@ namespace Fida
     {
         private int _stage = 0;
         private int _firstNumberIndex = -1;
-
-        public ChooseNumberIndexState(GameManager gameManager, int sourcePlayerId, int stage = 0, int firstNumberIndex = -1) : base(gameManager, sourcePlayerId)
+        private bool _changeBothNumbers = false;
+        public ChooseNumberIndexState(GameManager gameManager, int sourcePlayerId, int stage = 0, int firstNumberIndex = -1, bool changeBothNumbers = false) : base(gameManager, sourcePlayerId)
         {
             _stage = stage;
             _firstNumberIndex = firstNumberIndex;
+            _changeBothNumbers = changeBothNumbers;
         }
+
+        public int Stage => _stage;
+
 
         public override void Enter()
         {
@@ -227,7 +195,7 @@ namespace Fida
                 if (action.TargetPlayerId == _sourcePlayerId)
                 {
                     // 进入下一阶段
-                    _gameManager.TransitionTo(new ChooseNumberIndexState(_gameManager, _sourcePlayerId, 1, action.NumberIndex));
+                    _gameManager.TransitionTo(new ChooseNumberIndexState(_gameManager, _sourcePlayerId, 1, action.NumberIndex, _changeBothNumbers));
                 }
             }
             else // _stage == 1
@@ -241,12 +209,18 @@ namespace Fida
                     _gameManager.TransitionTo(new ChooseNumberIndexState(_gameManager, _sourcePlayerId, 0));
                     return;
                 }
-
                 int newCalculatedNumber = (_sourcePlayer.Numbers[_firstNumberIndex] + otherPlayerSelected.Numbers[action.NumberIndex]) % 10;
-                _gameManager.SetGameMessage($"玩家 {_sourcePlayer.Name} 的数字 {_sourcePlayer.Numbers[_firstNumberIndex]} 变为 {newCalculatedNumber}. 正在检查效果...", _sourcePlayerId);
 
-                // 改变数字并进入效果应用阶段
-                _gameManager.ChangeNumber(_sourcePlayerId, _firstNumberIndex, newCalculatedNumber);
+                if (_changeBothNumbers)
+                {
+                    _gameManager.SetGameMessage($"玩家 {_sourcePlayer.Name} 的两个数字都变为 {newCalculatedNumber}. 正在检查效果...", _sourcePlayerId);
+                    _gameManager.ChangeBothNumbers(_sourcePlayerId, newCalculatedNumber, newCalculatedNumber);
+                }
+                else
+                {
+                    _gameManager.SetGameMessage($"玩家 {_sourcePlayer.Name} 的数字 {_sourcePlayer.Numbers[_firstNumberIndex]} 变为 {newCalculatedNumber}. 正在检查效果...", _sourcePlayerId);
+                    _gameManager.ChangeNumber(_sourcePlayerId, _firstNumberIndex, newCalculatedNumber);
+                }
                 _gameManager.TransitionTo(new ApplyingEffectState(_gameManager, _sourcePlayerId));
             }
         }
@@ -264,12 +238,12 @@ namespace Fida
             var numbers = _sourcePlayer.Numbers;
 
             // 攻击 (数字变为 8 或 9)
-            if (numbers[0] == 8 || numbers[0] == 9)
+            if (numbers[0] == 8 || numbers[0] == 7)
             {
                 HandleAttackEffect(0, 1);
                 return;
             }
-            if (numbers[1] == 8 || numbers[1] == 9)
+            if (numbers[1] == 8 || numbers[1] == 7)
             {
                 HandleAttackEffect(1, 1);
                 return;
@@ -293,12 +267,12 @@ namespace Fida
                 return;
             }
             // 治愈 (数字变为 7)
-            if (numbers[0] == 7)
+            if (numbers[0] == 9)
             {
                 HandleHealEffect(0, 1);
                 return;
             }
-            if (numbers[1] == 7)
+            if (numbers[1] == 9)
             {
                 HandleHealEffect(1, 1);
                 return;
@@ -366,7 +340,7 @@ namespace Fida
             if (_skillCheckStage < GameConfig.OrderingAttackSkills.Count)
             {
                 var currentSkill = GameConfig.OrderingAttackSkills[_skillCheckStage];
-                if (_sourcePlayer.HasSkill(currentSkill) && _sourcePlayer.ConditionSatisfiedSkill(currentSkill))
+                if (_sourcePlayer.SkillAvaible(currentSkill))
                 {
                     _gameManager.SetGameMessage(GameText.SkillActivated(_sourcePlayer.Name, currentSkill), _sourcePlayerId);
                     _gameManager.OnSkillActivated(new SkillActivatedEventArgs
@@ -382,8 +356,9 @@ namespace Fida
                     // 转换到技能处理状态
                     GameState skillState = currentSkill switch
                     {
-                        Skill.DoubleAttack => new DoubleAttackSkillState(_gameManager, _sourcePlayerId, _baseDamage),
-                        Skill.Long => new LongSkillState(_gameManager, _sourcePlayerId, _baseDamage),
+                        SkillType.Long => new LongSkillState(_gameManager, _sourcePlayerId, _baseDamage),
+                        SkillType.DoubleAttack => new DoubleAttackSkillState(_gameManager, _sourcePlayerId, _baseDamage),
+                        
                         _ => null
                     };
 
@@ -418,6 +393,9 @@ namespace Fida
             _damageValue = damageValue;
             _healingValue = healingValue;
         }
+
+        public int DamageValue => _damageValue;
+        public int HealingValue => _healingValue;
 
         public override void Enter()
         {
@@ -486,19 +464,19 @@ namespace Fida
             {
                 targetPlayer.Numbers[shieldIndex] = 1; // 护盾数字变为1
                 _gameManager.SetGameMessage(GameText.ShieldBreak(targetPlayer.Name), _targetPlayerId);
-                // 护盾破碎也算一个效果，进入效果应用阶段，但源玩家是目标玩家
+                // 护盾破碎会导致数字改变，进入效果应用阶段，但源玩家是目标玩家
                 _gameManager.TransitionTo(new ApplyingEffectState(_gameManager, targetPlayer.PlayerId));
             }
             else
             {
                 int finalDamage = _damageValue;
-                if (targetPlayer.HasSkill(Skill.DoubleDefence))
+                if (targetPlayer.SkillAvaible(SkillType.DoubleDefence))
                 {
                     finalDamage /= 2;
                 }
 
                 targetPlayer.TakeDamage(finalDamage);
-                _gameManager.SetGameMessage(GameText.Attacked(targetPlayer.Name, finalDamage), _targetPlayerId);
+                _gameManager.SetGameMessage(GameText.Damaged(targetPlayer.Name, finalDamage), _targetPlayerId);
                 _gameManager.OnAttackExecuted(new AttackEventArgs
                 {
                     SourcePlayerId = _sourcePlayerId,
@@ -508,14 +486,20 @@ namespace Fida
                 });
 
                 // 检查攻击后技能
-                if (targetPlayer.HasSkill(Skill.Shen))
+                if (targetPlayer.SkillAvaible(SkillType.Shen))
                 {
                     _gameManager.PushState(new ShenSkillState(_gameManager, targetPlayer.PlayerId));
                 }
-                if (_sourcePlayer.HasSkill(Skill.Mo))
+                if (_sourcePlayer.SkillAvaible(SkillType.Xue))
                 {
-                    _gameManager.PushState(new MoSkillState(_gameManager, _sourcePlayerId, finalDamage));
+                    _gameManager.PushState(new XueSkillState(_gameManager, _sourcePlayerId, finalDamage));
                 }
+
+                if (targetPlayer.SkillAvaible(SkillType.Mo))
+                {
+                    _gameManager.PushState(new MoSkillState(_gameManager, targetPlayer.PlayerId, finalDamage));
+                }
+
 
                 _gameManager.TransitionTo(new HandleStackState(_gameManager));
             }
@@ -546,12 +530,49 @@ namespace Fida
             }
 
             targetPlayer.Heal(_healingValue);
-            _gameManager.SetGameMessage($"玩家 {targetPlayer.Name} 被治疗 {_healingValue} 点生命值.", _targetPlayerId);
+            _gameManager.SetGameMessage(GameText.Healed(targetPlayer.Name, _healingValue), _targetPlayerId);
             _gameManager.OnHealExecuted(new HealEventArgs
             {
                 SourcePlayerId = _sourcePlayerId,
                 TargetPlayerId = _targetPlayerId,
                 HealingValue = _healingValue,
+                Message = _gameManager.GameMessage
+            });
+
+            _gameManager.TransitionTo(new HandleStackState(_gameManager));
+        }
+    }
+
+    /// <summary>
+    /// 治疗状态
+    /// </summary>
+    public class TrueDamageState : GameState
+    {
+        private readonly int _targetPlayerId;
+        private readonly int _damageValue;
+
+        public TrueDamageState(GameManager gameManager, int sourcePlayerId, int targetPlayerId, int damageValue) : base(gameManager, sourcePlayerId)
+        {
+            _targetPlayerId = targetPlayerId;
+            _damageValue = damageValue;
+        }
+
+        public override void Enter()
+        {
+            var targetPlayer = _gameManager.Players.FirstOrDefault(p => p.PlayerId == _targetPlayerId);
+            if (targetPlayer == null)
+            {
+                _gameManager.TransitionTo(new HandleStackState(_gameManager));
+                return;
+            }
+
+            targetPlayer.TakeDamage(_damageValue);
+            _gameManager.SetGameMessage(GameText.TrueDamaged(targetPlayer.Name, _damageValue), _targetPlayerId);
+            _gameManager.OnAttackExecuted(new AttackEventArgs
+            {
+                SourcePlayerId = _sourcePlayerId,
+                TargetPlayerId = _targetPlayerId,
+                DamageValue = _damageValue,
                 Message = _gameManager.GameMessage
             });
 
@@ -574,8 +595,7 @@ namespace Fida
         }
     }
 
-    // ... 其他技能的状态类 ...
-    // 例如 DoubleAttackSkillState, ShenSkillState 等
+    // 技能的状态类 
 
     public class DoubleAttackSkillState : GameState
     {
@@ -587,7 +607,7 @@ namespace Fida
 
         public override void Enter()
         {
-            _gameManager.SetGameMessage(GameText.SkillActivated(_sourcePlayer.Name, Skill.DoubleAttack), _sourcePlayerId);
+            _gameManager.SetGameMessage(GameText.SkillActivated(_sourcePlayer.Name, SkillType.DoubleAttack), _sourcePlayerId);
             _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
             {
                 SourcePlayerId = _sourcePlayerId,
@@ -609,6 +629,7 @@ namespace Fida
         }
     }
 
+
     public class LongSkillState : GameState
     {
         private readonly int _originalDamage;
@@ -619,7 +640,7 @@ namespace Fida
 
         public override void Enter()
         {
-            _gameManager.SetGameMessage(GameText.SkillActivated(_sourcePlayer.Name, Skill.Long), _sourcePlayerId);
+            _gameManager.SetGameMessage(GameText.SkillActivated(_sourcePlayer.Name, SkillType.Long), _sourcePlayerId);
             _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
             {
                 SourcePlayerId = _sourcePlayerId,
@@ -640,22 +661,9 @@ namespace Fida
         }
     }
 
-    public class MoSkillState : GameState
-    {
-        private readonly int _damageDealt;
-        public MoSkillState(GameManager gameManager, int sourcePlayerId, int damageDealt) : base(gameManager, sourcePlayerId)
-        {
-            _damageDealt = damageDealt;
-        }
 
-        public override void Enter()
-        {
-            // 魔技能直接触发治疗，无需玩家输入
-            _gameManager.TransitionTo(new HealingState(_gameManager, _sourcePlayerId, _sourcePlayerId, _damageDealt));
-        }
-    }
 
-    // 神、仙、帝、同变等技能需要多阶段输入，这里以“神”为例
+    // 神
     public class ShenSkillState : GameState
     {
         private int _stage = 0;
@@ -671,18 +679,18 @@ namespace Fida
         {
             if (_stage == 0)
             {
-                _gameManager.SetGameMessage(GameText.SkillActivatedNumberTurnFrom(_sourcePlayer.Name, Skill.Shen), _sourcePlayerId);
+                _gameManager.SetGameMessage(GameText.SkillActivatedNumberTurnFrom(_sourcePlayer.Name, SkillType.Shen), _sourcePlayerId);
                 _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
                 {
                     SourcePlayerId = _sourcePlayerId,
                     RequiredActionType = ActionType.ChooseNumberIndex,
-                    ValidTargets = new List<int> { _sourcePlayerId },
+                    ValidTargets = [_sourcePlayerId],
                     Message = _gameManager.GameMessage
                 });
             }
             else // stage 1
             {
-                _gameManager.SetGameMessage(GameText.SkillActivatedNumberTurnInto(_sourcePlayer.Name, Skill.Shen), _sourcePlayerId);
+                _gameManager.SetGameMessage(GameText.SkillActivatedNumberTurnInto(_sourcePlayer.Name, SkillType.Shen), _sourcePlayerId);
                 _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
                 {
                     SourcePlayerId = _sourcePlayerId,
@@ -703,8 +711,142 @@ namespace Fida
             {
                 _gameManager.ChangeNumber(_sourcePlayerId, _numberIndexToChange, action.Number);
                 // 技能效果处理完毕，回到状态栈的下一个状态
-                _gameManager.TransitionTo(new HandleStackState(_gameManager));
+                _gameManager.TransitionTo(new ApplyingEffectState(_gameManager, _sourcePlayerId));
             }
+        }
+    }
+
+
+
+    // 仙
+    public class XianSkillState : GameState
+    {
+        private int _stage = 0;
+        private int _numberIndexToChange = -1;
+
+        public XianSkillState(GameManager gameManager, int sourcePlayerId, int stage = 0, int numberIndex = -1) : base(gameManager, sourcePlayerId)
+        {
+            _stage = stage;
+            _numberIndexToChange = numberIndex;
+        }
+
+        public override void Enter()
+        {
+            if (_stage == 0)
+            {
+                _gameManager.SetGameMessage(GameText.SkillActivatedNumberTurnFrom(_sourcePlayer.Name, SkillType.Xian), _sourcePlayerId);
+                _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
+                {
+                    SourcePlayerId = _sourcePlayerId,
+                    RequiredActionType = ActionType.ChooseNumberIndex,
+                    ValidTargets = [_sourcePlayerId],
+                    Message = _gameManager.GameMessage
+                });
+            }
+            else // stage 1
+            {
+                _gameManager.SetGameMessage(GameText.SkillActivatedNumberTurnInto(_sourcePlayer.Name, SkillType.Xian), _sourcePlayerId);
+                _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
+                {
+                    SourcePlayerId = _sourcePlayerId,
+                    RequiredActionType = ActionType.ChooseNumber,
+                    ValidNumbers = [.. Enumerable.Range(0, 10)],
+                    Message = _gameManager.GameMessage
+                });
+            }
+        }
+
+        public override void Handle(Action action)
+        {
+            if (_stage == 0 && action.Type == ActionType.ChooseNumberIndex && action.TargetPlayerId == _sourcePlayerId)
+            {
+                _gameManager.TransitionTo(new XianSkillState(_gameManager, _sourcePlayerId, 1, action.NumberIndex));
+            }
+            else if (_stage == 1 && action.Type == ActionType.ChooseNumber)
+            {
+                _gameManager.ChangeNumber(_sourcePlayerId, _numberIndexToChange, action.Number);
+                // 技能效果处理完毕，回到状态栈的下一个状态
+                _gameManager.TransitionTo(new ApplyingEffectState(_gameManager, _sourcePlayerId));
+            }
+        }
+    }
+
+    // 血
+    public class XueSkillState : GameState
+    {
+        private readonly int _damageDealt;
+        public XueSkillState(GameManager gameManager, int sourcePlayerId, int damageDealt) : base(gameManager, sourcePlayerId)
+        {
+            _damageDealt = damageDealt;
+        }
+
+        public override void Enter()
+        {
+            // 血技能直接触发治疗，无需玩家输入
+            _gameManager.TransitionTo(new HealingState(_gameManager, _sourcePlayerId, _sourcePlayerId, _damageDealt));
+        }
+    }
+
+
+    // 魔
+    public class MoSkillState : GameState
+    {
+        private readonly int _damageDealt;
+        private readonly int _damageReturned;
+        public MoSkillState(GameManager gameManager, int sourcePlayerId, int damageDealt) : base(gameManager, sourcePlayerId)
+        {
+            _damageDealt = damageDealt;
+            _damageReturned = _damageDealt - _damageDealt / 2;
+
+        }
+
+        public override void Enter()
+        {
+            _gameManager.SetGameMessage(GameText.SkillActivatedChooseTarget(_sourcePlayer.Name, SkillType.Mo) + $", 返回 {_damageReturned} 点伤害", _sourcePlayerId);
+            var validTargets = _gameManager.Players.Where(p => p.IsAlive()).Select(p => p.PlayerId).ToList();
+            _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
+            {
+                SourcePlayerId = _sourcePlayerId,
+                RequiredActionType = ActionType.ChooseTarget,
+                ValidTargets = validTargets,
+                Message = _gameManager.GameMessage 
+            });
+        }
+
+        public override void Handle(Action action)
+        {
+            if (action.Type == ActionType.ChooseTarget)
+                _gameManager.TransitionTo(new TrueDamageState(_gameManager, _sourcePlayerId, action.TargetPlayerId, _damageReturned));
+        }
+    }
+
+
+    // 同
+
+    public class TongSkillState : GameState
+    {
+        public TongSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
+        public override void Enter()
+        {
+            _gameManager.SetGameMessage(GameText.SkillActivated(_sourcePlayer.Name, SkillType.Tong), _sourcePlayerId);
+            _gameManager.OnPlayerActionRequired(new PlayerActionRequiredEventArgs
+            {
+                SourcePlayerId = _sourcePlayerId,
+                RequiredActionType = ActionType.DecideApply,
+                ValidTargets = [_sourcePlayerId],
+                Message = _gameManager.GameMessage
+            });
+        }
+
+        public override void Handle(Action action)
+        {
+            if (action.Type != ActionType.DecideApply) return;
+            if (action.IsApply)
+            {
+                _gameManager.StateStack.Pop(); 
+                _gameManager.StateStack.Push(new ChooseNumberIndexState(_gameManager, _sourcePlayerId, 0, -1, true));
+            }
+            _gameManager.TransitionTo(new HandleStackState(_gameManager));
         }
     }
 

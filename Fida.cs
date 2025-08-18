@@ -21,6 +21,7 @@ namespace Fida
         private bool sceneLoaded = false;
         private bool _isGameActive = true; // 游戏是否处于激活状态
 
+        private int _gameLevel = -1; // 当前游戏关卡
         public Fida()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -42,7 +43,7 @@ namespace Fida
             _uiManager = new UIManager(GraphicsDevice, _resourceManager);
             _agentManager = new AgentManager(_gameManager);
             base.Initialize();
-            SwitchToState(State.Playing);
+            SwitchToState(State.MainMenu);
             
         }
 
@@ -50,13 +51,13 @@ namespace Fida
         {
             // 将UI资源的加载委托给UIManager
             _resourceManager.LoadContent(Content);
+
+
+            // 订阅GameManager的事件
             _gameManager.NumberChanged += (sender, e) => _uiManager.UpdateAll();
             _gameManager.AttackExecuted += (sender, e) => _uiManager.UpdateAll();
             _gameManager.HealExecuted += (sender, e) => _uiManager.UpdateAll();
             _gameManager.MessageUpdated += (sender, e) => _uiManager.UpdateMessage(e.Message);
-            
-
-
             _gameManager.PlayerActionRequired += (sender, e) =>
             {
                 if (e.SourcePlayerId == 0)
@@ -69,33 +70,39 @@ namespace Fida
                 }
             };
 
-            _uiManager.OnStartButtonClick += () => SwitchToState(State.Playing);
+            // 订阅UIManager的事件
+            // 订阅UIManager的事件
+            _uiManager.OnStartButtonClick += () => SwitchToState(State.LevelSelect);
+            _uiManager.OnReturnToMainMenuClick += () => SwitchToState(State.MainMenu);
+            _uiManager.OnRulesButtonClick += () => SwitchToState(State.Rules);
+            _uiManager.OnSkillsButtonClick += () => SwitchToState(State.Skills);
+            _uiManager.OnLevelButtonClick += level =>
+            {
+                _gameLevel = level;
+                SwitchToState(State.Playing);
+            };
 
             _uiManager.OnChooseNumberIndex += (playerId, numberIndex) =>
-            {
-                // 当数字按钮被点击时，通知GameManager
                 _gameManager.UpdateGame(new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = playerId, NumberIndex = numberIndex });
-            };
 
-            _uiManager.OnChooseTarget += (targetPlayerId) =>
-            {
-                // 当生命值按钮被点击时，通知GameManager
+            _uiManager.OnChooseTarget += targetPlayerId =>
                 _gameManager.UpdateGame(new Action { Type = ActionType.ChooseTarget, TargetPlayerId = targetPlayerId });
-            };
 
+            _uiManager.OnDecideApply += isApply =>
+                _gameManager.UpdateGame(new Action { Type = ActionType.DecideApply, IsApply = isApply });
+           
+            _uiManager.OnChooseNumber += number =>
+                _gameManager.UpdateGame(new Action { Type = ActionType.ChooseNumber, Number = number });
+
+            // 订阅AgentManager的事件
             _agentManager.OnChooseNumberIndex += (playerId, numberIndex) =>
-            {
-                // 当数字按钮被点击时，通知GameManager
                 _gameManager.UpdateGame(new Action { Type = ActionType.ChooseNumberIndex, TargetPlayerId = playerId, NumberIndex = numberIndex });
-            };
 
-            _agentManager.OnChooseTarget += (targetPlayerId) =>
-            {
-                // 当生命值按钮被点击时，通知GameManager
+            _agentManager.OnChooseTarget += targetPlayerId =>
                 _gameManager.UpdateGame(new Action { Type = ActionType.ChooseTarget, TargetPlayerId = targetPlayerId });
-            };
 
         }
+
 
 
         protected override void Update(GameTime gameTime)
@@ -141,14 +148,18 @@ namespace Fida
                     BuildRulesScreen();
                     break;
 
+                case State.Skills:
+                    BuildSkillsScreen();
+                    break;
+
                 case State.Settings:
                     BuildSettingsScreen();
                     break;
-
+                case State.LevelSelect:
+                    BuildLevelSelectScreen();
+                    break;
                 case State.Playing:
-                    // 不需要 UIManager 显示主菜单，但可以加“返回主菜单”按钮
-                    LoadScene1();
-                    BuildPlayingUI();
+                    BuildPlayingScreen();
                     break;
                 case State.GameOver:
                     break;
@@ -156,10 +167,6 @@ namespace Fida
 
         }
 
-        public void LoadScene1()
-        {
-            _gameManager.Initialize(SceneConfig.PlayersScene1.Players);
-        }
 
         private void BuildMainMenu()
         {
@@ -170,18 +177,32 @@ namespace Fida
         {
             _uiManager.BuildRulesScreen();
         }
+        
+        private void BuildSkillsScreen()
+        {
+            _uiManager.BuildSkillsScreen();
+        }
 
         private void BuildSettingsScreen()
         {
             _uiManager.BuildSettingsScreen();
         }
 
-        private void BuildPlayingUI()
+        private void BuildLevelSelectScreen()
         {
-            _uiManager.BuildPlayingUI(_gameManager);
-
-
+            _uiManager.BuildLevelSelectScreen();
         }
+
+        private void BuildPlayingScreen()
+        {
+            // 不需要 UIManager 显示主菜单，但可以加“返回主菜单”按钮
+            _gameManager.Initialize(SceneConfig.PlayersScene(_gameLevel).Players);
+            _uiManager.BuildPlayingUI(_gameManager, _gameLevel);
+            // 设置初始状态为 GameStart
+            _gameManager.TransitionTo(new GameStartState(_gameManager));
+        }
+
+
 
 
 

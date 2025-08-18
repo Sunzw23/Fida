@@ -6,12 +6,6 @@ using System.Threading.Tasks;
 
 namespace Fida
 {
-    // 定义一个委托，用于处理开始按钮点击事件。
-    public delegate void StartButtonHandler();
-    // 定义一个委托，用于处理选择数字事件，传递被选择的数字。
-    public delegate void ChooseNumberIndexHandler(int playerId, int numberIndex);
-    // 定义一个委托，用于处理目标选择事件。
-    public delegate void ChooseTargetHandler(int playerId);
 
     public struct Action
     {

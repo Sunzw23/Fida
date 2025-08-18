@@ -30,8 +30,8 @@ namespace Fida
         public void LoadAgents()
         {
             string modelsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "onnx_models");
-            OnnxInferences.Add(new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_0.onnx")));
-            OnnxInferences.Add(new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_1.onnx")));
+            OnnxInferences.Add(new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_4.onnx")));
+            OnnxInferences.Add(new OnnxInference(Path.Combine(modelsDir, "agent_GamePhaseType.CHOOSE_NUMBER_INDEX_5.onnx")));
         }
 
         public void HandleActionRequired(PlayerActionRequiredEventArgs e)
@@ -39,11 +39,9 @@ namespace Fida
             switch (e.RequiredActionType)
             {
                 case ActionType.ChooseNumberIndex:
-                    // 如果是选择数字的操作，启用数字按钮
                     HandleChooseNumberIndex(e.SourcePlayerId);
                     break;
                 case ActionType.ChooseTarget:
-                    // 如果是选择目标的操作，启用生命值按钮
                     HandleChooseTarget();
                     break;
                 default:
@@ -53,13 +51,14 @@ namespace Fida
         }
 
 
-        public void HandleChooseNumberIndex(int sourcePlayerId)
+        public async void HandleChooseNumberIndex(int sourcePlayerId)
         {
-            System.Threading.Thread.Sleep(10); // 阻塞当前线程 1 秒
-            if (actionIndex == -1)
+            await Task.Delay(500);
+
+            if (_gameManager.IsChooseFirstNumberIndexState())
             {
                 // 选择第一个数字
-                var onnxInference = GetOnnxInference();
+                var onnxInference = GetOnnxInference(sourcePlayerId);
                 actionIndex = onnxInference.InferActionIndex(_GetState(_gameManager, sourcePlayerId, 0));
                 OnChooseNumberIndex?.Invoke(sourcePlayerId, actionIndex / 3);
             }
@@ -74,27 +73,30 @@ namespace Fida
                 {
                     OnChooseNumberIndex?.Invoke(0, actionIndex % 3 - 1);
                 }
-                actionIndex = -1;
+
             }
         }
 
         public void HandleChooseTarget()
         {
-            //if (_gameManager.IsDamagingButHealing())
-            //{
-            //    OnChooseTarget?.Invoke(0);
-            //}
-            //else
-            //{
-            //    OnChooseTarget?.Invoke(_gameManager.CurrentGamePhase.SourcePlayerId);
-            //}
-            OnChooseTarget?.Invoke(0); // 默认选择玩家0作为目标 TODO
+            if (_gameManager.IsDamaging())
+            {
+                OnChooseTarget?.Invoke(0);
+            }
+            else
+            {
+                OnChooseTarget?.Invoke(_gameManager.CurrentPlayerId);
+            }
         }
 
 
 
-        private OnnxInference GetOnnxInference()
+        private OnnxInference GetOnnxInference(int i)
         {
+            if (i > 0 && i < OnnxInferences.Count) 
+            {
+                return OnnxInferences[i];
+            }
             return OnnxInferences[0];
         }
 
