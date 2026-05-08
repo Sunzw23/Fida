@@ -1,7 +1,7 @@
 ﻿
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
-
+using Fida.Logic;
 
 namespace Fida
 {
@@ -18,6 +18,6 @@ namespace Fida
     }
     public class SceneConfig
     {
-        public static SceneLoader PlayersScene1 => new([new Player(0, "你"), new Player(1, "敌人")], [new Vector2(100, 800), new Vector2(100, 500)]);
+        public static SceneLoader PlayersScene1 => new([new Player(0, "YOU"), new Player(1, "ENEMY")], [new Vector2(100, 700), new Vector2(100, 180)]);
     }
 }

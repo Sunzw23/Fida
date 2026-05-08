@@ -80,7 +80,24 @@ namespace Fida
             }
             else
             {
-                throw new ContentLoadException($"Texture with name '{name}' not found.");
+                return null; // 返回 null 而不是抛出异常，允许缺失的纹理
+            }
+        }
+
+        /// <summary>
+        /// 加载玩家头像纹理。如果加载失败，返回 null（不显示头像）。
+        /// </summary>
+        public Texture2D LoadPortraitTexture(ContentManager contentManager, string path)
+        {
+            try
+            {
+                return contentManager.Load<Texture2D>(path);
+            }
+            catch (ContentLoadException)
+            {
+                // 头像加载失败时不崩溃，返回 null 表示不显示
+                System.Diagnostics.Debug.WriteLine($"Portrait texture not found: {path}, skipping.");
+                return null;
             }
         }
 

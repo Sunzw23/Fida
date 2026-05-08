@@ -1,44 +1,24 @@
 ﻿// Player.cs 文件
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System.Collections.Generic;
-using System.Globalization;
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace Fida
+namespace Fida.Logic
 {
-
-    public enum Skill
-    {
-        DoubleAttack,
-        DoubleDefence,
-        TripleHealth,
-        Shen,
-        Xian,
-        Mo,
-        Gui,
-        Tong,
-        Di,
-        Long,
-    }
-
-
-
-
     /// <summary>
     /// 玩家类, 存储玩家的数据和行为
     /// </summary>
     public class Player
     {
-        public String Name { get; set; } = "a"; // 玩家名称
+        public String Name { get; private set;  } // 玩家名称
         public int PlayerId { get; private set; } // 玩家ID
-        public List<int> Numbers { get; private set; } = [1, 1]; // 玩家拥有的两个数字
+        public int[] Numbers { get; private set; } = [1, 1]; // 玩家拥有的两个数字
         public int Health { get; set; } = 11; // 玩家生命值
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
 
-        public int MaxHealth {get; set;} // 生命值上限
+        public int MaxHealth { get; set; } = 11; // 生命值上限
 
         // 构造函数, 初始化玩家
         public Player(int id, string name, int health, List<Skill> skills)
@@ -133,9 +113,45 @@ namespace Fida
             return Math.Abs(health - damage);
         }
 
-        public bool HasSkill(Skill skill)
+        public bool SkillAvailable(SkillType skillTpye)
         {
-            return Skills.Contains(skill);
+            var skill = Skills.FirstOrDefault(s => s.Type == skillTpye);
+            if (skill == null) { return false; }
+
+            if ((skill.UsageLimit != SkillUsageLimit.Unlimited && skill.IsActivated) || !SkillConditionSatisfied(skillTpye)) return false;
+            skill.IsActivated = true;
+            return true;
         }
+
+        private bool SkillConditionSatisfied(SkillType skillType)
+        {
+            switch (skillType)
+            {
+                case SkillType.Tong:
+                    {
+                        return Numbers[0] == Numbers[1] && Numbers[0] != 1;
+                    }
+                default:
+                    {
+                        return true; // The default skill condition is satisfied
+                    }
+            }
+        }
+
+
+        public void ResetPerTurnSkills()
+        {
+            foreach (var skill in Skills.FindAll(s => s.UsageLimit == SkillUsageLimit.PerTurn))
+            {
+                skill.IsActivated = false;
+            }
+        }
+
+        public void ChangeName(string name)
+        {
+            Name = name;
+        }
+
+
     }
 }

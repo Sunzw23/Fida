@@ -1,11 +1,11 @@
-﻿using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Fida
+namespace Fida.Agent
 {
     /// <summary>
     /// ONNX 推理助手类，用于加载和执行 ONNX 模型。
@@ -26,6 +26,7 @@ namespace Fida
             {
                 throw new FileNotFoundException($"ONNX model not found at: {modelPath}");
             }
+
             // 创建推理会话。可以添加 SessionOptions 来配置执行提供者，例如使用 GPU。
             // 默认情况下，OnnxRuntime 会使用 CPU。
             _session = new InferenceSession(modelPath);

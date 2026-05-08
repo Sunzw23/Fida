@@ -19,7 +19,7 @@ namespace Fida.UI
             return Id;
         }
 
-        public virtual void Draw(SpriteBatch spriteBatch)
+        public virtual void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
             // 默认实现为空，子类可以重写此方法进行绘制
         }
@@ -32,6 +32,11 @@ namespace Fida.UI
         public virtual void SetFont(SpriteFont font)
         {
             Font = font; // 设置字体
+        }
+
+        public virtual void Update(GameTime gameTime)
+        {
+            // 默认实现为空，子类可以重写此方法进行每帧逻辑更新（如动画计时）
         }
 
         public virtual void Update(string _str)

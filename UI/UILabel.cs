@@ -20,23 +20,29 @@ namespace Fida.UI
             Font = font;
         }
 
-        public override void Draw(SpriteBatch sb)
+        public void SetColor(Color color)
+        {
+            Color = color;
+        }
+
+        public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
             if (string.IsNullOrEmpty(Text))
             {
-                return; // 如果文本为空，则不绘制
+                return;
             }
-            var size = Font.MeasureString(Text);
+
+            var textSize = Font.MeasureString(Text);
             var pos = new Vector2(
-                Position.X - size.X / 2,
-                Position.Y - size.Y / 2
+                Position.X - textSize.X / 2,
+                Position.Y - textSize.Y / 2
             );
             sb.DrawString(Font, Text, pos, Color);
         }
 
         public override void Update(string text)
         {
-            Text = text; // 更新文本内容
+            Text = text;
         }
 
 

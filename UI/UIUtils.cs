@@ -16,9 +16,9 @@ namespace Fida.UI
         public static void DrawRectangleOutlines(SpriteBatch sb, Rectangle rect, Color color, int width, Texture2D pixel)
         {
             sb.Draw(pixel, new Rectangle(rect.Left, rect.Top, rect.Width, width), color); // Top
-            sb.Draw(pixel, new Rectangle(rect.Left, rect.Bottom, rect.Width, width), color); // Bottom
+            sb.Draw(pixel, new Rectangle(rect.Left, rect.Bottom - width, rect.Width, width), color); // Bottom
             sb.Draw(pixel, new Rectangle(rect.Left, rect.Top, width, rect.Height), color); // Left
-            sb.Draw(pixel, new Rectangle(rect.Right, rect.Top, width, rect.Height + width), color); // Right
+            sb.Draw(pixel, new Rectangle(rect.Right - width, rect.Top, width, rect.Height), color); // Right
         }
     }
 }
