@@ -56,8 +56,19 @@ namespace Fida.UI
         public void BuildMainMenu()
         {
             Clear();
-            var startButton = new UIButton(0, new Rectangle(400, 400, 200, 100), "开始", _resourceManager.Pixel, _resourceManager.Font);
+
+            // 屏幕 1920×1200，按钮 200×80，垂直居中排列，间距 40px
+            int buttonWidth = 200;
+            int buttonHeight = 80;
+            int centerX = (1920 - buttonWidth) / 2;
+            int totalHeight = buttonHeight * 2 + 40;
+            int startY = (1200 - totalHeight) / 2;
+
+            var startButton = new UIButton(0, new Rectangle(centerX, startY, buttonWidth, buttonHeight), "开始", _resourceManager.Pixel, _resourceManager.Font);
+            var exitButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "退出", _resourceManager.Pixel, _resourceManager.Font);
+
             _uiControls.Add(startButton);
+            _uiControls.Add(exitButton);
         }
 
         public void BuildPlayingUI(GameManager gameManager)
@@ -122,6 +133,28 @@ namespace Fida.UI
         public void SetPortraitTexture(int playerId, Texture2D texture)
         {
             _playerManager.SetPortraitTexture(playerId, texture);
+        }
+
+        public List<UIControl> GetControls()
+        {
+            return _uiControls;
+        }
+
+        public void BuildPauseMenu()
+        {
+            Clear();
+
+            int buttonWidth = 200;
+            int buttonHeight = 80;
+            int centerX = (1920 - buttonWidth) / 2;
+            int totalHeight = buttonHeight * 2 + 40;
+            int startY = (1200 - totalHeight) / 2;
+
+            var continueButton = new UIButton(0, new Rectangle(centerX, startY, buttonWidth, buttonHeight), "继续", _resourceManager.Pixel, _resourceManager.Font);
+            var returnButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "返回", _resourceManager.Pixel, _resourceManager.Font);
+
+            _uiControls.Add(continueButton);
+            _uiControls.Add(returnButton);
         }
 
         public void BuildSettingsScreen()

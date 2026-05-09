@@ -78,15 +78,4 @@ namespace Fida.UI
         public static Point PlayerNameOffset => new Point(0, 0);
         public static Point PlayerHpOffset => new Point(0, 20);
     }
-
-    public class UIText
-    {
-        public static string UseDoubleAttack => "使用双倍攻击吗?";
-        public static string UseMo => "使用技能: 魔吗?";
-        public static string UseTong => "使用技能: 同变吗?";
-        public static string UseLong => "使用技能: 龙吗?";
-        public static string ChooseNumberPrompt => "选择数字:";
-        public static string Yes => "yes";
-        public static string No => "no";
-    }
 }

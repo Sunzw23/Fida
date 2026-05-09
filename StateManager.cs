@@ -12,6 +12,7 @@ namespace Fida
         Rules,
         Settings,
         Playing,
+        Paused,
         GameOver,
     }
 

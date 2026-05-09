@@ -1,4 +1,4 @@
-﻿// Game1.cs 文件
+// Game1.cs 文件
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -20,6 +20,7 @@ namespace Fida
         private PlayingSceneManager _playingSceneManager;
 
         private bool _isGameActive = true;
+        private bool _previousEscPressed = false;
 
         public Game1()
         {
@@ -32,7 +33,7 @@ namespace Fida
             _graphics.IsFullScreen = false;
             _graphics.ApplyChanges();
 
-            _currentState = State.Playing;
+            _currentState = State.MainMenu;
         }
 
         protected override void Initialize()
@@ -49,6 +50,11 @@ namespace Fida
         protected override void LoadContent()
         {
             _resourceManager.LoadContent(Content);
+
+            if (_currentState == State.MainMenu)
+            {
+                _uiManager.BuildMainMenu();
+            }
         }
 
         protected override void Update(GameTime gameTime)
@@ -61,8 +67,20 @@ namespace Fida
 
             HandleExitInput();
             _uiManager.Update(gameTime);
-            HandlePlayerInput();
-            EnsureGameStarted();
+
+            switch (_currentState)
+            {
+                case State.MainMenu:
+                    HandleMainMenuInput();
+                    break;
+                case State.Playing:
+                    HandlePlayerInput();
+                    EnsureGameStarted();
+                    break;
+                case State.Paused:
+                    HandlePausedInput();
+                    break;
+            }
 
             base.Update(gameTime);
         }
@@ -78,10 +96,82 @@ namespace Fida
 
         private void HandleExitInput()
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
-                Keyboard.GetState().IsKeyDown(Keys.Escape))
+            bool escPressed = Keyboard.GetState().IsKeyDown(Keys.Escape);
+
+            if (_currentState == State.Playing)
+            {
+                // Playing 状态下按 ESC → 进入暂停菜单
+                if (escPressed && !_previousEscPressed)
+                {
+                    SwitchToState(State.Paused);
+                }
+            }
+            else if (_currentState == State.Paused)
+            {
+                // Paused 状态下按 ESC → 继续游戏
+                if (escPressed && !_previousEscPressed)
+                {
+                    SwitchToState(State.Playing);
+                }
+            }
+            else if (escPressed || GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
             {
                 Exit();
+            }
+
+            _previousEscPressed = escPressed;
+        }
+
+        private void HandleMainMenuInput()
+        {
+            // 更新主菜单按钮的悬浮/按下状态
+            _uiManager.UpdateUIButtons(_uiManager.GameManager);
+
+            var mouseState = Mouse.GetState();
+            bool leftClick = mouseState.LeftButton == ButtonState.Pressed;
+
+            // 只在鼠标释放时检测点击（通过 UIButton.IsClicked 判断完整点击序列）
+            foreach (var control in _uiManager.GetControls())
+            {
+                if (control is UIButton button)
+                {
+                    if (button.IsClicked())
+                    {
+                        switch (button.GetId())
+                        {
+                            case 0: // 开始按钮
+                                SwitchToState(State.Playing);
+                                return;
+                            case 1: // 退出按钮
+                                Exit();
+                                return;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void HandlePausedInput()
+        {
+            _uiManager.UpdateUIButtons(_uiManager.GameManager);
+
+            foreach (var control in _uiManager.GetControls())
+            {
+                if (control is UIButton button)
+                {
+                    if (button.IsClicked())
+                    {
+                        switch (button.GetId())
+                        {
+                            case 0: // 继续按钮
+                                SwitchToState(State.Playing);
+                                return;
+                            case 1: // 返回按钮
+                                SwitchToState(State.MainMenu);
+                                return;
+                        }
+                    }
+                }
             }
         }
 
@@ -127,8 +217,19 @@ namespace Fida
                     _uiManager.BuildSettingsScreen();
                     break;
                 case State.Playing:
-                    _playingSceneManager.Initialize(SceneConfig.PlayersScene1.Players);
-                    _playingSceneManager.StartGame();
+                    if (!_playingSceneManager.IsInitialized)
+                    {
+                        _playingSceneManager.Initialize(SceneConfig.PlayersScene1.Players);
+                        _playingSceneManager.StartGame();
+                    }
+                    else
+                    {
+                        // 从暂停恢复，只重建 UI，不重置游戏
+                        _uiManager.BuildPlayingUI(_uiManager.GameManager);
+                    }
+                    break;
+                case State.Paused:
+                    _uiManager.BuildPauseMenu();
                     break;
                 case State.GameOver:
                     break;
