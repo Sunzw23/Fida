@@ -1,81 +1,166 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Fida.UI
 {
-    // UIConfig.cs
+    /// <summary>
+    /// UI 配置，从 Content/uiconfig.json 加载，提供 static 属性供全局访问。
+    /// </summary>
     public class UIConfig
     {
-        // 字体和基础样式
-        public static Color TextColor => Color.White;
-        public static Color HighlightColor => Color.White;
-        public static Color BackgroundColor => Color.Black;
-        public static Color ButtonTextColor => Color.White;
+        private static readonly Lazy<UIConfigData> _data = new(LoadConfig);
 
-        // 通用间距
-        public static int Padding => 10;
-        public static int Spacing => 5;
+        // ─── JSON 数据模型 ────────────────────────────────
 
-        // 玩家卡片布局（黄金比例 1.618:1，高：宽）
-        public static int CardWidth => 300;
-        public static int CardHeight => 485; // 300 * 1.618 ≈ 485
-        public static int CardBorderThickness => 2;
+        private class UIConfigData
+        {
+            public string TextColor { get; set; } = "#FFFFFF";
+            public string HighlightColor { get; set; } = "#FFFFFF";
+            public string BackgroundColor { get; set; } = "#000000";
+            public string ButtonTextColor { get; set; } = "#FFFFFF";
+            public int Padding { get; set; } = 10;
+            public int Spacing { get; set; } = 5;
+            public int CardWidth { get; set; } = 300;
+            public int CardHeight { get; set; } = 485;
+            public int CardBorderThickness { get; set; } = 2;
+            public int PortraitSize { get; set; } = 220;
+            public int PortraitTopMargin { get; set; } = 43;
+            public int NameTopMargin { get; set; } = 43;
+            public int NameHeight { get; set; } = 30;
+            public int BottomElementWidth { get; set; } = 70;
+            public int BottomElementHeight { get; set; } = 70;
+            public int InnerBorderMargin { get; set; } = 8;
+            public int InnerBorderThickness { get; set; } = 1;
+            public int CardBottomPadding { get; set; } = 15;
+            public RectData GameMessageArea { get; set; } = new() { X = 10, Y = 10, Width = 400, Height = 30 };
+            public Vec2Data GameMessagePosition { get; set; } = new() { X = 200, Y = 30 };
+            public RectData DecisionInfoArea { get; set; } = new() { X = 10, Y = 100, Width = 400, Height = 30 };
+            public RectData YesButtonArea { get; set; } = new() { X = 60, Y = 160, Width = 100, Height = 60 };
+            public RectData NoButtonArea { get; set; } = new() { X = 220, Y = 160, Width = 100, Height = 60 };
+            public RectData NumberSelectionArea { get; set; } = new() { X = 10, Y = 100, Width = 260, Height = 110 };
+            public int NumberButtonWidth { get; set; } = 50;
+            public int NumberButtonHeight { get; set; } = 50;
+            public int NumberColumns { get; set; } = 5;
+            public Vec2Data PlayerNameOffset { get; set; } = new() { X = 0, Y = 0 };
+            public Vec2Data PlayerHpOffset { get; set; } = new() { X = 0, Y = 20 };
+        }
 
-        // 头像（卡片顶部居中，正方形黑白画）
-        // 头像大小接近底部元素总长度：3*70 + 2*12 = 234
-        public static int PortraitSize => 220;
-        // 竖直等间距计算：(469 - 220 - 30 - 45) / 4 ≈ 43
-        public static int PortraitTopMargin => 43; // 内框顶部到头像的间距
+        private class RectData { public int X { get; set; } public int Y { get; set; } public int Width { get; set; } public int Height { get; set; } }
+        private class Vec2Data { public int X { get; set; } public int Y { get; set; } }
 
-        // 名称（头像下方，居中）
-        public static int NameTopMargin => 43; // 头像底部到名字的间距
-        
-        // 名称文字高度（预留空间）
-        public static int NameHeight => 30;
+        // ─── 加载逻辑 ──────────────────────────────────────
 
-        // 底部三个元素：数字 0、生命值、数字 1（水平并排）
-        // 间距计算：内框宽度 284 - 3 个元素宽度 210 = 74，4 个等间距 = 74/4 ≈ 18
-        public static int BottomElementWidth => 70;
-        public static int BottomElementHeight => 70;
-        public static int BottomElementTopMargin => 43; // 名字底部到底部元素的间距（竖直等间距）
-        public static int BottomElementSpacing => 18; // 等间距：左右边距 + 元素间 2 个间距 = 4 个相等间距
+        private static UIConfigData LoadConfig()
+        {
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "uiconfig.json");
+            if (!File.Exists(path))
+                return new UIConfigData();
 
-        // 内框边距（双层方框的内框）
-        public static int InnerBorderMargin => 8;
-        public static int InnerBorderThickness => 1;
+            try
+            {
+                string json = File.ReadAllText(path);
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                return JsonSerializer.Deserialize<UIConfigData>(json, options) ?? new UIConfigData();
+            }
+            catch
+            {
+                return new UIConfigData();
+            }
+        }
 
-        // 底部内边距
-        public static int CardBottomPadding => 15;
+        private static Color ParseHex(string hex)
+        {
+            if (string.IsNullOrEmpty(hex)) return Color.White;
+            hex = hex.TrimStart('#');
+            if (hex.Length != 6) return Color.White;
+            try
+            {
+                int r = Convert.ToInt32(hex.Substring(0, 2), 16);
+                int g = Convert.ToInt32(hex.Substring(2, 2), 16);
+                int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+                return new Color(r, g, b);
+            }
+            catch
+            {
+                return Color.White;
+            }
+        }
 
+        // ─── 公开属性（签名与原来完全一致）─────────────────
 
-        // 消息显示区域
-        public static Rectangle GameMessageArea => new Rectangle(10, 10, 400, 30);
-        public static Vector2 GameMessagePosition => new Vector2(200, 30);
+        public static Color TextColor => ParseHex(_data.Value.TextColor);
+        public static Color HighlightColor => ParseHex(_data.Value.HighlightColor);
+        public static Color BackgroundColor => ParseHex(_data.Value.BackgroundColor);
+        public static Color ButtonTextColor => ParseHex(_data.Value.ButtonTextColor);
 
-        // 决策和选择信息区域
-        public static Rectangle DecisionInfoArea => new Rectangle(10, 100, 400, 30);
+        public static int Padding => _data.Value.Padding;
+        public static int Spacing => _data.Value.Spacing;
 
+        public static int CardWidth => _data.Value.CardWidth;
+        public static int CardHeight => _data.Value.CardHeight;
+        public static int CardBorderThickness => _data.Value.CardBorderThickness;
 
-        // 决策按钮区域
-        public static Rectangle YesButtonArea => new Rectangle(60, 160, 100, 60);
-        public static Rectangle NoButtonArea => new Rectangle(220, 160, 100, 60);
+        public static int PortraitSize => _data.Value.PortraitSize;
+        public static int PortraitTopMargin => _data.Value.PortraitTopMargin;
 
+        public static int NameTopMargin => _data.Value.NameTopMargin;
+        public static int NameHeight => _data.Value.NameHeight;
 
+        public static int BottomElementWidth => _data.Value.BottomElementWidth;
+        public static int BottomElementHeight => _data.Value.BottomElementHeight;
 
+        public static int InnerBorderMargin => _data.Value.InnerBorderMargin;
+        public static int InnerBorderThickness => _data.Value.InnerBorderThickness;
 
-        // 数字选择区域
-        public static Rectangle NumberSelectionArea => new Rectangle(10, 100, 260, 110);
-        public static int NumberButtonWidth => 50;
-        public static int NumberButtonHeight => 50;
-        public static int NumberColumns => 5;
+        public static int CardBottomPadding => _data.Value.CardBottomPadding;
 
-        // 玩家 UI 区域偏移
-        public static Point PlayerNameOffset => new Point(0, 0);
-        public static Point PlayerHpOffset => new Point(0, 20);
+        public static Rectangle GameMessageArea => new(
+            _data.Value.GameMessageArea.X,
+            _data.Value.GameMessageArea.Y,
+            _data.Value.GameMessageArea.Width,
+            _data.Value.GameMessageArea.Height);
+
+        public static Vector2 GameMessagePosition => new(
+            _data.Value.GameMessagePosition.X,
+            _data.Value.GameMessagePosition.Y);
+
+        public static Rectangle DecisionInfoArea => new(
+            _data.Value.DecisionInfoArea.X,
+            _data.Value.DecisionInfoArea.Y,
+            _data.Value.DecisionInfoArea.Width,
+            _data.Value.DecisionInfoArea.Height);
+
+        public static Rectangle YesButtonArea => new(
+            _data.Value.YesButtonArea.X,
+            _data.Value.YesButtonArea.Y,
+            _data.Value.YesButtonArea.Width,
+            _data.Value.YesButtonArea.Height);
+
+        public static Rectangle NoButtonArea => new(
+            _data.Value.NoButtonArea.X,
+            _data.Value.NoButtonArea.Y,
+            _data.Value.NoButtonArea.Width,
+            _data.Value.NoButtonArea.Height);
+
+        public static Rectangle NumberSelectionArea => new(
+            _data.Value.NumberSelectionArea.X,
+            _data.Value.NumberSelectionArea.Y,
+            _data.Value.NumberSelectionArea.Width,
+            _data.Value.NumberSelectionArea.Height);
+
+        public static int NumberButtonWidth => _data.Value.NumberButtonWidth;
+        public static int NumberButtonHeight => _data.Value.NumberButtonHeight;
+        public static int NumberColumns => _data.Value.NumberColumns;
+
+        public static Point PlayerNameOffset => new(
+            _data.Value.PlayerNameOffset.X,
+            _data.Value.PlayerNameOffset.Y);
+
+        public static Point PlayerHpOffset => new(
+            _data.Value.PlayerHpOffset.X,
+            _data.Value.PlayerHpOffset.Y);
     }
 }
