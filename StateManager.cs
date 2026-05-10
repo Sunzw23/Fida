@@ -14,6 +14,10 @@ namespace Fida
         Playing,
         Paused,
         GameOver,
+        OnlineMenu,
+        Hosting,
+        Connecting,
+        OnlinePlaying,
     }
 
 }

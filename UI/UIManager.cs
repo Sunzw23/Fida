@@ -61,13 +61,15 @@ namespace Fida.UI
             int buttonWidth = 200;
             int buttonHeight = 80;
             int centerX = (1920 - buttonWidth) / 2;
-            int totalHeight = buttonHeight * 2 + 40;
+            int totalHeight = buttonHeight * 3 + 40 * 2;
             int startY = (1200 - totalHeight) / 2;
 
             var startButton = new UIButton(0, new Rectangle(centerX, startY, buttonWidth, buttonHeight), "开始", _resourceManager.Pixel, _resourceManager.Font);
-            var exitButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "退出", _resourceManager.Pixel, _resourceManager.Font);
+            var onlineButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "联机模式", _resourceManager.Pixel, _resourceManager.Font);
+            var exitButton = new UIButton(2, new Rectangle(centerX, startY + (buttonHeight + 40) * 2, buttonWidth, buttonHeight), "退出", _resourceManager.Pixel, _resourceManager.Font);
 
             _uiControls.Add(startButton);
+            _uiControls.Add(onlineButton);
             _uiControls.Add(exitButton);
         }
 
@@ -165,6 +167,59 @@ namespace Fida.UI
         public void BuildRulesScreen()
         {
             Clear();
+        }
+
+        public void BuildOnlineMenu()
+        {
+            Clear();
+
+            int buttonWidth = 300;
+            int buttonHeight = 80;
+            int centerX = (1920 - buttonWidth) / 2;
+            int totalHeight = buttonHeight * 3 + 40 * 2;
+            int startY = (1200 - totalHeight) / 2;
+
+            var hostButton = new UIButton(0, new Rectangle(centerX, startY, buttonWidth, buttonHeight), "创建房间 (主机)", _resourceManager.Pixel, _resourceManager.Font);
+            var joinButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "加入房间 (客机)", _resourceManager.Pixel, _resourceManager.Font);
+            var backButton = new UIButton(2, new Rectangle(centerX, startY + (buttonHeight + 40) * 2, buttonWidth, buttonHeight), "返回", _resourceManager.Pixel, _resourceManager.Font);
+
+            _uiControls.Add(hostButton);
+            _uiControls.Add(joinButton);
+            _uiControls.Add(backButton);
+        }
+
+        public void BuildHostingScreen(string statusText)
+        {
+            Clear();
+
+            int centerX = 1920 / 2;
+            int centerY = 1200 / 2;
+
+            var statusLabel = new UILabel(0, statusText, new Vector2(centerX, centerY - 80), _resourceManager.Font);
+            _uiControls.Add(statusLabel);
+
+            int buttonWidth = 200;
+            int buttonHeight = 80;
+            int buttonX = (1920 - buttonWidth) / 2;
+            var cancelButton = new UIButton(0, new Rectangle(buttonX, centerY + 40, buttonWidth, buttonHeight), "取消", _resourceManager.Pixel, _resourceManager.Font);
+            _uiControls.Add(cancelButton);
+        }
+
+        public void BuildConnectingScreen(string statusText)
+        {
+            Clear();
+
+            int centerX = 1920 / 2;
+            int centerY = 1200 / 2;
+
+            var statusLabel = new UILabel(0, statusText, new Vector2(centerX, centerY - 80), _resourceManager.Font);
+            _uiControls.Add(statusLabel);
+
+            int buttonWidth = 200;
+            int buttonHeight = 80;
+            int buttonX = (1920 - buttonWidth) / 2;
+            var cancelButton = new UIButton(0, new Rectangle(buttonX, centerY + 40, buttonWidth, buttonHeight), "取消", _resourceManager.Pixel, _resourceManager.Font);
+            _uiControls.Add(cancelButton);
         }
 
         public void Dispose()
