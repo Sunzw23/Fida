@@ -14,7 +14,7 @@ namespace Fida.Logic
     }
 
     // 动作结构
-    public struct Action
+    public struct GameAction
     {
         public ActionType Type { get; set; }
         public int TargetPlayerId { get; set; }
@@ -22,7 +22,7 @@ namespace Fida.Logic
         public int Number { get; set; }
         public bool IsApply { get; set; }
 
-        public Action(ActionType type)
+        public GameAction(ActionType type)
         {
             this.Type = type;
         }

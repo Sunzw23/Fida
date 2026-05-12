@@ -108,8 +108,8 @@ namespace Fida.Network
             }
         }
 
-        /// <summary>将本地 Action 发送给远程玩家</summary>
-        public void SendAction(Fida.Logic.Action action)
+        /// <summary>将本地 GameAction 发送给远程玩家</summary>
+        public void SendAction(Fida.Logic.GameAction action)
         {
             var payload = NetworkMessage.SerializeAction(action);
             var message = new NetworkMessage(MessageType.GameAction, payload);

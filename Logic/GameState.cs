@@ -10,7 +10,7 @@ namespace Fida.Logic
         public List<int> ValidTargets { get; init; } = [];
         public List<int> ValidNumbers { get; init; } = [];
         public string Prompt { get; init; } = string.Empty;
-        public Action? Result { get; set; }
+        public GameAction? Result { get; set; }
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ namespace Fida.Logic
         /// <summary>
         /// 处理当前状态下的逻辑和玩家输入
         /// </summary>
-        public virtual void Handle(Action action)
+        public virtual void Handle(GameAction action)
         {
             if (StepIndex >= Steps.Count) return;
 
@@ -79,9 +79,9 @@ namespace Fida.Logic
 
         protected virtual void BuildSteps() { }
 
-        protected virtual bool ValidateStep(ActionStep step, Action action) => true;
+        protected virtual bool ValidateStep(ActionStep step, GameAction action) => true;
 
-        protected virtual void Execute(List<Action> actions) { }
+        protected virtual void Execute(List<GameAction> actions) { }
 
         protected void BroadcastCurrentStep()
         {
@@ -255,7 +255,7 @@ namespace Fida.Logic
             StepIndex = _initialStage;
             if (StepIndex > 0 && _initialFirstNumberIndex >= 0)
             {
-                Steps[0].Result = new Action
+                Steps[0].Result = new GameAction
                 {
                     Type = ActionType.ChooseNumberIndex,
                     TargetPlayerId = SourcePlayerId,
@@ -264,7 +264,7 @@ namespace Fida.Logic
             }
         }
 
-        protected override bool ValidateStep(ActionStep step, Action action)
+        protected override bool ValidateStep(ActionStep step, GameAction action)
         {
             if (StepIndex != 1 || Steps[0].Result is not { } firstStepAction)
             {
@@ -283,7 +283,7 @@ namespace Fida.Logic
             return true;
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             if (actions.Count < 2) return;
 
@@ -495,7 +495,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             if (actions.Count == 0)
             {

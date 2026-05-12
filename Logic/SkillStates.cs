@@ -23,7 +23,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             var apply = actions.Count > 0 && actions[0].IsApply;
             var newDamage = apply ? _originalDamage + 1 : _originalDamage;
@@ -50,7 +50,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             var apply = actions.Count > 0 && actions[0].IsApply;
             var newDamage = apply ? _originalDamage * 2 : _originalDamage;
@@ -71,7 +71,7 @@ namespace Fida.Logic
             _targetPlayerId = targetPlayerId;
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleDefence));
             int newDamage = _originalDamage / 2;
@@ -91,7 +91,7 @@ namespace Fida.Logic
             _targetPlayerId = targetPlayerId;
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleDefence));
             int newDamage = _originalDamage - 1;
@@ -105,7 +105,7 @@ namespace Fida.Logic
     {
         public DoubleHealthSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleHealth));
             SourcePlayer.MaxHealth = SourcePlayer.MaxHealth * 2;
@@ -124,7 +124,7 @@ namespace Fida.Logic
     {
         public TripleHealthSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.TripleHealth));
             SourcePlayer.MaxHealth = SourcePlayer.MaxHealth * 3;
@@ -161,7 +161,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             var apply = actions.Count > 0 && actions[0].IsApply;
             int newDamage = apply ? _numbers[0] + _numbers[1] : _originalDamage;
@@ -194,7 +194,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             if (actions.Count < 2)
             {
@@ -232,7 +232,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             if (actions.Count < 2)
             {
@@ -256,7 +256,7 @@ namespace Fida.Logic
             _damageDealt = damageDealt;
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             // 血技能直接触发治疗，无需玩家输入
             GameManager.TransitionTo(new HealingState(GameManager, SourcePlayerId, SourcePlayerId, _damageDealt));
@@ -286,7 +286,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             if (actions.Count == 0)
             {
@@ -314,7 +314,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             if (actions.Count > 0 && actions[0].IsApply)
             {
@@ -345,7 +345,7 @@ namespace Fida.Logic
             });
         }
 
-        protected override void Execute(List<Action> actions)
+        protected override void Execute(List<GameAction> actions)
         {
             if (actions.Count == 0)
             {

@@ -71,7 +71,7 @@ namespace Fida.Logic
         /// <summary>
         /// 主游戏循环，将逻辑委托给当前状态
         /// </summary>
-        public void UpdateGame(Action action)
+        public void UpdateGame(GameAction action)
         {
             if (CheckGameEnd()) return;
 

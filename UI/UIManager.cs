@@ -126,7 +126,7 @@ namespace Fida.UI
             }
         }
 
-        public Action UpdateMouseAndCheckClicks(GameManager gameManager)
+        public GameAction UpdateMouseAndCheckClicks(GameManager gameManager)
         {
             return _inputHandler.UpdateMouseAndCheckClicks(gameManager);
         }
@@ -151,7 +151,7 @@ namespace Fida.UI
         /// <summary>
         /// 检查手柄确认键并生成游戏动作
         /// </summary>
-        public Action CheckControllerConfirm(GameManager gameManager)
+        public GameAction CheckControllerConfirm(GameManager gameManager)
         {
             return _inputHandler.CheckControllerConfirm(gameManager);
         }

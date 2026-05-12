@@ -34,7 +34,7 @@ namespace Fida.UI
         /// 更新鼠标状态并检测点击的 UI 区域。
         /// 注意：此方法假设 UI 控件已经在 UIManager.UpdateUIButtons 中更新过
         /// </summary>
-        public Action UpdateMouseAndCheckClicks(GameManager gameManager)
+        public GameAction UpdateMouseAndCheckClicks(GameManager gameManager)
         {
             _currentMouseState = Mouse.GetState();
 
@@ -48,7 +48,7 @@ namespace Fida.UI
 
             if (!leftClick)
             {
-                return new Action { Type = ActionType.None };
+                return new GameAction { Type = ActionType.None };
             }
 
             switch (gameManager.CurrentActionType)
@@ -63,7 +63,7 @@ namespace Fida.UI
                     break;
             }
 
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>
@@ -78,28 +78,28 @@ namespace Fida.UI
         /// 检查手柄确认键是否被按下，并生成对应的游戏动作
         /// 由 UIManager 在焦点管理后调用
         /// </summary>
-        public Action CheckControllerConfirm(GameManager gameManager)
+        public GameAction CheckControllerConfirm(GameManager gameManager)
         {
             if (!_controllerInput.IsConnected)
-                return new Action { Type = ActionType.None };
+                return new GameAction { Type = ActionType.None };
 
             // 防止同一帧重复触发
             if (_controllerActionConsumed)
             {
                 if (!_controllerInput.IsHeld(Buttons.A))
                     _controllerActionConsumed = false;
-                return new Action { Type = ActionType.None };
+                return new GameAction { Type = ActionType.None };
             }
 
             if (!_controllerInput.IsConfirmPressed())
-                return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
 
             _controllerActionConsumed = true;
 
             // 找到当前聚焦的控件
             UIControl focusedControl = _uiControls.FirstOrDefault(c => c.IsFocused && c.CanFocus);
             if (focusedControl == null)
-                return new Action { Type = ActionType.None };
+                return new GameAction { Type = ActionType.None };
 
             // 触发确认事件
             focusedControl.OnConfirmed();
@@ -117,20 +117,20 @@ namespace Fida.UI
                     break;
             }
 
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>
         /// 手柄选择数字索引
         /// </summary>
-        private Action ControllerChooseNumberIndex(GameManager gameManager, UIControl focusedControl)
+        private GameAction ControllerChooseNumberIndex(GameManager gameManager, UIControl focusedControl)
         {
             // 检查聚焦的是否是某个玩家的数字按钮
             foreach (UIPlayer uiPlayer in _uiControls.OfType<UIPlayer>())
             {
                 if (focusedControl == uiPlayer.Number0Button)
                 {
-                    return new Action
+                    return new GameAction
                     {
                         Type = ActionType.ChooseNumberIndex,
                         TargetPlayerId = uiPlayer.Player.PlayerId,
@@ -139,7 +139,7 @@ namespace Fida.UI
                 }
                 if (focusedControl == uiPlayer.Number1Button)
                 {
-                    return new Action
+                    return new GameAction
                     {
                         Type = ActionType.ChooseNumberIndex,
                         TargetPlayerId = uiPlayer.Player.PlayerId,
@@ -147,33 +147,33 @@ namespace Fida.UI
                     };
                 }
             }
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>
         /// 手柄选择目标
         /// </summary>
-        private Action ControllerChooseTarget(GameManager gameManager, UIControl focusedControl)
+        private GameAction ControllerChooseTarget(GameManager gameManager, UIControl focusedControl)
         {
             // 检查聚焦的是否是某个玩家的卡片
             foreach (UIPlayer uiPlayer in _uiControls.OfType<UIPlayer>())
             {
                 if (focusedControl == uiPlayer)
                 {
-                    return new Action
+                    return new GameAction
                     {
                         Type = ActionType.ChooseTarget,
                         TargetPlayerId = uiPlayer.Player.PlayerId
                     };
                 }
             }
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>
         /// 手柄选择数字
         /// </summary>
-        private Action ControllerChooseNumber(GameManager gameManager, UIControl focusedControl)
+        private GameAction ControllerChooseNumber(GameManager gameManager, UIControl focusedControl)
         {
             // 数字选择按钮的 ID 映射：ID = 100 + number
             if (focusedControl is UIButton btn)
@@ -181,10 +181,10 @@ namespace Fida.UI
                 int number = btn.GetId() - 100;
                 if (number >= 0 && number <= 9)
                 {
-                    return new Action { Type = ActionType.ChooseNumber, Number = number };
+                    return new GameAction { Type = ActionType.ChooseNumber, Number = number };
                 }
             }
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>
@@ -201,14 +201,14 @@ namespace Fida.UI
         /// <summary>
         /// 处理选择数字索引的输入
         /// </summary>
-        private Action ActionChooseNumberIndex(GameManager gameManager)
+        private GameAction ActionChooseNumberIndex(GameManager gameManager)
         {
             foreach (UIPlayer uiPlayer in _uiControls.OfType<UIPlayer>())
             {
                 // 检测数字 0 按钮的点击
                 if (uiPlayer.Number0Button.IsPressed())
                 {
-                    return new Action
+                    return new GameAction
                     {
                         Type = ActionType.ChooseNumberIndex,
                         TargetPlayerId = uiPlayer.Player.PlayerId,
@@ -219,7 +219,7 @@ namespace Fida.UI
                 // 检测数字 1 按钮的点击
                 if (uiPlayer.Number1Button.IsPressed())
                 {
-                    return new Action
+                    return new GameAction
                     {
                         Type = ActionType.ChooseNumberIndex,
                         TargetPlayerId = uiPlayer.Player.PlayerId,
@@ -229,19 +229,19 @@ namespace Fida.UI
             }
 
             // 没有点击任何有效按钮，返回空动作
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>
         /// 处理选择目标的输入
         /// </summary>
-        private Action ActionChooseTarget(GameManager gameManager)
+        private GameAction ActionChooseTarget(GameManager gameManager)
         {
             foreach (UIPlayer uiPlayer in _uiControls.OfType<UIPlayer>())
             {
                 if (CheckClickArea(uiPlayer.CardBounds))
                 {
-                    return new Action
+                    return new GameAction
                     {
                         Type = ActionType.ChooseTarget,
                         TargetPlayerId = uiPlayer.Player.PlayerId
@@ -250,13 +250,13 @@ namespace Fida.UI
             }
 
             // 没有点击任何有效按钮，返回空动作
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>
         /// 处理选择数字的输入
         /// </summary>
-        private Action ActionChooseNumber(GameManager gameManager)
+        private GameAction ActionChooseNumber(GameManager gameManager)
         {
             for (int i = 0; i <= 9; i++)
             {
@@ -264,12 +264,12 @@ namespace Fida.UI
                 int y = i / 5;
                 if (CheckClickArea(new Rectangle(10 + x * 50, 100 + y * 50, 50, 50)))
                 {
-                    return new Action { Type = ActionType.ChooseNumber, Number = i };
+                    return new GameAction { Type = ActionType.ChooseNumber, Number = i };
                 }
             }
 
             // 没有点击任何有效按钮，返回空动作
-            return new Action { Type = ActionType.None };
+            return new GameAction { Type = ActionType.None };
         }
 
         /// <summary>

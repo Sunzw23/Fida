@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Fida.Logic;
-using FidaAction = Fida.Logic.Action;
 
 namespace Fida.Agent
 {
@@ -125,7 +124,7 @@ namespace Fida.Agent
         /// </summary>
         /// <param name="gameManager">GameManager 实例</param>
         /// <param name="sourcePlayerId">动作源玩家 ID，默认为 -1，表示使用 CurrentPlayerId</param>
-        public FidaAction GetAgentAction(GameManager gameManager, int sourcePlayerId = -1)
+        public GameAction GetAgentAction(GameManager gameManager, int sourcePlayerId = -1)
         {
             _gameManager = gameManager;
             // 如果没有指定 sourcePlayerId，使用 CurrentPlayerId
@@ -143,11 +142,11 @@ namespace Fida.Agent
                 case ActionType.ChooseNumber:
                     return HandleChooseNumberAction(playerId);
                 default:
-                    return new FidaAction { Type = ActionType.None };
+                    return new GameAction { Type = ActionType.None };
             }
         }
 
-        private FidaAction HandleChooseNumberIndexAction(int sourcePlayerId)
+        private GameAction HandleChooseNumberIndexAction(int sourcePlayerId)
         {
             if (_gameManager.IsChooseFirstNumberIndexState())
             {
@@ -156,22 +155,22 @@ namespace Fida.Agent
                 {
                     _actionIndex = onnxInference.InferActionIndex(GetState(_gameManager, sourcePlayerId, 0));
                 }
-                return new FidaAction { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = _actionIndex / 3 };
+                return new GameAction { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = _actionIndex / 3 };
             }
             else
             {
                 if (_actionIndex % 3 == 0)
                 {
-                    return new FidaAction { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = 1 - _actionIndex / 3 };
+                    return new GameAction { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = 1 - _actionIndex / 3 };
                 }
                 else
                 {
-                    return new FidaAction { Type = ActionType.ChooseNumberIndex, TargetPlayerId = 0, NumberIndex = _actionIndex % 3 - 1 };
+                    return new GameAction { Type = ActionType.ChooseNumberIndex, TargetPlayerId = 0, NumberIndex = _actionIndex % 3 - 1 };
                 }
             }
         }
 
-        private FidaAction HandleChooseTargetAction(int sourcePlayerId)
+        private GameAction HandleChooseTargetAction(int sourcePlayerId)
         {
             if (_gameManager.IsDamaging())
             {
@@ -181,29 +180,29 @@ namespace Fida.Agent
                 if (enemyPlayers.Count > 0)
                 {
                     var targetPlayer = enemyPlayers.OrderBy(p => p.Health).First();
-                    return new FidaAction { Type = ActionType.ChooseTarget, TargetPlayerId = targetPlayer.PlayerId };
+                    return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = targetPlayer.PlayerId };
                 }
-                return new FidaAction { Type = ActionType.ChooseTarget, TargetPlayerId = 0 };
+                return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = 0 };
             }
             else if (_gameManager.IsHealing())
             {
                 // 治疗时，选择自己或生命值最低的队友
-                return new FidaAction { Type = ActionType.ChooseTarget, TargetPlayerId = sourcePlayerId };
+                return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = sourcePlayerId };
             }
             else
             {
-                return new FidaAction { Type = ActionType.ChooseTarget, TargetPlayerId = 0 };
+                return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = 0 };
             }
         }
 
-        private FidaAction HandleDecideApplyAction(int sourcePlayerId)
+        private GameAction HandleDecideApplyAction(int sourcePlayerId)
         {
-            return new FidaAction { Type = ActionType.DecideApply, IsApply = true };
+            return new GameAction { Type = ActionType.DecideApply, IsApply = true };
         }
 
-        private FidaAction HandleChooseNumberAction(int sourcePlayerId)
+        private GameAction HandleChooseNumberAction(int sourcePlayerId)
         {
-            return new FidaAction { Type = ActionType.ChooseNumber, Number = new Random().Next(6, 10) };
+            return new GameAction { Type = ActionType.ChooseNumber, Number = new Random().Next(6, 10) };
         }
 
         private void HandleChooseNumberIndex(int sourcePlayerId)
