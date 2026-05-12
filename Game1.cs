@@ -71,16 +71,20 @@ namespace Fida
 
             HandleExitInput();
             _uiManager.Update(gameTime);
+            _uiManager.UpdateInputMode();
+
+            // 根据输入模式切换鼠标可见性
+            IsMouseVisible = _uiManager.CurrentInputMode == InputMode.Mouse;
 
             switch (_currentState)
             {
-                case State.MainMenu:      HandleMainMenuInput(); break;
-                case State.Playing:       HandlePlayerInput(); EnsureGameStarted(); break;
-                case State.Paused:        HandlePausedInput(); break;
-                case State.OnlineMenu:    HandleOnlineMenuInput(); break;
-                case State.Hosting:       HandleHostingInput(); break;
-                case State.Connecting:    HandleConnectingInput(); break;
-                case State.OnlinePlaying: HandleOnlinePlayingInput(); EnsureOnlineGameStarted(); break;
+                case State.MainMenu:      HandleMainMenuInput(gameTime); break;
+                case State.Playing:       HandlePlayerInput(gameTime); EnsureGameStarted(); break;
+                case State.Paused:        HandlePausedInput(gameTime); break;
+                case State.OnlineMenu:    HandleOnlineMenuInput(gameTime); break;
+                case State.Hosting:       HandleHostingInput(gameTime); break;
+                case State.Connecting:    HandleConnectingInput(gameTime); break;
+                case State.OnlinePlaying: HandleOnlinePlayingInput(gameTime); EnsureOnlineGameStarted(); break;
             }
 
             base.Update(gameTime);
@@ -97,15 +101,23 @@ namespace Fida
             }
         }
 
-        private void HandlePlayerInput()
+        private void HandlePlayerInput(GameTime gameTime)
         {
             var gm = _uiManager.GameManager;
             _uiManager.UpdateUIButtons(gm);
+
+            // 手柄输入更新
+            _uiManager.UpdateControllerInput(gameTime);
 
             if (gm.CurrentPlayerId != 0)
                 return;
 
             var action = _uiManager.UpdateMouseAndCheckClicks(gm);
+
+            // 手柄确认键
+            if (action.Type == ActionType.None)
+                action = _uiManager.CheckControllerConfirm(gm);
+
             if (action.Type != ActionType.None)
                 gm.UpdateGame(action);
         }
@@ -134,10 +146,13 @@ namespace Fida
             _playingSceneManager.StartGame();
         }
 
-        private void HandleOnlinePlayingInput()
+        private void HandleOnlinePlayingInput(GameTime gameTime)
         {
             var gm = _uiManager.GameManager;
             _uiManager.UpdateUIButtons(gm);
+
+            // 手柄输入更新
+            _uiManager.UpdateControllerInput(gameTime);
 
             _networkManager.ProcessMessages(gm);
 
@@ -145,6 +160,11 @@ namespace Fida
                 return;
 
             var action = _uiManager.UpdateMouseAndCheckClicks(gm);
+
+            // 手柄确认键
+            if (action.Type == ActionType.None)
+                action = _uiManager.CheckControllerConfirm(gm);
+
             if (action.Type != ActionType.None)
             {
                 _networkManager.SendAction(action);
@@ -176,72 +196,150 @@ namespace Fida
             _previousEscPressed = escPressed;
         }
 
-        private void HandleMainMenuInput()
+        /// <summary>
+        /// 处理菜单按钮点击（鼠标或手柄确认键）
+        /// </summary>
+        private bool HandleMenuButtonClick()
         {
-            _uiManager.UpdateUIButtons(_uiManager.GameManager);
             foreach (var c in _uiManager.GetControls())
             {
                 if (c is UIButton b && b.IsClicked())
                 {
-                    switch (b.GetId())
-                    {
-                        case 0: SwitchToState(State.Playing); return;
-                        case 1: SwitchToState(State.OnlineMenu); return;
-                        case 2: Exit(); return;
-                    }
+                    return HandleButtonById(b.GetId());
                 }
             }
+            return false;
         }
 
-        private void HandlePausedInput()
+        /// <summary>
+        /// 处理手柄菜单按钮点击
+        /// </summary>
+        private bool HandleControllerMenuButtonClick()
         {
-            _uiManager.UpdateUIButtons(_uiManager.GameManager);
+            var controller = _uiManager.GetControls().Count > 0 ? 
+                new ControllerInputHandler(PlayerIndex.One) : null;
+            
             foreach (var c in _uiManager.GetControls())
             {
-                if (c is UIButton b && b.IsClicked())
+                if (c is UIButton b && b.IsFocused && b.IsClicked())
                 {
-                    switch (b.GetId())
+                    return HandleButtonById(b.GetId());
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 根据按钮 ID 执行菜单操作
+        /// </summary>
+        private bool HandleButtonById(int id)
+        {
+            switch (_currentState)
+            {
+                case State.MainMenu:
+                    switch (id)
+                    {
+                        case 0: SwitchToState(State.Playing); return true;
+                        case 1: SwitchToState(State.OnlineMenu); return true;
+                        case 2: Exit(); return true;
+                    }
+                    break;
+                case State.Paused:
+                    switch (id)
                     {
                         case 0:
                             SwitchToState(_networkManager.IsConnected ? State.OnlinePlaying : State.Playing);
-                            return;
+                            return true;
                         case 1:
                             _networkManager.Cleanup();
                             SwitchToState(State.MainMenu);
-                            return;
+                            return true;
                     }
-                }
-            }
-        }
-
-        private void HandleOnlineMenuInput()
-        {
-            _uiManager.UpdateUIButtons(_uiManager.GameManager);
-            foreach (var c in _uiManager.GetControls())
-            {
-                if (c is UIButton b && b.IsClicked())
-                {
-                    switch (b.GetId())
+                    break;
+                case State.OnlineMenu:
+                    switch (id)
                     {
                         case 0:
                             _networkManager.StartHosting(_networkManager.GetServerAddress(), _networkManager.GetServerPort());
                             SwitchToState(State.Hosting);
-                            return;
+                            return true;
                         case 1:
                             _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort());
                             SwitchToState(State.Connecting);
-                            return;
+                            return true;
                         case 2:
                             SwitchToState(State.MainMenu);
-                            return;
+                            return true;
+                    }
+                    break;
+                case State.Hosting:
+                    if (id == 0)
+                    {
+                        _networkManager.Cleanup();
+                        SwitchToState(State.OnlineMenu);
+                        return true;
+                    }
+                    break;
+                case State.Connecting:
+                    if (id == 0)
+                    {
+                        _networkManager.Cleanup();
+                        SwitchToState(State.OnlineMenu);
+                        return true;
+                    }
+                    break;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 处理手柄菜单确认键 - 使用 UIManager 中已更新的 ControllerInputHandler
+        /// </summary>
+        private bool HandleControllerMenuConfirm()
+        {
+            var controller = _uiManager.GetControls().Count > 0 ? 
+                _uiManager.GetControllerInput() : null;
+            if (controller != null && controller.IsConnected && controller.IsConfirmPressed())
+            {
+                foreach (var c in _uiManager.GetControls())
+                {
+                    if (c is UIButton b && b.IsFocused)
+                    {
+                        return HandleButtonById(b.GetId());
                     }
                 }
             }
+            return false;
         }
 
-        private void HandleHostingInput()
+        private void HandleMainMenuInput(GameTime gameTime)
         {
             _uiManager.UpdateUIButtons(_uiManager.GameManager);
+            _uiManager.UpdateControllerInput(gameTime);
+            if (HandleMenuButtonClick()) return;
+            HandleControllerMenuConfirm();
+        }
+
+        private void HandlePausedInput(GameTime gameTime)
+        {
+            _uiManager.UpdateUIButtons(_uiManager.GameManager);
+            _uiManager.UpdateControllerInput(gameTime);
+            if (HandleMenuButtonClick()) return;
+            HandleControllerMenuConfirm();
+        }
+
+        private void HandleOnlineMenuInput(GameTime gameTime)
+        {
+            _uiManager.UpdateUIButtons(_uiManager.GameManager);
+            _uiManager.UpdateControllerInput(gameTime);
+            if (HandleMenuButtonClick()) return;
+            HandleControllerMenuConfirm();
+        }
+
+        private void HandleHostingInput(GameTime gameTime)
+        {
+            _uiManager.UpdateUIButtons(_uiManager.GameManager);
+            _uiManager.UpdateControllerInput(gameTime);
 
             if (_networkManager.CheckHostConnection())
             {
@@ -251,20 +349,14 @@ namespace Fida
                 return;
             }
 
-            foreach (var c in _uiManager.GetControls())
-            {
-                if (c is UIButton b && b.IsClicked() && b.GetId() == 0)
-                {
-                    _networkManager.Cleanup();
-                    SwitchToState(State.OnlineMenu);
-                    return;
-                }
-            }
+            if (HandleMenuButtonClick()) return;
+            HandleControllerMenuConfirm();
         }
 
-        private void HandleConnectingInput()
+        private void HandleConnectingInput(GameTime gameTime)
         {
             _uiManager.UpdateUIButtons(_uiManager.GameManager);
+            _uiManager.UpdateControllerInput(gameTime);
 
             if (_networkManager.IsConnected)
             {
@@ -274,15 +366,8 @@ namespace Fida
                 return;
             }
 
-            foreach (var c in _uiManager.GetControls())
-            {
-                if (c is UIButton b && b.IsClicked() && b.GetId() == 0)
-                {
-                    _networkManager.Cleanup();
-                    SwitchToState(State.OnlineMenu);
-                    return;
-                }
-            }
+            if (HandleMenuButtonClick()) return;
+            HandleControllerMenuConfirm();
         }
 
         // ─── 状态切换 ──────────────────────────────────────

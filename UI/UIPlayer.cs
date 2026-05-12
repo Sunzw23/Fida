@@ -41,6 +41,20 @@ namespace Fida.UI
         private bool _clickStartedOnThis = false;
         private bool _mouseWasDown = false;
 
+        // ─── 手柄焦点支持 ──────────────────────────────────
+        /// <summary>
+        /// 玩家卡片可以被手柄聚焦（当启用时）
+        /// </summary>
+        public override bool CanFocus => IsEnabled;
+
+        /// <summary>
+        /// 获取焦点时触发确认事件（手柄 A 键按下时调用）
+        /// </summary>
+        public void OnCardConfirmed()
+        {
+            OnConfirmed();
+        }
+
         private UIButtonState CardState
         {
             get
@@ -174,7 +188,7 @@ namespace Fida.UI
             else
             {
                 IsEnabled = true;
-                IsHovered = CardBounds.Contains(mousePoint);
+                IsHovered = CardBounds.Contains(mousePoint) || IsFocused;
 
                 if (IsHovered && mouseDown && !_mouseWasDown)
                 {

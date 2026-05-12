@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace Fida.UI
 {
@@ -8,6 +9,58 @@ namespace Fida.UI
     {
         int Id;
         SpriteFont Font;
+
+        // ─── 焦点导航支持 ──────────────────────────────────
+        /// <summary>
+        /// 此控件是否拥有手柄焦点
+        /// </summary>
+        public bool IsFocused { get; private set; }
+
+        /// <summary>
+        /// 焦点排序索引，用于确定导航顺序
+        /// </summary>
+        public int FocusIndex { get; set; } = -1;
+
+        /// <summary>
+        /// 此控件是否可被手柄聚焦
+        /// </summary>
+        public virtual bool CanFocus => false;
+
+        /// <summary>
+        /// 获取焦点时触发
+        /// </summary>
+        public event Action<UIControl> FocusGained;
+
+        /// <summary>
+        /// 失去焦点时触发
+        /// </summary>
+        public event Action<UIControl> FocusLost;
+
+        /// <summary>
+        /// 确认键按下时触发（手柄 A 键）
+        /// </summary>
+        public event Action<UIControl> Confirmed;
+
+        /// <summary>
+        /// 设置焦点状态
+        /// </summary>
+        public void SetFocus(bool focused)
+        {
+            if (focused == IsFocused) return;
+            IsFocused = focused;
+            if (focused)
+                FocusGained?.Invoke(this);
+            else
+                FocusLost?.Invoke(this);
+        }
+
+        /// <summary>
+        /// 触发确认事件（手柄 A 键按下时调用）
+        /// </summary>
+        public void OnConfirmed()
+        {
+            Confirmed?.Invoke(this);
+        }
 
         public UIControl(int id)
         {

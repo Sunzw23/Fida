@@ -81,6 +81,12 @@ namespace Fida.UI
         // 支持切换模式 - 点击后切换选定状态
         public bool IsToggleMode { get; set; } = false;
 
+        // ─── 手柄焦点支持 ──────────────────────────────────
+        /// <summary>
+        /// 按钮可以被手柄聚焦
+        /// </summary>
+        public override bool CanFocus => IsEnabled;
+
         // 纯黑白配色方案
         private static readonly Color Black = Color.Black;
         private static readonly Color White = Color.White;
@@ -304,8 +310,8 @@ namespace Fida.UI
             {
                 IsEnabled = true;
                 _mouseWasDown = mouseDown;
-                // 启用时恢复悬浮状态检测
-                IsHovered = Contains(mousePoint);
+            // 启用时恢复悬浮状态检测
+                IsHovered = Contains(mousePoint) || IsFocused;
                 IsSelected = false; // 启用时默认不选定
                 NotifyStateChanged();
                 return;
@@ -325,7 +331,7 @@ namespace Fida.UI
 
             bool wasHovered = IsHovered;
             bool wasPressed = _isPressed;
-            IsHovered = Contains(mousePoint);
+            IsHovered = Contains(mousePoint) || IsFocused;
 
             // 鼠标刚在此按钮上按下
             if (IsHovered && mouseDown && !_mouseWasDown)
@@ -411,6 +417,15 @@ namespace Fida.UI
         public void SetSelected(bool selected)
         {
             IsSelected = selected;
+            NotifyStateChanged();
+        }
+
+        /// <summary>
+        /// 设置悬停状态（用于输入模式切换时清除）
+        /// </summary>
+        public void SetHover(bool hovered)
+        {
+            IsHovered = hovered;
             NotifyStateChanged();
         }
 

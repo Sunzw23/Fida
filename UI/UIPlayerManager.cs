@@ -68,8 +68,18 @@ namespace Fida.UI
                 // 为按钮设置环境检查器，让按钮根据游戏状态自动决定是否启用
                 uiPlayer.Number0Button.EnabledChecker = () => ShouldNumberButtonBeEnabled(capturedPlayerId, 0);
                 uiPlayer.Number1Button.EnabledChecker = () => ShouldNumberButtonBeEnabled(capturedPlayerId, 1);
+
+                // ─── 设置手柄焦点索引 ──────────────────────
+                // 玩家卡片：100 + playerId * 10
+                uiPlayer.FocusIndex = 100 + capturedPlayerId * 10;
+                // 数字按钮：101 + playerId * 10（数字0），102 + playerId * 10（数字1）
+                uiPlayer.Number0Button.FocusIndex = 101 + capturedPlayerId * 10;
+                uiPlayer.Number1Button.FocusIndex = 102 + capturedPlayerId * 10;
                 
                 _uiControls.Add(uiPlayer);
+                // 将数字按钮也加入主控件列表，使其可被手柄聚焦
+                _uiControls.Add(uiPlayer.Number0Button);
+                _uiControls.Add(uiPlayer.Number1Button);
                 _uiPlayers.Add(uiPlayer);
             }
         }
