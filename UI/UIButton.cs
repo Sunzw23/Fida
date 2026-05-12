@@ -77,6 +77,11 @@ namespace Fida.UI
             OnStateChanged?.Invoke(currentState);
         }
 
+        /// <summary>
+        /// 按钮点击事件 - 当按钮完成一次完整点击时触发
+        /// </summary>
+        public event Action<UIButton> Clicked;
+
         // 支持切换模式 - 点击后切换选定状态
         public bool IsToggleMode { get; set; } = false;
 
@@ -301,6 +306,7 @@ namespace Fida.UI
         /// <summary>
         /// 检测按钮是否完成了一次完整点击（按下 + 释放均在按钮上）
         /// 调用后状态会被消费（返回 true 后再次调用返回 false）
+        /// 如果点击完成，触发 Clicked 事件。
         /// </summary>
         public bool IsClicked()
         {
@@ -311,6 +317,7 @@ namespace Fida.UI
             if (clicked)
             {
                 _clickStartedOnThis = false;
+                Clicked?.Invoke(this);
                 return true;
             }
             return false;

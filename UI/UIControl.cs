@@ -10,6 +10,11 @@ namespace Fida.UI
         int Id;
         SpriteFont Font;
 
+        /// <summary>
+        /// 控件名称（来自 JSON 的 name 字段），用于按名称查找控件
+        /// </summary>
+        public string Name { get; set; } = "";
+
         // ─── 焦点导航支持 ──────────────────────────────────
         /// <summary>
         /// 此控件是否拥有手柄焦点

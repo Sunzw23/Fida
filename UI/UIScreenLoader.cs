@@ -31,6 +31,9 @@ namespace Fida.UI
             [JsonPropertyName("id")]
             public int Id { get; set; }
 
+            [JsonPropertyName("name")]
+            public string Name { get; set; } = "";
+
             [JsonPropertyName("text")]
             public string Text { get; set; } = "";
 
@@ -81,6 +84,9 @@ namespace Fida.UI
 
             /// <summary>控件 ID</summary>
             public int Id { get; set; }
+
+            /// <summary>控件名称（用于事件绑定查找）</summary>
+            public string Name { get; set; } = "";
 
             /// <summary>显示文字（已替换占位符）</summary>
             public string Text { get; set; } = "";
@@ -133,6 +139,7 @@ namespace Fida.UI
                     {
                         Type = ctrl.Type,
                         Id = ctrl.Id,
+                        Name = ctrl.Name,
                         Text = text,
                     };
 

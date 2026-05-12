@@ -1,7 +1,7 @@
 {
   "controls": [
-    { "type": "button", "id": 0, "text": "创建房间 (主机)", "bounds": { "x": 810, "y": 460, "width": 300, "height": 80 } },
-    { "type": "button", "id": 1, "text": "加入房间 (客机)", "bounds": { "x": 810, "y": 580, "width": 300, "height": 80 } },
-    { "type": "button", "id": 2, "text": "返回", "bounds": { "x": 810, "y": 700, "width": 300, "height": 80 } }
+    { "type": "button", "name": "hostGame", "id": 0, "text": "创建房间 (主机)", "bounds": { "x": 810, "y": 460, "width": 300, "height": 80 } },
+    { "type": "button", "name": "joinGame", "id": 1, "text": "加入房间 (客机)", "bounds": { "x": 810, "y": 580, "width": 300, "height": 80 } },
+    { "type": "button", "name": "backToMain", "id": 2, "text": "返回", "bounds": { "x": 810, "y": 700, "width": 300, "height": 80 } }
   ]
 }

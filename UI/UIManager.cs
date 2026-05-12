@@ -355,6 +355,19 @@ namespace Fida.UI
             return _uiControls;
         }
 
+        /// <summary>
+        /// 根据名称查找按钮控件
+        /// </summary>
+        public UIButton? GetButtonByName(string name)
+        {
+            foreach (var control in _uiControls)
+            {
+                if (control is UIButton btn && btn.Name == name)
+                    return btn;
+            }
+            return null;
+        }
+
         public void BuildPauseMenu()
         {
             Clear();
@@ -407,6 +420,8 @@ namespace Fida.UI
                     "label" => new UILabel(desc.Id, desc.Text, desc.Position!.Value, _resourceManager.Font),
                     _ => throw new System.NotSupportedException($"Unknown control type: {desc.Type}")
                 };
+                // 设置控件名称（用于事件绑定查找）
+                control.Name = desc.Name;
                 // 为按钮设置 FocusIndex，使其可被手柄聚焦
                 if (control is UIButton)
                 {
