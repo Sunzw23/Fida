@@ -1,0 +1,6 @@
+{
+  "controls": [
+    { "type": "button", "id": 0, "text": "继续", "bounds": { "x": 860, "y": 500, "width": 200, "height": 80 } },
+    { "type": "button", "id": 1, "text": "返回", "bounds": { "x": 860, "y": 620, "width": 200, "height": 80 } }
+  ]
+}

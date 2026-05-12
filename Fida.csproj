@@ -37,6 +37,21 @@
     <None Update="Content\agent_GamePhaseType.CHOOSE_NUMBER_INDEX_0.onnx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Content\screens\ConnectingScreen.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\screens\HostingScreen.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\screens\MainMenu.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\screens\OnlineMenu.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\screens\PauseMenu.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Content\source_han_sans.spritefont">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

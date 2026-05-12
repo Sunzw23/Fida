@@ -76,6 +76,8 @@ namespace Fida.Logic
             if (CheckGameEnd()) return;
 
             _currentState?.Handle(action);
+
+            if (CheckGameEnd()) return;
         }
 
 

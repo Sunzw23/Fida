@@ -1,4 +1,5 @@
 // UIManager.cs 文件
+#nullable enable
 using System.Collections.Generic;
 using Fida.Logic;
 using Microsoft.Xna.Framework;
@@ -56,21 +57,7 @@ namespace Fida.UI
         public void BuildMainMenu()
         {
             Clear();
-
-            // 屏幕 1920×1200，按钮 200×80，垂直居中排列，间距 40px
-            int buttonWidth = 200;
-            int buttonHeight = 80;
-            int centerX = (1920 - buttonWidth) / 2;
-            int totalHeight = buttonHeight * 3 + 40 * 2;
-            int startY = (1200 - totalHeight) / 2;
-
-            var startButton = new UIButton(0, new Rectangle(centerX, startY, buttonWidth, buttonHeight), "开始", _resourceManager.Pixel, _resourceManager.Font);
-            var onlineButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "联机模式", _resourceManager.Pixel, _resourceManager.Font);
-            var exitButton = new UIButton(2, new Rectangle(centerX, startY + (buttonHeight + 40) * 2, buttonWidth, buttonHeight), "退出", _resourceManager.Pixel, _resourceManager.Font);
-
-            _uiControls.Add(startButton);
-            _uiControls.Add(onlineButton);
-            _uiControls.Add(exitButton);
+            BuildFromScreen("MainMenu");
         }
 
         public void BuildPlayingUI(GameManager gameManager)
@@ -101,7 +88,9 @@ namespace Fida.UI
         {
             foreach (UIControl control in _uiControls)
             {
-                if (control is UIBoxLabel boxLabel)
+                if (control is AnimatedBoxLabel animatedBoxLabel)
+                    animatedBoxLabel.Refresh();
+                else if (control is UIBoxLabel boxLabel)
                     boxLabel.Refresh();
                 else if (control is UIAnimatedButton animatedButton)
                     animatedButton.Refresh();
@@ -145,18 +134,7 @@ namespace Fida.UI
         public void BuildPauseMenu()
         {
             Clear();
-
-            int buttonWidth = 200;
-            int buttonHeight = 80;
-            int centerX = (1920 - buttonWidth) / 2;
-            int totalHeight = buttonHeight * 2 + 40;
-            int startY = (1200 - totalHeight) / 2;
-
-            var continueButton = new UIButton(0, new Rectangle(centerX, startY, buttonWidth, buttonHeight), "继续", _resourceManager.Pixel, _resourceManager.Font);
-            var returnButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "返回", _resourceManager.Pixel, _resourceManager.Font);
-
-            _uiControls.Add(continueButton);
-            _uiControls.Add(returnButton);
+            BuildFromScreen("PauseMenu");
         }
 
         public void BuildSettingsScreen()
@@ -172,54 +150,39 @@ namespace Fida.UI
         public void BuildOnlineMenu()
         {
             Clear();
-
-            int buttonWidth = 300;
-            int buttonHeight = 80;
-            int centerX = (1920 - buttonWidth) / 2;
-            int totalHeight = buttonHeight * 3 + 40 * 2;
-            int startY = (1200 - totalHeight) / 2;
-
-            var hostButton = new UIButton(0, new Rectangle(centerX, startY, buttonWidth, buttonHeight), "创建房间 (主机)", _resourceManager.Pixel, _resourceManager.Font);
-            var joinButton = new UIButton(1, new Rectangle(centerX, startY + buttonHeight + 40, buttonWidth, buttonHeight), "加入房间 (客机)", _resourceManager.Pixel, _resourceManager.Font);
-            var backButton = new UIButton(2, new Rectangle(centerX, startY + (buttonHeight + 40) * 2, buttonWidth, buttonHeight), "返回", _resourceManager.Pixel, _resourceManager.Font);
-
-            _uiControls.Add(hostButton);
-            _uiControls.Add(joinButton);
-            _uiControls.Add(backButton);
+            BuildFromScreen("OnlineMenu");
         }
 
         public void BuildHostingScreen(string statusText)
         {
             Clear();
-
-            int centerX = 1920 / 2;
-            int centerY = 1200 / 2;
-
-            var statusLabel = new UILabel(0, statusText, new Vector2(centerX, centerY - 80), _resourceManager.Font);
-            _uiControls.Add(statusLabel);
-
-            int buttonWidth = 200;
-            int buttonHeight = 80;
-            int buttonX = (1920 - buttonWidth) / 2;
-            var cancelButton = new UIButton(0, new Rectangle(buttonX, centerY + 40, buttonWidth, buttonHeight), "取消", _resourceManager.Pixel, _resourceManager.Font);
-            _uiControls.Add(cancelButton);
+            var replacements = new Dictionary<string, string> { { "status", statusText } };
+            BuildFromScreen("HostingScreen", replacements);
         }
 
         public void BuildConnectingScreen(string statusText)
         {
             Clear();
+            var replacements = new Dictionary<string, string> { { "status", statusText } };
+            BuildFromScreen("ConnectingScreen", replacements);
+        }
 
-            int centerX = 1920 / 2;
-            int centerY = 1200 / 2;
-
-            var statusLabel = new UILabel(0, statusText, new Vector2(centerX, centerY - 80), _resourceManager.Font);
-            _uiControls.Add(statusLabel);
-
-            int buttonWidth = 200;
-            int buttonHeight = 80;
-            int buttonX = (1920 - buttonWidth) / 2;
-            var cancelButton = new UIButton(0, new Rectangle(buttonX, centerY + 40, buttonWidth, buttonHeight), "取消", _resourceManager.Pixel, _resourceManager.Font);
-            _uiControls.Add(cancelButton);
+        /// <summary>
+        /// 从 JSON 屏幕布局文件构建控件。
+        /// </summary>
+        private void BuildFromScreen(string screenName, Dictionary<string, string>? replacements = null)
+        {
+            var descriptors = UIScreenLoader.Load(screenName, replacements);
+            foreach (var desc in descriptors)
+            {
+                UIControl control = desc.Type switch
+                {
+                    "button" => new UIButton(desc.Id, desc.Bounds!.Value, desc.Text, _resourceManager.Pixel, _resourceManager.Font),
+                    "label" => new UILabel(desc.Id, desc.Text, desc.Position!.Value, _resourceManager.Font),
+                    _ => throw new System.NotSupportedException($"Unknown control type: {desc.Type}")
+                };
+                _uiControls.Add(control);
+            }
         }
 
         public void Dispose()

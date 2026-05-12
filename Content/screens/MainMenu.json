@@ -1,0 +1,7 @@
+{
+  "controls": [
+    { "type": "button", "id": 0, "text": "开始", "bounds": { "x": 860, "y": 460, "width": 200, "height": 80 } },
+    { "type": "button", "id": 1, "text": "联机模式", "bounds": { "x": 860, "y": 580, "width": 200, "height": 80 } },
+    { "type": "button", "id": 2, "text": "退出", "bounds": { "x": 860, "y": 700, "width": 200, "height": 80 } }
+  ]
+}
