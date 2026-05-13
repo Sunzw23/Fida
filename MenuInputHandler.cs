@@ -28,6 +28,7 @@ namespace Fida
                 { State.OnlineMenu,  new OnlineMenuState(uiManager, networkManager, stateMachine) },
                 { State.Hosting,     new HostingState(uiManager, networkManager, stateMachine) },
                 { State.Connecting,  new ConnectingState(uiManager, networkManager, stateMachine) },
+                { State.OnlineLobby, new OnlineLobbyState(uiManager, networkManager, stateMachine) },
             };
 
             // 订阅状态机生命周期事件

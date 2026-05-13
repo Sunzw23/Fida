@@ -18,6 +18,7 @@ namespace Fida
         Hosting,
         Connecting,
         OnlinePlaying,
+        OnlineLobby,
     }
 
 }

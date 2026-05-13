@@ -15,7 +15,14 @@ namespace Fida.States
         public override void OnEnter()
         {
             BindButton("startGame", () => _stateMachine.SwitchToState(State.Playing));
-            BindButton("onlineMode", () => _stateMachine.SwitchToState(State.OnlineMenu));
+            BindButton("onlineMode", () =>
+            {
+                // 如果已连接则直接进入大厅，否则进入联机菜单
+                if (_networkManager.IsConnected)
+                    _stateMachine.SwitchToState(State.OnlineLobby);
+                else
+                    _stateMachine.SwitchToState(State.OnlineMenu);
+            });
             BindButton("exit", () => Environment.Exit(0));
         }
     }

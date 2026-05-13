@@ -22,6 +22,9 @@ namespace Fida
         // 单像素纹理，用于绘制矩形边框和填充
         public Texture2D Pixel { get; private set; }
 
+        /// <summary>获取图形设备实例</summary>
+        public GraphicsDevice GraphicsDevice => _graphicsDevice;
+
         /// <summary>
         /// ResourceManager 的构造函数。
         /// </summary>

@@ -92,6 +92,7 @@ namespace Fida
                 case State.OnlineMenu:    _menuInput.HandleMenuInput(gameTime); break;
                 case State.Hosting:       _menuInput.HandleHostingInput(gameTime); break;
                 case State.Connecting:    _menuInput.HandleConnectingInput(gameTime); break;
+                case State.OnlineLobby:   _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlinePlaying: _gameSession.HandleOnlinePlayingInput(gameTime); _gameSession.EnsureOnlineGameStarted(); break;
             }
 

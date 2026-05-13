@@ -30,7 +30,7 @@ namespace Fida.States
             if (_networkManager.CheckHostConnection())
             {
                 _uiManager.BuildHostingScreen(_networkManager.StatusText);
-                _stateMachine.SwitchToState(State.OnlinePlaying);
+                _stateMachine.SwitchToState(State.OnlineLobby);
             }
         }
     }

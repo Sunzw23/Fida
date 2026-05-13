@@ -239,6 +239,21 @@ namespace Fida.Logic
         #endregion
 
         /// <summary>
+        /// 强制结束游戏，指定获胜者（用于联机对手断开连接时）
+        /// </summary>
+        public void ForceEndGame(int winnerPlayerId)
+        {
+            var winner = Players.FirstOrDefault(p => p.PlayerId == winnerPlayerId);
+            var winnerName = winner?.Name ?? $"玩家{winnerPlayerId}";
+            SetGameMessage(GameText.GameEndWithWinner(winnerName));
+            OnGameEnded(new GameEndEventArgs
+            {
+                WinnerPlayerId = winnerPlayerId,
+                Message = GameMessage
+            });
+        }
+
+        /// <summary>
         /// 检查游戏是否结束
         /// </summary>
         /// <returns></returns>

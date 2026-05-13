@@ -1,0 +1,9 @@
+{
+  "controls": [
+    { "type": "label", "name": "title", "text": "联机大厅", "position": { "x": 960, "y": 200 } },
+    { "type": "button", "name": "startPvP", "id": 0, "text": "与好友对战", "bounds": { "x": 760, "y": 400, "width": 400, "height": 80 } },
+    { "type": "button", "name": "startCoop", "id": 1, "text": "与好友合作对战Agent", "bounds": { "x": 760, "y": 520, "width": 400, "height": 80 } },
+    { "type": "button", "name": "disconnect", "id": 2, "text": "断开连接", "bounds": { "x": 760, "y": 640, "width": 400, "height": 80 } },
+    { "type": "button", "name": "backToMain", "id": 3, "text": "返回主菜单", "bounds": { "x": 760, "y": 740, "width": 400, "height": 80 } }
+  ]
+}

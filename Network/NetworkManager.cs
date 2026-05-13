@@ -7,6 +7,7 @@ namespace Fida.Network
 {
     /// <summary>
     /// 封装所有联机网络逻辑：服务器/客户端生命周期、消息收发、状态管理。
+    /// 支持大厅（Lobby）模式：连接保持后进入大厅，由主机选择游戏模式。
     /// </summary>
     public class NetworkManager : IDisposable
     {
@@ -36,6 +37,18 @@ namespace Fida.Network
         /// <summary>连接断开时触发</summary>
         public event System.Action<string> Disconnected;
 
+        /// <summary>收到大厅游戏模式请求时触发（客机端）</summary>
+        public event System.Action<int> LobbyGameModeRequested;
+
+        /// <summary>收到大厅游戏模式响应时触发（主机端）</summary>
+        public event System.Action<int> LobbyGameModeAccepted;
+
+        /// <summary>收到大厅游戏开始结果时触发（客机端）</summary>
+        public event System.Action<int> LobbyGameStarting;
+
+        /// <summary>当前游戏模式（0=PvP, 1=Co-op），在游戏开始时设置</summary>
+        public int CurrentGameMode { get; set; } = 0;
+
         public NetworkManager()
         {
             _serverConfig = ServerConfig.Load("server.csv");
@@ -53,11 +66,10 @@ namespace Fida.Network
             _isHost = true;
 
             _gameServer = new GameServer(ipAddress, port);
+            _gameServer.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
             _gameServer.Start();
 
             StatusText = $"等待对手连接...\n地址: [{ipAddress}]:{port}";
-
-            // 轮询客户端连接（由外部每帧调用 CheckHostConnection）
         }
 
         /// <summary>启动客机模式：连接到远程服务器</summary>
@@ -78,11 +90,96 @@ namespace Fida.Network
         {
             if (_isHost && _gameServer != null && _gameServer.HasClientConnected)
             {
-                StatusText = "对手已连接！正在开始游戏...";
+                StatusText = "对手已连接！正在进入大厅...";
                 ClientConnected?.Invoke();
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// 处理大厅消息（在 OnlineLobby 状态时每帧调用）
+        /// </summary>
+        public void ProcessLobbyMessages()
+        {
+            List<NetworkMessage> messages = null;
+
+            if (_isHost && _gameServer != null)
+                messages = _gameServer.ReceiveMessages();
+            else if (!_isHost && _gameClient != null)
+                messages = _gameClient.ReceiveMessages();
+
+            if (messages == null)
+                return;
+
+            foreach (var msg in messages)
+            {
+                switch (msg.Type)
+                {
+                    case MessageType.LobbyStartGameResponse:
+                        // 客机接受了游戏模式请求
+                        if (_isHost && msg.Payload.Length >= 4)
+                        {
+                            int mode = BitConverter.ToInt32(msg.Payload, 0);
+                            LobbyGameModeAccepted?.Invoke(mode);
+                        }
+                        break;
+
+                    case MessageType.LobbyStartGameRequest:
+                        // 主机发来了游戏模式请求
+                        if (!_isHost && msg.Payload.Length >= 4)
+                        {
+                            int mode = BitConverter.ToInt32(msg.Payload, 0);
+                            LobbyGameModeRequested?.Invoke(mode);
+                        }
+                        break;
+
+                    case MessageType.LobbyStartGameResult:
+                        // 主机确认游戏开始
+                        if (!_isHost && msg.Payload.Length >= 4)
+                        {
+                            int mode = BitConverter.ToInt32(msg.Payload, 0);
+                            LobbyGameStarting?.Invoke(mode);
+                        }
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 主机发送游戏模式请求给客机
+        /// </summary>
+        public void SendLobbyGameModeRequest(int mode)
+        {
+            var payload = BitConverter.GetBytes(mode);
+            var message = new NetworkMessage(MessageType.LobbyStartGameRequest, payload);
+
+            if (_isHost && _gameServer != null)
+                _gameServer.SendToClient(message);
+        }
+
+        /// <summary>
+        /// 客机发送游戏模式接受响应给主机
+        /// </summary>
+        public void SendLobbyGameModeAccept(int mode)
+        {
+            var payload = BitConverter.GetBytes(mode);
+            var message = new NetworkMessage(MessageType.LobbyStartGameResponse, payload);
+
+            if (!_isHost && _gameClient != null)
+                _gameClient.SendMessage(message);
+        }
+
+        /// <summary>
+        /// 主机发送游戏开始确认给客机
+        /// </summary>
+        public void SendLobbyGameStartResult(int mode)
+        {
+            var payload = BitConverter.GetBytes(mode);
+            var message = new NetworkMessage(MessageType.LobbyStartGameResult, payload);
+
+            if (_isHost && _gameServer != null)
+                _gameServer.SendToClient(message);
         }
 
         /// <summary>接收远程消息并应用到 GameManager</summary>

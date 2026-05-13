@@ -52,6 +52,9 @@ namespace Fida.UI
             _gameManager.GameStateChanged += OnGameStateChanged;
             _gameManager.PlayerActionRequired += OnPlayerActionRequired;
 
+            // 计算每个玩家的绘制位置（基于分组）
+            var positions = ComputePlayerPositions(gameManager);
+
             for (int i = 0; i < gameManager.Players.Count; i++)
             {
                 var player = gameManager.Players[i];
@@ -59,9 +62,7 @@ namespace Fida.UI
                 // 尝试获取该玩家的头像纹理，如果未设置则为 null（不显示头像）
                 _portraitTextures.TryGetValue(player.PlayerId, out Texture2D portraitTexture);
                 
-                // 根据 LocalPlayerId 分配位置：本地玩家在底部 (Positions[0])，远程玩家在顶部 (Positions[1])
-                int positionIndex = player.PlayerId == gameManager.LocalPlayerId ? 0 : 1;
-                var uiPlayer = new UIPlayer(player.PlayerId, player, SceneConfig.PlayersScene1.Positions[positionIndex], _resourceManager.Font, _resourceManager.Pixel, portraitTexture);
+                var uiPlayer = new UIPlayer(player.PlayerId, player, positions[player.PlayerId], _resourceManager.Font, _resourceManager.Pixel, portraitTexture);
                 
                 // 卡片本身在 ChooseTarget 时可交互
                 int capturedPlayerId = player.PlayerId;
@@ -84,6 +85,77 @@ namespace Fida.UI
                 _uiControls.Add(uiPlayer.Number1Button);
                 _uiPlayers.Add(uiPlayer);
             }
+        }
+
+        /// <summary>
+        /// 基于分组计算每个玩家的绘制位置：
+        /// - 本地玩家所在组的成员 → 底部行（RowBottomY）
+        /// - 其他组的成员 → 顶部行（RowTopY）
+        /// - 每行内水平均匀分布
+        /// </summary>
+        private Dictionary<int, Vector2> ComputePlayerPositions(GameManager gameManager)
+        {
+            var positions = new Dictionary<int, Vector2>();
+
+            // 找到本地玩家所在的组
+            Group localGroup = null;
+            foreach (var group in gameManager.Groups)
+            {
+                foreach (var p in group.Players)
+                {
+                    if (p.PlayerId == gameManager.LocalPlayerId)
+                    {
+                        localGroup = group;
+                        break;
+                    }
+                }
+                if (localGroup != null) break;
+            }
+
+            int cardWidth = UIConfig.Int("cardWidth");
+            int screenWidth = _resourceManager.GraphicsDevice.Viewport.Width;
+
+            // 如果没有分组（单机 PvP），使用默认的两位置布局
+            if (localGroup == null)
+            {
+                for (int i = 0; i < gameManager.Players.Count; i++)
+                {
+                    int y = (i == 0) ? SceneConfig.RowBottomY : SceneConfig.RowTopY;
+                    positions[gameManager.Players[i].PlayerId] = new Vector2(100, y);
+                }
+                return positions;
+            }
+
+            // 按组分：本地组在底部，其他组在顶部
+            var localPlayers = localGroup.Players;
+            var enemyPlayers = new List<Player>();
+            foreach (var group in gameManager.Groups)
+            {
+                if (group.GroupId != localGroup.GroupId)
+                {
+                    enemyPlayers.AddRange(group.Players);
+                }
+            }
+
+            // 计算底部行（本地组）位置
+            int localCount = localPlayers.Count;
+            int totalLocalWidth = localCount * cardWidth + (localCount - 1) * 20; // 20px 间距
+            int startLocalX = (screenWidth - totalLocalWidth) / 2;
+            for (int i = 0; i < localCount; i++)
+            {
+                positions[localPlayers[i].PlayerId] = new Vector2(startLocalX + i * (cardWidth + 20), SceneConfig.RowBottomY);
+            }
+
+            // 计算顶部行（敌方组）位置
+            int enemyCount = enemyPlayers.Count;
+            int totalEnemyWidth = enemyCount * cardWidth + (enemyCount - 1) * 20;
+            int startEnemyX = (screenWidth - totalEnemyWidth) / 2;
+            for (int i = 0; i < enemyCount; i++)
+            {
+                positions[enemyPlayers[i].PlayerId] = new Vector2(startEnemyX + i * (cardWidth + 20), SceneConfig.RowTopY);
+            }
+
+            return positions;
         }
 
         public void UpdateGameMessage(string message)

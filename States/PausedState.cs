@@ -18,7 +18,7 @@ namespace Fida.States
 
             BindButton("backToMenu", () =>
             {
-                _networkManager.Cleanup();
+                // 不中断连接，只返回主菜单
                 _stateMachine.SwitchToState(State.MainMenu);
             });
         }

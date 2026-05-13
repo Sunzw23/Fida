@@ -10,6 +10,7 @@ namespace Fida
 {
     /// <summary>
     /// 游戏会话管理 - 负责单机和联机游戏的初始化与输入处理
+    /// 支持 PvP（与好友对战）和 Co-op（与好友合作对战Agent）两种联机模式
     /// </summary>
     public class GameSessionManager
     {
@@ -27,6 +28,26 @@ namespace Fida
             _playingSceneManager = playingSceneManager;
             _networkManager = networkManager;
             _stateMachine = stateMachine;
+
+            // 监听网络断开事件，在游戏中时强制结束游戏
+            _networkManager.Disconnected += OnNetworkDisconnected;
+        }
+
+        /// <summary>
+        /// 网络断开时处理：
+        /// - 如果在联机游戏中，强制结束游戏并宣布本地玩家获胜
+        /// - 如果在大厅中，返回主菜单
+        /// </summary>
+        private void OnNetworkDisconnected(string message)
+        {
+            if (_stateMachine.CurrentState == State.OnlinePlaying)
+            {
+                _playingSceneManager.HandleRemotePlayerDisconnect();
+            }
+            else if (_stateMachine.CurrentState == State.OnlineLobby)
+            {
+                _stateMachine.GoToMainMenu();
+            }
         }
 
         /// <summary>
@@ -50,21 +71,48 @@ namespace Fida
             _networkGameStarted = true;
 
             int localId = _networkManager.GetLocalPlayerId();
+            int gameMode = _networkManager.CurrentGameMode;
 
-            // 两端使用完全相同的玩家列表，不反转
-            // 这样 CurrentPlayerIndex 在两端指向同一个玩家
-            var players = new List<Player>
+            if (gameMode == 0)
             {
-                new Player(0, "玩家1"),
-                new Player(1, "玩家2")
-            };
+                // PvP 模式：两个玩家对战
+                var players = new List<Player>
+                {
+                    new Player(0, "玩家1"),
+                    new Player(1, "玩家2")
+                };
 
-            // 设置本地玩家 ID
-            _uiManager.GameManager.LocalPlayerId = localId;
+                _uiManager.GameManager.LocalPlayerId = localId;
 
-            // 初始化玩家控制器（联机模式：本地玩家 + 远程玩家）
-            _playingSceneManager.InitializeControllers(players, localId);
-            _playingSceneManager.Initialize(players);
+                // 初始化玩家控制器（联机模式：本地玩家 + 远程玩家）
+                _playingSceneManager.InitializeControllers(players, localId);
+                _playingSceneManager.Initialize(players);
+            }
+            else
+            {
+                // Co-op 模式：两个人类玩家合作对战两个 Agent
+                var players = new List<Player>
+                {
+                    new Player(0, "玩家1"),   // 主机
+                    new Player(1, "玩家2"),   // 客机
+                    new Player(2, "Agent 1"), // AI 对手
+                    new Player(3, "Agent 2")  // AI 对手
+                };
+
+                // 分组：人类玩家一组，Agent 一组
+                var groups = new List<Group>
+                {
+                    new Group(0, "人类联盟", [players[0], players[1]]),
+                    new Group(1, "Agent 联盟", [players[2], players[3]])
+                };
+
+                _uiManager.GameManager.LocalPlayerId = localId;
+
+                // 初始化玩家控制器（Co-op 模式：本地玩家 + 远程玩家 + Agent 玩家）
+                _playingSceneManager.InitializeControllers(players, localId, true);
+                _playingSceneManager.Initialize(players, groups);
+            }
+
             _playingSceneManager.StartGame();
         }
 

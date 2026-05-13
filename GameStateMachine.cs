@@ -36,6 +36,16 @@ namespace Fida
         }
 
         /// <summary>
+        /// 返回主菜单（清理网络资源）
+        /// </summary>
+        public void GoToMainMenu()
+        {
+            _networkManager.Cleanup();
+            _playingSceneManager.IsInitialized = false;
+            SwitchToState(State.MainMenu);
+        }
+
+        /// <summary>
         /// 切换到新状态并构建对应的 UI
         /// </summary>
         public void SwitchToState(State newState)
@@ -66,6 +76,7 @@ namespace Fida
                 case State.OnlineMenu:    _uiManager.BuildOnlineMenu(); break;
                 case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText); break;
                 case State.Connecting:    _uiManager.BuildConnectingScreen(_networkManager.StatusText); break;
+                case State.OnlineLobby:   _uiManager.BuildOnlineLobby(_networkManager.IsHost); break;
                 case State.OnlinePlaying: _uiManager.BuildPlayingUI(_uiManager.GameManager); break;
             }
 

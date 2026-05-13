@@ -404,6 +404,12 @@ namespace Fida.UI
             BuildFromScreen("ConnectingScreen", replacements);
         }
 
+        public void BuildOnlineLobby(bool isHost)
+        {
+            Clear();
+            BuildFromScreen("OnlineLobby");
+        }
+
         /// <summary>
         /// 从 JSON 屏幕布局文件构建控件。
         /// 自动为按钮设置 FocusIndex（按添加顺序），并聚焦第一个按钮。
