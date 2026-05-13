@@ -82,52 +82,52 @@ namespace Fida.UI
             CardBounds = new Rectangle(
                 (int)position.X,
                 (int)position.Y,
-                UIConfig.CardWidth,
-                UIConfig.CardHeight
+                UIConfig.Int("cardWidth"),
+                UIConfig.Int("cardHeight")
             );
 
             InnerCardBounds = new Rectangle(
-                CardBounds.X + UIConfig.InnerBorderMargin,
-                CardBounds.Y + UIConfig.InnerBorderMargin,
-                CardBounds.Width - 2 * UIConfig.InnerBorderMargin,
-                CardBounds.Height - 2 * UIConfig.InnerBorderMargin
+                CardBounds.X + UIConfig.Int("innerBorderMargin"),
+                CardBounds.Y + UIConfig.Int("innerBorderMargin"),
+                CardBounds.Width - 2 * UIConfig.Int("innerBorderMargin"),
+                CardBounds.Height - 2 * UIConfig.Int("innerBorderMargin")
             );
 
-            int verticalSpacing = (InnerCardBounds.Height - UIConfig.PortraitSize - UIConfig.NameHeight - UIConfig.BottomElementHeight) / 4;
+            int verticalSpacing = (InnerCardBounds.Height - UIConfig.Int("portraitSize") - UIConfig.Int("nameHeight") - UIConfig.Int("bottomElementHeight")) / 4;
 
-            int portraitX = InnerCardBounds.Center.X - UIConfig.PortraitSize / 2;
+            int portraitX = InnerCardBounds.Center.X - UIConfig.Int("portraitSize") / 2;
             int portraitY = InnerCardBounds.Y + verticalSpacing;
-            PortraitBounds = new Rectangle(portraitX, portraitY, UIConfig.PortraitSize, UIConfig.PortraitSize);
+            PortraitBounds = new Rectangle(portraitX, portraitY, UIConfig.Int("portraitSize"), UIConfig.Int("portraitSize"));
 
-            int nameY = portraitY + UIConfig.PortraitSize + verticalSpacing;
+            int nameY = portraitY + UIConfig.Int("portraitSize") + verticalSpacing;
             NameLabel = new UILabel(0, player.Name,
                 new Vector2(InnerCardBounds.Center.X, nameY + nameHeight / 2),
                 font);
 
-            int nameBottomY = nameY + UIConfig.NameHeight;
+            int nameBottomY = nameY + UIConfig.Int("nameHeight");
             int bottomY = nameBottomY + verticalSpacing;
-            int spacing = (InnerCardBounds.Width - 3 * UIConfig.BottomElementWidth) / 4;
+            int spacing = (InnerCardBounds.Width - 3 * UIConfig.Int("bottomElementWidth")) / 4;
             int startX = InnerCardBounds.X + spacing;
 
-            Number0Bounds = new Rectangle(startX, bottomY, UIConfig.BottomElementWidth, UIConfig.BottomElementHeight);
+            Number0Bounds = new Rectangle(startX, bottomY, UIConfig.Int("bottomElementWidth"), UIConfig.Int("bottomElementHeight"));
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
                 pixel, font);
 
             HealthBounds = new Rectangle(
-                startX + UIConfig.BottomElementWidth + spacing,
+                startX + UIConfig.Int("bottomElementWidth") + spacing,
                 bottomY,
-                UIConfig.BottomElementWidth,
-                UIConfig.BottomElementHeight);
+                UIConfig.Int("bottomElementWidth"),
+                UIConfig.Int("bottomElementHeight"));
             HealthLabel = new UILabel(11, player.Health.ToString(),
                 new Vector2(HealthBounds.Center.X, HealthBounds.Center.Y),
                 font);
 
             Number1Bounds = new Rectangle(
-                startX + 2 * (UIConfig.BottomElementWidth + spacing),
+                startX + 2 * (UIConfig.Int("bottomElementWidth") + spacing),
                 bottomY,
-                UIConfig.BottomElementWidth,
-                UIConfig.BottomElementHeight);
+                UIConfig.Int("bottomElementWidth"),
+                UIConfig.Int("bottomElementHeight"));
             Number1Button = new UIAnimatedButton(12, Number1Bounds,
                 player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
                pixel, font);
@@ -159,7 +159,7 @@ namespace Fida.UI
             {
                 UIButtonState.Hovered => 4,
                 UIButtonState.Pressed => 2,
-                _ => UIConfig.CardBorderThickness
+                _ => UIConfig.Int("cardBorderThickness")
             };
         }
 
@@ -283,7 +283,7 @@ namespace Fida.UI
             }
 
             // 绘制内框边框（Pressed 时反色）
-            UIUtils.DrawRectangleOutlines(sb, InnerCardBounds, foreColor, UIConfig.InnerBorderThickness, Pixel);
+            UIUtils.DrawRectangleOutlines(sb, InnerCardBounds, foreColor, UIConfig.Int("innerBorderThickness"), Pixel);
 
             // 绘制头像
             if (PortraitTexture != null)

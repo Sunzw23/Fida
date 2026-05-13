@@ -39,7 +39,7 @@ namespace Fida.UI
             _gameManager = gameManager;
             _uiPlayers.Clear();
 
-            _gameMessageLabel = new UIBoxLabel(0, UIConfig.GameMessageArea, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
+            _gameMessageLabel = new UIBoxLabel(0, UIConfig.Rect("gameMessageArea"), gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Alignment = UIBoxLabelAlignment.Left,
                 BorderThickness = 0
