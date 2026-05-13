@@ -17,6 +17,11 @@ namespace Fida.Scene
         private readonly UIManager _uiManager;
         private readonly AgentManager _agentManager;
 
+        /// <summary>
+        /// 玩家控制器字典 — 通过 IPlayerController 接口统一处理不同模式玩家的操作请求
+        /// </summary>
+        private Dictionary<int, IPlayerController> _controllers = new();
+
         public bool IsInitialized { get; private set; }
 
         public PlayingSceneManager(GameManager gameManager, UIManager uiManager, AgentManager agentManager)
@@ -37,11 +42,55 @@ namespace Fida.Scene
             _gameManager.PlayerActionRequired += OnPlayerActionRequired;
         }
 
+        /// <summary>
+        /// 初始化玩家控制器（单机模式：本地玩家 + AI 代理）
+        /// </summary>
+        public void InitializeControllers(List<Player> players)
+        {
+            _controllers.Clear();
+            foreach (var player in players)
+            {
+                if (player.PlayerId == _gameManager.LocalPlayerId)
+                {
+                    _controllers[player.PlayerId] = new LocalPlayerController(player.PlayerId);
+                }
+                else
+                {
+                    _controllers[player.PlayerId] = new AgentPlayerController(player.PlayerId, _agentManager);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 初始化玩家控制器（联机模式：本地玩家 + 远程玩家）
+        /// </summary>
+        public void InitializeControllers(List<Player> players, int localPlayerId)
+        {
+            _controllers.Clear();
+            foreach (var player in players)
+            {
+                if (player.PlayerId == localPlayerId)
+                {
+                    _controllers[player.PlayerId] = new LocalPlayerController(player.PlayerId);
+                }
+                else
+                {
+                    _controllers[player.PlayerId] = new RemotePlayerController(player.PlayerId);
+                }
+            }
+        }
+
         public void Initialize(List<Player> players)
         {
             IsInitialized = true;
             _gameManager.Initialize(players);
             _uiManager.BuildPlayingUI(_gameManager);
+
+            // 如果没有显式初始化控制器，使用默认的单机模式
+            if (_controllers.Count == 0)
+            {
+                InitializeControllers(players);
+            }
         }
 
         public void StartGame()
@@ -77,16 +126,9 @@ namespace Fida.Scene
 
         private void OnPlayerActionRequired(object sender, PlayerActionRequiredEventArgs e)
         {
-            if (e.SourcePlayerId == 0)
+            if (_controllers.TryGetValue(e.SourcePlayerId, out var controller))
             {
-                // 玩家操作：按钮会通过 EnabledChecker 自动询问环境来决定是否启用
-                // 无需手动设置按钮状态
-            }
-            else
-            {
-                // 获取 Agent 的动作并执行
-                var agentAction = _agentManager.GetAgentAction(_gameManager, e.SourcePlayerId);
-                _gameManager.UpdateGame(agentAction);
+                controller.RequestAction(_gameManager, e);
             }
         }
 

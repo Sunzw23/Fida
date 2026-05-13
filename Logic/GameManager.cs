@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -31,6 +31,11 @@ namespace Fida.Logic
         public int CurrentPlayerIndex { get; private set; }
         public string GameMessage { get; private set; }
         public ActionType CurrentActionType { get; private set; } = ActionType.None;
+
+        /// <summary>
+        /// 本地玩家 ID（单机默认 0，联机由 NetworkManager 设置）
+        /// </summary>
+        public int LocalPlayerId { get; set; } = 0;
 
         // --- State Management ---
         private GameState _currentState;

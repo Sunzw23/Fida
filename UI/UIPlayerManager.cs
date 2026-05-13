@@ -59,7 +59,9 @@ namespace Fida.UI
                 // 尝试获取该玩家的头像纹理，如果未设置则为 null（不显示头像）
                 _portraitTextures.TryGetValue(player.PlayerId, out Texture2D portraitTexture);
                 
-                var uiPlayer = new UIPlayer(player.PlayerId, player, SceneConfig.PlayersScene1.Positions[i], _resourceManager.Font, _resourceManager.Pixel, portraitTexture);
+                // 根据 LocalPlayerId 分配位置：本地玩家在底部 (Positions[0])，远程玩家在顶部 (Positions[1])
+                int positionIndex = player.PlayerId == gameManager.LocalPlayerId ? 0 : 1;
+                var uiPlayer = new UIPlayer(player.PlayerId, player, SceneConfig.PlayersScene1.Positions[positionIndex], _resourceManager.Font, _resourceManager.Pixel, portraitTexture);
                 
                 // 卡片本身在 ChooseTarget 时可交互
                 int capturedPlayerId = player.PlayerId;
@@ -161,8 +163,8 @@ namespace Fida.UI
         {
             if (_gameManager == null) return false;
             
-            // Agent 行动时（非玩家回合）禁用所有按钮
-            if (_gameManager.CurrentPlayerId != 0) return false;
+            // 非本地玩家回合时禁用所有按钮
+            if (_gameManager.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
             
             // 不是选择数字索引操作时禁用
             if (_gameManager.CurrentActionType != ActionType.ChooseNumberIndex) return false;
@@ -187,7 +189,7 @@ namespace Fida.UI
         private bool ShouldPlayerCardBeEnabled(int playerId)
         {
             if (_gameManager == null) return false;
-            if (_gameManager.CurrentPlayerId != 0) return false;
+            if (_gameManager.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
             if (_gameManager.CurrentActionType != ActionType.ChooseTarget) return false;
             return _gameManager.Players[playerId].IsAlive();
         }
@@ -199,8 +201,8 @@ namespace Fida.UI
         {
             if (_gameManager == null) return false;
             
-            // Agent 行动时（非玩家回合）禁用所有按钮
-            if (_gameManager.CurrentPlayerId != 0) return false;
+            // 非本地玩家回合时禁用所有按钮
+            if (_gameManager.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
             
             // 不是选择目标操作时禁用
             if (_gameManager.CurrentActionType != ActionType.ChooseTarget) return false;

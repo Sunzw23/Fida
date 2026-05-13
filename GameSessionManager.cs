@@ -50,18 +50,20 @@ namespace Fida
             _networkGameStarted = true;
 
             int localId = _networkManager.GetLocalPlayerId();
-            int remoteId = localId == 0 ? 1 : 0;
 
+            // 两端使用完全相同的玩家列表，不反转
+            // 这样 CurrentPlayerIndex 在两端指向同一个玩家
             var players = new List<Player>
             {
-                new Player(localId, "YOU"),
-                new Player(remoteId, "OPPONENT")
+                new Player(0, "玩家1"),
+                new Player(1, "玩家2")
             };
 
-            // 确保 Player 列表按 ID 排序
-            if (localId == 1)
-                players.Reverse();
+            // 设置本地玩家 ID
+            _uiManager.GameManager.LocalPlayerId = localId;
 
+            // 初始化玩家控制器（联机模式：本地玩家 + 远程玩家）
+            _playingSceneManager.InitializeControllers(players, localId);
             _playingSceneManager.Initialize(players);
             _playingSceneManager.StartGame();
         }
