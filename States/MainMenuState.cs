@@ -7,7 +7,7 @@ namespace Fida.States
     /// 主菜单状态 - 处理开始游戏、联机、退出
     /// 使用事件驱动方式绑定按钮点击
     /// </summary>
-    public class MainMenuState : MenuStateBase
+    public class MainMenuState : StateBase
     {
         public MainMenuState(UI.UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
             : base(uiManager, networkManager, stateMachine) { }

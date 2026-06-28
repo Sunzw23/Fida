@@ -6,7 +6,7 @@ namespace Fida.States
     /// 暂停菜单状态 - 处理继续游戏、返回主菜单
     /// 使用事件驱动方式绑定按钮点击
     /// </summary>
-    public class PausedState : MenuStateBase
+    public class PausedState : StateBase
     {
         public PausedState(UI.UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
             : base(uiManager, networkManager, stateMachine) { }

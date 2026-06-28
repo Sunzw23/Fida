@@ -6,7 +6,7 @@ namespace Fida.States
     /// 连接等待状态 - 处理取消按钮和连接检查
     /// 使用事件驱动方式绑定按钮点击
     /// </summary>
-    public class ConnectingState : MenuStateBase
+    public class ConnectingState : StateBase
     {
         public ConnectingState(UI.UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
             : base(uiManager, networkManager, stateMachine) { }

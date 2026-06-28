@@ -6,7 +6,7 @@ namespace Fida.States
     /// 联机菜单状态 - 处理创建主机、连接、返回
     /// 使用事件驱动方式绑定按钮点击
     /// </summary>
-    public class OnlineMenuState : MenuStateBase
+    public class OnlineMenuState : StateBase
     {
         public OnlineMenuState(UI.UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
             : base(uiManager, networkManager, stateMachine) { }

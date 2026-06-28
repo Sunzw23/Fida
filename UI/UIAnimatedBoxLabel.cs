@@ -6,7 +6,7 @@ namespace Fida.UI
     /// <summary>
     /// 带擦除动画的标签控件，继承自 UIBoxLabel
     /// </summary>
-    public class AnimatedBoxLabel : UIBoxLabel
+    public class UIAnimatedBoxLabel : UIBoxLabel
     {
         private bool _isAnimating;
         private float _animationTimer;
@@ -15,7 +15,7 @@ namespace Fida.UI
         private string _newText;
         private float _wipeProgress;
 
-        public AnimatedBoxLabel(int id, Rectangle bounds, string text, Texture2D pixel, SpriteFont font)
+        public UIAnimatedBoxLabel(int id, Rectangle bounds, string text, Texture2D pixel, SpriteFont font)
             : base(id, bounds, text, pixel, font)
         {
         }

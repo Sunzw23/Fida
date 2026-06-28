@@ -9,7 +9,7 @@ namespace Fida.States
     /// <summary>
     /// 菜单状态抽象基类 - 提供事件驱动的按钮绑定机制
     /// </summary>
-    public abstract class MenuStateBase : IMenuState
+    public abstract class StateBase : IMenuState
     {
         protected readonly UIManager _uiManager;
         protected readonly Network.NetworkManager _networkManager;
@@ -21,7 +21,7 @@ namespace Fida.States
         private readonly List<(UIButton button, Action<UIButton> handler)> _boundButtons
             = new List<(UIButton, Action<UIButton>)>();
 
-        protected MenuStateBase(UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
+        protected StateBase(UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
         {
             _uiManager = uiManager;
             _networkManager = networkManager;

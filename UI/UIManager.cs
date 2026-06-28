@@ -107,8 +107,8 @@ namespace Fida.UI
         {
             foreach (UIControl control in _uiControls)
             {
-                if (control is AnimatedBoxLabel animatedBoxLabel)
-                    animatedBoxLabel.Refresh();
+                if (control is UIAnimatedBoxLabel UIAnimatedBoxLabel)
+                    UIAnimatedBoxLabel.Refresh();
                 else if (control is UIBoxLabel boxLabel)
                     boxLabel.Refresh();
                 else if (control is UIAnimatedButton animatedButton)

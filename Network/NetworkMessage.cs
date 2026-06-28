@@ -100,9 +100,9 @@ namespace Fida.Network
         }
 
         /// <summary>
-        /// 将 Logic.GameAction 序列化为字节数组
+        /// 将 GameAction 序列化为字节数组
         /// </summary>
-        public static byte[] SerializeAction(Logic.GameAction action)
+        public static byte[] SerializeAction(GameAction action)
         {
             using var ms = new MemoryStream();
             using var writer = new BinaryWriter(ms);
@@ -115,13 +115,13 @@ namespace Fida.Network
         }
 
         /// <summary>
-        /// 从字节数组反序列化为 Logic.GameAction
+        /// 从字节数组反序列化为 GameAction
         /// </summary>
-        public static Logic.GameAction DeserializeAction(byte[] payload)
+        public static GameAction DeserializeAction(byte[] payload)
         {
             using var ms = new MemoryStream(payload);
             using var reader = new BinaryReader(ms);
-            return new Logic.GameAction
+            return new GameAction
             {
                 Type = (ActionType)reader.ReadByte(),
                 TargetPlayerId = reader.ReadInt32(),

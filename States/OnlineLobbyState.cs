@@ -6,7 +6,7 @@ namespace Fida.States
     /// 联机大厅状态 - 连接保持后进入，主机选择游戏模式
     /// 主机点击按钮后发送请求给客机，客机自动接受，然后双方进入游戏
     /// </summary>
-    public class OnlineLobbyState : MenuStateBase
+    public class OnlineLobbyState : StateBase
     {
         private bool _gameStarting;
 
