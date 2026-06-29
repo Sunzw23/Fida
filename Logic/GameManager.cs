@@ -40,7 +40,6 @@ namespace Fida.Logic
         // --- State Management ---
         private GameState _currentState;
         public Stack<GameState> StateStack { get; private set; } = new();
-        public IEnumerator<SkillType> Enumerator;
 
         /// <summary>
         /// 初始化游戏并设置初始状态

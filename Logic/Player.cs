@@ -17,6 +17,11 @@ namespace Fida.Logic
         public int Health { get; set; } = 11; // 玩家生命值
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
+        public IEnumerator<Skill> GetSkillsByTrigger(SkillTrigger trigger)
+        {
+            return Skills.Where(skill => skill.Trigger == trigger).GetEnumerator();
+        }
+
 
         public int MaxHealth { get; set; } = 11; // 生命值上限
 
@@ -113,37 +118,12 @@ namespace Fida.Logic
             return Math.Abs(health - damage);
         }
 
-        public bool SkillAvailable(SkillType skillTpye)
-        {
-            var skill = Skills.FirstOrDefault(s => s.Type == skillTpye);
-            if (skill == null) { return false; }
-
-            if ((skill.UsageLimit != SkillUsageLimit.Unlimited && skill.IsActivated) || !SkillConditionSatisfied(skillTpye)) return false;
-            skill.IsActivated = true;
-            return true;
-        }
-
-        private bool SkillConditionSatisfied(SkillType skillType)
-        {
-            switch (skillType)
-            {
-                case SkillType.Tong:
-                    {
-                        return Numbers[0] == Numbers[1] && Numbers[0] != 1;
-                    }
-                default:
-                    {
-                        return true; // The default skill condition is satisfied
-                    }
-            }
-        }
-
 
         public void ResetPerTurnSkills()
         {
-            foreach (var skill in Skills.FindAll(s => s.UsageLimit == SkillUsageLimit.PerTurn))
+            foreach (var skill in Skills.FindAll(s => s.Usage.UsageLimit == SkillUsageLimit.PerTurn))
             {
-                skill.IsActivated = false;
+                skill.Usage.Reset();
             }
         }
 

@@ -3,80 +3,68 @@ using System.Collections.Generic;
 
 namespace Fida.Logic
 {
-    public static class SkillManager
+
+    /// <summary>
+    /// 技能/动作上下文，携带流水线数据在状态之间传递。
+    /// SourcePlayerId — 当前技能所属玩家（可在流水线中切换）；
+    /// PipelineOriginId — 流水线发起者（锁定不变），用于在子阶段结束后还原。
+    /// </summary>
+    public class SkillContext
     {
-        public static List<SkillType> GameStartSkills => [SkillType.TripleHealth, SkillType.DoubleHealth];
-        public static List<SkillType> TurnStartSkills => [SkillType.Tong, SkillType.Di];
-        public static List<SkillType> OrderingAttackSkills => [SkillType.Bian, SkillType.Long, SkillType.DoubleAttack, SkillType.PlusAttack];
-        public static List<SkillType> OrderedAttackSkills => [SkillType.Xian];
+        public int SourcePlayerId { get; set; }
+        public int PipelineOriginId { get; init; }
+        public int TargetPlayerId { get; set; }
+        public int Damage { get; set; }
+        public int Healing { get; set; }
+        public int[] Numbers { get; init; }
+        public IEnumerator<Skill> SkillEnumerator { get; set; }
 
-        public static List<SkillType> DamagingSkills => [SkillType.Xue];
-        public static List<SkillType> DamagedSkills => [SkillType.Shen, SkillType.Mo];
-
-        public static int ApplyDefenceSkills(Player targetPlayer, int damage)
+        public SkillContext(int sourcePlayerId)
         {
-            int finalDamage = damage;
-            if (targetPlayer.SkillAvailable(SkillType.Shi))
-            {
-                return 0; // Shi cancels one attack completely per turn
-            }
-            if (targetPlayer.SkillAvailable(SkillType.PlusDefence))
-            {
-                finalDamage = Math.Max(0, finalDamage - 1);
-            }
-            if (targetPlayer.SkillAvailable(SkillType.DoubleDefence))
-            {
-                finalDamage /= 2;
-            }
-            return finalDamage;
+            SourcePlayerId = sourcePlayerId;
+            PipelineOriginId = sourcePlayerId;
         }
 
-        public static GameState CreateGameStartSkillState(GameManager gameManager, int playerId, SkillType skillType) =>
-            skillType switch
-            {
-                SkillType.TripleHealth => new TripleHealthSkillState(gameManager, playerId),
-                SkillType.DoubleHealth => new DoubleHealthSkillState(gameManager, playerId),
-                _ => null
-            };
+        public SkillContext(int sourcePlayerId, int damage, int healing = 0, int[] numbers = null)
+        {
+            SourcePlayerId = sourcePlayerId;
+            PipelineOriginId = sourcePlayerId;
+            Damage = damage;
+            Healing = healing;
+            Numbers = numbers;
+        }
 
-        public static GameState CreateTurnStartSkillState(GameManager gameManager, int playerId, SkillType skillType) =>
-            skillType switch
+        /// <summary>
+        /// 基于当前上下文创建子上下文，切换 SourcePlayerId 但保留 PipelineOriginId
+        /// </summary>
+        public SkillContext Derive(int newSourcePlayerId)
+        {
+            return new SkillContext(newSourcePlayerId)
             {
-                SkillType.Tong => new TongSkillState(gameManager, playerId),
-                _ => null
+                PipelineOriginId = this.PipelineOriginId,
+                TargetPlayerId = this.TargetPlayerId,
+                Damage = this.Damage,
+                Healing = this.Healing,
+                SkillEnumerator = this.SkillEnumerator,
             };
+        }
 
-        public static GameState CreateOrderedAttackSkillState(GameManager gameManager, int playerId, SkillType skillType) =>
-            skillType switch
-            {
-                SkillType.Xian => new XianSkillState(gameManager, playerId),
-                _ => null
-            };
+        public void DisposeEnumerator()
+        {
+            SkillEnumerator?.Dispose();
+            SkillEnumerator = null;
+        }
+    }
 
-        public static GameState CreateOrderingAttackSkillState(GameManager gameManager, int playerId, SkillType skillType, int[] numbers, int baseDamage) =>
-            skillType switch
-            {
-                SkillType.Bian => new BianSkillState(gameManager, playerId, baseDamage),
-                SkillType.Long => new LongSkillState(gameManager, playerId, numbers, baseDamage),
-                SkillType.DoubleAttack => new DoubleAttackSkillState(gameManager, playerId, baseDamage),
-                SkillType.PlusAttack => new PlusAttackSkillState(gameManager, playerId, baseDamage),
-                _ => null
-            };
-
-        public static GameState CreateDamagedSkillState(GameManager gameManager, int targetPlayerId, SkillType skillType, int finalDamage) =>
-            skillType switch
-            {
-                SkillType.Shen => new ShenSkillState(gameManager, targetPlayerId),
-                SkillType.Mo => new MoSkillState(gameManager, targetPlayerId, finalDamage),
-                _ => null
-            };
-
-        public static GameState CreateDamagingSkillState(GameManager gameManager, int sourcePlayerId, SkillType skillType, int finalDamage) =>
-            skillType switch
-            {
-                SkillType.Xue => new XueSkillState(gameManager, sourcePlayerId, finalDamage),
-                _ => null
-            };
+    public enum SkillTrigger
+    {
+        GameStart,
+        TurnStart,
+        OrderingAttack,
+        OrderedAttack,
+        Defending,
+        Damaging,
+        Damaged
     }
 
     public enum SkillType
@@ -104,68 +92,301 @@ namespace Fida.Logic
     public enum SkillUsageLimit
     {
         Unlimited,
-        GameStart,
         PerRound,
         PerTurn,
         Limited
     }
 
-    public class Skill: IEquatable<Skill>
+    public sealed class SkillUsageState
     {
-        public SkillType Type { get; init; }
-        public int Value;
-        
         public SkillUsageLimit UsageLimit { get; set; } = SkillUsageLimit.Unlimited;
         public int MaxUses { get; set; } = 1;
         public int RemainingUses { get; set; } = 1;
+        public bool IsActivated { get; set; } = false;
 
-        public bool IsActivated 
-        { 
-            get => UsageLimit != SkillUsageLimit.Unlimited && RemainingUses <= 0; 
-            set 
+        public bool CanUse() => UsageLimit == SkillUsageLimit.Unlimited || RemainingUses > 0;
+
+        public void MarkUsed()
+        {
+            IsActivated = true;
+            if (UsageLimit != SkillUsageLimit.Unlimited && RemainingUses > 0)
             {
-                if (value) RemainingUses = 0; 
-                else RemainingUses = MaxUses; 
+                RemainingUses--;
             }
         }
 
-        public bool Equals(Skill other)
+        public void Reset()
         {
-            return other != null && Type == other.Type;
+            IsActivated = false;
+            RemainingUses = MaxUses;
         }
-        
+
+        public SkillUsageState() {}
+
+        public SkillUsageState(SkillUsageLimit usageLimit)
+        {
+            UsageLimit = usageLimit;
+            MaxUses = 1;
+            RemainingUses = 1;
+        }
+        public SkillUsageState(int maxUses)
+        {
+            UsageLimit = SkillUsageLimit.Limited;
+            MaxUses = maxUses;
+            RemainingUses = maxUses;
+        }
     }
 
-
-
-    public static class SkillLibrary
+    public abstract class Skill
     {
-        public static Skill GetSkill(SkillType skillType)
+        public SkillType Type { get; set; }
+        public int Value { get; set; } = 1;
+
+        public SkillTrigger Trigger { get; set; }
+        public SkillUsageState Usage { get; set; }
+
+        public bool CanUse(GameManager gameManager, Player player)
         {
-            return skillType switch
-            {
-                SkillType.PlusAttack => new Skill { Type = SkillType.PlusAttack, Value = 1 },
-                SkillType.PlusDefence => new Skill { Type = SkillType.PlusDefence, Value = 1 },
-                SkillType.DoubleHealth => new Skill { Type = SkillType.DoubleHealth, Value = 2, UsageLimit = SkillUsageLimit.GameStart },
-                SkillType.DoubleAttack => new Skill { Type = SkillType.DoubleAttack, Value = 2 },
-                SkillType.DoubleDefence => new Skill { Type = SkillType.DoubleDefence, Value = 2 },
-                SkillType.TripleHealth => new Skill { Type = SkillType.TripleHealth, Value = 2, UsageLimit = SkillUsageLimit.GameStart },
-                SkillType.Shen => new Skill { Type = SkillType.Shen, Value = 2, UsageLimit = SkillUsageLimit.PerTurn },
-                SkillType.Xian => new Skill { Type = SkillType.Xian, Value = 2, UsageLimit = SkillUsageLimit.PerTurn },
-                SkillType.Mo => new Skill { Type = SkillType.Mo, Value = 2 },
-                SkillType.Xue => new Skill { Type = SkillType.Xue, Value = 2 },
-                SkillType.Tong => new Skill { Type = SkillType.Tong, Value = 2 },
-                SkillType.Long => new Skill { Type = SkillType.Long, Value = 3 },
-                SkillType.Huo => new Skill { Type = SkillType.Huo, Value = 2 },
-                SkillType.Bian => new Skill { Type = SkillType.Bian, Value = 3 },
-                SkillType.Shi => new Skill { Type = SkillType.Shi, Value = 2, UsageLimit = SkillUsageLimit.PerTurn },
-                _ => null
-            };
+            if (!Usage.CanUse()) return false;
+            return CheckCondition(gameManager, player);
         }
 
-        
+        public virtual bool CheckCondition(GameManager gameManager, Player player) => true;
 
-        
+        public abstract GameState CreateState(GameManager gameManager, SkillContext context);
+
     }
+
+
+    public class PlusAttackSkill : Skill
+    {
+        public PlusAttackSkill()
+        {
+            Type = SkillType.PlusAttack;
+            Value = 1;
+            Trigger = SkillTrigger.OrderingAttack;
+            Usage = new SkillUsageState();
+        }
+
+        public SkillUsageLimit SkillUsageLimit { get; }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new PlusAttackSkillState(gameManager, context);
+        }
+    }
+
+    public class DoubleAttackSkill : Skill
+    {
+        public DoubleAttackSkill()
+        {
+            Type = SkillType.DoubleAttack;
+            Value = 1;
+            Trigger = SkillTrigger.OrderingAttack;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new DoubleAttackSkillState(gameManager, context);
+        }
+    }
+
+    public class PlusDefenceSkill : Skill
+    {
+        public PlusDefenceSkill()
+        {
+            Type = SkillType.PlusDefence;
+            Value = 1;
+            Trigger = SkillTrigger.Defending;
+            Usage = new SkillUsageState();
+        }
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new PlusDefenceSkillState(gameManager, context);
+        }
+    }
+
+    public class DoubleDefenceSkill : Skill
+    {
+        public DoubleDefenceSkill()
+        {
+            Type = SkillType.DoubleDefence;
+            Value = 1;
+            Trigger = SkillTrigger.Defending;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new DoubleDefenceSkillState(gameManager, context);
+        }
+    }
+
+    public class DoubleHealthSkill : Skill
+    {
+        public DoubleHealthSkill()
+        {
+            Type = SkillType.DoubleHealth;
+            Value = 1;
+            Trigger = SkillTrigger.GameStart;
+            Usage = new SkillUsageState(maxUses: 1);
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new DoubleHealthSkillState(gameManager, context);
+        }
+    }
+
+    public class TripleHealthSkill : Skill
+    {
+        public TripleHealthSkill()
+        {
+            Type = SkillType.TripleHealth;
+            Value = 1;
+            Trigger = SkillTrigger.GameStart;
+            Usage = new SkillUsageState(maxUses: 1);
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new TripleHealthSkillState(gameManager, context);
+        }
+    }
+
+    public class ShenSkill : Skill
+    {
+        public ShenSkill()
+        {
+            Type = SkillType.Shen;
+            Value = 2;
+            Trigger = SkillTrigger.Damaged;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new ShenSkillState(gameManager, context);
+        }
+    }
+
+    public class XianSkill : Skill
+    {
+        public XianSkill()
+        {
+            Type = SkillType.Xian;
+            Value = 1;
+            Trigger = SkillTrigger.OrderedAttack;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new XianSkillState(gameManager, context);
+        }
+    }
+
+    public class MoSkill : Skill
+    {
+        public MoSkill()
+        {
+            Type = SkillType.Mo;
+            Value = 1;
+            Trigger = SkillTrigger.Damaged;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new MoSkillState(gameManager, context);
+        }
+    }
+
+    public class XueSkill : Skill
+    {
+        public XueSkill()
+        {
+            Type = SkillType.Xue;
+            Value = 1;
+            Trigger = SkillTrigger.Damaging;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new XueSkillState(gameManager, context);
+        }
+    }
+
+    public class TongSkill : Skill
+    {
+        public TongSkill()
+        {
+            Type = SkillType.Tong;
+            Value = 2;
+            Trigger = SkillTrigger.TurnStart;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new TongSkillState(gameManager, context);
+        }
+    }
+
+    public class BianSkill : Skill
+    {
+        public BianSkill()
+        {
+            Type = SkillType.Bian;
+            Value = 3;
+            Trigger = SkillTrigger.OrderingAttack;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new BianSkillState(gameManager, context);
+        }
+    }
+
+    public class LongSkill : Skill
+    {
+        public LongSkill()
+        {
+            Type = SkillType.Long;
+            Value = 3;
+            Trigger = SkillTrigger.OrderingAttack;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new LongSkillState(gameManager, context);
+        }
+    }
+
+    public class DiSkill : Skill
+    {
+        public DiSkill()
+        {
+            Type = SkillType.Di;
+            Value = 2;
+            Trigger = SkillTrigger.TurnStart;
+            Usage = new SkillUsageState();
+        }
+
+        public override GameState CreateState(GameManager gameManager, SkillContext context)
+        {
+            return new DiSkillState(gameManager, context);
+        }
+    }
+
+
+
+
+
+
 
 }

@@ -125,11 +125,12 @@ namespace Fida.Logic
 
             foreach (var player in GameManager.Players)
             {
-                foreach (var skillType in SkillManager.GameStartSkills)
+                foreach (var skill in player.Skills)
                 {
-                    if (player.SkillAvailable(skillType))
+                    if (skill.Trigger == SkillTrigger.GameStart && skill.CanUse(GameManager, player))
                     {
-                        var state = SkillManager.CreateGameStartSkillState(GameManager, player.PlayerId, skillType);
+                        var playerId = player.PlayerId;
+                        var state = skill.CreateState(GameManager, new SkillContext(playerId));
                         if (state != null)
                         {
                             GameManager.StateStack.Push(state);
@@ -190,16 +191,15 @@ namespace Fida.Logic
                 player.ResetPerTurnSkills();
             }
 
-            // 整条回合主流程倒序入栈，逻辑路径更集中。
+            // 整条回合主流程倒序入栈。
             GameManager.StateStack.Push(new ChooseNumberIndexState(GameManager, SourcePlayerId));
 
-
-
-            foreach (var skillType in SkillManager.TurnStartSkills)
+            foreach (var skill in SourcePlayer.Skills)
             {
-                if (SourcePlayer.SkillAvailable(skillType))
+                if (skill.Trigger == SkillTrigger.TurnStart && skill.CanUse(GameManager, SourcePlayer))
                 {
-                    var state = SkillManager.CreateTurnStartSkillState(GameManager, SourcePlayerId, skillType);
+                    var playerId = SourcePlayer.PlayerId;
+                    var state = skill.CreateState(GameManager, new SkillContext(playerId));
                     if (state != null)
                     {
                         GameManager.StateStack.Push(state);
@@ -383,8 +383,8 @@ namespace Fida.Logic
             int[] numbers = new int[2];
             Array.Copy(SourcePlayer.Numbers, numbers, 2);
             GameManager.ChangeNumber(SourcePlayerId, numberIndex, 1);
-            GameManager.Enumerator = SkillManager.OrderingAttackSkills.GetEnumerator();
-            GameManager.TransitionTo(new OrderingAttackState(GameManager, SourcePlayerId, numbers, damage));
+            var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
+            GameManager.TransitionTo(new OrderingAttackState(GameManager, ctx));
         }
 
         private void HandleAttackEffectBoth(int damage)
@@ -393,76 +393,76 @@ namespace Fida.Logic
             int[] numbers = new int[2];
             Array.Copy(SourcePlayer.Numbers, numbers, 2);
             GameManager.ChangeBothNumbers(SourcePlayerId, 1, 1);
-            GameManager.Enumerator = SkillManager.OrderingAttackSkills.GetEnumerator();
-            GameManager.TransitionTo(new OrderingAttackState(GameManager, SourcePlayerId, numbers, damage));
+            var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
+            GameManager.TransitionTo(new OrderingAttackState(GameManager, ctx));
         }
 
         private void HandleHealEffect(int numberIndex, int healing)
         {
             GameManager.SetGameMessage(GameText.HealTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], healing));
             GameManager.ChangeNumber(SourcePlayerId, numberIndex, 1);
-            GameManager.TransitionTo(new TargetSelectionState(GameManager, SourcePlayerId, 0, healing));
+            var ctx = new SkillContext(SourcePlayerId, 0, healing);
+            GameManager.TransitionTo(new TargetSelectionState(GameManager, ctx));
         }
 
         private void HandleHealEffectBoth(int healing)
         {
             GameManager.SetGameMessage(GameText.HealTriggeredByNumberPair(SourcePlayer.Name, healing));
             GameManager.ChangeBothNumbers(SourcePlayerId, 1, 1);
-            GameManager.TransitionTo(new TargetSelectionState(GameManager, SourcePlayerId, 0, healing));
+            var ctx = new SkillContext(SourcePlayerId, 0, healing);
+            GameManager.TransitionTo(new TargetSelectionState(GameManager, ctx));
         }
     }
 
     /// <summary>
-    /// 攻击指令状态（检查攻击前技能）
+    /// 攻击指令状态（逐一检查攻击前技能）
     /// </summary>
     public class OrderingAttackState : GameState
     {
-        private readonly int[] _numbers;
-        private readonly int _baseDamage;
-        public OrderingAttackState(GameManager gameManager, int sourcePlayerId, int[] numbers, int damage) : base(gameManager, sourcePlayerId)
-        {
-            _numbers = numbers;
-            _baseDamage = damage;
-        }
+        private readonly SkillContext _ctx;
 
+        public OrderingAttackState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
+        {
+            _ctx = ctx;
+            if (_ctx.SkillEnumerator == null)
+                _ctx.SkillEnumerator = SourcePlayer.GetSkillsByTrigger(SkillTrigger.OrderingAttack);
+        }
 
         public override void Enter()
         {
-
-            foreach (var skillType in SkillManager.OrderedAttackSkills)
+            // OrderedAttack 技能推栈（先于 OrderingAttack 处理）
+            foreach (var skill in SourcePlayer.Skills)
             {
-                if (SourcePlayer.SkillAvailable(skillType))
+                if (skill.Trigger == SkillTrigger.OrderedAttack && skill.CanUse(GameManager, SourcePlayer))
                 {
-                    var orderedState = SkillManager.CreateOrderedAttackSkillState(GameManager, SourcePlayerId, skillType);
-                    if (orderedState != null)
+                    var state = skill.CreateState(GameManager, new SkillContext(SourcePlayerId));
+                    if (state != null)
                     {
-                        GameManager.StateStack.Push(orderedState);
+                        GameManager.StateStack.Push(state);
                     }
                 }
             }
-            
-            if (GameManager.Enumerator.MoveNext())
+
+            if (_ctx.SkillEnumerator.MoveNext())
             {
-                var currentSkill = GameManager.Enumerator.Current;
-                if (SourcePlayer.SkillAvailable(currentSkill))
+                var currentSkill = _ctx.SkillEnumerator.Current;
+                if (currentSkill.CanUse(GameManager, SourcePlayer))
                 {
-
-                    // 转换到技能处理状态
-                    var skillState = SkillManager.CreateOrderingAttackSkillState(GameManager, SourcePlayerId, currentSkill, _numbers, _baseDamage);
-
+                    var skillState = currentSkill.CreateState(GameManager, _ctx);
                     if (skillState != null)
                     {
                         GameManager.TransitionTo(skillState);
                         return;
                     }
                 }
-                // 如果不满足条件或没有对应状态，直接进入下一阶段检查
-                GameManager.TransitionTo(new OrderingAttackState(GameManager, SourcePlayerId, _numbers, _baseDamage));
+                // 当前技能不可用或没有对应状态，跳过继续
+                GameManager.TransitionTo(new OrderingAttackState(GameManager, _ctx));
             }
             else
             {
-                // 所有攻击前技能检查完毕，进入选择目标阶段
-                GameManager.TransitionTo(new TargetSelectionState(GameManager, SourcePlayerId, _baseDamage, 0));
+                // 所有攻击前技能检查完毕，清理枚举器，进入选择目标阶段
+                _ctx.DisposeEnumerator();
+                GameManager.TransitionTo(new TargetSelectionState(GameManager, _ctx));
             }
         }
     }
@@ -473,17 +473,15 @@ namespace Fida.Logic
     /// </summary>
     public class TargetSelectionState : GameState
     {
-        private readonly int _damageValue;
-        private readonly int _healingValue;
+        private readonly SkillContext _ctx;
 
-        public TargetSelectionState(GameManager gameManager, int sourcePlayerId, int damageValue, int healingValue) : base(gameManager, sourcePlayerId)
+        public TargetSelectionState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _damageValue = damageValue;
-            _healingValue = healingValue;
+            _ctx = ctx;
         }
 
-        public int DamageValue => _damageValue;
-        public int HealingValue => _healingValue;
+        public int DamageValue => _ctx.Damage;
+        public int HealingValue => _ctx.Healing;
 
         protected override void BuildSteps()
         {
@@ -491,7 +489,7 @@ namespace Fida.Logic
             {
                 RequiredType = ActionType.ChooseTarget,
                 ValidTargets = GameManager.Players.Where(p => p.IsAlive()).Select(p => p.PlayerId).ToList(),
-                Prompt = _damageValue > 0 ? GameText.ChooseTargetForDamaging : GameText.ChooseTargetForHealing
+                Prompt = _ctx.Damage > 0 ? GameText.ChooseTargetForDamaging : GameText.ChooseTargetForHealing
             });
         }
 
@@ -506,13 +504,15 @@ namespace Fida.Logic
             var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == targetId);
             if (targetPlayer == null || !targetPlayer.IsAlive()) return;
 
-            if (_damageValue > 0)
+            _ctx.TargetPlayerId = targetId;
+
+            if (_ctx.Damage > 0)
             {
-                GameManager.TransitionTo(new DamagingState(GameManager, SourcePlayerId, targetId, _damageValue));
+                GameManager.TransitionTo(new DamagingState(GameManager, _ctx));
             }
             else
             {
-                GameManager.TransitionTo(new HealingState(GameManager, SourcePlayerId, targetId, _healingValue));
+                GameManager.TransitionTo(new HealingState(GameManager, _ctx));
             }
         }
     }
@@ -522,18 +522,16 @@ namespace Fida.Logic
     /// </summary>
     public class DamagingState : GameState
     {
-        private readonly int _targetPlayerId;
-        private readonly int _damageValue;
+        private readonly SkillContext _ctx;
 
-        public DamagingState(GameManager gameManager, int sourcePlayerId, int targetPlayerId, int damageValue) : base(gameManager, sourcePlayerId)
+        public DamagingState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _targetPlayerId = targetPlayerId;
-            _damageValue = damageValue;
+            _ctx = ctx;
         }
 
         public override void Enter()
         {
-            var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == _targetPlayerId);
+            var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == _ctx.TargetPlayerId);
             if (targetPlayer == null)
             {
                 GameManager.TransitionTo(new HandleStackState(GameManager));
@@ -543,88 +541,113 @@ namespace Fida.Logic
             var (hasShield, shieldIndex) = targetPlayer.HasShield();
             if (hasShield)
             {
-                GameManager.ChangeNumber(_targetPlayerId, shieldIndex, 1); // 护盾数字变为1
+                GameManager.ChangeNumber(_ctx.TargetPlayerId, shieldIndex, 1); // 护盾数字变为1
                 GameManager.SetGameMessage(GameText.ShieldBreak(targetPlayer.Name));
                 // 护盾破碎会导致数字改变，进入效果应用阶段，但源玩家是目标玩家
                 GameManager.TransitionTo(new HandleStackState(GameManager));
             }
             else
             {
-                var finalDamage = SkillManager.ApplyDefenceSkills(targetPlayer, _damageValue);
-
-                targetPlayer.TakeDamage(finalDamage);
-                GameManager.SetGameMessage(GameText.Damaged(targetPlayer.Name, finalDamage));
-                GameManager.OnAttackExecuted(new AttackEventArgs
-                {
-                    SourcePlayerId = SourcePlayerId,
-                    TargetPlayerId = _targetPlayerId,
-                    DamageValue = finalDamage,
-                    Message = GameManager.GameMessage
-                });
-
-                // 检查攻击后技能
-                foreach (var skillType in SkillManager.DamagedSkills)
-                {
-                    if (targetPlayer.SkillAvailable(skillType))
-                    {
-                        var state = SkillManager.CreateDamagedSkillState(GameManager, targetPlayer.PlayerId, skillType, finalDamage);
-                        if (state != null)
-                        {
-                            GameManager.PushState(state);
-                        }
-                    }
-                }
-
-                foreach (var skillType in SkillManager.DamagingSkills)
-                {
-                    if (SourcePlayer.SkillAvailable(skillType))
-                    {
-                        var state = SkillManager.CreateDamagingSkillState(GameManager, SourcePlayerId, skillType, finalDamage);
-                        if (state != null)
-                        {
-                            GameManager.PushState(state);
-                        }
-                    }
-                }
-
-
-                GameManager.TransitionTo(new HandleStackState(GameManager));
+                // 进入防御技能处理流水线
+                GameManager.TransitionTo(new PreDamageState(GameManager, _ctx));
             }
         }
     }
 
     /// <summary>
-    /// 治疗状态
+    /// 防御技能处理状态 — 逐一迭代目标玩家的防御技能，然后结算伤害和反应技能
     /// </summary>
-    public class HealingState : GameState
+    public class PreDamageState : GameState
     {
-        private readonly int _targetPlayerId;
-        private readonly int _healingValue;
+        private readonly SkillContext _ctx;
+        private readonly int _attackerId;
 
-        public HealingState(GameManager gameManager, int sourcePlayerId, int targetPlayerId, int healingValue) : base(gameManager, sourcePlayerId)
+        public PreDamageState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _targetPlayerId = targetPlayerId;
-            _healingValue = healingValue;
+            _ctx = ctx;
+            _attackerId = ctx.PipelineOriginId;
+
+            if (_ctx.SkillEnumerator == null)
+            {
+                var target = gameManager.Players.FirstOrDefault(p => p.PlayerId == ctx.TargetPlayerId);
+                _ctx.SkillEnumerator = target?.GetSkillsByTrigger(SkillTrigger.Defending);
+            }
         }
 
         public override void Enter()
         {
-            var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == _targetPlayerId);
+            if (_ctx.SkillEnumerator != null && _ctx.SkillEnumerator.MoveNext())
+            {
+                var skill = _ctx.SkillEnumerator.Current;
+                var target = GameManager.Players.FirstOrDefault(p => p.PlayerId == _ctx.TargetPlayerId);
+                if (target != null && skill.CanUse(GameManager, target))
+                {
+                    var subCtx = _ctx.Derive(target.PlayerId);
+                    var state = skill.CreateState(GameManager, subCtx);
+                    if (state != null)
+                    {
+                        GameManager.TransitionTo(state);
+                        return;
+                    }
+                }
+                // 不可用则跳过
+                GameManager.TransitionTo(new PreDamageState(GameManager, _ctx));
+            }
+            else
+            {
+                _ctx.DisposeEnumerator();
+                ApplyDamage();
+            }
+        }
+
+        private void ApplyDamage()
+        {
+            var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == _ctx.TargetPlayerId);
             if (targetPlayer == null)
             {
                 GameManager.TransitionTo(new HandleStackState(GameManager));
                 return;
             }
 
-            targetPlayer.Heal(_healingValue);
-            GameManager.SetGameMessage(GameText.Healed(targetPlayer.Name, _healingValue));
-            GameManager.OnHealExecuted(new HealEventArgs
+            targetPlayer.TakeDamage(_ctx.Damage);
+            GameManager.SetGameMessage(GameText.Damaged(targetPlayer.Name, _ctx.Damage));
+            GameManager.OnAttackExecuted(new AttackEventArgs
             {
-                SourcePlayerId = SourcePlayerId,
-                TargetPlayerId = _targetPlayerId,
-                HealingValue = _healingValue,
+                SourcePlayerId = _attackerId,
+                TargetPlayerId = _ctx.TargetPlayerId,
+                DamageValue = _ctx.Damage,
                 Message = GameManager.GameMessage
             });
+
+            // 推入受伤后反应技能（栈模式，直接调用 skill.CreateState 而非 SkillManager）
+            var attacker = GameManager.Players.FirstOrDefault(p => p.PlayerId == _attackerId);
+
+            // Damaging 技能（攻击者）
+            if (attacker != null)
+            {
+                foreach (var skill in attacker.Skills)
+                {
+                    if (skill.Trigger == SkillTrigger.Damaging && skill.CanUse(GameManager, attacker))
+                    {
+                        var state = skill.CreateState(GameManager, _ctx.Derive(attacker.PlayerId));
+                        if (state != null)
+                            GameManager.StateStack.Push(state);
+                    }
+                }
+            }
+
+            // Damaged 技能（目标玩家）
+            foreach (var skill in targetPlayer.Skills)
+            {
+                if (skill.Trigger == SkillTrigger.Damaged && skill.CanUse(GameManager, targetPlayer))
+                {
+                    var state = skill.CreateState(GameManager, _ctx.Derive(targetPlayer.PlayerId));
+                    if (state != null)
+                        GameManager.StateStack.Push(state);
+                }
+            }
+
+
 
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
@@ -633,33 +656,66 @@ namespace Fida.Logic
     /// <summary>
     /// 治疗状态
     /// </summary>
-    public class TrueDamageState : GameState
+    public class HealingState : GameState
     {
-        private readonly int _targetPlayerId;
-        private readonly int _damageValue;
+        private readonly SkillContext _ctx;
 
-        public TrueDamageState(GameManager gameManager, int sourcePlayerId, int targetPlayerId, int damageValue) : base(gameManager, sourcePlayerId)
+        public HealingState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _targetPlayerId = targetPlayerId;
-            _damageValue = damageValue;
+            _ctx = ctx;
         }
 
         public override void Enter()
         {
-            var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == _targetPlayerId);
+            var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == _ctx.TargetPlayerId);
             if (targetPlayer == null)
             {
                 GameManager.TransitionTo(new HandleStackState(GameManager));
                 return;
             }
 
-            targetPlayer.TakeDamage(_damageValue);
-            GameManager.SetGameMessage(GameText.TrueDamaged(targetPlayer.Name, _damageValue));
+            targetPlayer.Heal(_ctx.Healing);
+            GameManager.SetGameMessage(GameText.Healed(targetPlayer.Name, _ctx.Healing));
+            GameManager.OnHealExecuted(new HealEventArgs
+            {
+                SourcePlayerId = SourcePlayerId,
+                TargetPlayerId = _ctx.TargetPlayerId,
+                HealingValue = _ctx.Healing,
+                Message = GameManager.GameMessage
+            });
+
+            GameManager.TransitionTo(new HandleStackState(GameManager));
+        }
+    }
+
+    /// <summary>
+    /// 真实伤害状态
+    /// </summary>
+    public class TrueDamageState : GameState
+    {
+        private readonly SkillContext _ctx;
+
+        public TrueDamageState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
+        {
+            _ctx = ctx;
+        }
+
+        public override void Enter()
+        {
+            var targetPlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == _ctx.TargetPlayerId);
+            if (targetPlayer == null)
+            {
+                GameManager.TransitionTo(new HandleStackState(GameManager));
+                return;
+            }
+
+            targetPlayer.TakeDamage(_ctx.Damage);
+            GameManager.SetGameMessage(GameText.TrueDamaged(targetPlayer.Name, _ctx.Damage));
             GameManager.OnAttackExecuted(new AttackEventArgs
             {
                 SourcePlayerId = SourcePlayerId,
-                TargetPlayerId = _targetPlayerId,
-                DamageValue = _damageValue,
+                TargetPlayerId = _ctx.TargetPlayerId,
+                DamageValue = _ctx.Damage,
                 Message = GameManager.GameMessage
             });
 

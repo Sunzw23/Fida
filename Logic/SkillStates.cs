@@ -4,14 +4,14 @@ using System.Linq;
 namespace Fida.Logic
 {
     #region skill states
-    // 技能的状态类
+    // 技能的状态类 — 统一通过 SkillContext 接收和传递流水线数据
 
     public class PlusAttackSkillState : GameState
     {
-        private readonly int _originalDamage;
-        public PlusAttackSkillState(GameManager gameManager, int sourcePlayerId, int originalDamage) : base(gameManager, sourcePlayerId)
+        private readonly SkillContext _ctx;
+        public PlusAttackSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _originalDamage = originalDamage;
+            _ctx = ctx;
         }
 
         protected override void BuildSteps()
@@ -25,20 +25,19 @@ namespace Fida.Logic
 
         protected override void Execute(List<GameAction> actions)
         {
-            var apply = actions.Count > 0 && actions[0].IsApply;
-            var newDamage = apply ? _originalDamage + 1 : _originalDamage;
+            if (actions.Count > 0 && actions[0].IsApply)
+                _ctx.Damage += 1;
 
-            var newState = new OrderingAttackState(GameManager, SourcePlayerId, SourcePlayer.Numbers, newDamage);
-            GameManager.TransitionTo(newState);
+            GameManager.TransitionTo(new OrderingAttackState(GameManager, _ctx));
         }
     }
 
     public class DoubleAttackSkillState : GameState
     {
-        private readonly int _originalDamage;
-        public DoubleAttackSkillState(GameManager gameManager, int sourcePlayerId, int originalDamage) : base(gameManager, sourcePlayerId)
+        private readonly SkillContext _ctx;
+        public DoubleAttackSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _originalDamage = originalDamage;
+            _ctx = ctx;
         }
 
         protected override void BuildSteps()
@@ -52,58 +51,54 @@ namespace Fida.Logic
 
         protected override void Execute(List<GameAction> actions)
         {
-            var apply = actions.Count > 0 && actions[0].IsApply;
-            var newDamage = apply ? _originalDamage * 2 : _originalDamage;
+            if (actions.Count > 0 && actions[0].IsApply)
+                _ctx.Damage *= 2;
 
-            // 创建一个新的OrderingAttackState实例，而不是修改弹出的实例
-            var newState = new OrderingAttackState(GameManager, SourcePlayerId, SourcePlayer.Numbers, newDamage);
-            GameManager.TransitionTo(newState);
+            GameManager.TransitionTo(new OrderingAttackState(GameManager, _ctx));
         }
     }
 
     public class DoubleDefenceSkillState : GameState
     {
-        private readonly int _originalDamage;
-        private readonly int _targetPlayerId;
-        public DoubleDefenceSkillState(GameManager gameManager, int sourcePlayerId, int targetPlayerId, int originalDamage) : base(gameManager, sourcePlayerId)
+        private readonly SkillContext _ctx;
+        public DoubleDefenceSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _originalDamage = originalDamage;
-            _targetPlayerId = targetPlayerId;
+            _ctx = ctx;
         }
 
         protected override void Execute(List<GameAction> actions)
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleDefence));
-            int newDamage = _originalDamage / 2;
+            int newDamage = _ctx.Damage / 2;
             if (newDamage == 0) newDamage = 1; // 最少造成1点伤害
-            var newState = new DamagingState(GameManager, SourcePlayerId, _targetPlayerId, newDamage);
-            GameManager.TransitionTo(newState);
+            _ctx.Damage = newDamage;
+            _ctx.SourcePlayerId = _ctx.PipelineOriginId;
+            GameManager.TransitionTo(new PreDamageState(GameManager, _ctx));
         }
     }
 
     public class PlusDefenceSkillState : GameState
     {
-        private readonly int _originalDamage;
-        private readonly int _targetPlayerId;
-        public PlusDefenceSkillState(GameManager gameManager, int sourcePlayerId, int targetPlayerId, int originalDamage) : base(gameManager, sourcePlayerId)
+        private readonly SkillContext _ctx;
+        public PlusDefenceSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _originalDamage = originalDamage;
-            _targetPlayerId = targetPlayerId;
+            _ctx = ctx;
         }
 
         protected override void Execute(List<GameAction> actions)
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleDefence));
-            int newDamage = _originalDamage - 1;
+            int newDamage = _ctx.Damage - 1;
             if (newDamage == 0) newDamage = 1; // 最少造成1点伤害
-            var newState = new DamagingState(GameManager, SourcePlayerId, _targetPlayerId, newDamage);
-            GameManager.TransitionTo(newState);
+            _ctx.Damage = newDamage;
+            _ctx.SourcePlayerId = _ctx.PipelineOriginId;
+            GameManager.TransitionTo(new PreDamageState(GameManager, _ctx));
         }
     }
 
     public class DoubleHealthSkillState : GameState
     {
-        public DoubleHealthSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
+        public DoubleHealthSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId) { }
 
         protected override void Execute(List<GameAction> actions)
         {
@@ -122,7 +117,7 @@ namespace Fida.Logic
 
     public class TripleHealthSkillState : GameState
     {
-        public TripleHealthSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
+        public TripleHealthSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId) { }
 
         protected override void Execute(List<GameAction> actions)
         {
@@ -135,21 +130,17 @@ namespace Fida.Logic
                 SkillType = SkillType.TripleHealth,
                 Message = GameManager.GameMessage
             });
-            // 技能效果处理完毕，回到状态栈的下一个状态
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
     }
 
-
-
+    // 龙
     public class LongSkillState : GameState
     {
-        private int[] _numbers;
-        private readonly int _originalDamage;
-        public LongSkillState(GameManager gameManager, int sourcePlayerId, int[] numbers, int originalDamage) : base(gameManager, sourcePlayerId)
+        private readonly SkillContext _ctx;
+        public LongSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _numbers = numbers;
-            _originalDamage = originalDamage;
+            _ctx = ctx;
         }
 
         protected override void BuildSteps()
@@ -163,20 +154,17 @@ namespace Fida.Logic
 
         protected override void Execute(List<GameAction> actions)
         {
-            var apply = actions.Count > 0 && actions[0].IsApply;
-            int newDamage = apply ? _numbers[0] + _numbers[1] : _originalDamage;
+            if (actions.Count > 0 && actions[0].IsApply && _ctx.Numbers != null)
+                _ctx.Damage = _ctx.Numbers[0] + _ctx.Numbers[1];
 
-            var newState = new OrderingAttackState(GameManager, SourcePlayerId, _numbers, newDamage);
-            GameManager.TransitionTo(newState);
+            GameManager.TransitionTo(new OrderingAttackState(GameManager, _ctx));
         }
     }
-
-
 
     // 神
     public class ShenSkillState : GameState
     {
-        public ShenSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
+        public ShenSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId) { }
 
         protected override void BuildSteps()
         {
@@ -204,17 +192,14 @@ namespace Fida.Logic
             var numberIndexToChange = actions[0].NumberIndex;
             var numberToApply = actions[1].Number;
             GameManager.ChangeNumber(SourcePlayerId, numberIndexToChange, numberToApply);
-            // 技能效果处理完毕，回到状态栈的下一个状态
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
     }
 
-
-
     // 仙
     public class XianSkillState : GameState
     {
-        public XianSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
+        public XianSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId) { }
 
         protected override void BuildSteps()
         {
@@ -242,7 +227,6 @@ namespace Fida.Logic
             var numberIndexToChange = actions[0].NumberIndex;
             var numberToApply = actions[1].Number;
             GameManager.ChangeNumber(SourcePlayerId, numberIndexToChange, numberToApply);
-            // 技能效果处理完毕，回到状态栈的下一个状态
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
     }
@@ -250,30 +234,29 @@ namespace Fida.Logic
     // 血
     public class XueSkillState : GameState
     {
-        private readonly int _damageDealt;
-        public XueSkillState(GameManager gameManager, int sourcePlayerId, int damageDealt) : base(gameManager, sourcePlayerId)
+        private readonly SkillContext _ctx;
+        public XueSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _damageDealt = damageDealt;
+            _ctx = ctx;
         }
 
         protected override void Execute(List<GameAction> actions)
         {
             // 血技能直接触发治疗，无需玩家输入
-            GameManager.TransitionTo(new HealingState(GameManager, SourcePlayerId, SourcePlayerId, _damageDealt));
+            GameManager.TransitionTo(new HealingState(GameManager,
+                new SkillContext(SourcePlayerId) { TargetPlayerId = SourcePlayerId, Healing = _ctx.Damage }));
         }
     }
-
 
     // 魔
     public class MoSkillState : GameState
     {
-        private readonly int _damageDealt;
+        private readonly SkillContext _ctx;
         private readonly int _damageReturned;
-        public MoSkillState(GameManager gameManager, int sourcePlayerId, int damageDealt) : base(gameManager, sourcePlayerId)
+        public MoSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _damageDealt = damageDealt;
-            _damageReturned = _damageDealt - _damageDealt / 2;
-
+            _ctx = ctx;
+            _damageReturned = _ctx.Damage - _ctx.Damage / 2;
         }
 
         protected override void BuildSteps()
@@ -293,16 +276,15 @@ namespace Fida.Logic
                 return;
             }
 
-            GameManager.TransitionTo(new TrueDamageState(GameManager, SourcePlayerId, actions[0].TargetPlayerId, _damageReturned));
+            GameManager.TransitionTo(new TrueDamageState(GameManager,
+                new SkillContext(SourcePlayerId) { TargetPlayerId = actions[0].TargetPlayerId, Damage = _damageReturned }));
         }
     }
 
-
     // 同
-
     public class TongSkillState : GameState
     {
-        public TongSkillState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
+        public TongSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId) { }
 
         protected override void BuildSteps()
         {
@@ -326,15 +308,14 @@ namespace Fida.Logic
     }
 
     // 变
-
     public class BianSkillState : GameState
     {
-
-        private readonly int _originalDamage;
-        public BianSkillState(GameManager gameManager, int sourcePlayerId, int originalDamage) : base(gameManager, sourcePlayerId)
+        private readonly SkillContext _ctx;
+        public BianSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
-            _originalDamage = originalDamage;
+            _ctx = ctx;
         }
+
         protected override void BuildSteps()
         {
             Steps.Add(new ActionStep
@@ -352,14 +333,43 @@ namespace Fida.Logic
                 return;
             }
 
-            int newDamage = actions[0].Number;
-            var newState = new OrderingAttackState(GameManager, SourcePlayerId, SourcePlayer.Numbers, newDamage);
-            GameManager.TransitionTo(newState);
+            _ctx.Damage = actions[0].Number;
+            GameManager.TransitionTo(new OrderingAttackState(GameManager, _ctx));
         }
     }
 
+    public class DiSkillState : GameState
+    {
+        public DiSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId) { }
+        protected override void BuildSteps()
+        {
+            Steps.Add(new ActionStep
+            {
+                RequiredType = ActionType.ChooseNumberIndex,
+                ValidTargets = [SourcePlayerId],
+                Prompt = GameText.SkillActivatedNumberTurnFrom(SourcePlayer.Name, SkillType.Shen)
+            });
+            Steps.Add(new ActionStep
+            {
+                RequiredType = ActionType.ChooseNumber,
+                ValidNumbers = Enumerable.Range(0, 10).ToList(),
+                Prompt = GameText.SkillActivatedNumberTurnInto(SourcePlayer.Name, SkillType.Shen)
+            });
+        }
 
+        protected override void Execute(List<GameAction> actions)
+        {
+            if (actions.Count < 2)
+            {
+                return;
+            }
 
+            var numberIndexToChange = actions[0].NumberIndex;
+            var numberToApply = actions[1].Number;
+            GameManager.ChangeNumber(SourcePlayerId, numberIndexToChange, numberToApply);
+            GameManager.TransitionTo(new HandleStackState(GameManager));
+        }
+    }
 
     #endregion
 }
