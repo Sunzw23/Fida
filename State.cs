@@ -10,7 +10,9 @@ namespace Fida
     {
         MainMenu,
         Rules,
+        Skills,
         Settings,
+        LevelSelect,
         Playing,
         Paused,
         GameOver,
