@@ -47,7 +47,6 @@ namespace Fida.UI
             _uiControls.Add(_gameMessageLabel);
 
             // 订阅事件
-            _gameManager.NumberChanged += OnNumberChanged;
             _gameManager.MessageUpdated += OnMessageUpdated;
             _gameManager.GameStateChanged += OnGameStateChanged;
             _gameManager.PlayerActionRequired += OnPlayerActionRequired;
@@ -163,16 +162,6 @@ namespace Fida.UI
             _gameMessageLabel?.Update(message);
         }
 
-        private void OnNumberChanged(object sender, NumberChangeEventArgs e)
-        {
-            var uiPlayer = _uiPlayers.FirstOrDefault(p => p.Player.PlayerId == e.SourcePlayerId);
-            if (uiPlayer != null)
-            {
-                uiPlayer.UpdateNumbers();
-                uiPlayer.UpdateHealth();
-            }
-        }
-
         private void OnMessageUpdated(object sender, GameEventArgs e)
         {
             UpdateGameMessage(e.Message);
@@ -217,13 +206,11 @@ namespace Fida.UI
 
             if (firstChosenIndex < 0)
             {
-                // 第一阶段或非 ChooseNumberIndex 状态：清除两个按钮的选定状态
                 uiPlayer.Number0Button.SetSelected(false);
                 uiPlayer.Number1Button.SetSelected(false);
                 return;
             }
 
-            // 第二阶段：标记已选按钮，清除另一个
             uiPlayer.Number0Button.SetSelected(firstChosenIndex == 0);
             uiPlayer.Number1Button.SetSelected(firstChosenIndex == 1);
         }

@@ -48,16 +48,6 @@ namespace Fida.Logic
         public int NewValue { get; set; }
     }
 
-    public class AttackEventArgs : GameEventArgs
-    {
-        public int DamageValue { get; set; }
-    }
-
-    public class HealEventArgs : GameEventArgs
-    {
-        public int HealingValue { get; set; }
-    }
-
     public class SkillActivatedEventArgs : GameEventArgs
     {
         public SkillType SkillType { get; set; }

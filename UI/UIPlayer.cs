@@ -131,6 +131,10 @@ namespace Fida.UI
             Number1Button = new UIAnimatedButton(12, Number1Bounds,
                 player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
                pixel, font);
+
+            // 直接监听 Player 的数字变化，UI 自动刷新
+            player.NumberChanged += (p, idx, oldVal, newVal) => UpdateNumbers();
+            player.HealthChanged += (p) => UpdateHealth();
         }
 
         // ---- 状态驱动渲染 ----

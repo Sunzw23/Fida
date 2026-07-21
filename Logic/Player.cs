@@ -13,7 +13,7 @@ namespace Fida.Logic
     {
         public String Name { get; private set;  } // 玩家名称
         public int PlayerId { get; private set; } // 玩家ID
-        public int[] Numbers { get; private set; } = [1, 1]; // 玩家拥有的两个数字
+        public int[] Numbers {get; private set; } = [1, 1];
         public int Health { get; set; } = 11; // 玩家生命值
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
@@ -49,6 +49,7 @@ namespace Fida.Logic
         public void TakeDamage(int damage)
         {
             Health = CalNormalDamage(damage, Health); // 计算反弹后的生命值
+            HealthChanged?.Invoke(this);
         }
 
 
@@ -61,6 +62,7 @@ namespace Fida.Logic
         {
             Health += amount;
             Health = Math.Clamp(Health, 0, MaxHealth); // 确保生命值不超出范围
+            HealthChanged?.Invoke(this);
         }
 
 
@@ -69,9 +71,14 @@ namespace Fida.Logic
         /// </summary>
         /// <param name="index"></param>
         /// <param name="value"></param>
+        public event Action<Player, int, int, int> NumberChanged; // player, index, oldValue, newValue
+        public event Action<Player> HealthChanged;
+
         public void SetNumber(int index, int value)
         {
+            int old = Numbers[index];
             Numbers[index] = value;
+            NumberChanged?.Invoke(this, index, old, value);
         }
 
 
@@ -80,8 +87,8 @@ namespace Fida.Logic
         /// </summary>
         public void ResetAllNumbersToOne()
         {
-            Numbers[0] = 1;
-            Numbers[1] = 1;
+            SetNumber(0, 1);
+            SetNumber(1, 1);
         }
 
         /// <summary>
@@ -126,12 +133,5 @@ namespace Fida.Logic
                 skill.Usage.Reset();
             }
         }
-
-        public void ChangeName(string name)
-        {
-            Name = name;
-        }
-
-
     }
 }

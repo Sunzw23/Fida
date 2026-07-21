@@ -191,7 +191,8 @@ namespace Fida.Logic
 
             var numberIndexToChange = actions[0].NumberIndex;
             var numberToApply = actions[1].Number;
-            GameManager.ChangeNumber(SourcePlayerId, numberIndexToChange, numberToApply);
+            SourcePlayer.SetNumber(numberIndexToChange, numberToApply);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
     }
@@ -226,7 +227,8 @@ namespace Fida.Logic
 
             var numberIndexToChange = actions[0].NumberIndex;
             var numberToApply = actions[1].Number;
-            GameManager.ChangeNumber(SourcePlayerId, numberIndexToChange, numberToApply);
+            SourcePlayer.SetNumber(numberIndexToChange, numberToApply);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
     }
@@ -366,7 +368,8 @@ namespace Fida.Logic
 
             var numberIndexToChange = actions[0].NumberIndex;
             var numberToApply = actions[1].Number;
-            GameManager.ChangeNumber(SourcePlayerId, numberIndexToChange, numberToApply);
+            SourcePlayer.SetNumber(numberIndexToChange, numberToApply);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
     }

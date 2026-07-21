@@ -35,9 +35,6 @@ namespace Fida.Scene
 
         private void SubscribeEvents()
         {
-            _gameManager.NumberChanged += OnNumberChanged;
-            _gameManager.AttackExecuted += OnAttackExecuted;
-            _gameManager.HealExecuted += OnHealExecuted;
             _gameManager.MessageUpdated += OnMessageUpdated;
             _gameManager.PlayerActionRequired += OnPlayerActionRequired;
         }
@@ -143,25 +140,6 @@ namespace Fida.Scene
         }
 
         #region Event Handlers
-
-        private void OnNumberChanged(object sender, NumberChangeEventArgs e)
-        {
-            var uiPlayer = _uiManager.GetUIPlayer(e.SourcePlayerId);
-            uiPlayer?.UpdateNumbers();
-            uiPlayer?.UpdateHealth();
-        }
-
-        private void OnAttackExecuted(object sender, AttackEventArgs e)
-        {
-            var uiPlayer = _uiManager.GetUIPlayer(e.TargetPlayerId);
-            uiPlayer?.UpdateHealth();
-        }
-
-        private void OnHealExecuted(object sender, HealEventArgs e)
-        {
-            var uiPlayer = _uiManager.GetUIPlayer(e.TargetPlayerId);
-            uiPlayer?.UpdateHealth();
-        }
 
         private void OnMessageUpdated(object sender, GameEventArgs e)
         {

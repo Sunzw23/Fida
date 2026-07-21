@@ -13,9 +13,6 @@ namespace Fida.Logic
         // --- Events ---
         public event EventHandler<GameStartEventArgs> GameStarted;
         public event EventHandler<TurnStartEventArgs> TurnStarted;
-        public event EventHandler<NumberChangeEventArgs> NumberChanged;
-        public event EventHandler<AttackEventArgs> AttackExecuted;
-        public event EventHandler<HealEventArgs> HealExecuted;
         public event EventHandler<SkillActivatedEventArgs> SkillActivated;
         public event EventHandler<PlayerActionRequiredEventArgs> PlayerActionRequired;
         public event EventHandler<GameEndEventArgs> GameEnded;
@@ -124,53 +121,11 @@ namespace Fida.Logic
         public Player GetCurrentPlayer() => Players[CurrentPlayerIndex];
 
 
-        #region Public Helper Methods (called by States)
-
         public void SetGameMessage(string message)
         {
             GameMessage = message;
             OnMessageUpdated(new GameEventArgs { Message = message });
         }
-
-        public void ChangeNumber(int playerId, int numberIndex, int newValue, bool enqueueApplyingEffect = true)
-        {
-            var player = Players.FirstOrDefault(p => p.PlayerId == playerId);
-            if (player == null) return;
-
-            var oldValue = player.Numbers[numberIndex];
-            player.SetNumber(numberIndex, newValue);
-
-            OnNumberChanged(new NumberChangeEventArgs
-            {
-                SourcePlayerId = playerId,
-                NumberIndex = numberIndex,
-                OldValue = oldValue,
-                NewValue = newValue
-            });
-
-            if (enqueueApplyingEffect)
-            {
-                PushState(new ApplyingEffectState(this, playerId));
-            }
-        }
-
-        public void ChangeBothNumbers(int playerId, int firstValue, int secondValue)
-        {
-            var player = Players.FirstOrDefault(p => p.PlayerId == playerId);
-            if (player == null) return;
-
-            ChangeNumber(playerId, 0, firstValue, false);
-            ChangeNumber(playerId, 1, secondValue, false);
-
-            PushState(new ApplyingEffectState(this, playerId));
-
-            OnNumberChanged(new NumberChangeEventArgs
-            {
-                SourcePlayerId = playerId,
-            });
-        }
-
-        #endregion
 
         #region State Information for Agents
         public int CurrentPlayerId => Players.Count > 0 && CurrentPlayerIndex >= 0 && CurrentPlayerIndex < Players.Count ? Players[CurrentPlayerIndex].PlayerId : -1;
@@ -222,9 +177,6 @@ namespace Fida.Logic
 
         public void OnGameStarted(GameStartEventArgs e) => GameStarted?.Invoke(this, e);
         public void OnTurnStarted(TurnStartEventArgs e) => TurnStarted?.Invoke(this, e);
-        public void OnNumberChanged(NumberChangeEventArgs e) => NumberChanged?.Invoke(this, e);
-        public void OnAttackExecuted(AttackEventArgs e) => AttackExecuted?.Invoke(this, e);
-        public void OnHealExecuted(HealEventArgs e) => HealExecuted?.Invoke(this, e);
         public void OnSkillActivated(SkillActivatedEventArgs e) => SkillActivated?.Invoke(this, e);
         public void OnPlayerActionRequired(PlayerActionRequiredEventArgs e)
         {

@@ -218,15 +218,13 @@ namespace Fida.Logic
     /// </summary>
     public class ChooseNumberIndexState : GameState
     {
-        private readonly bool _changeBothNumbers;
         private readonly int _initialStage;
         private readonly int _initialFirstNumberIndex;
 
-        public ChooseNumberIndexState(GameManager gameManager, int sourcePlayerId, int stage = 0, int firstNumberIndex = -1, bool changeBothNumbers = false) : base(gameManager, sourcePlayerId)
+        public ChooseNumberIndexState(GameManager gameManager, int sourcePlayerId, int stage = 0, int firstNumberIndex = -1) : base(gameManager, sourcePlayerId)
         {
             _initialStage = stage;
             _initialFirstNumberIndex = firstNumberIndex;
-            _changeBothNumbers = changeBothNumbers;
         }
 
         public int Stage => StepIndex;
@@ -299,16 +297,11 @@ namespace Fida.Logic
             var firstNumberIndex = firstAction.NumberIndex;
             var newCalculatedNumber = (SourcePlayer.Numbers[firstNumberIndex] + otherPlayerSelected.Numbers[secondAction.NumberIndex]) % 10;
 
-            if (_changeBothNumbers)
-            {
-                GameManager.SetGameMessage(GameText.NumberChangedBothCheckEffect(SourcePlayer.Name, newCalculatedNumber));
-                GameManager.ChangeBothNumbers(SourcePlayerId, newCalculatedNumber, newCalculatedNumber);
-            }
-            else
-            {
-                GameManager.SetGameMessage(GameText.NumberChangedSingleCheckEffect(SourcePlayer.Name, SourcePlayer.Numbers[firstNumberIndex], newCalculatedNumber));
-                GameManager.ChangeNumber(SourcePlayerId, firstNumberIndex, newCalculatedNumber);
-            }
+
+            GameManager.SetGameMessage(GameText.NumberChangedSingleCheckEffect(SourcePlayer.Name, SourcePlayer.Numbers[firstNumberIndex], newCalculatedNumber));
+            SourcePlayer.SetNumber(firstNumberIndex, newCalculatedNumber);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
+            
 
             // 回合主流程已预先入栈，交还给栈调度。
             GameManager.TransitionTo(new HandleStackState(GameManager));
@@ -382,7 +375,8 @@ namespace Fida.Logic
             GameManager.SetGameMessage(GameText.AttackTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], damage));
             int[] numbers = new int[2];
             Array.Copy(SourcePlayer.Numbers, numbers, 2);
-            GameManager.ChangeNumber(SourcePlayerId, numberIndex, 1);
+            SourcePlayer.SetNumber(numberIndex, 1);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
             GameManager.TransitionTo(new OrderingAttackState(GameManager, ctx));
         }
@@ -392,7 +386,9 @@ namespace Fida.Logic
             GameManager.SetGameMessage(GameText.AttackTriggeredByNumberPair(SourcePlayer.Name, damage));
             int[] numbers = new int[2];
             Array.Copy(SourcePlayer.Numbers, numbers, 2);
-            GameManager.ChangeBothNumbers(SourcePlayerId, 1, 1);
+            SourcePlayer.SetNumber(0, 1);
+            SourcePlayer.SetNumber(1, 1);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
             GameManager.TransitionTo(new OrderingAttackState(GameManager, ctx));
         }
@@ -400,7 +396,8 @@ namespace Fida.Logic
         private void HandleHealEffect(int numberIndex, int healing)
         {
             GameManager.SetGameMessage(GameText.HealTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], healing));
-            GameManager.ChangeNumber(SourcePlayerId, numberIndex, 1);
+            SourcePlayer.SetNumber(numberIndex, 1);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, 0, healing);
             GameManager.TransitionTo(new TargetSelectionState(GameManager, ctx));
         }
@@ -408,7 +405,9 @@ namespace Fida.Logic
         private void HandleHealEffectBoth(int healing)
         {
             GameManager.SetGameMessage(GameText.HealTriggeredByNumberPair(SourcePlayer.Name, healing));
-            GameManager.ChangeBothNumbers(SourcePlayerId, 1, 1);
+            SourcePlayer.SetNumber(0, 1);
+            SourcePlayer.SetNumber(1, 1);
+            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, 0, healing);
             GameManager.TransitionTo(new TargetSelectionState(GameManager, ctx));
         }
@@ -541,7 +540,8 @@ namespace Fida.Logic
             var (hasShield, shieldIndex) = targetPlayer.HasShield();
             if (hasShield)
             {
-                GameManager.ChangeNumber(_ctx.TargetPlayerId, shieldIndex, 1); // 护盾数字变为1
+                targetPlayer.SetNumber(shieldIndex, 1); // 护盾数字变为1
+                GameManager.PushState(new ApplyingEffectState(GameManager, _ctx.TargetPlayerId));
                 GameManager.SetGameMessage(GameText.ShieldBreak(targetPlayer.Name));
                 // 护盾破碎会导致数字改变，进入效果应用阶段，但源玩家是目标玩家
                 GameManager.TransitionTo(new HandleStackState(GameManager));
@@ -611,13 +611,6 @@ namespace Fida.Logic
 
             targetPlayer.TakeDamage(_ctx.Damage);
             GameManager.SetGameMessage(GameText.Damaged(targetPlayer.Name, _ctx.Damage));
-            GameManager.OnAttackExecuted(new AttackEventArgs
-            {
-                SourcePlayerId = _attackerId,
-                TargetPlayerId = _ctx.TargetPlayerId,
-                DamageValue = _ctx.Damage,
-                Message = GameManager.GameMessage
-            });
 
             // 推入受伤后反应技能（栈模式，直接调用 skill.CreateState 而非 SkillManager）
             var attacker = GameManager.Players.FirstOrDefault(p => p.PlayerId == _attackerId);
@@ -676,13 +669,6 @@ namespace Fida.Logic
 
             targetPlayer.Heal(_ctx.Healing);
             GameManager.SetGameMessage(GameText.Healed(targetPlayer.Name, _ctx.Healing));
-            GameManager.OnHealExecuted(new HealEventArgs
-            {
-                SourcePlayerId = SourcePlayerId,
-                TargetPlayerId = _ctx.TargetPlayerId,
-                HealingValue = _ctx.Healing,
-                Message = GameManager.GameMessage
-            });
 
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
@@ -711,13 +697,6 @@ namespace Fida.Logic
 
             targetPlayer.TakeDamage(_ctx.Damage);
             GameManager.SetGameMessage(GameText.TrueDamaged(targetPlayer.Name, _ctx.Damage));
-            GameManager.OnAttackExecuted(new AttackEventArgs
-            {
-                SourcePlayerId = SourcePlayerId,
-                TargetPlayerId = _ctx.TargetPlayerId,
-                DamageValue = _ctx.Damage,
-                Message = GameManager.GameMessage
-            });
 
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
