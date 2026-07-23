@@ -13,8 +13,8 @@ namespace Fida.Logic
     {
         public String Name { get; private set;  } // 玩家名称
         public int PlayerId { get; private set; } // 玩家ID
-        public int[] Numbers {get; private set; } = [1, 1];
-        public int Health { get; set; } = 11; // 玩家生命值
+        public int Health { get; private set; } = 11; // 玩家生命值
+        private int[] Numbers = {1, 1}; // 玩家拥有的两个数字, 初始值为1
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
         public IEnumerator<Skill> GetSkillsByTrigger(SkillTrigger trigger)
@@ -74,12 +74,18 @@ namespace Fida.Logic
         public event Action<Player, int, int, int> NumberChanged; // player, index, oldValue, newValue
         public event Action<Player> HealthChanged;
 
-        /// <summary>
-        /// 通知 HealthChanged 事件（供外部在直接修改 Health 属性后调用）
-        /// </summary>
-        public void NotifyHealthChanged()
+
+        public void SetHealth(int value)
         {
+            Health = value;
             HealthChanged?.Invoke(this);
+        }
+
+
+
+        public int GetNumber(int index)
+        {
+            return Numbers[index];
         }
 
         public void SetNumber(int index, int value)
@@ -87,6 +93,7 @@ namespace Fida.Logic
             int old = Numbers[index];
             Numbers[index] = value;
             NumberChanged?.Invoke(this, index, old, value);
+            Console.WriteLine("Number Changed: Player {0}, Index {1}, Old {2}, New {3}", Name, index, old, value);
         }
 
 

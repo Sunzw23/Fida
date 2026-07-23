@@ -105,8 +105,7 @@ namespace Fida.Logic
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleHealth));
             SourcePlayer.MaxHealth = SourcePlayer.MaxHealth * 2;
-            SourcePlayer.Health = SourcePlayer.MaxHealth;
-            SourcePlayer.NotifyHealthChanged();
+            SourcePlayer.SetHealth(SourcePlayer.MaxHealth);
             GameManager.OnSkillActivated(new SkillActivatedEventArgs
             {
                 SourcePlayerId = SourcePlayerId,
@@ -125,8 +124,7 @@ namespace Fida.Logic
         {
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.TripleHealth));
             SourcePlayer.MaxHealth = SourcePlayer.MaxHealth * 3;
-            SourcePlayer.Health = SourcePlayer.MaxHealth;
-            SourcePlayer.NotifyHealthChanged();
+            SourcePlayer.SetHealth(SourcePlayer.MaxHealth);
             GameManager.OnSkillActivated(new SkillActivatedEventArgs
             {
                 SourcePlayerId = SourcePlayerId,

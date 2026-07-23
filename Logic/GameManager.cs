@@ -48,6 +48,7 @@ namespace Fida.Logic
         /// </summary>
         public void Initialize(List<Player> players)
         {
+            StackIterationCount = 0;
             Players = players;
             Groups = [.. players.Select(p => new Group(p.PlayerId, p.Name, [p]))];
             CurrentPlayerIndex = 0;
@@ -61,6 +62,7 @@ namespace Fida.Logic
         /// </summary>
         public void Initialize(List<Player> players, List<Group> groups)
         {
+            StackIterationCount = 0;
             Players = players;
             Groups = groups;
             CurrentPlayerIndex = 0;

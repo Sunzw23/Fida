@@ -293,11 +293,11 @@ namespace Fida.Agent
             var targetPlayer = gameManager.Players.First(p => p.PlayerId == targetPlayerId);
             var user = gameManager.Players.First(p => p.PlayerId == 0);
             state[0] = sourcePlayer.Health;
-            state[1] = sourcePlayer.Numbers[0];
-            state[2] = sourcePlayer.Numbers[1];
+            state[1] = sourcePlayer.GetNumber(0);
+            state[2] = sourcePlayer.GetNumber(1);
             state[3] = user.Health;
-            state[4] = targetPlayer.Numbers[0];
-            state[5] = targetPlayer.Numbers[1];
+            state[4] = targetPlayer.GetNumber(0);
+            state[5] = targetPlayer.GetNumber(1);
             return state;
         }
 

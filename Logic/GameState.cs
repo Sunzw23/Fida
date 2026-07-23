@@ -200,6 +200,7 @@ namespace Fida.Logic
 
         public override void Enter()
         {
+            GameManager.StackIterationCount = 0;
             // 只有在检查第一个技能时才显示回合开始消息
             GameManager.SetGameMessage(GameText.TurnStart(SourcePlayer.Name));
             GameManager.OnTurnStarted(new TurnStartEventArgs
@@ -319,10 +320,10 @@ namespace Fida.Logic
             }
 
             var firstNumberIndex = firstAction.NumberIndex;
-            var newCalculatedNumber = (SourcePlayer.Numbers[firstNumberIndex] + otherPlayerSelected.Numbers[secondAction.NumberIndex]) % 10;
+            var newCalculatedNumber = (SourcePlayer.GetNumber(firstNumberIndex) + otherPlayerSelected.GetNumber(secondAction.NumberIndex)) % 10;
 
 
-            GameManager.SetGameMessage(GameText.NumberChangedSingleCheckEffect(SourcePlayer.Name, SourcePlayer.Numbers[firstNumberIndex], newCalculatedNumber));
+            GameManager.SetGameMessage(GameText.NumberChangedSingleCheckEffect(SourcePlayer.Name, SourcePlayer.GetNumber(firstNumberIndex), newCalculatedNumber));
             SourcePlayer.SetNumber(firstNumberIndex, newCalculatedNumber);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             
@@ -357,7 +358,8 @@ namespace Fida.Logic
 
         public override void Enter()
         {
-            var numbers = SourcePlayer.Numbers;
+            // 获取玩家的两个数字
+            int[] numbers = [SourcePlayer.GetNumber(0), SourcePlayer.GetNumber(1)];
 
             // 攻击 (数字变为 8 或 7)
             if (numbers[0] == AttackThresholdSingle2 || numbers[0] == AttackThresholdSingle1)
@@ -412,9 +414,8 @@ namespace Fida.Logic
 
         private void HandleAttackEffect(int numberIndex, int damage)
         {
-            GameManager.SetGameMessage(GameText.AttackTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], damage));
-            int[] numbers = new int[2];
-            Array.Copy(SourcePlayer.Numbers, numbers, 2);
+            GameManager.SetGameMessage(GameText.AttackTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.GetNumber(numberIndex), damage));
+            int[] numbers = [SourcePlayer.GetNumber(0), SourcePlayer.GetNumber(1)];
             SourcePlayer.SetNumber(numberIndex, 1);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
@@ -424,8 +425,7 @@ namespace Fida.Logic
         private void HandleAttackEffectBoth(int damage)
         {
             GameManager.SetGameMessage(GameText.AttackTriggeredByNumberPair(SourcePlayer.Name, damage));
-            int[] numbers = new int[2];
-            Array.Copy(SourcePlayer.Numbers, numbers, 2);
+            int[] numbers = [SourcePlayer.GetNumber(0), SourcePlayer.GetNumber(1)];
             SourcePlayer.SetNumber(0, 1);
             SourcePlayer.SetNumber(1, 1);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
@@ -435,7 +435,7 @@ namespace Fida.Logic
 
         private void HandleHealEffect(int numberIndex, int healing)
         {
-            GameManager.SetGameMessage(GameText.HealTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], healing));
+            GameManager.SetGameMessage(GameText.HealTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.GetNumber(numberIndex), healing));
             SourcePlayer.SetNumber(numberIndex, 1);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, 0, healing);

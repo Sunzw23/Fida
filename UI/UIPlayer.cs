@@ -115,7 +115,7 @@ namespace Fida.UI
 
             Number0Bounds = new Rectangle(startX, bottomY, UIConfig.Int("bottomElementWidth"), UIConfig.Int("bottomElementHeight"));
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
-                player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
+                player.GetNumber(0).ToString(),
                 pixel, font);
 
             HealthBounds = new Rectangle(
@@ -133,7 +133,7 @@ namespace Fida.UI
                 UIConfig.Int("bottomElementWidth"),
                 UIConfig.Int("bottomElementHeight"));
             Number1Button = new UIAnimatedButton(12, Number1Bounds,
-                player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
+                player.GetNumber(1).ToString(),
                pixel, font);
 
             // 直接监听 Player 的数字变化，UI 自动刷新
@@ -141,18 +141,6 @@ namespace Fida.UI
             _healthChangedHandler = (p) => UpdateHealth();
             player.NumberChanged += _numberChangedHandler;
             player.HealthChanged += _healthChangedHandler;
-        }
-
-        /// <summary>
-        /// 取消订阅 Player 事件，防止内存泄漏
-        /// </summary>
-        public void Unsubscribe()
-        {
-            if (Player != null)
-            {
-                Player.NumberChanged -= _numberChangedHandler;
-                Player.HealthChanged -= _healthChangedHandler;
-            }
         }
 
         // ---- 状态驱动渲染 ----
@@ -261,10 +249,8 @@ namespace Fida.UI
 
         public void UpdateNumbers()
         {
-            if (Player.Numbers.Length > 0)
-                Number0Button.Update(Player.Numbers[0].ToString());
-            if (Player.Numbers.Length > 1)
-                Number1Button.Update(Player.Numbers[1].ToString());
+            Number0Button.Update(Player.GetNumber(0).ToString());
+            Number1Button.Update(Player.GetNumber(1).ToString());
         }
 
         public void UpdateHealth()

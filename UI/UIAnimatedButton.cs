@@ -361,23 +361,20 @@ namespace Fida.UI
 
         public override void Update(string newText)
         {
-            if (newText != Text)
+            // 动画进行中且目标值又变了 → 重置动画
+            if (_isAnimating && newText != _newText)
             {
-                // 动画进行中且目标值又变了 → 重置动画
-                if (_isAnimating && newText != _newText)
-                {
-                    _animationTimer = 0f;
-                    _animationStartTime = 0f;
-                    _wipeProgress = 0f;
-                }
-                _newText = newText;
-                if (!_isAnimating)
-                {
-                    _isAnimating = true;
-                    _animationTimer = 0f;
-                    _wipeProgress = 0f;
-                    _animationStartTime = 0f;
-                }
+                _animationTimer = 0f;
+                _animationStartTime = 0f;
+                _wipeProgress = 0f;
+            }
+            _newText = newText;
+            if (!_isAnimating)
+            {
+                _isAnimating = true;
+                _animationTimer = 0f;
+                _wipeProgress = 0f;
+                _animationStartTime = 0f;
             }
         }
 
