@@ -35,7 +35,9 @@ namespace Fida.Scene
 
         private void SubscribeEvents()
         {
+            _gameManager.MessageUpdated -= OnMessageUpdated;
             _gameManager.MessageUpdated += OnMessageUpdated;
+            _gameManager.PlayerActionRequired -= OnPlayerActionRequired;
             _gameManager.PlayerActionRequired += OnPlayerActionRequired;
         }
 

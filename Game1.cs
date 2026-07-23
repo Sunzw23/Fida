@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using Fida.Network;
 using Fida.Scene;
+using Fida.States;
 using Fida.UI;
 using Fida.Agent;
 using Fida.Logic;
@@ -124,6 +125,7 @@ namespace Fida
             if (disposing)
             {
                 _networkManager?.Dispose();
+                _agentManager?.Dispose();
                 _uiManager?.Dispose();
             }
             base.Dispose(disposing);

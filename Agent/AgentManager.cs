@@ -12,8 +12,10 @@ namespace Fida.Agent
     /// <summary>
     /// AgentManager 类负责管理 AI 代理的行为。
     /// </summary>
-    public class AgentManager
+    public class AgentManager : IDisposable
     {
+        private static readonly Random _random = new Random();
+        private bool _disposed;
         // 定义委托类型用于信号
         public delegate void ChooseNumberIndexEventHandler(int playerId, int numberIndex);
         public delegate void ChooseTargetEventHandler(int targetPlayerId);
@@ -42,6 +44,9 @@ namespace Fida.Agent
         /// </summary>
         public void LoadAgents(int modelNumber = 5)
         {
+            // 释放旧模型以防止资源泄漏
+            foreach (var inference in _onnxInferences)
+                inference?.Dispose();
             _onnxInferences.Clear();
             
             // 尝试多个可能的模型路径
@@ -202,7 +207,7 @@ namespace Fida.Agent
 
         private GameAction HandleChooseNumberAction(int sourcePlayerId)
         {
-            return new GameAction { Type = ActionType.ChooseNumber, Number = new Random().Next(6, 10) };
+            return new GameAction { Type = ActionType.ChooseNumber, Number = _random.Next(6, 10) };
         }
 
         private void HandleChooseNumberIndex(int sourcePlayerId)
@@ -260,16 +265,25 @@ namespace Fida.Agent
         private void HandleChooseNumber(int sourcePlayerId)
         {
             // 选择数字
-            EmitSignalChooseNumber(new Random().Next(6, 10));
+            EmitSignalChooseNumber(_random.Next(6, 10));
         }
 
         private OnnxInference GetOnnxInference(int i)
         {
-            if (i > 0 && i < _onnxInferences.Count)
+            if (i >= 0 && i < _onnxInferences.Count)
             {
                 return _onnxInferences[i];
             }
             return _onnxInferences.Count > 0 ? _onnxInferences[0] : null;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            foreach (var inference in _onnxInferences)
+                inference?.Dispose();
+            _onnxInferences.Clear();
         }
 
         private static float[] GetState(GameManager gameManager, int sourcePlayerId, int targetPlayerId)

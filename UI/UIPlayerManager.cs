@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Fida.Logic;
+using Fida.Scene;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -36,6 +37,9 @@ namespace Fida.UI
 
         public void BuildPlayingUI(GameManager gameManager)
         {
+            // 取消之前的事件订阅，防止重复订阅导致泄漏
+            UnsubscribeEvents();
+
             _gameManager = gameManager;
             _uiPlayers.Clear();
 
@@ -160,6 +164,19 @@ namespace Fida.UI
         public void UpdateGameMessage(string message)
         {
             _gameMessageLabel?.Update(message);
+        }
+
+        /// <summary>
+        /// 取消所有事件订阅，防止重复订阅导致泄漏
+        /// </summary>
+        private void UnsubscribeEvents()
+        {
+            if (_gameManager != null)
+            {
+                _gameManager.MessageUpdated -= OnMessageUpdated;
+                _gameManager.GameStateChanged -= OnGameStateChanged;
+                _gameManager.PlayerActionRequired -= OnPlayerActionRequired;
+            }
         }
 
         private void OnMessageUpdated(object sender, GameEventArgs e)

@@ -1,2 +1,2 @@
-﻿using var game = new Fida.Fida();
+﻿using var game = new Fida.Game1();
 game.Run();

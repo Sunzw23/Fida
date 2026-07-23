@@ -23,7 +23,11 @@ namespace Fida.UI
                     _settings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? new();
                 }
             }
-            catch (Exception ex) { Console.WriteLine($"UIConfig Load Error: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UIConfig Load Error: {ex.Message}. UI layout may be degraded.");
+                _settings = new(); // reset to empty to avoid partial config
+            }
         }
 
         // --- 通用获取方法 ---

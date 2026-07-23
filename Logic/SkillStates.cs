@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -87,7 +88,7 @@ namespace Fida.Logic
 
         protected override void Execute(List<GameAction> actions)
         {
-            GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleDefence));
+            GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.PlusDefence));
             int newDamage = _ctx.Damage - 1;
             if (newDamage == 0) newDamage = 1; // 最少造成1点伤害
             _ctx.Damage = newDamage;
@@ -105,6 +106,7 @@ namespace Fida.Logic
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleHealth));
             SourcePlayer.MaxHealth = SourcePlayer.MaxHealth * 2;
             SourcePlayer.Health = SourcePlayer.MaxHealth;
+            SourcePlayer.NotifyHealthChanged();
             GameManager.OnSkillActivated(new SkillActivatedEventArgs
             {
                 SourcePlayerId = SourcePlayerId,
@@ -124,6 +126,7 @@ namespace Fida.Logic
             GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.TripleHealth));
             SourcePlayer.MaxHealth = SourcePlayer.MaxHealth * 3;
             SourcePlayer.Health = SourcePlayer.MaxHealth;
+            SourcePlayer.NotifyHealthChanged();
             GameManager.OnSkillActivated(new SkillActivatedEventArgs
             {
                 SourcePlayerId = SourcePlayerId,
@@ -258,7 +261,8 @@ namespace Fida.Logic
         public MoSkillState(GameManager gameManager, SkillContext ctx) : base(gameManager, ctx.SourcePlayerId)
         {
             _ctx = ctx;
-            _damageReturned = _ctx.Damage - _ctx.Damage / 2;
+            // 返回 ceil(damage/2) 伤害给攻击者（反射一半，向上取整）
+            _damageReturned = (int)Math.Ceiling(_ctx.Damage / 2.0);
         }
 
         protected override void BuildSteps()
@@ -303,7 +307,7 @@ namespace Fida.Logic
             if (actions.Count > 0 && actions[0].IsApply)
             {
                 GameManager.StateStack.Pop();
-                GameManager.StateStack.Push(new ChooseNumberIndexState(GameManager, SourcePlayerId, 0, -1, true));
+                GameManager.StateStack.Push(new ChooseNumberIndexState(GameManager, SourcePlayerId, 0, -1));
             }
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }

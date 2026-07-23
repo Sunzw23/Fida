@@ -83,7 +83,8 @@ namespace Fida
             }
             else
             {
-                return null; // 返回 null 而不是抛出异常，允许缺失的纹理
+                System.Diagnostics.Debug.WriteLine($"Warning: Texture '{name}' not found, using fallback.");
+                return Pixel; // 返回 1px 白色纹理作为安全回退，避免 NPE
             }
         }
 

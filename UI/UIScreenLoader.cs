@@ -154,8 +154,9 @@ namespace Fida.UI
 
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"UIScreenLoader: Failed to load screen layout: {ex.Message}");
                 return new List<ControlDescriptor>();
             }
         }

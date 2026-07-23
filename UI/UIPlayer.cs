@@ -34,6 +34,10 @@ namespace Fida.UI
         // 环境检查器 — 卡片在 ChooseTarget 时启用交互
         public Func<bool> EnabledChecker { get; set; }
 
+        // 存储事件处理器引用以便取消订阅，防止事件泄漏
+        private Action<Player, int, int, int> _numberChangedHandler;
+        private Action<Player> _healthChangedHandler;
+
         // 卡片交互状态
         private bool IsEnabled { get; set; } = true;
         private bool IsHovered { get; set; } = false;
@@ -133,8 +137,22 @@ namespace Fida.UI
                pixel, font);
 
             // 直接监听 Player 的数字变化，UI 自动刷新
-            player.NumberChanged += (p, idx, oldVal, newVal) => UpdateNumbers();
-            player.HealthChanged += (p) => UpdateHealth();
+            _numberChangedHandler = (p, idx, oldVal, newVal) => UpdateNumbers();
+            _healthChangedHandler = (p) => UpdateHealth();
+            player.NumberChanged += _numberChangedHandler;
+            player.HealthChanged += _healthChangedHandler;
+        }
+
+        /// <summary>
+        /// 取消订阅 Player 事件，防止内存泄漏
+        /// </summary>
+        public void Unsubscribe()
+        {
+            if (Player != null)
+            {
+                Player.NumberChanged -= _numberChangedHandler;
+                Player.HealthChanged -= _healthChangedHandler;
+            }
         }
 
         // ---- 状态驱动渲染 ----
@@ -251,7 +269,7 @@ namespace Fida.UI
 
         public void UpdateHealth()
         {
-            HealthLabel.Update(Player.Health.ToString());
+            HealthLabel.UpdateText(Player.Health.ToString());
         }
 
         public void RefreshButtons()

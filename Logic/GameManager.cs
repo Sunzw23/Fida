@@ -39,6 +39,11 @@ namespace Fida.Logic
         public Stack<GameState> StateStack { get; private set; } = new();
 
         /// <summary>
+        /// 状态栈迭代计数，用于防止无限递归导致栈溢出
+        /// </summary>
+        public int StackIterationCount { get; set; }
+
+        /// <summary>
         /// 初始化游戏并设置初始状态
         /// </summary>
         public void Initialize(List<Player> players)
@@ -106,6 +111,8 @@ namespace Fida.Logic
         /// </summary>
         public void EndCurrentTurn()
         {
+            if (Players.Count == 0) return;
+
             int nextPlayerTrial = (CurrentPlayerIndex + 1) % Players.Count;
             while (!Players[nextPlayerTrial].IsAlive() && nextPlayerTrial != CurrentPlayerIndex)
             {
@@ -116,6 +123,8 @@ namespace Fida.Logic
             {
                 CurrentPlayerIndex = nextPlayerTrial;
             }
+            // If no player is alive, CurrentPlayerIndex stays unchanged.
+            // CheckGameEnd() will handle the game-over case.
         }
 
         public Player GetCurrentPlayer() => Players[CurrentPlayerIndex];

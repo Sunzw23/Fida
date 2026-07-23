@@ -18,7 +18,7 @@ namespace Fida.Network
         private CancellationTokenSource _cts;
         private readonly ConcurrentQueue<NetworkMessage> _incomingMessages = new();
         private readonly ConcurrentQueue<NetworkMessage> _outgoingMessages = new();
-        private bool _isConnected;
+        private volatile bool _isConnected;
         private bool _disposed;
 
         /// <summary>
@@ -64,8 +64,16 @@ namespace Fida.Network
                     Connected?.Invoke();
 
                     // 启动接收和发送循环
-                    _ = Task.Run(() => ReceiveLoop(_cts.Token));
-                    _ = Task.Run(() => SendLoop(_cts.Token));
+                    _ = Task.Run(() => ReceiveLoop(_cts.Token)).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted && t.Exception != null)
+                            System.Diagnostics.Debug.WriteLine($"[GameClient] ReceiveLoop task failed: {t.Exception.InnerException?.Message}");
+                    }, TaskContinuationOptions.OnlyOnFaulted);
+                    _ = Task.Run(() => SendLoop(_cts.Token)).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted && t.Exception != null)
+                            System.Diagnostics.Debug.WriteLine($"[GameClient] SendLoop task failed: {t.Exception.InnerException?.Message}");
+                    }, TaskContinuationOptions.OnlyOnFaulted);
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
@@ -114,7 +122,10 @@ namespace Fida.Network
                 _tcpClient?.Close();
                 _tcpClient?.Dispose();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GameClient] Error during disconnect: {ex.Message}");
+            }
 
             _stream = null;
             _tcpClient = null;
@@ -132,8 +143,9 @@ namespace Fida.Network
                         {
                             return NetworkMessage.ReadFromStream(_stream);
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            System.Diagnostics.Debug.WriteLine($"[GameClient] Receive read error: {ex.Message}");
                             return null;
                         }
                     }, ct);
@@ -147,7 +159,10 @@ namespace Fida.Network
                 }
             }
             catch (OperationCanceledException) { }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GameClient] Loop error: {ex.Message}");
+            }
 
             if (_isConnected)
             {
@@ -175,7 +190,10 @@ namespace Fida.Network
                 }
             }
             catch (OperationCanceledException) { }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GameClient] Loop error: {ex.Message}");
+            }
         }
 
         public void Dispose()

@@ -1,8 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Fida.Logic;
 
-namespace Fida
+namespace Fida.Scene
 {
     public class SceneLoader
     {

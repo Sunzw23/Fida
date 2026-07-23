@@ -48,7 +48,7 @@ namespace Fida.Logic
         /// <returns></returns>
         public void TakeDamage(int damage)
         {
-            Health = CalNormalDamage(damage, Health); // 计算反弹后的生命值
+            Health = Math.Max(0, CalNormalDamage(damage, Health)); // 计算反弹后的生命值，不低于0
             HealthChanged?.Invoke(this);
         }
 
@@ -74,6 +74,14 @@ namespace Fida.Logic
         public event Action<Player, int, int, int> NumberChanged; // player, index, oldValue, newValue
         public event Action<Player> HealthChanged;
 
+        /// <summary>
+        /// 通知 HealthChanged 事件（供外部在直接修改 Health 属性后调用）
+        /// </summary>
+        public void NotifyHealthChanged()
+        {
+            HealthChanged?.Invoke(this);
+        }
+
         public void SetNumber(int index, int value)
         {
             int old = Numbers[index];
@@ -97,7 +105,7 @@ namespace Fida.Logic
         /// <returns></returns>
         public bool IsAlive()
         {
-            return Health != 0;
+            return Health > 0;
         }
 
         /// <summary>
@@ -120,9 +128,9 @@ namespace Fida.Logic
             }
         }
 
-        private static int CalNormalDamage(int damage, int health) 
+        private static int CalNormalDamage(int damage, int health)
         {
-            return Math.Abs(health - damage);
+            return health - damage;
         }
 
 

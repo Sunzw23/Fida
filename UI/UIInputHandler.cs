@@ -59,6 +59,8 @@ namespace Fida.UI
                     return ActionChooseTarget(gameManager);
                 case ActionType.ChooseNumber:
                     return ActionChooseNumber(gameManager);
+                case ActionType.DecideApply:
+                    return ActionDecideApply(gameManager);
                 default:
                     break;
             }
@@ -113,6 +115,13 @@ namespace Fida.UI
                     return ControllerChooseTarget(gameManager, focusedControl);
                 case ActionType.ChooseNumber:
                     return ControllerChooseNumber(gameManager, focusedControl);
+                case ActionType.DecideApply:
+                    return new GameAction
+                    {
+                        Type = ActionType.DecideApply,
+                        IsApply = true,
+                        TargetPlayerId = gameManager.CurrentPlayerId
+                    };
                 default:
                     break;
             }
@@ -269,6 +278,26 @@ namespace Fida.UI
             }
 
             // 没有点击任何有效按钮，返回空动作
+            return new GameAction { Type = ActionType.None };
+        }
+
+        /// <summary>
+        /// 处理 DecideApply（确认技能使用）的鼠标点击
+        /// </summary>
+        private GameAction ActionDecideApply(GameManager gameManager)
+        {
+            foreach (UIPlayer uiPlayer in _uiControls.OfType<UIPlayer>())
+            {
+                if (uiPlayer.Player.PlayerId == gameManager.CurrentPlayerId && CheckClickArea(uiPlayer.CardBounds))
+                {
+                    return new GameAction
+                    {
+                        Type = ActionType.DecideApply,
+                        IsApply = true,
+                        TargetPlayerId = uiPlayer.Player.PlayerId
+                    };
+                }
+            }
             return new GameAction { Type = ActionType.None };
         }
 

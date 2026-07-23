@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -11,7 +11,7 @@ namespace Fida.UI
         Vector2 Position { get; set; }
         SpriteFont Font { get; set; }
 
-        public UILabel(string text, Vector2 position, SpriteFont font)
+        public UILabel(int id, string text, Vector2 position, SpriteFont font) : base(id)
         {
             Text = text;
             Position = position;
@@ -25,10 +25,6 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
-            if (!IsVisible)
-            {
-                return; // 如果不可见，则不绘制
-            }
             if (string.IsNullOrEmpty(Text))
             {
                 return;

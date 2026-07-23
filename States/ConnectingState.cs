@@ -29,7 +29,7 @@ namespace Fida.States
 
             if (_networkManager.IsConnected)
             {
-                _uiManager.BuildConnectingScreen(_networkManager.StatusText);
+                // SwitchToState 内部的 BuildConnectingScreen 已处理 UI 构建
                 _stateMachine.SwitchToState(State.OnlineLobby);
             }
         }

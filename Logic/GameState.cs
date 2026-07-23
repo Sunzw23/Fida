@@ -31,8 +31,17 @@ namespace Fida.Logic
             if (sourcePlayerId != -1)
             {
                 SourcePlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == sourcePlayerId);
+                if (SourcePlayer == null)
+                {
+                    throw new ArgumentException($"Player with ID {sourcePlayerId} not found in GameManager.");
+                }
             }
         }
+
+        /// <summary>
+        /// 获取源玩家名称的安全访问器
+        /// </summary>
+        protected string SourcePlayerName => SourcePlayer?.Name ?? $"Player {SourcePlayerId}";
 
         /// <summary>
         /// 进入状态时执行的逻辑
@@ -129,6 +138,7 @@ namespace Fida.Logic
                 {
                     if (skill.Trigger == SkillTrigger.GameStart && skill.CanUse(GameManager, player))
                     {
+                        skill.Usage.MarkUsed();
                         var playerId = player.PlayerId;
                         var state = skill.CreateState(GameManager, new SkillContext(playerId));
                         if (state != null)
@@ -149,8 +159,21 @@ namespace Fida.Logic
     /// </summary>
     public class HandleStackState(GameManager gameManager) : GameState(gameManager)
     {
+        private const int MaxStackIterations = 100;
+
         public override void Enter()
         {
+            // 防止状态栈无限递归导致栈溢出
+            GameManager.StackIterationCount++;
+            if (GameManager.StackIterationCount > MaxStackIterations)
+            {
+                System.Diagnostics.Debug.WriteLine("WARNING: State stack iteration limit reached. Clearing stack.");
+                GameManager.StackIterationCount = 0;
+                GameManager.StateStack.Clear();
+                GameManager.TransitionTo(new PlayerTurnEndState(GameManager, GameManager.GetCurrentPlayer()?.PlayerId ?? 0));
+                return;
+            }
+
             if (GameManager.StateStack.Count > 0)
             {
                 var nextState = GameManager.StateStack.Pop();
@@ -198,6 +221,7 @@ namespace Fida.Logic
             {
                 if (skill.Trigger == SkillTrigger.TurnStart && skill.CanUse(GameManager, SourcePlayer))
                 {
+                    skill.Usage.MarkUsed();
                     var playerId = SourcePlayer.PlayerId;
                     var state = skill.CreateState(GameManager, new SkillContext(playerId));
                     if (state != null)
@@ -313,6 +337,22 @@ namespace Fida.Logic
     /// </summary>
     public class ApplyingEffectState : GameState
     {
+        // ─── 效果触发阈值常量 ──────────────────────────────────
+        private const int AttackThresholdSingle1 = 7;
+        private const int AttackThresholdSingle2 = 8;
+        private const int HealThresholdSingle = 9;
+        private const int ShieldNumber = 0;
+        private const int PairComboLow = 1;
+        private const int PairComboHigh = 6;
+        private const int PairFive = 5;
+        private const int PairSix = 6;
+        private const int AttackDamageSingle = 1;
+        private const int AttackDamagePairLow = 2;
+        private const int AttackDamagePairFive = 3;
+        private const int AttackDamagePairSix = 5;
+        private const int HealAmountSingle = 1;
+        private const int HealAmountPairZero = 10;
+
         public ApplyingEffectState(GameManager gameManager, int sourcePlayerId) : base(gameManager, sourcePlayerId) { }
 
         public override void Enter()
@@ -320,49 +360,49 @@ namespace Fida.Logic
             var numbers = SourcePlayer.Numbers;
 
             // 攻击 (数字变为 8 或 7)
-            if (numbers[0] == 8 || numbers[0] == 7)
+            if (numbers[0] == AttackThresholdSingle2 || numbers[0] == AttackThresholdSingle1)
             {
-                HandleAttackEffect(0, 1);
+                HandleAttackEffect(0, AttackDamageSingle);
                 return;
             }
-            if (numbers[1] == 8 || numbers[1] == 7)
+            if (numbers[1] == AttackThresholdSingle2 || numbers[1] == AttackThresholdSingle1)
             {
-                HandleAttackEffect(1, 1);
+                HandleAttackEffect(1, AttackDamageSingle);
                 return;
             }
             // 攻击 (数字变为 1 和 6)
-            if ((numbers[0] == 1 && numbers[1] == 6) || (numbers[0] == 6 && numbers[1] == 1))
+            if ((numbers[0] == PairComboLow && numbers[1] == PairComboHigh) || (numbers[0] == PairComboHigh && numbers[1] == PairComboLow))
             {
-                HandleAttackEffectBoth(2);
+                HandleAttackEffectBoth(AttackDamagePairLow);
                 return;
             }
             // 攻击 (数字变为 5 和 5)
-            if (numbers[0] == 5 && numbers[1] == 5)
+            if (numbers[0] == PairFive && numbers[1] == PairFive)
             {
-                HandleAttackEffectBoth(3);
+                HandleAttackEffectBoth(AttackDamagePairFive);
                 return;
             }
             // 攻击 (数字变为 6 和 6)
-            if (numbers[0] == 6 && numbers[1] == 6)
+            if (numbers[0] == PairSix && numbers[1] == PairSix)
             {
-                HandleAttackEffectBoth(5);
+                HandleAttackEffectBoth(AttackDamagePairSix);
                 return;
             }
             // 治愈 (数字变为 9)
-            if (numbers[0] == 9)
+            if (numbers[0] == HealThresholdSingle)
             {
-                HandleHealEffect(0, 1);
+                HandleHealEffect(0, HealAmountSingle);
                 return;
             }
-            if (numbers[1] == 9)
+            if (numbers[1] == HealThresholdSingle)
             {
-                HandleHealEffect(1, 1);
+                HandleHealEffect(1, HealAmountSingle);
                 return;
             }
             // 治愈 (两个数字都变为 0)
-            if (numbers[0] == 0 && numbers[1] == 0)
+            if (numbers[0] == ShieldNumber && numbers[1] == ShieldNumber)
             {
-                HandleHealEffectBoth(10);
+                HandleHealEffectBoth(HealAmountPairZero);
                 return;
             }
 
@@ -434,6 +474,7 @@ namespace Fida.Logic
             {
                 if (skill.Trigger == SkillTrigger.OrderedAttack && skill.CanUse(GameManager, SourcePlayer))
                 {
+                    skill.Usage.MarkUsed();
                     var state = skill.CreateState(GameManager, new SkillContext(SourcePlayerId));
                     if (state != null)
                     {
@@ -447,6 +488,7 @@ namespace Fida.Logic
                 var currentSkill = _ctx.SkillEnumerator.Current;
                 if (currentSkill.CanUse(GameManager, SourcePlayer))
                 {
+                    currentSkill.Usage.MarkUsed();
                     var skillState = currentSkill.CreateState(GameManager, _ctx);
                     if (skillState != null)
                     {
@@ -582,6 +624,7 @@ namespace Fida.Logic
                 var target = GameManager.Players.FirstOrDefault(p => p.PlayerId == _ctx.TargetPlayerId);
                 if (target != null && skill.CanUse(GameManager, target))
                 {
+                    skill.Usage.MarkUsed();
                     var subCtx = _ctx.Derive(target.PlayerId);
                     var state = skill.CreateState(GameManager, subCtx);
                     if (state != null)
@@ -622,6 +665,7 @@ namespace Fida.Logic
                 {
                     if (skill.Trigger == SkillTrigger.Damaging && skill.CanUse(GameManager, attacker))
                     {
+                        skill.Usage.MarkUsed();
                         var state = skill.CreateState(GameManager, _ctx.Derive(attacker.PlayerId));
                         if (state != null)
                             GameManager.StateStack.Push(state);
@@ -634,6 +678,7 @@ namespace Fida.Logic
             {
                 if (skill.Trigger == SkillTrigger.Damaged && skill.CanUse(GameManager, targetPlayer))
                 {
+                    skill.Usage.MarkUsed();
                     var state = skill.CreateState(GameManager, _ctx.Derive(targetPlayer.PlayerId));
                     if (state != null)
                         GameManager.StateStack.Push(state);

@@ -11,9 +11,10 @@ namespace Fida.Agent
     /// ONNX 推理助手类，用于加载和执行 ONNX 模型。
     /// 这是一个通用的类，可以被 AgentManager 用于多个模型。
     /// </summary>
-    public class OnnxInference
+    public class OnnxInference : IDisposable
     {
         private readonly InferenceSession _session;
+        private bool _disposed;
 
         /// <summary>
         /// 构造函数，加载指定的 ONNX 模型文件。
@@ -68,6 +69,13 @@ namespace Fida.Agent
 
                 return maxIndex;
             }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _session?.Dispose();
         }
     }
 }

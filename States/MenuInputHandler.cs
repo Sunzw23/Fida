@@ -4,7 +4,7 @@ using Fida.Network;
 using Fida.States;
 using Fida.UI;
 
-namespace Fida
+namespace Fida.States
 {
     /// <summary>
     /// 菜单输入处理 - 使用状态模式委托给具体的状态类

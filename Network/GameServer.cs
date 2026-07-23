@@ -20,9 +20,9 @@ namespace Fida.Network
         private CancellationTokenSource _cts;
         private readonly ConcurrentQueue<NetworkMessage> _incomingMessages = new();
         private readonly ConcurrentQueue<NetworkMessage> _outgoingMessages = new();
-        private bool _isRunning;
+        private volatile bool _isRunning;
         private bool _disposed;
-        private bool _clientConnected;
+        private volatile bool _clientConnected;
 
         /// <summary>
         /// 服务器是否正在运行
@@ -80,8 +80,16 @@ namespace Fida.Network
                     ClientConnected?.Invoke();
 
                     // 启动接收和发送循环
-                    _ = Task.Run(() => ReceiveLoop(_cts.Token));
-                    _ = Task.Run(() => SendLoop(_cts.Token));
+                    _ = Task.Run(() => ReceiveLoop(_cts.Token)).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted && t.Exception != null)
+                            System.Diagnostics.Debug.WriteLine($"[GameServer] ReceiveLoop task failed: {t.Exception.InnerException?.Message}");
+                    }, TaskContinuationOptions.OnlyOnFaulted);
+                    _ = Task.Run(() => SendLoop(_cts.Token)).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted && t.Exception != null)
+                            System.Diagnostics.Debug.WriteLine($"[GameServer] SendLoop task failed: {t.Exception.InnerException?.Message}");
+                    }, TaskContinuationOptions.OnlyOnFaulted);
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
@@ -133,7 +141,10 @@ namespace Fida.Network
                 _client?.Dispose();
                 _listener?.Stop();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GameServer] Error during stop: {ex.Message}");
+            }
 
             _clientStream = null;
             _client = null;
@@ -152,8 +163,9 @@ namespace Fida.Network
                         {
                             return NetworkMessage.ReadFromStream(_clientStream);
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            System.Diagnostics.Debug.WriteLine($"[GameServer] Receive read error: {ex.Message}");
                             return null;
                         }
                     }, ct);
@@ -167,7 +179,10 @@ namespace Fida.Network
                 }
             }
             catch (OperationCanceledException) { }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GameServer] {nameof(ReceiveLoop)}/{nameof(SendLoop)} error: {ex.Message}");
+            }
 
             if (_isRunning)
             {
@@ -196,7 +211,10 @@ namespace Fida.Network
                 }
             }
             catch (OperationCanceledException) { }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GameServer] {nameof(ReceiveLoop)}/{nameof(SendLoop)} error: {ex.Message}");
+            }
         }
 
         public void Dispose()
