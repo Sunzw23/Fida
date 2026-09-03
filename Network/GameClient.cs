@@ -34,7 +34,7 @@ namespace Fida.Network
         /// <summary>
         /// 当连接成功时触发
         /// </summary>
-        public event Action Connected;
+        public event System.Action Connected;
 
         /// <summary>
         /// 连接到指定 IPv6 地址和端口的服务器（非阻塞）

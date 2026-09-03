@@ -15,6 +15,10 @@ namespace Fida.UI
         /// </summary>
         public string Name { get; set; } = "";
 
+        /// <summary>
+        /// 控件是否可见（不可见时 Draw 不绘制）
+        /// </summary>
+        public virtual bool IsVisible { get; set; } = true;
         // ─── 焦点导航支持 ──────────────────────────────────
         /// <summary>
         /// 此控件是否拥有手柄焦点

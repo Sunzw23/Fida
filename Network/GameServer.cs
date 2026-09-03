@@ -37,7 +37,7 @@ namespace Fida.Network
         /// <summary>
         /// 当客户端连接时触发
         /// </summary>
-        public event Action ClientConnected;
+        public event System.Action ClientConnected;
 
         /// <summary>
         /// 当客户端断开时触发

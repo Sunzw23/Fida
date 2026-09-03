@@ -11,7 +11,7 @@ namespace Fida.UI
         Vector2 Position { get; set; }
         SpriteFont Font { get; set; }
 
-        public UILabel(string text, Vector2 position, SpriteFont font)
+        public UILabel(int id, string text, Vector2 position, SpriteFont font) : base(id)
         {
             Text = text;
             Position = position;

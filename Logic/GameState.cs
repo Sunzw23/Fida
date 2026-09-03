@@ -220,11 +220,13 @@ namespace Fida.Logic
     {
         private readonly int _initialStage;
         private readonly int _initialFirstNumberIndex;
+        private readonly bool _changeBothNumbers;
 
-        public ChooseNumberIndexState(GameManager gameManager, int sourcePlayerId, int stage = 0, int firstNumberIndex = -1) : base(gameManager, sourcePlayerId)
+        public ChooseNumberIndexState(GameManager gameManager, int sourcePlayerId, int stage = 0, int firstNumberIndex = -1, bool changeBothNumbers = false) : base(gameManager, sourcePlayerId)
         {
             _initialStage = stage;
             _initialFirstNumberIndex = firstNumberIndex;
+            _changeBothNumbers = changeBothNumbers;
         }
 
         public int Stage => StepIndex;
@@ -298,8 +300,17 @@ namespace Fida.Logic
             var newCalculatedNumber = (SourcePlayer.Numbers[firstNumberIndex] + otherPlayerSelected.Numbers[secondAction.NumberIndex]) % 10;
 
 
-            GameManager.SetGameMessage(GameText.NumberChangedSingleCheckEffect(SourcePlayer.Name, SourcePlayer.Numbers[firstNumberIndex], newCalculatedNumber));
-            SourcePlayer.SetNumber(firstNumberIndex, newCalculatedNumber);
+            if (_changeBothNumbers)
+            {
+                GameManager.SetGameMessage(GameText.NumberChangedBothCheckEffect(SourcePlayer.Name, newCalculatedNumber));
+                SourcePlayer.SetNumber(0, newCalculatedNumber);
+                SourcePlayer.SetNumber(1, newCalculatedNumber);
+            }
+            else
+            {
+                GameManager.SetGameMessage(GameText.NumberChangedSingleCheckEffect(SourcePlayer.Name, SourcePlayer.Numbers[firstNumberIndex], newCalculatedNumber));
+                SourcePlayer.SetNumber(firstNumberIndex, newCalculatedNumber);
+            }
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             
 
