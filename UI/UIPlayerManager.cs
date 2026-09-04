@@ -199,10 +199,10 @@ namespace Fida.UI
             if (_gameManager == null) return;
 
             // 找到当前回合玩家的 UIPlayer
-            var uiPlayer = _uiPlayers.FirstOrDefault(p => p.Player.PlayerId == _gameManager.CurrentPlayerId);
+            var uiPlayer = _uiPlayers.FirstOrDefault(p => p.Player.PlayerId == _gameManager.Query.CurrentPlayerId);
             if (uiPlayer == null) return;
 
-            int firstChosenIndex = _gameManager.GetFirstChosenNumberIndex();
+            int firstChosenIndex = _gameManager.Query.GetFirstChosenNumberIndex();
 
             if (firstChosenIndex < 0)
             {
@@ -223,17 +223,17 @@ namespace Fida.UI
             if (_gameManager == null) return false;
             
             // 非本地玩家回合时禁用所有按钮
-            if (_gameManager.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
+            if (_gameManager.Query.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
             
             // 不是选择数字索引操作时禁用
             if (_gameManager.CurrentActionType != ActionType.ChooseNumberIndex) return false;
             
-            bool isFirstStage = _gameManager.IsChooseFirstNumberIndexState();
+            bool isFirstStage = _gameManager.Query.IsChooseFirstNumberIndexState();
             
             // 第一阶段：只有当前操作的玩家可以选择
             if (isFirstStage)
             {
-                return playerId == _gameManager.CurrentPlayerId && _gameManager.Players[playerId].IsAlive();
+                return playerId == _gameManager.Query.CurrentPlayerId && _gameManager.Players[playerId].IsAlive();
             }
             // 第二阶段：所有存活玩家的数字都可以选择（包括自己的另一个数字）
             else
@@ -248,7 +248,7 @@ namespace Fida.UI
         private bool ShouldPlayerCardBeEnabled(int playerId)
         {
             if (_gameManager == null) return false;
-            if (_gameManager.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
+            if (_gameManager.Query.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
             if (_gameManager.CurrentActionType != ActionType.ChooseTarget) return false;
             return _gameManager.Players[playerId].IsAlive();
         }
@@ -261,7 +261,7 @@ namespace Fida.UI
             if (_gameManager == null) return false;
             
             // 非本地玩家回合时禁用所有按钮
-            if (_gameManager.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
+            if (_gameManager.Query.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
             
             // 不是选择目标操作时禁用
             if (_gameManager.CurrentActionType != ActionType.ChooseTarget) return false;

@@ -36,6 +36,18 @@ namespace Fida.Logic
 
         // --- State Management ---
         private GameState _currentState;
+        public GameState CurrentState => _currentState;
+
+        /// <summary>
+        /// 状态信息查询对象 — 集中封装对当前状态/当前回合玩家的只读查询
+        /// </summary>
+        public GameQuery Query { get; private set; }
+
+        public GameManager()
+        {
+            Query = new GameQuery(this);
+        }
+
         public Stack<GameState> StateStack { get; private set; } = new();
 
         /// <summary>
@@ -126,52 +138,6 @@ namespace Fida.Logic
             GameMessage = message;
             OnMessageUpdated(new GameEventArgs { Message = message });
         }
-
-        #region State Information for Agents
-        public int CurrentPlayerId => Players.Count > 0 && CurrentPlayerIndex >= 0 && CurrentPlayerIndex < Players.Count ? Players[CurrentPlayerIndex].PlayerId : -1;
-        public bool IsChooseFirstNumberIndexState()
-        {
-            if (_currentState is ChooseNumberIndexState chooseState && chooseState.Stage == 0)
-            {
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// 获取第一步已选择的数字索引（仅在 ChooseNumberIndexState 的第二阶段有效）
-        /// 返回 -1 表示不在第二阶段或第一步尚未完成
-        /// </summary>
-        public int GetFirstChosenNumberIndex()
-        {
-            if (_currentState is ChooseNumberIndexState chooseState && chooseState.Stage == 1)
-            {
-                return chooseState.FirstStepNumberIndex;
-            }
-            return -1;
-        }
-
-        public bool IsDamaging()
-        {
-            if (_currentState is TargetSelectionState targetSelectionState && (targetSelectionState.DamageValue > 0 || targetSelectionState.HealingValue < 0))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        public bool IsHealing()
-        {
-            if (_currentState is TargetSelectionState targetSelectionState && targetSelectionState.HealingValue > 0)
-            {
-                return true;
-            }
-            return false;
-        }
-
-
-
-        #endregion
 
         #region Event Invokers
 

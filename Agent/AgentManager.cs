@@ -128,7 +128,7 @@ namespace Fida.Agent
         {
             _gameManager = gameManager;
             // 如果没有指定 sourcePlayerId，使用 CurrentPlayerId
-            var playerId = sourcePlayerId != -1 ? sourcePlayerId : gameManager.CurrentPlayerId;
+            var playerId = sourcePlayerId != -1 ? sourcePlayerId : gameManager.Query.CurrentPlayerId;
             var currentActionType = gameManager.CurrentActionType;
 
             switch (currentActionType)
@@ -148,7 +148,7 @@ namespace Fida.Agent
 
         private GameAction HandleChooseNumberIndexAction(int sourcePlayerId)
         {
-            if (_gameManager.IsChooseFirstNumberIndexState())
+            if (_gameManager.Query.IsChooseFirstNumberIndexState())
             {
                 var onnxInference = GetOnnxInference(sourcePlayerId);
                 if (onnxInference != null)
@@ -172,7 +172,7 @@ namespace Fida.Agent
 
         private GameAction HandleChooseTargetAction(int sourcePlayerId)
         {
-            if (_gameManager.IsDamaging())
+            if (_gameManager.Query.IsDamaging())
             {
                 // 攻击时，选择一个存活的敌方玩家作为目标
                 // 优先选择生命值最低的敌人
@@ -184,7 +184,7 @@ namespace Fida.Agent
                 }
                 return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = 0 };
             }
-            else if (_gameManager.IsHealing())
+            else if (_gameManager.Query.IsHealing())
             {
                 // 治疗时，选择自己或生命值最低的队友
                 return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = sourcePlayerId };
@@ -207,7 +207,7 @@ namespace Fida.Agent
 
         private void HandleChooseNumberIndex(int sourcePlayerId)
         {
-            if (_gameManager.IsChooseFirstNumberIndexState())
+            if (_gameManager.Query.IsChooseFirstNumberIndexState())
             {
                 // 选择第一个数字
                 var onnxInference = GetOnnxInference(sourcePlayerId);
@@ -238,11 +238,11 @@ namespace Fida.Agent
 
         private void HandleChooseTarget(int sourcePlayerId)
         {
-            if (_gameManager.IsDamaging())
+            if (_gameManager.Query.IsDamaging())
             {
                 EmitSignalChooseTarget(0);
             }
-            else if (_gameManager.IsHealing())
+            else if (_gameManager.Query.IsHealing())
             {
                 EmitSignalChooseTarget(sourcePlayerId);
             }
