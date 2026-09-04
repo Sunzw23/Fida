@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fida.Logic;
 
@@ -13,6 +14,7 @@ namespace Fida.Network
     {
         private GameServer _gameServer;
         private GameClient _gameClient;
+        private GameRelayHost _relayHost;
         private readonly ServerConfig _serverConfig;
         private bool _isHost;
         private bool _disposed;
@@ -23,6 +25,7 @@ namespace Fida.Network
         /// <summary>是否已建立网络连接（主机有客户端连入，或客机已连上服务器）</summary>
         public bool IsConnected =>
             (_isHost && _gameServer != null && _gameServer.HasClientConnected) ||
+            (_isHost && _relayHost != null && _relayHost.HasClientConnected) ||
             (!_isHost && _gameClient != null && _gameClient.IsConnected);
 
         /// <summary>当前状态文本（用于 UI 显示）</summary>
@@ -60,10 +63,22 @@ namespace Fida.Network
         /// <summary>获取 CSV 中配置的端口</summary>
         public int GetServerPort() => _serverConfig?.GetServerPort() ?? 8888;
 
-        /// <summary>启动主机模式：创建服务器并开始监听</summary>
-        public void StartHosting(string ipAddress, int port)
+        /// <summary>获取 CSV 中第一行服务器是否为 relay</summary>
+        public bool GetServerIsRelay() => _serverConfig?.GetServers()?.FirstOrDefault()?.IsRelay ?? false;
+
+        /// <summary>启动主机模式：直连监听 或 连接 relay 作为主机端</summary>
+        public void StartHosting(string ipAddress, int port, bool isRelay = false)
         {
             _isHost = true;
+
+            if (isRelay)
+            {
+                _relayHost = new GameRelayHost();
+                _relayHost.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
+                _relayHost.Start(ipAddress, port);
+                StatusText = $"等待对手连接...\nrelay: {ipAddress}:{port}";
+                return;
+            }
 
             _gameServer = new GameServer(ipAddress, port);
             _gameServer.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
@@ -72,23 +87,26 @@ namespace Fida.Network
             StatusText = $"等待对手连接...\n地址: [{ipAddress}]:{port}";
         }
 
-        /// <summary>启动客机模式：连接到远程服务器</summary>
-        public void StartConnecting(string ipAddress, int port)
+        /// <summary>启动客机模式：直连服务器 或 连接 relay 作为客机端</summary>
+        public void StartConnecting(string ipAddress, int port, bool isRelay = false)
         {
             _isHost = false;
 
             _gameClient = new GameClient();
             _gameClient.Connected += () => ConnectedToServer?.Invoke();
             _gameClient.Disconnected += (msg) => Disconnected?.Invoke(msg);
-            _gameClient.Connect(ipAddress, port);
+            _gameClient.Connect(ipAddress, port, isRelay ? (byte)'C' : (byte)0);
 
-            StatusText = $"正在连接到 [{ipAddress}]:{port} ...";
+            StatusText = isRelay
+                ? $"正在通过 relay 连接 {ipAddress}:{port} ..."
+                : $"正在连接到 [{ipAddress}]:{port} ...";
         }
 
         /// <summary>主机每帧调用：检查是否有客户端连入</summary>
         public bool CheckHostConnection()
         {
-            if (_isHost && _gameServer != null && _gameServer.HasClientConnected)
+            if ((_isHost && _gameServer != null && _gameServer.HasClientConnected) ||
+                (_isHost && _relayHost != null && _relayHost.HasClientConnected))
             {
                 StatusText = "对手已连接！正在进入大厅...";
                 ClientConnected?.Invoke();
@@ -96,6 +114,7 @@ namespace Fida.Network
             }
             return false;
         }
+
 
         /// <summary>
         /// 处理大厅消息（在 OnlineLobby 状态时每帧调用）
@@ -106,8 +125,11 @@ namespace Fida.Network
 
             if (_isHost && _gameServer != null)
                 messages = _gameServer.ReceiveMessages();
+            else if (_isHost && _relayHost != null)
+                messages = _relayHost.ReceiveMessages();
             else if (!_isHost && _gameClient != null)
                 messages = _gameClient.ReceiveMessages();
+
 
             if (messages == null)
                 return;
@@ -156,6 +178,9 @@ namespace Fida.Network
 
             if (_isHost && _gameServer != null)
                 _gameServer.SendToClient(message);
+            else if (_isHost && _relayHost != null)
+                _relayHost.SendToClient(message);
+
         }
 
         /// <summary>
@@ -180,6 +205,9 @@ namespace Fida.Network
 
             if (_isHost && _gameServer != null)
                 _gameServer.SendToClient(message);
+            else if (_isHost && _relayHost != null)
+                _relayHost.SendToClient(message);
+
         }
 
         /// <summary>接收远程消息并应用到 GameManager</summary>
@@ -189,8 +217,11 @@ namespace Fida.Network
 
             if (_isHost && _gameServer != null)
                 messages = _gameServer.ReceiveMessages();
+            else if (_isHost && _relayHost != null)
+                messages = _relayHost.ReceiveMessages();
             else if (!_isHost && _gameClient != null)
                 messages = _gameClient.ReceiveMessages();
+
 
             if (messages == null)
                 return;
@@ -213,8 +244,11 @@ namespace Fida.Network
 
             if (_isHost && _gameServer != null)
                 _gameServer.SendToClient(message);
+            else if (_isHost && _relayHost != null)
+                _relayHost.SendToClient(message);
             else if (!_isHost && _gameClient != null)
                 _gameClient.SendMessage(message);
+
         }
 
         /// <summary>获取本地玩家 ID（主机=0，客机=1）</summary>
@@ -228,6 +262,9 @@ namespace Fida.Network
 
             _gameClient?.Disconnect();
             _gameClient = null;
+
+            _relayHost?.Stop();
+            _relayHost = null;
 
             _isHost = false;
             StatusText = string.Empty;

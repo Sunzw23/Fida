@@ -15,13 +15,13 @@ namespace Fida.States
         {
             BindButton("hostGame", () =>
             {
-                _networkManager.StartHosting(_networkManager.GetServerAddress(), _networkManager.GetServerPort());
+                _networkManager.StartHosting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), _networkManager.GetServerIsRelay());
                 _stateMachine.SwitchToState(State.Hosting);
             });
 
             BindButton("joinGame", () =>
             {
-                _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort());
+                _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), _networkManager.GetServerIsRelay());
                 _stateMachine.SwitchToState(State.Connecting);
             });
 

@@ -37,11 +37,13 @@ namespace Fida.Network
         public event System.Action Connected;
 
         /// <summary>
-        /// 连接到指定 IPv6 地址和端口的服务器（非阻塞）
+        /// 连接到指定地址和端口的服务器（非阻塞）。
+        /// roleByte 用于 relay 模式：客机发 'C' 告诉 relay 自己是客机角色（见 GameRelayHost）。
         /// </summary>
-        /// <param name="ipAddress">IPv6 地址字符串</param>
+        /// <param name="ipAddress">地址字符串</param>
         /// <param name="port">端口号</param>
-        public void Connect(string ipAddress, int port)
+        /// <param name="roleByte">可选，relay 角色字节（0 = 无角色）</param>
+        public void Connect(string ipAddress, int port, byte roleByte = 0)
         {
             if (_isConnected)
                 return;
@@ -59,6 +61,11 @@ namespace Fida.Network
 
                     await _tcpClient.ConnectAsync(addr, port, _cts.Token);
                     _stream = _tcpClient.GetStream();
+                    if (roleByte != 0)
+                    {
+                        await _stream.WriteAsync(new byte[] { roleByte }, _cts.Token);
+                        await _stream.FlushAsync(_cts.Token);
+                    }
                     _isConnected = true;
 
                     Connected?.Invoke();

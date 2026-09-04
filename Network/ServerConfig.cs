@@ -13,6 +13,7 @@ namespace Fida.Network
         public string Address { get; set; } = "::1";
         public int Port { get; set; } = 8888;
         public string Name { get; set; } = string.Empty;
+        public bool IsRelay { get; set; }
 
         public override string ToString()
         {
@@ -95,6 +96,7 @@ namespace Fida.Network
                 string addressStr = parts[0].Trim();
                 string portStr = parts[1].Trim();
                 string name = parts.Length >= 3 ? parts[2].Trim() : addressStr;
+                bool isRelay = parts.Length >= 4 && string.Equals(parts[3].Trim(), "relay", System.StringComparison.OrdinalIgnoreCase);
 
                 // 去掉 IPv6 地址的方括号
                 addressStr = addressStr.Trim('[', ']');
@@ -106,7 +108,8 @@ namespace Fida.Network
                 {
                     Address = addressStr,
                     Port = port,
-                    Name = name
+                    Name = name,
+                    IsRelay = isRelay
                 });
             }
 
