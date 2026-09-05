@@ -1,11 +1,12 @@
 {
   "controls": [
-    { "type": "label", "name": "title", "id": 0, "text": "选择关卡", "position": { "x": 960, "y": 300 } },
-    { "type": "button", "name": "DefaultScene", "id": 1, "text": "默认场景", "bounds": { "x": 760, "y": 420, "width": 400, "height": 80 } },
-    { "type": "button", "name": "Scene1", "id": 2, "text": "场景一", "bounds": { "x": 760, "y": 520, "width": 400, "height": 80 } },
-    { "type": "button", "name": "Scene2", "id": 3, "text": "场景二", "bounds": { "x": 760, "y": 620, "width": 400, "height": 80 } },
-    { "type": "button", "name": "Scene3", "id": 4, "text": "场景三", "bounds": { "x": 760, "y": 720, "width": 400, "height": 80 } },
-    { "type": "button", "name": "Scene4", "id": 5, "text": "场景四", "bounds": { "x": 760, "y": 820, "width": 400, "height": 80 } },
-    { "type": "button", "name": "back", "id": 6, "text": "返回", "bounds": { "x": 760, "y": 980, "width": 400, "height": 70 } }
+    { "type": "panel", "name": "panel", "id": 0 },
+    { "type": "title", "name": "title", "id": 1, "text": "Select Level", "position": { "x": 960, "y": 260 } },
+    { "type": "button", "name": "DefaultScene", "id": 2, "text": "Default Scene", "bounds": { "x": 780, "y": 400, "width": 360, "height": 80 } },
+    { "type": "button", "name": "Scene1", "id": 3, "text": "Scene 1", "bounds": { "x": 780, "y": 500, "width": 360, "height": 80 } },
+    { "type": "button", "name": "Scene2", "id": 4, "text": "Scene 2", "bounds": { "x": 780, "y": 600, "width": 360, "height": 80 } },
+    { "type": "button", "name": "Scene3", "id": 5, "text": "Scene 3", "bounds": { "x": 780, "y": 700, "width": 360, "height": 80 } },
+    { "type": "button", "name": "Scene4", "id": 6, "text": "Scene 4", "bounds": { "x": 780, "y": 800, "width": 360, "height": 80 } },
+    { "type": "button", "name": "back", "id": 7, "text": "Back", "bounds": { "x": 800, "y": 940, "width": 320, "height": 70 } }
   ]
 }

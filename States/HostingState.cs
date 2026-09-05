@@ -35,7 +35,7 @@ namespace Fida.States
             {
                 _lastShownCode = code;
                 _uiManager.GetLabelByName("roomCodeLabel")?.Update(
-                    code.Length == 4 ? $"房间码: {code}" : "房间码: 生成中...");
+                    code.Length == 4 ? $"Room: {code}" : "Room: generating...");
             }
 
             if (_networkManager.CheckHostConnection())

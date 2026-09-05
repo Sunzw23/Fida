@@ -79,7 +79,7 @@ namespace Fida.Network
                 _relayHost = new GameRelayHost();
                 _relayHost.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
                 _relayHost.Start(ipAddress, port);
-                StatusText = $"等待对手连接...\nrelay: {ipAddress}:{port}";
+                StatusText = $"Waiting for opponent...\nrelay: {ipAddress}:{port}";
                 return;
             }
 
@@ -87,7 +87,7 @@ namespace Fida.Network
             _gameServer.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
             _gameServer.Start();
 
-            StatusText = $"等待对手连接...\n地址: [{ipAddress}]:{port}";
+            StatusText = $"Waiting for opponent...\naddress: [{ipAddress}]:{port}";
         }
 
         /// <summary>启动客机模式：直连服务器 或 连接 relay 作为客机端</summary>
@@ -101,8 +101,8 @@ namespace Fida.Network
             _gameClient.Connect(ipAddress, port, isRelay ? (byte)'C' : (byte)0, roomCode);
 
             StatusText = isRelay
-                ? $"正在通过 relay 连接 {ipAddress}:{port} (房间码: {roomCode})"
-                : $"正在连接到 [{ipAddress}]:{port} ...";
+                ? $"Connecting via relay {ipAddress}:{port} (room code: {roomCode})"
+                : $"Connecting to [{ipAddress}]:{port} ...";
         }
 
         /// <summary>主机每帧调用：检查是否有客户端连入</summary>
@@ -111,7 +111,7 @@ namespace Fida.Network
             if ((_isHost && _gameServer != null && _gameServer.HasClientConnected) ||
                 (_isHost && _relayHost != null && _relayHost.HasClientConnected))
             {
-                StatusText = "对手已连接！正在进入大厅...";
+                StatusText = "Opponent connected! Entering lobby...";
                 ClientConnected?.Invoke();
                 return true;
             }

@@ -1,7 +1,9 @@
 {
   "controls": [
-    { "type": "label", "name": "roomCodeLabel", "id": 0, "text": "房间码: {roomCode}", "position": { "x": 960, "y": 440 } },
-    { "type": "label", "name": "statusLabel", "id": 1, "text": "{status}", "position": { "x": 960, "y": 520 } },
-    { "type": "button", "name": "cancelHost", "id": 2, "text": "取消", "bounds": { "x": 860, "y": 640, "width": 200, "height": 80 } }
+    { "type": "panel", "name": "panel", "id": 0 },
+    { "type": "title", "name": "title", "id": 1, "text": "Hosting a Game", "position": { "x": 960, "y": 320 } },
+    { "type": "label", "name": "roomCodeLabel", "id": 2, "text": "Room: {roomCode}", "position": { "x": 960, "y": 450 } },
+    { "type": "label", "name": "statusLabel", "id": 3, "text": "{status}", "position": { "x": 960, "y": 520 } },
+    { "type": "button", "name": "cancelHost", "id": 4, "text": "Cancel", "bounds": { "x": 800, "y": 640, "width": 320, "height": 80 } }
   ]
 }

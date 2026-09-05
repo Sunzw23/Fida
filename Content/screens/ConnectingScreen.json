@@ -1,6 +1,8 @@
 {
   "controls": [
-    { "type": "label", "name": "statusLabel", "id": 0, "text": "{status}", "position": { "x": 960, "y": 520 } },
-    { "type": "button", "name": "cancelConnect", "id": 1, "text": "取消", "bounds": { "x": 860, "y": 640, "width": 200, "height": 80 } }
+    { "type": "panel", "name": "panel", "id": 0 },
+    { "type": "title", "name": "title", "id": 1, "text": "Connecting", "position": { "x": 960, "y": 360 } },
+    { "type": "label", "name": "statusLabel", "id": 2, "text": "{status}", "position": { "x": 960, "y": 480 } },
+    { "type": "button", "name": "cancelConnect", "id": 3, "text": "Cancel", "bounds": { "x": 800, "y": 620, "width": 320, "height": 80 } }
   ]
 }

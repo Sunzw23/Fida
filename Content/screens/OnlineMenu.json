@@ -1,8 +1,10 @@
 {
   "controls": [
-    { "type": "button", "name": "hostGame", "id": 0, "text": "创建房间 (主机)", "bounds": { "x": 810, "y": 400, "width": 300, "height": 80 } },
-    { "type": "textbox", "name": "roomCodeInput", "id": 1, "text": "输入4位房间码", "bounds": { "x": 810, "y": 510, "width": 300, "height": 50 } },
-    { "type": "button", "name": "joinGame", "id": 2, "text": "加入房间 (客机)", "bounds": { "x": 810, "y": 600, "width": 300, "height": 80 } },
-    { "type": "button", "name": "backToMain", "id": 3, "text": "返回", "bounds": { "x": 810, "y": 710, "width": 300, "height": 80 } }
+    { "type": "panel", "name": "panel", "id": 0 },
+    { "type": "title", "name": "title", "id": 1, "text": "Online", "position": { "x": 960, "y": 280 } },
+    { "type": "button", "name": "hostGame", "id": 2, "text": "Host Game", "bounds": { "x": 780, "y": 400, "width": 360, "height": 80 } },
+    { "type": "textbox", "name": "roomCodeInput", "id": 3, "text": "4-digit room code", "bounds": { "x": 780, "y": 500, "width": 360, "height": 50 } },
+    { "type": "button", "name": "joinGame", "id": 4, "text": "Join Game", "bounds": { "x": 780, "y": 590, "width": 360, "height": 80 } },
+    { "type": "button", "name": "backToMain", "id": 5, "text": "Main Menu", "bounds": { "x": 780, "y": 720, "width": 360, "height": 80 } }
   ]
 }

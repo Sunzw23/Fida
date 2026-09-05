@@ -1,7 +1,9 @@
 {
   "controls": [
-    { "type": "button", "name": "startGame", "id": 0, "text": "开始", "bounds": { "x": 860, "y": 460, "width": 200, "height": 80 } },
-    { "type": "button", "name": "onlineMode", "id": 1, "text": "联机模式", "bounds": { "x": 860, "y": 580, "width": 200, "height": 80 } },
-    { "type": "button", "name": "exit", "id": 2, "text": "退出", "bounds": { "x": 860, "y": 700, "width": 200, "height": 80 } }
+    { "type": "panel", "name": "panel", "id": 0 },
+    { "type": "title", "name": "title", "id": 1, "text": "Fida", "position": { "x": 960, "y": 320 } },
+    { "type": "button", "name": "startGame", "id": 2, "text": "Start", "bounds": { "x": 800, "y": 480, "width": 320, "height": 80 } },
+    { "type": "button", "name": "onlineMode", "id": 3, "text": "Online", "bounds": { "x": 800, "y": 600, "width": 320, "height": 80 } },
+    { "type": "button", "name": "exit", "id": 4, "text": "Exit", "bounds": { "x": 800, "y": 720, "width": 320, "height": 80 } }
   ]
 }

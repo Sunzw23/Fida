@@ -84,8 +84,8 @@ namespace Fida
                 // PvP 模式：两个玩家对战
                 var players = new List<Player>
                 {
-                    new Player(0, "玩家1"),
-                    new Player(1, "玩家2")
+                    new Player(0, "Player 1"),
+                    new Player(1, "Player 2")
                 };
 
                 _uiManager.GameManager.LocalPlayerId = localId;
@@ -99,8 +99,8 @@ namespace Fida
                 // Co-op 模式：两个人类玩家合作对战两个 Agent
                 var players = new List<Player>
                 {
-                    new Player(0, "玩家1"),   // 主机
-                    new Player(1, "玩家2"),   // 客机
+                    new Player(0, "Player 1"),   // 主机
+                    new Player(1, "Player 2"),   // 客机
                     new Player(2, "Agent 1"), // AI 对手
                     new Player(3, "Agent 2")  // AI 对手
                 };
@@ -108,8 +108,8 @@ namespace Fida
                 // 分组：人类玩家一组，Agent 一组
                 var groups = new List<Group>
                 {
-                    new Group(0, "人类联盟", [players[0], players[1]]),
-                    new Group(1, "Agent 联盟", [players[2], players[3]])
+                    new Group(0, "Allies", [players[0], players[1]]),
+                    new Group(1, "Agents", [players[2], players[3]])
                 };
 
                 _uiManager.GameManager.LocalPlayerId = localId;

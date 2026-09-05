@@ -174,7 +174,7 @@ namespace Fida.Logic
         public void ForceEndGame(int winnerPlayerId)
         {
             var winner = Players.FirstOrDefault(p => p.PlayerId == winnerPlayerId);
-            var winnerName = winner?.Name ?? $"玩家{winnerPlayerId}";
+            var winnerName = winner?.Name ?? $"Player {winnerPlayerId}";
             SetGameMessage(GameText.GameEndWithWinner(winnerName));
             OnGameEnded(new GameEndEventArgs
             {
