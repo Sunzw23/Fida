@@ -44,10 +44,11 @@ namespace Fida.UI
 
 
 
-        public void UpdateText(string text)
+        public override void Update(string newText)
         {
-            Text = text;
+            Text = newText;
         }
+
 
 
     }

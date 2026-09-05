@@ -21,6 +21,12 @@ namespace Fida.States
         private readonly List<(UIButton button, Action<UIButton> handler)> _boundButtons
             = new List<(UIButton, Action<UIButton>)>();
 
+        /// <summary>
+        /// 已绑定的房间码输入框及其提交处理委托，用于在 OnExit 时统一解绑
+        /// </summary>
+        private readonly List<(UIRoomCodeInput box, Action<string> handler)> _boundTextBoxes
+            = new List<(UIRoomCodeInput, Action<string>)>();
+
         protected StateBase(UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
         {
             _uiManager = uiManager;
@@ -43,6 +49,19 @@ namespace Fida.States
         }
 
         /// <summary>
+        /// 绑定房间码输入框的提交事件 - 子类在 OnEnter 中调用
+        /// </summary>
+        protected void BindTextBox(string name, Action<string> handler)
+        {
+            var box = _uiManager.GetTextBoxByName(name);
+            if (box != null)
+            {
+                box.Submitted += handler;
+                _boundTextBoxes.Add((box, handler));
+            }
+        }
+
+        /// <summary>
         /// 解绑所有已绑定的按钮事件 - 在 OnExit 中调用
         /// </summary>
         protected void UnbindAll()
@@ -52,6 +71,12 @@ namespace Fida.States
                 button.Clicked -= handler;
             }
             _boundButtons.Clear();
+
+            foreach (var (box, handler) in _boundTextBoxes)
+            {
+                box.Submitted -= handler;
+            }
+            _boundTextBoxes.Clear();
         }
 
         /// <summary>

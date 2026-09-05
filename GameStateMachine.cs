@@ -74,7 +74,7 @@ namespace Fida
                 case State.Paused:        _uiManager.BuildPauseMenu(); break;
                 case State.GameOver:      break;
                 case State.OnlineMenu:    _uiManager.BuildOnlineMenu(); break;
-                case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText); break;
+                case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText, _networkManager.HostRoomCode); break;
                 case State.Connecting:    _uiManager.BuildConnectingScreen(_networkManager.StatusText); break;
                 case State.OnlineLobby:   _uiManager.BuildOnlineLobby(_networkManager.IsHost); break;
                 case State.OnlinePlaying: _uiManager.BuildPlayingUI(_uiManager.GameManager); break;

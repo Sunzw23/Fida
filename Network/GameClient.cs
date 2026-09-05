@@ -38,12 +38,14 @@ namespace Fida.Network
 
         /// <summary>
         /// 连接到指定地址和端口的服务器（非阻塞）。
-        /// roleByte 用于 relay 模式：客机发 'C' 告诉 relay 自己是客机角色（见 GameRelayHost）。
+        /// relay 模式：发 'C' + 0x01 + 4 位房间码，等 relay 回 0x03 才视为连接成功。
+        /// 直连模式：roleByte=0 且无房间码，行为与旧版一致。
         /// </summary>
         /// <param name="ipAddress">地址字符串</param>
         /// <param name="port">端口号</param>
         /// <param name="roleByte">可选，relay 角色字节（0 = 无角色）</param>
-        public void Connect(string ipAddress, int port, byte roleByte = 0)
+        /// <param name="roomCode">可选，4 位房间码（relay 模式必填）</param>
+        public void Connect(string ipAddress, int port, byte roleByte = 0, string roomCode = null)
         {
             if (_isConnected)
                 return;
@@ -61,11 +63,35 @@ namespace Fida.Network
 
                     await _tcpClient.ConnectAsync(addr, port, _cts.Token);
                     _stream = _tcpClient.GetStream();
+
                     if (roleByte != 0)
                     {
-                        await _stream.WriteAsync(new byte[] { roleByte }, _cts.Token);
+                        if (string.IsNullOrEmpty(roomCode))
+                            throw new System.IO.IOException("relay 模式需要 4 位房间码");
+
+                        // 发 'C' + 0x01 + 4 位 ASCII 房间码（大写归一化）
+                        string code = roomCode.Trim().ToUpperInvariant();
+                        if (code.Length != 4)
+                            throw new System.IO.IOException("房间码无效（需要 4 位）");
+
+                        var payload = new byte[6];
+                        payload[0] = roleByte;
+                        payload[1] = 0x01;
+                        System.Text.Encoding.ASCII.GetBytes(code, 0, 4, payload, 2);
+
+                        await _stream.WriteAsync(payload, 0, payload.Length, _cts.Token);
                         await _stream.FlushAsync(_cts.Token);
+
+                        // relay 回 0x03 = join OK；错误码/房间不存在 → relay 直接断开
+                        int oldTimeout = _tcpClient.ReceiveTimeout;
+                        _tcpClient.ReceiveTimeout = 10_000;
+                        var ack = new byte[] { 0 };
+                        int n = _stream.Read(ack, 0, 1);
+                        _tcpClient.ReceiveTimeout = oldTimeout;
+                        if (n <= 0 || ack[0] != 0x03)
+                            throw new System.IO.IOException("房间码无效或房间已满");
                     }
+
                     _isConnected = true;
 
                     Connected?.Invoke();

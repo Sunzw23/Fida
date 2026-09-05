@@ -1,6 +1,7 @@
 {
   "controls": [
-    { "type": "label", "name": "statusLabel", "id": 0, "text": "{status}", "position": { "x": 960, "y": 520 } },
-    { "type": "button", "name": "cancelHost", "id": 1, "text": "取消", "bounds": { "x": 860, "y": 640, "width": 200, "height": 80 } }
+    { "type": "label", "name": "roomCodeLabel", "id": 0, "text": "房间码: {roomCode}", "position": { "x": 960, "y": 440 } },
+    { "type": "label", "name": "statusLabel", "id": 1, "text": "{status}", "position": { "x": 960, "y": 520 } },
+    { "type": "button", "name": "cancelHost", "id": 2, "text": "取消", "bounds": { "x": 860, "y": 640, "width": 200, "height": 80 } }
   ]
 }

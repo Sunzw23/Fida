@@ -31,6 +31,9 @@ namespace Fida.Network
         /// <summary>当前状态文本（用于 UI 显示）</summary>
         public string StatusText { get; private set; } = string.Empty;
 
+        /// <summary>主机端：relay 分配的房间码（客机用此码加入）</summary>
+        public string HostRoomCode => _relayHost?.RoomCode ?? string.Empty;
+
         /// <summary>主机端：客户端连入时触发</summary>
         public event System.Action ClientConnected;
 
@@ -88,17 +91,17 @@ namespace Fida.Network
         }
 
         /// <summary>启动客机模式：直连服务器 或 连接 relay 作为客机端</summary>
-        public void StartConnecting(string ipAddress, int port, bool isRelay = false)
+        public void StartConnecting(string ipAddress, int port, bool isRelay = false, string roomCode = null)
         {
             _isHost = false;
 
             _gameClient = new GameClient();
             _gameClient.Connected += () => ConnectedToServer?.Invoke();
             _gameClient.Disconnected += (msg) => Disconnected?.Invoke(msg);
-            _gameClient.Connect(ipAddress, port, isRelay ? (byte)'C' : (byte)0);
+            _gameClient.Connect(ipAddress, port, isRelay ? (byte)'C' : (byte)0, roomCode);
 
             StatusText = isRelay
-                ? $"正在通过 relay 连接 {ipAddress}:{port} ..."
+                ? $"正在通过 relay 连接 {ipAddress}:{port} (房间码: {roomCode})"
                 : $"正在连接到 [{ipAddress}]:{port} ...";
         }
 

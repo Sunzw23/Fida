@@ -106,7 +106,7 @@ namespace Fida.UI
         public void BuildSettingsScreen() => _screenBuilder.BuildSettingsScreen();
         public void BuildRulesScreen() => _screenBuilder.BuildRulesScreen();
         public void BuildOnlineMenu() => _screenBuilder.BuildOnlineMenu();
-        public void BuildHostingScreen(string statusText) => _screenBuilder.BuildHostingScreen(statusText);
+        public void BuildHostingScreen(string statusText, string roomCode = "") => _screenBuilder.BuildHostingScreen(statusText, roomCode);
         public void BuildConnectingScreen(string statusText) => _screenBuilder.BuildConnectingScreen(statusText);
         public void BuildOnlineLobby(bool isHost) => _screenBuilder.BuildOnlineLobby(isHost);
 
@@ -179,6 +179,28 @@ namespace Fida.UI
             {
                 if (control is UIButton btn && btn.Name == name)
                     return btn;
+            }
+            return null;
+        }
+
+        /// <summary>根据名称查找房间码输入框</summary>
+        public UIRoomCodeInput? GetTextBoxByName(string name)
+        {
+            foreach (var control in _uiControls)
+            {
+                if (control is UIRoomCodeInput tb && tb.Name == name)
+                    return tb;
+            }
+            return null;
+        }
+
+        /// <summary>根据名称查找标签控件</summary>
+        public UILabel? GetLabelByName(string name)
+        {
+            foreach (var control in _uiControls)
+            {
+                if (control is UILabel lbl && lbl.Name == name)
+                    return lbl;
             }
             return null;
         }

@@ -21,7 +21,18 @@ namespace Fida.States
 
             BindButton("joinGame", () =>
             {
-                _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), _networkManager.GetServerIsRelay());
+                bool isRelay = _networkManager.GetServerIsRelay();
+                string roomCode = null;
+
+                if (isRelay)
+                {
+                    roomCode = _uiManager.GetTextBoxByName("roomCodeInput")?.Value
+                        ?.Trim().ToUpperInvariant();
+                    if (string.IsNullOrEmpty(roomCode) || roomCode.Length != 4)
+                        return; // 房间码未输入/不全，停留原地
+                }
+
+                _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), isRelay, roomCode);
                 _stateMachine.SwitchToState(State.Connecting);
             });
 

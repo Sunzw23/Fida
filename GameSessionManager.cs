@@ -48,6 +48,12 @@ namespace Fida
             {
                 _stateMachine.GoToMainMenu();
             }
+            else if (_stateMachine.CurrentState == State.Connecting || _stateMachine.CurrentState == State.Hosting)
+            {
+                // relay 拒绝（房间码无效/房间满）或连接失败 → 清理并回联机菜单
+                _networkManager.Cleanup();
+                _stateMachine.SwitchToState(State.OnlineMenu);
+            }
         }
 
         /// <summary>
