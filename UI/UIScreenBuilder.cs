@@ -69,7 +69,7 @@ namespace Fida.UI
             var replacements = new Dictionary<string, string>
             {
                 { "status", statusText },
-                { "roomCode", string.IsNullOrEmpty(roomCode) ? "生成中..." : roomCode }
+                { "roomCode", string.IsNullOrEmpty(roomCode) ? "generating..." : roomCode }
             };
             BuildFromScreen("HostingScreen", replacements);
         }
@@ -124,6 +124,8 @@ namespace Fida.UI
                     "button" => new UIButton(desc.Id, desc.Bounds!.Value, desc.Text, _resourceManager.Pixel, _resourceManager.Font),
                     "label" => new UILabel(desc.Id, desc.Text, desc.Position!.Value, _resourceManager.Font),
                     "textbox" => new UIRoomCodeInput(desc.Id, desc.Bounds!.Value, desc.Text, _resourceManager.Pixel, _resourceManager.Font),
+                    "title" => new UITitle(desc.Id, desc.Text, desc.Position!.Value, _resourceManager.Pixel, _resourceManager.TitleFont),
+                    "panel" => new UIPanel(desc.Id, _resourceManager.Pixel),
                     _ => throw new System.NotSupportedException($"Unknown control type: {desc.Type}")
                 };
                 // 设置控件名称（用于事件绑定查找）

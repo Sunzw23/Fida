@@ -21,9 +21,9 @@ namespace Fida.UI
         protected SpriteFont Font { get; set; }
 
         // 配色
-        public Color BackColor { get; set; } = Color.Black;
-        public Color ForeColor { get; set; } = Color.White;
-        public Color BorderColor { get; set; } = Color.White;
+        public Color BackColor { get; set; } = UITheme.PanelDark;
+        public Color ForeColor { get; set; } = UITheme.Ink;
+        public Color BorderColor { get; set; } = UITheme.Gold;
         public int BorderThickness { get; set; } = 1;
         public UIBoxLabelAlignment Alignment { get; set; } = UIBoxLabelAlignment.Center;
 

@@ -7,7 +7,7 @@ namespace Fida.UI
     public class UILabel: UIControl
     {
         string Text { get; set; }
-        Color Color { get; set; } = Color.White;
+        Color Color { get; set; } = UITheme.Ink;
         Vector2 Position { get; set; }
         SpriteFont Font { get; set; }
 

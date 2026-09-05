@@ -66,8 +66,7 @@ namespace Fida.UI
             }
         }
 
-        private static readonly Color Black = Color.Black;
-        private static readonly Color White = Color.White;
+        // 配色统一取自 UITheme（暖墨 + 羊皮纸主题）
 
         public UIPlayer(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel, Texture2D portraitTexture = null) : base(id)
         {
@@ -143,17 +142,23 @@ namespace Fida.UI
         {
             return CardState switch
             {
-                UIButtonState.Pressed => White,
-                _ => Black
+                UIButtonState.Pressed => UITheme.PanelDark,
+                _ => UITheme.PanelLight
             };
         }
 
         private Color GetCardForeColor()
         {
+            // 文字/内框/头像用深墨，在浅底与按压深底上都清晰
+            return UITheme.Ink;
+        }
+
+        private Color GetCardBorderColor()
+        {
             return CardState switch
             {
-                UIButtonState.Pressed => Black,
-                _ => White
+                UIButtonState.Hovered => UITheme.GoldBright,
+                _ => UITheme.Gold
             };
         }
 
@@ -272,18 +277,18 @@ namespace Fida.UI
             // 绘制外框边框
             if (HasDoubleBorder())
             {
-                UIUtils.DrawRectangleOutlines(sb, CardBounds, White, outerThickness, Pixel);
+                UIUtils.DrawRectangleOutlines(sb, CardBounds, UITheme.Gold, outerThickness, Pixel);
                 var innerBounds = new Rectangle(
                     CardBounds.X + outerThickness,
                     CardBounds.Y + outerThickness,
                     CardBounds.Width - outerThickness * 2,
                     CardBounds.Height - outerThickness * 2
                 );
-                UIUtils.DrawRectangleOutlines(sb, innerBounds, Black, 2, Pixel);
+                UIUtils.DrawRectangleOutlines(sb, innerBounds, UITheme.Ink, 2, Pixel);
             }
             else
             {
-                UIUtils.DrawRectangleOutlines(sb, CardBounds, foreColor, outerThickness, Pixel);
+                UIUtils.DrawRectangleOutlines(sb, CardBounds, GetCardBorderColor(), outerThickness, Pixel);
             }
 
             // 绘制内框边框（Pressed 时反色）

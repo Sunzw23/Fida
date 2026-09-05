@@ -62,9 +62,11 @@ namespace Fida.UI
 
         public void Draw(GameTime gameTime)
         {
-            _graphicsDevice.Clear(Color.Black);
+            _graphicsDevice.Clear(UITheme.BgTop);
 
             _spriteBatch.Begin();
+            // 绘制主题背景（暖墨渐变桌面 + 暗角），菜单与对局通用
+            UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel, _graphicsDevice.Viewport);
             foreach (UIControl control in _uiControls)
             {
                 control.Draw(_spriteBatch, gameTime);

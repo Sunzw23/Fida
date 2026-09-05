@@ -19,6 +19,9 @@ namespace Fida
         // 游戏字体，用于UI文本
         public SpriteFont Font { get; private set; }
 
+        // 衬线标题字体（菜单大标题）。加载失败时回退到 Font，绝不崩溃。
+        public SpriteFont TitleFont { get; private set; }
+
         // 单像素纹理，用于绘制矩形边框和填充
         public Texture2D Pixel { get; private set; }
 
@@ -47,6 +50,18 @@ namespace Fida
             {
                 throw new ContentLoadException("Failed to load font.");
             }
+
+            // 加载衬线标题字体；失败则回退到普通字体，保证不崩溃。
+            try
+            {
+                TitleFont = contentManager.Load<SpriteFont>("source_han_title");
+            }
+            catch (ContentLoadException)
+            {
+                System.Diagnostics.Debug.WriteLine("Title font not found, falling back to body font.");
+                TitleFont = Font;
+            }
+
             // 创建一个单像素纹理，用于绘制矩形边框和填充
             // Create a single-pixel texture for drawing rectangle outlines and fills
             Pixel = new Texture2D(_graphicsDevice, 1, 1);

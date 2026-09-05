@@ -123,15 +123,15 @@ namespace Fida.UI
         {
             if (!IsVisible) return;
 
-            // 黑底
-            sb.Draw(_pixel, _bounds, Color.Black);
+            // 深羊皮纸底
+            sb.Draw(_pixel, _bounds, UITheme.PanelDark);
 
             // 文字（左对齐，垂直居中）
             string text = _value;
             if (string.IsNullOrEmpty(text))
                 text = _placeholder;
 
-            Color textColor = string.IsNullOrEmpty(_value) ? new Color(128, 128, 128) : Color.White;
+            Color textColor = string.IsNullOrEmpty(_value) ? UITheme.InkMuted : UITheme.Ink;
             var textSize = _font.MeasureString(text);
             var pos = new Vector2(
                 _bounds.X + 12,
@@ -149,11 +149,11 @@ namespace Fida.UI
                     2,
                     _bounds.Height - 16
                 );
-                sb.Draw(_pixel, cursor, Color.White);
+                sb.Draw(_pixel, cursor, UITheme.Ink);
             }
 
-            // 白边（聚焦时加粗）
-            UIUtils.DrawRectangleOutlines(sb, _bounds, Color.White, _focused ? 3 : 1, _pixel);
+            // 描金边（聚焦时加粗亮金）
+            UIUtils.DrawRectangleOutlines(sb, _bounds, _focused ? UITheme.GoldBright : UITheme.Gold, _focused ? 3 : 1, _pixel);
         }
     }
 }

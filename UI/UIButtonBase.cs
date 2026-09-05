@@ -47,9 +47,7 @@ namespace Fida.UI
         /// </summary>
         public override bool CanFocus => IsEnabled && IsVisible;
 
-        // 纯黑白配色方案
-        protected static readonly Color Black = Color.Black;
-        protected static readonly Color White = Color.White;
+        // 配色统一取自 UITheme（暖墨 + 羊皮纸主题）
 
         // ---- 鼠标交互状态机 ----
         // _clickStartedOnThis: 当前点击序列是否起始于此按钮
@@ -112,27 +110,30 @@ namespace Fida.UI
         }
 
         /// <summary>
-        /// 根据状态获取背景色（按下/选定反色为白，其余为黑）
+        /// 根据状态获取背景色（按下/选定反色为深羊皮纸，其余为浅羊皮纸）
         /// </summary>
         protected Color GetBackColor()
         {
-            return IsPressedOrSelected() ? White : Black;
+            return IsPressedOrSelected() ? UITheme.PanelDark : UITheme.PanelLight;
         }
 
         /// <summary>
-        /// 根据状态获取前景色（按下/选定为黑，其余为白）
+        /// 根据状态获取前景色（按下/选定为浅羊皮纸，其余为深墨）
         /// </summary>
         protected Color GetForeColor()
         {
-            return IsPressedOrSelected() ? Black : White;
+            if (IsDisabled()) return UITheme.InkMuted;
+            return IsPressedOrSelected() ? UITheme.PanelLight : UITheme.Ink;
         }
 
         /// <summary>
-        /// 根据状态获取边框颜色（禁用为黑=无边框，其余为白）
+        /// 根据状态获取边框颜色（禁用无边框，悬停亮金，其余描金）
         /// </summary>
         protected Color GetBorderColor()
         {
-            return IsDisabled() ? Black : White;
+            if (IsDisabled()) return UITheme.Panel;            // 禁用：无边框（thickness=0）
+            if (IsHoveredState()) return UITheme.GoldBright;   // 悬停：亮金边框
+            return UITheme.Gold;                               // 其余：描金边框
         }
 
         /// <summary>

@@ -124,16 +124,16 @@ namespace Fida.UI
             {
                 if (HasDoubleBorder())
                 {
-                    // 外层边框（白色）
-                    UIUtils.DrawRectangleOutlines(sb, Bounds, White, borderThickness, Pixel);
-                    // 内层边框（黑色），向内偏移
+                    // 外层边框（描金）
+                    UIUtils.DrawRectangleOutlines(sb, Bounds, UITheme.Gold, borderThickness, Pixel);
+                    // 内层边框（深墨），向内偏移
                     var innerBounds = new Rectangle(
                         Bounds.X + borderThickness,
                         Bounds.Y + borderThickness,
                         Bounds.Width - borderThickness * 2,
                         Bounds.Height - borderThickness * 2
                     );
-                    UIUtils.DrawRectangleOutlines(sb, innerBounds, Black, 2, Pixel);
+                    UIUtils.DrawRectangleOutlines(sb, innerBounds, UITheme.Ink, 2, Pixel);
                 }
                 else
                 {
@@ -151,7 +151,7 @@ namespace Fida.UI
                     wipeWidth,
                     Bounds.Height
                 );
-                sb.Draw(Pixel, wipeRect, Color.White);
+                sb.Draw(Pixel, wipeRect, UITheme.Panel);
             }
         }
 
