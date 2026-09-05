@@ -33,6 +33,12 @@ namespace Fida.Logic
                 SourcePlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == sourcePlayerId);
             }
         }
+        /// <summary>
+        /// 当前状态的操作者（源玩家）ID。
+        /// 普通回合即当前回合玩家；技能触发（如"神"受伤反击）时为技能源玩家。
+        /// UI 输入门控应基于操作者而非回合玩家，否则对方回合触发的本方技能无法操作。
+        /// </summary>
+        public int ActorId => SourcePlayerId;
 
         /// <summary>
         /// 进入状态时执行的逻辑

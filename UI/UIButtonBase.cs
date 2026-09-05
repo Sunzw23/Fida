@@ -45,7 +45,7 @@ namespace Fida.UI
         /// <summary>
         /// 按钮可以被手柄聚焦
         /// </summary>
-        public override bool CanFocus => IsEnabled;
+        public override bool CanFocus => IsEnabled && IsVisible;
 
         // 纯黑白配色方案
         protected static readonly Color Black = Color.Black;
@@ -153,6 +153,7 @@ namespace Fida.UI
 
         public override void Update(MouseState mouseState)
         {
+            if (!IsVisible) return; // 不可见时不响应鼠标/手柄（数字面板非 ChooseNumber 步骤时隐藏）
             bool mouseDown = mouseState.LeftButton == ButtonState.Pressed;
             var mousePoint = new Point(mouseState.X, mouseState.Y);
 

@@ -28,6 +28,17 @@ namespace Fida.Logic
         public int CurrentPlayerIndex { get; private set; }
         public string GameMessage { get; private set; }
         public ActionType CurrentActionType { get; private set; } = ActionType.None;
+        /// <summary>
+        /// 当前步骤允许的目标玩家 ID 列表（空 = 无限制）。
+        /// 由 BroadcastCurrentStep 随事件填充，UI 据此门控可选按钮，与状态机校验保持一致。
+        /// </summary>
+        public List<int> CurrentStepValidTargets { get; private set; } = [];
+
+        /// <summary>
+        /// 当前步骤允许选择的数字值列表（空 = 无限制，即 0-9）。
+        /// 由 BroadcastCurrentStep 随事件填充，数字面板据此门控可选数字，与状态机校验保持一致。
+        /// </summary>
+        public List<int> CurrentStepValidNumbers { get; private set; } = [];
 
         /// <summary>
         /// 本地玩家 ID（单机默认 0，联机由 NetworkManager 设置）
@@ -147,6 +158,8 @@ namespace Fida.Logic
         public void OnPlayerActionRequired(PlayerActionRequiredEventArgs e)
         {
             CurrentActionType = e.RequiredActionType;
+            CurrentStepValidTargets = e.ValidTargets;
+            CurrentStepValidNumbers = e.ValidNumbers;
             PlayerActionRequired?.Invoke(this, e);
         }
         public void OnGameEnded(GameEndEventArgs e) => GameEnded?.Invoke(this, e);

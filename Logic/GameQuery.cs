@@ -45,6 +45,12 @@ namespace Fida.Logic
             }
             return -1;
         }
+        /// <summary>
+        /// 当前状态的操作者（技能源玩家）是否为本地玩家。
+        /// 区别于 <see cref="CurrentPlayerId"/>（回合玩家）：技能触发（如"神"受伤反击）时，
+        /// 操作者是本方、回合玩家是对方，输入门控必须按操作者判断。
+        /// </summary>
+        public bool IsLocalPlayerSource() => _gameManager.CurrentState?.ActorId == _gameManager.LocalPlayerId;
 
         /// <summary>
         /// 当前是否处于"伤害/扣血"目标选择（DamageValue > 0 或 HealingValue < 0）

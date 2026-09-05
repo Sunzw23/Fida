@@ -47,9 +47,7 @@ namespace Fida.UI
             _previousMouseState = _currentMouseState;
 
             if (!leftClick)
-            {
                 return new GameAction { Type = ActionType.None };
-            }
 
             switch (gameManager.CurrentActionType)
             {
@@ -175,10 +173,10 @@ namespace Fida.UI
         /// </summary>
         private GameAction ControllerChooseNumber(GameManager gameManager, UIControl focusedControl)
         {
-            // 数字选择按钮的 ID 映射：ID = 100 + number
-            if (focusedControl is UIButton btn)
+            // 数字面板按钮的 ID 映射：ID = 200 + number（UIPlayerManager 构建的可见 0-9 面板）
+            if (focusedControl is UIAnimatedButton padBtn)
             {
-                int number = btn.GetId() - 100;
+                int number = padBtn.GetId() - 200;
                 if (number >= 0 && number <= 9)
                 {
                     return new GameAction { Type = ActionType.ChooseNumber, Number = number };
@@ -258,17 +256,18 @@ namespace Fida.UI
         /// </summary>
         private GameAction ActionChooseNumber(GameManager gameManager)
         {
-            for (int i = 0; i <= 9; i++)
+            // 数字面板按钮（id 200..209）。与 ActionChooseTarget 一致：用真实几何做位置命中检测，
+            // 以 CanFocus（IsEnabled && IsVisible）门控，不依赖按钮 _isPressed 状态机——
+            // 避免"禁用→启用"切换帧的早退分支吃掉按下沿、导致 IsPressed() 读不到按下。
+            foreach (var btn in _uiControls.OfType<UIAnimatedButton>())
             {
-                int x = i % 5;
-                int y = i / 5;
-                if (CheckClickArea(new Rectangle(10 + x * 50, 100 + y * 50, 50, 50)))
+                int id = btn.GetId();
+                if (id >= 200 && id <= 209 && btn.CanFocus && btn.Contains(_currentMouseState.X, _currentMouseState.Y))
                 {
-                    return new GameAction { Type = ActionType.ChooseNumber, Number = i };
+                    return new GameAction { Type = ActionType.ChooseNumber, Number = id - 200 };
                 }
             }
 
-            // 没有点击任何有效按钮，返回空动作
             return new GameAction { Type = ActionType.None };
         }
 

@@ -90,6 +90,7 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
+            if (!IsVisible) return; // 不可见时不绘制（数字面板非 ChooseNumber 步骤时隐藏）
             // 更新文字尺寸缓存
             if (_textSizeDirty)
             {

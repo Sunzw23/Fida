@@ -20,6 +20,12 @@ namespace Fida.UI
         // 玩家头像纹理字典，key 为 PlayerId，value 为头像纹理（可为 null）
         private Dictionary<int, Texture2D> _portraitTextures = new Dictionary<int, Texture2D>();
 
+        // ─── ChooseNumber 数字面板（0-9）────────────────────────────
+        // 「神/仙/迪」技能第二步"把该数字改成几"、「变」技能"变成几点"需要选择 0-9，
+        // 此前只有鼠标隐形点击区、手柄完全不可用。这里构建可见按钮面板，
+        // 按钮加入 _uiControls，使鼠标/手柄/焦点三条输入路径统一生效。
+        private UIAnimatedButton[] _numberButtons = null;
+
         public UIPlayerManager(List<UIControl> uiControls, ResourceManager resourceManager)
         {
             _uiControls = uiControls;
@@ -84,6 +90,11 @@ namespace Fida.UI
                 _uiControls.Add(uiPlayer.Number1Button);
                 _uiPlayers.Add(uiPlayer);
             }
+
+            // ─── 构建 ChooseNumber 数字面板（0-9，2 行 × 5 列）─────────────
+            // 位置取自 uiconfig 的 numberSelectionArea（10,100,260×110），
+            // 即原先 UIInputHandler.ActionChooseNumber 中硬编码的隐形点击区位置。
+            BuildNumberPad();
         }
 
         /// <summary>
@@ -179,15 +190,15 @@ namespace Fida.UI
             {
                 uiPlayer.RefreshButtons();
             }
+            UpdateNumberPadVisibility();
         }
 
         /// <summary>
-        /// 玩家行动请求事件 — 在 BroadcastCurrentStep 时触发，是标记 Selected 的正确时机
-        /// </summary>
         private void OnPlayerActionRequired(object sender, PlayerActionRequiredEventArgs e)
         {
             // 每次步骤切换时（包括同状态内 StepIndex++），更新按钮的 Selected 状态
             UpdateButtonSelectedStates();
+            UpdateNumberPadVisibility();
         }
 
         /// <summary>
@@ -222,24 +233,22 @@ namespace Fida.UI
         {
             if (_gameManager == null) return false;
             
-            // 非本地玩家回合时禁用所有按钮
-            if (_gameManager.Query.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
-            
+            // 非本地玩家操作时禁用所有按钮（按操作者判断，而非回合玩家）
+            // 神/仙/迪等在对方回合触发的本方技能，操作者是本地玩家，需放行
+            if (!_gameManager.Query.IsLocalPlayerSource()) return false;
+
             // 不是选择数字索引操作时禁用
             if (_gameManager.CurrentActionType != ActionType.ChooseNumberIndex) return false;
-            
-            bool isFirstStage = _gameManager.Query.IsChooseFirstNumberIndexState();
-            
-            // 第一阶段：只有当前操作的玩家可以选择
-            if (isFirstStage)
+
+            // 只启用当前步骤允许目标范围内的存活玩家按钮。
+            // ValidTargets 由状态机广播（普通回合/神仙迪均携带），与 Handle 校验一致，
+            // 空列表表示无限制。
+            var validTargets = _gameManager.CurrentStepValidTargets;
+            if (validTargets.Count > 0)
             {
-                return playerId == _gameManager.Query.CurrentPlayerId && _gameManager.Players[playerId].IsAlive();
+                return validTargets.Contains(playerId) && _gameManager.Players[playerId].IsAlive();
             }
-            // 第二阶段：所有存活玩家的数字都可以选择（包括自己的另一个数字）
-            else
-            {
-                return _gameManager.Players[playerId].IsAlive();
-            }
+            return _gameManager.Players[playerId].IsAlive();
         }
 
         /// <summary>
@@ -268,6 +277,85 @@ namespace Fida.UI
             
             // 选择目标时，所有存活的玩家都可以被选择
             return _gameManager.Players[playerId].IsAlive();
+        }
+
+        /// <summary>
+        /// 构建 ChooseNumber 数字面板（0-9，2 行 × 5 列），水平居中于窗口顶带。
+        /// 原先 ChooseNumber 仅接受 UIInputHandler 中硬编码的隐形点击区（左上角），
+        /// 且手柄路径完全不可用；现改为真实按钮并接入共享控件列表 _uiControls，
+        /// 使鼠标（UpdateUIButtons）、手柄（FocusManager）与点击分发三条输入路径统一生效。
+        /// 按钮 id 为 200+n，与玩家卡片数字按钮(10/12)区分；FocusIndex 300+，避开卡片(100+)与索引按钮(101/102)。
+        /// </summary>
+        private void BuildNumberPad()
+        {
+            _numberButtons = new UIAnimatedButton[10];
+
+            int cellW = UIConfig.Int("numberButtonWidth", 50);
+            int cellH = UIConfig.Int("numberButtonHeight", 50);
+            int cols = UIConfig.Int("numberColumns", 5);
+            int gap = 4;
+            int panelW = cols * cellW + (cols - 1) * gap;
+            // 水平居中于窗口顶带（y=10），避开两侧玩家卡片与左上角信息区，
+            // 使 0-9 面板在单机/联机、有/无分组布局下均清晰可见且无遮挡。
+            int viewportW = _resourceManager.GraphicsDevice.Viewport.Width;
+            int areaX = (viewportW - panelW) / 2;
+            int areaY = 10;
+
+            for (int n = 0; n < 10; n++)
+            {
+                int num = n; // 闭包捕获：for 循环变量 n 在 lambda 中会指向循环结束后的值(10)，需用局部变量固定每个按钮自己的数字
+                int col = n % cols;
+                int row = n / cols;
+                int x = areaX + col * (cellW + gap);
+                int y = areaY + row * (cellH + gap);
+                var bounds = new Rectangle(x, y, cellW, cellH);
+
+                var btn = new UIAnimatedButton(200 + n, bounds, n.ToString(), _resourceManager.Pixel, _resourceManager.Font)
+                {
+                    EnabledChecker = () => ShouldNumberPadBeEnabled(num),
+                    FocusIndex = 300 + n  // 300+ 段，避开玩家卡片(100+)与数字索引按钮(101/102)
+                };
+
+                _numberButtons[n] = btn;
+                _uiControls.Add(btn);
+            }
+
+            UpdateNumberPadVisibility();
+        }
+
+        /// <summary>
+        /// 数字面板按钮是否应该启用 — 由按钮主动调用 EnabledChecker 询问。
+        /// 需同时满足：本方操作、处于 ChooseNumber 步骤、且该数字在步骤 ValidNumbers 内
+        /// （空列表 = 无限制，即 0-9 全可选）。与状态机 GameState.Handle 的校验保持一致。
+        /// </summary>
+        private bool ShouldNumberPadBeEnabled(int number)
+        {
+            if (_gameManager == null) return false;
+
+            if (!_gameManager.Query.IsLocalPlayerSource()) return false;
+
+            if (_gameManager.CurrentActionType != ActionType.ChooseNumber) return false;
+
+            var validNumbers = _gameManager.CurrentStepValidNumbers;
+            if (validNumbers.Count > 0)
+            {
+                return validNumbers.Contains(number);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 刷新数字面板可见性 — 仅在「本方操作 + ChooseNumber 步骤」时显示，其余步骤隐藏。
+        /// 与 ShouldNumberPadBeEnabled 的启用条件一致，避免面板在非相关步骤以灰色禁用态常驻屏幕。
+        /// </summary>
+        private void UpdateNumberPadVisibility()
+        {
+            bool visible = _gameManager != null
+                && _gameManager.Query.IsLocalPlayerSource()
+                && _gameManager.CurrentActionType == ActionType.ChooseNumber;
+            if (_numberButtons != null)
+                foreach (var btn in _numberButtons)
+                    btn.IsVisible = visible;
         }
 
         /// <summary>

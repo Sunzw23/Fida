@@ -133,7 +133,7 @@ namespace Fida
             // 手柄输入更新
             _uiManager.UpdateControllerInput(gameTime);
 
-            if (gm.Query.CurrentPlayerId != 0)
+            if (!gm.Query.IsLocalPlayerSource())
                 return;
 
             var action = _uiManager.UpdateMouseAndCheckClicks(gm);
@@ -159,7 +159,7 @@ namespace Fida
 
             _networkManager.ProcessMessages(gm);
 
-            if (gm.Query.CurrentPlayerId != _networkManager.GetLocalPlayerId())
+            if (!gm.Query.IsLocalPlayerSource())
                 return;
 
             var action = _uiManager.UpdateMouseAndCheckClicks(gm);
