@@ -73,19 +73,19 @@
     <None Update="Content\uiconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Scenes\DefaultScene.csv">
+    <None Update="Content\scenes\DefaultScene.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Scenes\Scene1.csv">
+    <None Update="Content\scenes\Scene1.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Scenes\Scene2.csv">
+    <None Update="Content\scenes\Scene2.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Scenes\Scene3.csv">
+    <None Update="Content\scenes\Scene3.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Scenes\Scene4.csv">
+    <None Update="Content\scenes\Scene4.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
