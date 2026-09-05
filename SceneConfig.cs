@@ -21,7 +21,5 @@ namespace Fida
 
         /// <summary>底部行 Y 坐标（本地玩家所在组）</summary>
         public const int RowBottomY = 700;
-
-        public static SceneLoader PlayersScene1 => new([new Player(0, "YOU"), new Player(1, "ENEMY")]);
     }
 }

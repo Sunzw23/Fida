@@ -1,0 +1,21 @@
+{
+  "controls": [
+    { "type": "label", "name": "title", "id": 0, "text": "选择技能", "position": { "x": 960, "y": 170 } },
+    { "type": "button", "name": "skill_PlusAttack", "id": 1, "text": "加攻击", "bounds": { "x": 500, "y": 300, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_PlusDefence", "id": 2, "text": "加防御", "bounds": { "x": 1120, "y": 300, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_DoubleHealth", "id": 3, "text": "双倍生命", "bounds": { "x": 500, "y": 395, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_DoubleAttack", "id": 4, "text": "双倍攻击", "bounds": { "x": 1120, "y": 395, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_DoubleDefence", "id": 5, "text": "双倍防御", "bounds": { "x": 500, "y": 490, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_TripleHealth", "id": 6, "text": "三倍生命", "bounds": { "x": 1120, "y": 490, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Shen", "id": 7, "text": "神", "bounds": { "x": 500, "y": 585, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Xian", "id": 8, "text": "仙", "bounds": { "x": 1120, "y": 585, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Mo", "id": 9, "text": "魔", "bounds": { "x": 500, "y": 680, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Xue", "id": 10, "text": "血", "bounds": { "x": 1120, "y": 680, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Tong", "id": 11, "text": "同", "bounds": { "x": 500, "y": 775, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Di", "id": 12, "text": "帝", "bounds": { "x": 1120, "y": 775, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Long", "id": 13, "text": "龙", "bounds": { "x": 500, "y": 870, "width": 300, "height": 70 } },
+    { "type": "button", "name": "skill_Bian", "id": 14, "text": "变", "bounds": { "x": 1120, "y": 870, "width": 300, "height": 70 } },
+    { "type": "button", "name": "back", "id": 15, "text": "返回", "bounds": { "x": 500, "y": 1000, "width": 300, "height": 70 } },
+    { "type": "button", "name": "confirm", "id": 16, "text": "开始", "bounds": { "x": 1120, "y": 1000, "width": 300, "height": 70 } }
+  ]
+}

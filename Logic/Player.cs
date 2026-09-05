@@ -42,6 +42,14 @@ namespace Fida.Logic
         }
 
         /// <summary>
+        /// 替换玩家拥有的技能列表（用于单机开局按所选技能覆写本地玩家默认技能）。
+        /// </summary>
+        public void ReplaceSkills(List<Skill> skills)
+        {
+            Skills = skills ?? new List<Skill>();
+        }
+
+        /// <summary>
         /// 玩家受到伤害
         /// </summary>
         /// <param name="damage"></param>

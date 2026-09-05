@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Fida.Network;
 using Fida.Scene;
+using Fida.Logic;
 using Fida.UI;
 
 namespace Fida
@@ -63,10 +64,12 @@ namespace Fida
                 case State.MainMenu:      _uiManager.BuildMainMenu(); break;
                 case State.Rules:         _uiManager.BuildRulesScreen(); break;
                 case State.Settings:      _uiManager.BuildSettingsScreen(); break;
+                case State.LevelSelect:   _uiManager.BuildLevelSelect(); break;
+                case State.Skills:        _uiManager.BuildSkillSelect(); break;
                 case State.Playing:
                     if (!_playingSceneManager.IsInitialized)
                     {
-                        _playingSceneManager.Initialize(SceneConfig.PlayersScene1.Players);
+                        _playingSceneManager.Initialize(GameSetup.LoadLocalPlayers());
                         _playingSceneManager.StartGame();
                     }
                     else _uiManager.BuildPlayingUI(_uiManager.GameManager);

@@ -18,8 +18,8 @@ namespace Fida.States
         /// <summary>
         /// 已绑定的按钮及其事件处理委托，用于在 OnExit 时统一解绑
         /// </summary>
-        private readonly List<(UIButton button, Action<UIButton> handler)> _boundButtons
-            = new List<(UIButton, Action<UIButton>)>();
+        private readonly List<(UIButton button, Action<UIButton> handler, Action<UIControl> confirmed)> _boundButtons
+            = new List<(UIButton, Action<UIButton>, Action<UIControl>)>();
 
         /// <summary>
         /// 已绑定的房间码输入框及其提交处理委托，用于在 OnExit 时统一解绑
@@ -43,8 +43,11 @@ namespace Fida.States
             if (button != null)
             {
                 Action<UIButton> wrappedHandler = (btn) => handler();
+                Action<UIControl> confirmedHandler = (ctrl) => handler();
                 button.Clicked += wrappedHandler;
-                _boundButtons.Add((button, wrappedHandler));
+                // 同时绑定手柄确认事件（Confirmed），保证鼠标与手柄路径行为一致
+                button.Confirmed += confirmedHandler;
+                _boundButtons.Add((button, wrappedHandler, confirmedHandler));
             }
         }
 
@@ -66,9 +69,10 @@ namespace Fida.States
         /// </summary>
         protected void UnbindAll()
         {
-            foreach (var (button, handler) in _boundButtons)
+            foreach (var (button, handler, confirmed) in _boundButtons)
             {
                 button.Clicked -= handler;
+                button.Confirmed -= confirmed;
             }
             _boundButtons.Clear();
 

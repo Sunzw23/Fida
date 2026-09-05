@@ -73,7 +73,7 @@ Loaded 5 models
 
 ### 本地模式
 
-主菜单「开始」：本地玩家 + 由 ONNX 模型驱动的 AI 对手。AI 决策分两个阶段（`ChooseNumberIndex` 选第一个数字、`ChooseTarget` 选目标），共 5 个 ONNX 模型文件。
+主菜单「开始」→ 关卡选择（`Content/scenes/*.csv`，5 个场景）→ 技能选择（14 种可选技能）→ 本地玩家 + 由 ONNX 模型驱动的 AI 对手。AI 决策分两个阶段（`ChooseNumberIndex` 选第一个数字、`ChooseTarget` 选目标），共 5 个 ONNX 模型文件。
 
 ## 联机
 
@@ -206,8 +206,9 @@ Fida/
 ├── States/                  菜单状态（IMenuState 实现）
 ├── UI/                      按钮/标签/焦点/动画
 ├── Scene/PlayingSceneManager.cs  对局场景
-├── Scenes/*.csv             场景配置
-├── Content/                 界面 JSON + 字体 + ONNX 模型
+├── Content/screens/*.json    界面布局（主菜单/规则/关卡选择/技能选择/联机…）
+├── Content/scenes/*.csv     场景配置（关卡玩家列表：id,name,hp,skills,positionIndex）
+├── Content/                 字体 + ONNX 模型
 └── Fida.Tests/              xUnit 测试（48 个）
 ```
 

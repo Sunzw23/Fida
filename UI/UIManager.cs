@@ -109,6 +109,8 @@ namespace Fida.UI
         public void BuildHostingScreen(string statusText, string roomCode = "") => _screenBuilder.BuildHostingScreen(statusText, roomCode);
         public void BuildConnectingScreen(string statusText) => _screenBuilder.BuildConnectingScreen(statusText);
         public void BuildOnlineLobby(bool isHost) => _screenBuilder.BuildOnlineLobby(isHost);
+        public void BuildLevelSelect() => _screenBuilder.BuildLevelSelect();
+        public void BuildSkillSelect() => _screenBuilder.BuildSkillSelect();
 
         /// <summary>构建对局 UI（玩家面板 + 焦点初始化）</summary>
         public void BuildPlayingUI(GameManager gameManager)

@@ -14,7 +14,7 @@ namespace Fida.States
 
         public override void OnEnter()
         {
-            BindButton("startGame", () => _stateMachine.SwitchToState(State.Playing));
+            BindButton("startGame", () => _stateMachine.SwitchToState(State.LevelSelect));
             BindButton("onlineMode", () =>
             {
                 // 如果已连接则直接进入大厅，否则进入联机菜单

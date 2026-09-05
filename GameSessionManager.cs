@@ -63,7 +63,7 @@ namespace Fida
         {
             if (!_playingSceneManager.IsInitialized)
             {
-                _playingSceneManager.Initialize(SceneConfig.PlayersScene1.Players);
+                _playingSceneManager.Initialize(GameSetup.LoadLocalPlayers());
                 _playingSceneManager.StartGame();
             }
         }

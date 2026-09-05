@@ -87,6 +87,8 @@ namespace Fida
             switch (_stateMachine.CurrentState)
             {
                 case State.MainMenu:      _menuInput.HandleMenuInput(gameTime); break;
+                case State.LevelSelect:   _menuInput.HandleMenuInput(gameTime); break;
+                case State.Skills:        _menuInput.HandleMenuInput(gameTime); break;
                 case State.Playing:       _gameSession.HandlePlayerInput(gameTime); _gameSession.EnsureGameStarted(); break;
                 case State.Paused:        _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlineMenu:    _menuInput.HandleMenuInput(gameTime); break;

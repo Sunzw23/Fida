@@ -89,6 +89,20 @@ namespace Fida.UI
             BuildFromScreen("OnlineLobby");
         }
 
+        /// <summary>构建关卡选择界面</summary>
+        public void BuildLevelSelect()
+        {
+            Clear();
+            BuildFromScreen("LevelSelect");
+        }
+
+        /// <summary>构建技能选择界面</summary>
+        public void BuildSkillSelect()
+        {
+            Clear();
+            BuildFromScreen("SkillSelect");
+        }
+
         /// <summary>清空控件列表（由构建方法调用，不直接对外）</summary>
         public void Clear()
         {
