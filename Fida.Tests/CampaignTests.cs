@@ -278,4 +278,45 @@ public class CampaignTests
             if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
         }
     }
+
+    [Fact]
+    public void JsonProvider_LoadsAndCombinesChapterDirectoryInFileNameOrder()
+    {
+        string directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"fida_chapters_{Guid.NewGuid():N}");
+        System.IO.Directory.CreateDirectory(directory);
+        try
+        {
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "20-second.json"),
+                "[{\"id\":\"B\",\"enemies\":[{}]}]");
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "10-first.json"),
+                "[{\"id\":\"A\",\"enemies\":[{}]}]");
+
+            var nodes = new JsonCampaignNodeProvider(directory).Load();
+
+            Assert.Equal(new[] { "A", "B" }, nodes.Select(node => node.Id));
+        }
+        finally
+        {
+            System.IO.Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void JsonProvider_ReportsMalformedCampaignData()
+    {
+        string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"fida_invalid_{Guid.NewGuid():N}.json");
+        try
+        {
+            System.IO.File.WriteAllText(path, "[{ invalid json }]");
+
+            var exception = Assert.Throws<System.IO.InvalidDataException>(
+                () => new JsonCampaignNodeProvider(path).Load());
+
+            Assert.Contains(path, exception.Message);
+        }
+        finally
+        {
+            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+        }
+    }
 }

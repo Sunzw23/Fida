@@ -3,18 +3,19 @@
 Dependency flow:
 
 ```text
-Chapter data / JSON extensions -> CampaignCatalog -> CampaignBattleFactory
+Chapter JSON files -> JsonCampaignNodeProvider -> validation -> CampaignCatalog -> CampaignBattleFactory
 Skill costs -> CampaignLoadout -> Loadout UI
 CampaignBattleSetup -> EncounterCoordinator -> PlayingSceneManager
 CampaignProgressStore -> CampaignRuntime -> Campaign map UI
 ```
 
-- `Data/`: built-in nodes split by chapter. Add a partial file for a new built-in chapter.
-- `Infrastructure/`: JSON node extensions and persistence adapters.
+- `Content/campaign/chapters/`: authoritative campaign nodes, split by chapter. Add a JSON file to add a chapter without recompiling.
+- `Infrastructure/`: strict JSON loading and persistence adapters.
 - `Battle/`: agent controllers, the controller factory, and reinforcement orchestration.
 - `CampaignModels.cs`: domain models with no UI dependency.
 - `CampaignSkillBalance.cs`: the single source of truth for skill costs and conflicts.
-- `Content/campaign/nodes.json`: adds or overrides nodes without recompiling.
+- Campaign JSON uses string enum names for `skills`, `rewards`, and `agentType`.
+- Every loaded file is combined and the complete graph is validated before use. Duplicate IDs, missing parents, cycles, invalid skills, empty encounters, and teams larger than four are rejected.
 
 The UI reads campaign models and submits node/loadout choices. Unlock, budget, and
 reinforcement rules belong to the campaign layer.

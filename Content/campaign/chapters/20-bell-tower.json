@@ -1,0 +1,49 @@
+[
+  {
+    "id": "B1", "chapter": "Chapter II - Bell Tower", "name": "Blood Hunt",
+    "story": "The hunters forgot their prey, but remember how to survive.",
+    "skillBudget": 7, "mapX": 100, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "rewards": ["Xue"],
+    "enemies": [
+      { "name": "Blood Hunter A", "health": 4, "skills": ["Xue"] },
+      { "name": "Blood Hunter B", "health": 4 },
+      { "name": "Blood Hunter C", "health": 4 }
+    ]
+  },
+  {
+    "id": "B2", "chapter": "Chapter II - Bell Tower", "name": "Twin Bell Chamber",
+    "story": "The twins share one memory that refuses to end.",
+    "skillBudget": 7, "mapX": 390, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "rewards": ["Tong"], "reinforcementRound": 3,
+    "enemies": [
+      { "name": "First Bellkeeper", "health": 5, "number0": 2, "number1": 2, "skills": ["Tong"] },
+      { "name": "Second Bellkeeper", "health": 5 }
+    ],
+    "reinforcements": [{ "name": "Bell Wraith", "health": 4, "skills": ["PlusAttack"] }]
+  },
+  {
+    "id": "B3", "chapter": "Chapter II - Bell Tower", "name": "Retaliation Idols",
+    "story": "The idols return every wound to the other side.",
+    "skillBudget": 7, "mapX": 680, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "rewards": ["Mo"],
+    "enemies": [
+      { "name": "Retaliation Golem", "health": 7, "skills": ["Mo"] },
+      { "name": "Idol A", "health": 3 },
+      { "name": "Idol B", "health": 3 }
+    ]
+  },
+  {
+    "id": "BG", "chapter": "Chapter II - Bell Tower", "name": "The Blood Bell",
+    "story": "Let the war's final day end for the first time.",
+    "skillBudget": 10, "mapX": 390, "mapY": 635, "parents": ["B1", "B2", "B3"], "requiredCompletedParents": 2,
+    "rewards": [], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      { "name": "Bell Matriarch", "health": 9, "skills": ["Xue"] },
+      { "name": "Hunter Echo", "health": 4 }
+    ],
+    "reinforcements": [
+      { "name": "Bell Echo A", "health": 4, "skills": ["Xue"] },
+      { "name": "Bell Echo B", "health": 4 }
+    ]
+  }
+]

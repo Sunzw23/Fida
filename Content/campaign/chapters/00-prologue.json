@@ -1,0 +1,25 @@
+[
+  {
+    "id": "P",
+    "chapter": "Prologue",
+    "name": "The Withered King",
+    "story": "The King repeats the Crown's last commands, then falls silent.",
+    "skillBudget": 0,
+    "mapX": 860,
+    "mapY": 105,
+    "requiredCompletedParents": 0,
+    "parents": [],
+    "rewards": ["PlusAttack", "PlusDefence"],
+    "enemies": [
+      {
+        "name": "The Withered King",
+        "portraitKey": "withered_king",
+        "health": 3,
+        "number0": 1,
+        "number1": 6,
+        "agentType": "Scripted",
+        "skills": ["PlusAttack", "PlusDefence"]
+      }
+    ]
+  }
+]

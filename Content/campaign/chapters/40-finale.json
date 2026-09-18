@@ -1,0 +1,14 @@
+[
+  {
+    "id": "F", "chapter": "Finale", "name": "The Crown of Zero",
+    "story": "Every path returns to the silent throne.",
+    "skillBudget": 16, "mapX": 820, "mapY": 1030, "parents": ["D2", "E2"], "requiredCompletedParents": 1,
+    "rewards": [], "isBoss": true, "reinforcementAfterEnemyDeaths": 2,
+    "enemies": [
+      { "name": "The Zero King", "health": 12, "skills": ["Di", "Shen"] },
+      { "name": "Echo of Assault", "health": 5, "skills": ["DoubleAttack"] },
+      { "name": "Echo of Defense", "health": 5, "skills": ["DoubleDefence"] }
+    ],
+    "reinforcements": [{ "name": "Crown Core", "health": 9, "skills": ["Bian"] }]
+  }
+]

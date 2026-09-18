@@ -1,0 +1,49 @@
+[
+  {
+    "id": "A1", "chapter": "Chapter I", "name": "Rustblade Arsenal",
+    "story": "The arsenal still arms a war that ended long ago.",
+    "skillBudget": 3, "mapX": 310, "mapY": 235, "parents": ["P"], "requiredCompletedParents": 1,
+    "rewards": ["DoubleAttack"],
+    "enemies": [
+      { "name": "Forge Guard A", "health": 4, "number0": 6, "skills": ["PlusAttack"] },
+      { "name": "Forge Guard B", "health": 4 },
+      { "name": "Blade Inspector", "health": 3 }
+    ]
+  },
+  {
+    "id": "A2", "chapter": "Chapter I", "name": "White Stone Gate",
+    "story": "The sentries guard no survivors, only an empty city.",
+    "skillBudget": 3, "mapX": 760, "mapY": 235, "parents": ["P"], "requiredCompletedParents": 1,
+    "rewards": ["DoubleDefence"],
+    "enemies": [
+      { "name": "White Shield", "health": 6, "skills": ["DoubleDefence"] },
+      { "name": "Crossbow Statue A", "health": 4 },
+      { "name": "Crossbow Statue B", "health": 4 }
+    ]
+  },
+  {
+    "id": "A3", "chapter": "Chapter I", "name": "Silent Hospice",
+    "story": "The physician erased pain, and every name with it.",
+    "skillBudget": 3, "mapX": 1210, "mapY": 235, "parents": ["P"], "requiredCompletedParents": 1,
+    "rewards": ["DoubleHealth"],
+    "enemies": [
+      { "name": "Silent Physician", "health": 4 },
+      { "name": "Patient A", "health": 3 },
+      { "name": "Patient B", "health": 3 }
+    ]
+  },
+  {
+    "id": "AG", "chapter": "Chapter I", "name": "The Nameless General",
+    "story": "The General guards the first memory of the Zero Decree.",
+    "skillBudget": 5, "mapX": 760, "mapY": 355, "parents": ["A1", "A2", "A3"], "requiredCompletedParents": 2,
+    "rewards": ["TripleHealth"], "isBoss": true, "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      { "name": "Nameless General", "health": 8, "skills": ["DoubleAttack"] },
+      { "name": "Broken Shieldguard", "health": 5, "skills": ["PlusDefence"] }
+    ],
+    "reinforcements": [
+      { "name": "Rustblade Reinforcement A", "health": 3 },
+      { "name": "Rustblade Reinforcement B", "health": 3 }
+    ]
+  }
+]
