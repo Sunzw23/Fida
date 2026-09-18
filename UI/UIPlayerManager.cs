@@ -19,6 +19,7 @@ namespace Fida.UI
         private UINumberFlowEffect _numberFlowEffect;
         private UICardCombatAnimator _cardCombatAnimator;
         private UIDecideApplyDialog _decideApplyDialog;
+        private UINumberSelectionDialog _numberSelectionDialog;
         private GameManager _gameManager;
 
         // 玩家头像纹理字典，key 为 PlayerId，value 为头像纹理（可为 null）
@@ -28,8 +29,6 @@ namespace Fida.UI
         // 「神/仙/迪」技能第二步"把该数字改成几"、「变」技能"变成几点"需要选择 0-9，
         // 此前只有鼠标隐形点击区、手柄完全不可用。这里构建可见按钮面板，
         // 按钮加入 _uiControls，使鼠标/手柄/焦点三条输入路径统一生效。
-        private UIAnimatedButton[] _numberButtons = null;
-
         public UIPlayerManager(List<UIControl> uiControls, ResourceManager resourceManager)
         {
             _uiControls = uiControls;
@@ -142,9 +141,7 @@ namespace Fida.UI
             };
             _cardCombatAnimator = new UICardCombatAnimator(-3);
 
-            // ─── 构建 ChooseNumber 数字面板（0-9，2 行 × 5 列）─────────────
-            // 位置取自 uiconfig 的 numberSelectionArea（10,100,260×110），
-            // 即原先 UIInputHandler.ActionChooseNumber 中硬编码的隐形点击区位置。
+            // ─── 构建 ChooseNumber 模态窗口（0-9，2 行 × 5 列）─────────────
             BuildNumberPad();
             _uiControls.Add(_numberFlowEffect);
             _uiControls.Add(_cardCombatAnimator);
@@ -304,6 +301,7 @@ namespace Fida.UI
         private void OnGameStateChanged(object sender, GameStateEventArgs e)
         {
             HideDecideApplyDialog();
+            HideNumberSelectionDialog();
             // 游戏状态变化时，强制刷新所有按钮的状态
             // 通过清除上一帧的状态记录，让按钮在下次 Update 时重新计算并通知状态变化
             foreach (var uiPlayer in _uiPlayers)
@@ -324,6 +322,12 @@ namespace Fida.UI
                 ShowDecideApplyDialog(e.Message);
             else
                 HideDecideApplyDialog();
+
+            if (e.RequiredActionType == ActionType.ChooseNumber &&
+                e.SourcePlayerId == _gameManager.LocalPlayerId)
+                ShowNumberSelectionDialog(e.Message);
+            else
+                HideNumberSelectionDialog();
         }
 
         private void OnEffectNumbersConsumed(object sender, EffectNumbersConsumedEventArgs e)
@@ -352,6 +356,27 @@ namespace Fida.UI
             _decideApplyDialog.Hide();
             _decideApplyDialog.ApplyButton.SetFocus(false);
             _decideApplyDialog.PassButton.SetFocus(false);
+        }
+
+        private void ShowNumberSelectionDialog(string prompt)
+        {
+            if (_numberSelectionDialog == null) return;
+            _numberSelectionDialog.Show(prompt);
+            foreach (var control in _uiControls)
+                if (control.IsFocused) control.SetFocus(false);
+
+            int first = Enumerable.Range(0, 10).FirstOrDefault(number =>
+                _gameManager.CurrentStepValidNumbers.Count == 0 ||
+                _gameManager.CurrentStepValidNumbers.Contains(number));
+            _numberSelectionDialog.NumberButtons[first].SetFocus(true);
+        }
+
+        private void HideNumberSelectionDialog()
+        {
+            if (_numberSelectionDialog == null) return;
+            _numberSelectionDialog.Hide();
+            foreach (var button in _numberSelectionDialog.NumberButtons)
+                button.SetFocus(false);
         }
 
         /// <summary>
@@ -443,39 +468,16 @@ namespace Fida.UI
         /// </summary>
         private void BuildNumberPad()
         {
-            _numberButtons = new UIAnimatedButton[10];
-
-            int cellW = UIConfig.Int("numberButtonWidth", 50);
-            int cellH = UIConfig.Int("numberButtonHeight", 50);
-            int cols = UIConfig.Int("numberColumns", 5);
-            int gap = 4;
-            int panelW = cols * cellW + (cols - 1) * gap;
-            // 水平居中于窗口顶带（y=10），避开两侧玩家卡片与左上角信息区，
-            // 使 0-9 面板在单机/联机、有/无分组布局下均清晰可见且无遮挡。
-            int viewportW = _resourceManager.GraphicsDevice.Viewport.Width;
-            int areaX = (viewportW - panelW) / 2;
-            int areaY = 10;
-
-            for (int n = 0; n < 10; n++)
+            _numberSelectionDialog = new UINumberSelectionDialog(-5,
+                _resourceManager.GraphicsDevice, _resourceManager.Pixel, _resourceManager.Font);
+            _uiControls.Add(_numberSelectionDialog);
+            for (int n = 0; n < _numberSelectionDialog.NumberButtons.Length; n++)
             {
-                int num = n; // 闭包捕获：for 循环变量 n 在 lambda 中会指向循环结束后的值(10)，需用局部变量固定每个按钮自己的数字
-                int col = n % cols;
-                int row = n / cols;
-                int x = areaX + col * (cellW + gap);
-                int y = areaY + row * (cellH + gap);
-                var bounds = new Rectangle(x, y, cellW, cellH);
-
-                var btn = new UIAnimatedButton(200 + n, bounds, n.ToString(), _resourceManager.Pixel, _resourceManager.Font)
-                {
-                    EnabledChecker = () => ShouldNumberPadBeEnabled(num),
-                    FocusIndex = 300 + n  // 300+ 段，避开玩家卡片(100+)与数字索引按钮(101/102)
-                };
-
-                _numberButtons[n] = btn;
-                _uiControls.Add(btn);
+                int number = n;
+                var button = _numberSelectionDialog.NumberButtons[n];
+                button.EnabledChecker = () => ShouldNumberPadBeEnabled(number);
+                _uiControls.Add(button);
             }
-
-            UpdateNumberPadVisibility();
         }
 
         /// <summary>
@@ -508,9 +510,7 @@ namespace Fida.UI
             bool visible = _gameManager != null
                 && _gameManager.Query.IsLocalPlayerSource()
                 && _gameManager.CurrentActionType == ActionType.ChooseNumber;
-            if (_numberButtons != null)
-                foreach (var btn in _numberButtons)
-                    btn.IsVisible = visible;
+            if (!visible) HideNumberSelectionDialog();
         }
 
         /// <summary>
