@@ -62,6 +62,15 @@ namespace Fida.Logic
         public int ResultValue { get; init; }
     }
 
+    /// <summary>
+    /// Raised immediately before an effect consumes its triggering number(s).
+    /// Presentation may keep the old values visible until the card action finishes.
+    /// </summary>
+    public sealed class EffectNumbersConsumedEventArgs : GameEventArgs
+    {
+        public IReadOnlyList<int> NumberIndices { get; init; } = [];
+    }
+
     /// <summary>Raised once an attack or heal target has been validated.</summary>
     public sealed class CardActionEventArgs : GameEventArgs
     {

@@ -51,6 +51,7 @@ namespace Fida.UI
                 _gameManager.MessageUpdated -= OnMessageUpdated;
                 _gameManager.GameStateChanged -= OnGameStateChanged;
                 _gameManager.PlayerActionRequired -= OnPlayerActionRequired;
+                _gameManager.EffectNumbersConsumed -= OnEffectNumbersConsumed;
             }
             _gameManager = gameManager;
             _uiPlayers.Clear();
@@ -92,6 +93,7 @@ namespace Fida.UI
             _gameManager.MessageUpdated += OnMessageUpdated;
             _gameManager.GameStateChanged += OnGameStateChanged;
             _gameManager.PlayerActionRequired += OnPlayerActionRequired;
+            _gameManager.EffectNumbersConsumed += OnEffectNumbersConsumed;
 
             // 计算每个玩家的绘制位置（基于分组）
             var positions = ComputePlayerPositions(gameManager);
@@ -279,7 +281,13 @@ namespace Fida.UI
         {
             var source = GetUIPlayer(sourcePlayerId);
             var target = GetUIPlayer(targetPlayerId);
-            if (source == null || target == null) return;
+            if (source == null || target == null)
+            {
+                // Do not leave a consumed value visually frozen if a card was
+                // removed between effect resolution and presentation.
+                source?.CommitDeferredNumberVisual();
+                return;
+            }
             HideActionCue();
             _cardCombatAnimator?.Start(source, target, damaging);
         }
@@ -316,6 +324,11 @@ namespace Fida.UI
                 ShowDecideApplyDialog(e.Message);
             else
                 HideDecideApplyDialog();
+        }
+
+        private void OnEffectNumbersConsumed(object sender, EffectNumbersConsumedEventArgs e)
+        {
+            GetUIPlayer(e.SourcePlayerId)?.BeginDeferredNumberVisual();
         }
 
         private bool ShouldDecisionButtonsBeEnabled() =>

@@ -107,6 +107,7 @@ namespace Fida.UI
             card.SelectionStrength = 0f;
             card.ImpactStrength = 0f;
             card.CommitDeferredHealthVisual();
+            card.CommitDeferredNumberVisual();
         }
 
         public override void Draw(SpriteBatch spriteBatch, GameTime gameTime) { }

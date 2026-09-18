@@ -18,6 +18,7 @@ namespace Fida.Logic
         public event EventHandler<GameEndEventArgs> GameEnded;
         public event EventHandler<GameEventArgs> MessageUpdated;
         public event EventHandler<NumberOperationEventArgs> NumberOperationResolved;
+        public event EventHandler<EffectNumbersConsumedEventArgs> EffectNumbersConsumed;
         public event EventHandler<CardActionEventArgs> CardActionStarted;
         /// <summary>
         /// 游戏状态变化事件 - 当 GameState 发生变化时触发，用于通知 UI 层刷新按钮状态
@@ -216,6 +217,8 @@ namespace Fida.Logic
         public void OnMessageUpdated(GameEventArgs e) => MessageUpdated?.Invoke(this, e);
         public void OnNumberOperationResolved(NumberOperationEventArgs e) =>
             NumberOperationResolved?.Invoke(this, e);
+        public void OnEffectNumbersConsumed(EffectNumbersConsumedEventArgs e) =>
+            EffectNumbersConsumed?.Invoke(this, e);
         public void OnCardActionStarted(CardActionEventArgs e) =>
             CardActionStarted?.Invoke(this, e);
         public void OnGameStateChanged(GameStateEventArgs e) => GameStateChanged?.Invoke(this, e);

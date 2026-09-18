@@ -71,6 +71,7 @@ namespace Fida.Logic
             GameManager.SetGameMessage(GameText.AttackTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], damage));
             int[] numbers = new int[2];
             Array.Copy(SourcePlayer.Numbers, numbers, 2);
+            NotifyNumbersConsumed(numberIndex);
             SourcePlayer.SetNumber(numberIndex, 1);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
@@ -82,6 +83,7 @@ namespace Fida.Logic
             GameManager.SetGameMessage(GameText.AttackTriggeredByNumberPair(SourcePlayer.Name, damage));
             int[] numbers = new int[2];
             Array.Copy(SourcePlayer.Numbers, numbers, 2);
+            NotifyNumbersConsumed(0, 1);
             SourcePlayer.SetNumber(0, 1);
             SourcePlayer.SetNumber(1, 1);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
@@ -92,6 +94,7 @@ namespace Fida.Logic
         private void HandleHealEffect(int numberIndex, int healing)
         {
             GameManager.SetGameMessage(GameText.HealTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], healing));
+            NotifyNumbersConsumed(numberIndex);
             SourcePlayer.SetNumber(numberIndex, 1);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, 0, healing);
@@ -101,11 +104,19 @@ namespace Fida.Logic
         private void HandleHealEffectBoth(int healing)
         {
             GameManager.SetGameMessage(GameText.HealTriggeredByNumberPair(SourcePlayer.Name, healing));
+            NotifyNumbersConsumed(0, 1);
             SourcePlayer.SetNumber(0, 1);
             SourcePlayer.SetNumber(1, 1);
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
             var ctx = new SkillContext(SourcePlayerId, 0, healing);
             GameManager.TransitionTo(new TargetSelectionState(GameManager, ctx));
         }
+
+        private void NotifyNumbersConsumed(params int[] indices) =>
+            GameManager.OnEffectNumbersConsumed(new EffectNumbersConsumedEventArgs
+            {
+                SourcePlayerId = SourcePlayerId,
+                NumberIndices = indices
+            });
     }
 }

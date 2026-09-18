@@ -54,6 +54,8 @@ namespace Fida.UI
         private Vector2 _nameCenter;
         private Vector2 _healthCenter;
         private int? _deferredHealth;
+        private int[] _deferredNumbers;
+        public bool DeferNumberVisual { get; private set; }
         private bool _pointerOverCard;
         public bool DeferHealthVisual { get; set; }
 
@@ -268,6 +270,11 @@ namespace Fida.UI
 
         public void UpdateNumbers()
         {
+            if (DeferNumberVisual)
+            {
+                _deferredNumbers = (int[])Player.Numbers.Clone();
+                return;
+            }
             if (Player.Numbers.Length > 0)
                 Number0Button.Update(Player.Numbers[0].ToString());
             if (Player.Numbers.Length > 1)
@@ -282,6 +289,21 @@ namespace Fida.UI
                 return;
             }
             HealthLabel.Update(Player.Health.ToString());
+        }
+
+        public void BeginDeferredNumberVisual()
+        {
+            DeferNumberVisual = true;
+            _deferredNumbers = null;
+        }
+
+        public void CommitDeferredNumberVisual()
+        {
+            DeferNumberVisual = false;
+            int[] numbers = _deferredNumbers ?? Player.Numbers;
+            if (numbers.Length > 0) Number0Button.Update(numbers[0].ToString());
+            if (numbers.Length > 1) Number1Button.Update(numbers[1].ToString());
+            _deferredNumbers = null;
         }
 
         public void CommitDeferredHealthVisual()
