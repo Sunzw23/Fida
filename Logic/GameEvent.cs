@@ -48,6 +48,28 @@ namespace Fida.Logic
         public int NewValue { get; set; }
     }
 
+    /// <summary>
+    /// Describes the visible direction of a number operation: the addend flows
+    /// from one card into the source player's selected base number.
+    /// </summary>
+    public sealed class NumberOperationEventArgs : GameEventArgs
+    {
+        public int BaseNumberIndex { get; init; }
+        public int BaseValue { get; init; }
+        public int AddendPlayerId { get; init; }
+        public int AddendNumberIndex { get; init; }
+        public int AddendValue { get; init; }
+        public int ResultValue { get; init; }
+    }
+
+    /// <summary>Raised once an attack or heal target has been validated.</summary>
+    public sealed class CardActionEventArgs : GameEventArgs
+    {
+        public int Damage { get; init; }
+        public int Healing { get; init; }
+        public bool IsDamaging => Damage > 0;
+    }
+
     public class SkillActivatedEventArgs : GameEventArgs
     {
         public SkillType SkillType { get; set; }

@@ -28,6 +28,7 @@ namespace Fida.Logic
             foreach (var player in GameManager.Players)
             {
                 player.ResetPerTurnSkills();
+                player.ResetAttacksReceivedThisTurn();
             }
 
             // 整条回合主流程倒序入栈。

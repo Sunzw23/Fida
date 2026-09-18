@@ -6,7 +6,7 @@ namespace Fida.Logic
     /// AI 代理控制器。
     /// RequestAction 调用 AgentManager.GetAgentAction() 并执行 game.UpdateGame(action)。
     /// </summary>
-    public class AgentPlayerController : IPlayerController
+    public class AgentPlayerController : IAutomatedPlayerController
     {
         public int PlayerId { get; }
         private readonly AgentManager _agentManager;

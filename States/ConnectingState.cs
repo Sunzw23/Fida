@@ -30,7 +30,7 @@ namespace Fida.States
             if (_networkManager.IsConnected)
             {
                 _uiManager.BuildConnectingScreen(_networkManager.StatusText);
-                _stateMachine.SwitchToState(State.OnlineLobby);
+                _stateMachine.SwitchToState(State.MainMenu);
             }
         }
     }

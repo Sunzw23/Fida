@@ -14,6 +14,7 @@ namespace Fida.UI
         private readonly List<UIControl> _uiControls;
         private MouseState _currentMouseState;
         private MouseState _previousMouseState;
+        private KeyboardState _previousKeyboardState;
 
         // ─── 手柄输入支持 ──────────────────────────────────
         private ControllerInputHandler _controllerInput;
@@ -37,6 +38,22 @@ namespace Fida.UI
         public GameAction UpdateMouseAndCheckClicks(GameManager gameManager)
         {
             _currentMouseState = Mouse.GetState();
+            KeyboardState currentKeyboard = Keyboard.GetState();
+
+            if (gameManager.CurrentActionType == ActionType.DecideApply)
+            {
+                bool applyPressed = (currentKeyboard.IsKeyDown(Keys.Enter) || currentKeyboard.IsKeyDown(Keys.Y)) &&
+                    !_previousKeyboardState.IsKeyDown(Keys.Enter) && !_previousKeyboardState.IsKeyDown(Keys.Y);
+                bool passPressed = (currentKeyboard.IsKeyDown(Keys.Escape) || currentKeyboard.IsKeyDown(Keys.N)) &&
+                    !_previousKeyboardState.IsKeyDown(Keys.Escape) && !_previousKeyboardState.IsKeyDown(Keys.N);
+                _previousKeyboardState = currentKeyboard;
+                if (applyPressed) return CreateDecideApplyAction(gameManager, true);
+                if (passPressed) return CreateDecideApplyAction(gameManager, false);
+            }
+            else
+            {
+                _previousKeyboardState = currentKeyboard;
+            }
 
             // 不再更新 UI 控件状态 - 已经在 UIManager.UpdateUIButtons 中更新过了
             // 只处理切换模式按钮的点击
@@ -57,6 +74,8 @@ namespace Fida.UI
                     return ActionChooseTarget(gameManager);
                 case ActionType.ChooseNumber:
                     return ActionChooseNumber(gameManager);
+                case ActionType.DecideApply:
+                    return ActionDecideApply(gameManager);
                 default:
                     break;
             }
@@ -111,6 +130,8 @@ namespace Fida.UI
                     return ControllerChooseTarget(gameManager, focusedControl);
                 case ActionType.ChooseNumber:
                     return ControllerChooseNumber(gameManager, focusedControl);
+                case ActionType.DecideApply:
+                    return ControllerDecideApply(gameManager, focusedControl);
                 default:
                     break;
             }
@@ -182,6 +203,15 @@ namespace Fida.UI
                     return new GameAction { Type = ActionType.ChooseNumber, Number = number };
                 }
             }
+            return new GameAction { Type = ActionType.None };
+        }
+
+        private GameAction ControllerDecideApply(GameManager gameManager, UIControl focusedControl)
+        {
+            if (focusedControl.GetId() == UIDecideApplyDialog.ApplyButtonId)
+                return CreateDecideApplyAction(gameManager, true);
+            if (focusedControl.GetId() == UIDecideApplyDialog.PassButtonId)
+                return CreateDecideApplyAction(gameManager, false);
             return new GameAction { Type = ActionType.None };
         }
 
@@ -270,6 +300,26 @@ namespace Fida.UI
 
             return new GameAction { Type = ActionType.None };
         }
+
+        private GameAction ActionDecideApply(GameManager gameManager)
+        {
+            foreach (var button in _uiControls.OfType<UIAnimatedButton>())
+            {
+                if (!button.CanFocus || !button.Contains(_currentMouseState.X, _currentMouseState.Y)) continue;
+                if (button.GetId() == UIDecideApplyDialog.ApplyButtonId)
+                    return CreateDecideApplyAction(gameManager, true);
+                if (button.GetId() == UIDecideApplyDialog.PassButtonId)
+                    return CreateDecideApplyAction(gameManager, false);
+            }
+            return new GameAction { Type = ActionType.None };
+        }
+
+        private static GameAction CreateDecideApplyAction(GameManager gameManager, bool apply) =>
+            new(ActionType.DecideApply)
+            {
+                TargetPlayerId = gameManager.CurrentState?.ActorId ?? gameManager.LocalPlayerId,
+                IsApply = apply
+            };
 
         /// <summary>
         /// 检查鼠标是否在指定区域内

@@ -14,4 +14,12 @@ namespace Fida.Logic
         /// </summary>
         void RequestAction(GameManager game, PlayerActionRequiredEventArgs args);
     }
+
+    /// <summary>
+    /// Marker for controllers whose decisions should be presented over several
+    /// rendered frames before they are committed to the game state.
+    /// </summary>
+    public interface IAutomatedPlayerController : IPlayerController
+    {
+    }
 }

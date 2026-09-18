@@ -22,8 +22,15 @@ namespace Fida
         // 衬线标题字体（菜单大标题）。加载失败时回退到 Font，绝不崩溃。
         public SpriteFont TitleFont { get; private set; }
 
+        // High-resolution regular face used by zoomable campaign UI. It is rendered
+        // at half scale so glyphs retain more source pixels along curved serifs.
+        public SpriteFont MapFont { get; private set; }
+
         // 单像素纹理，用于绘制矩形边框和填充
         public Texture2D Pixel { get; private set; }
+
+        /// <summary>Feathered strip for smooth rotated map connections.</summary>
+        public Texture2D AntialiasedLine { get; private set; }
 
         /// <summary>获取图形设备实例</summary>
         public GraphicsDevice GraphicsDevice => _graphicsDevice;
@@ -45,7 +52,7 @@ namespace Fida
         {
             // 加载字体。确保你的字体文件名是"Font"
             // Load the font. Ensure your font filename is "Font"
-            Font = contentManager.Load<SpriteFont>("source_han_sans");
+            Font = contentManager.Load<SpriteFont>("ui_serif");
             if (Font==null)
             {
                 throw new ContentLoadException("Failed to load font.");
@@ -54,7 +61,12 @@ namespace Fida
             // 加载衬线标题字体；失败则回退到普通字体，保证不崩溃。
             try
             {
-                TitleFont = contentManager.Load<SpriteFont>("source_han_title");
+                TitleFont = contentManager.Load<SpriteFont>("ui_serif_title");
+                if (!UI.UIFontGuard.Supports(TitleFont, "Fida Aa-Zz 0-9"))
+                {
+                    System.Diagnostics.Debug.WriteLine("Title font lacks required Latin glyphs, falling back to body font.");
+                    TitleFont = Font;
+                }
             }
             catch (ContentLoadException)
             {
@@ -62,15 +74,48 @@ namespace Fida
                 TitleFont = Font;
             }
 
+            try
+            {
+                MapFont = contentManager.Load<SpriteFont>("ui_serif_map");
+            }
+            catch (ContentLoadException)
+            {
+                MapFont = Font;
+            }
+
             // 创建一个单像素纹理，用于绘制矩形边框和填充
             // Create a single-pixel texture for drawing rectangle outlines and fills
             Pixel = new Texture2D(_graphicsDevice, 1, 1);
             Pixel.SetData(new[] { Color.White });
+            AntialiasedLine = CreateAntialiasedLineTexture();
             _textures = new Dictionary<string, Texture2D>();
+            LoadTexture(contentManager, "portrait_arithmetist", "portraits/arithmetist");
+            LoadTexture(contentManager, "portrait_withered_king", "portraits/withered_king");
+            LoadTexture(contentManager, "portrait_enemy_fallback", "portraits/enemy_fallback");
 
         }
 
-        private void _LoadTexture(ContentManager _contentManager, string name, string path)
+        private Texture2D CreateAntialiasedLineTexture()
+        {
+            const int width = 64;
+            const int height = 7;
+            byte[] rowAlpha = { 0, 72, 180, 255, 180, 72, 0 };
+            var data = new Color[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    float endFade = x == 0 || x == width - 1 ? 0f :
+                        x == 1 || x == width - 2 ? 0.55f : 1f;
+                    data[y * width + x] = Color.White * (rowAlpha[y] / 255f * endFade);
+                }
+            }
+            var texture = new Texture2D(_graphicsDevice, width, height);
+            texture.SetData(data);
+            return texture;
+        }
+
+        private void LoadTexture(ContentManager contentManager, string name, string path)
         {
             if (_textures.ContainsKey(name))
             {
@@ -79,7 +124,7 @@ namespace Fida
             }
             try
             {
-                Texture2D texture = _contentManager.Load<Texture2D>(path);
+                Texture2D texture = contentManager.Load<Texture2D>(path);
                 _textures[name] = texture;
             }
             catch (ContentLoadException ex)
@@ -100,6 +145,21 @@ namespace Fida
             {
                 return null; // 返回 null 而不是抛出异常，允许缺失的纹理
             }
+        }
+
+        /// <summary>
+        /// Resolves a logical portrait key and falls back to a stable player/enemy asset.
+        /// New campaign content only needs to provide a matching portrait key.
+        /// </summary>
+        public Texture2D GetPortrait(string portraitKey, bool isLocalPlayer)
+        {
+            string resourceKey = string.IsNullOrWhiteSpace(portraitKey)
+                ? null
+                : $"portrait_{portraitKey}";
+            Texture2D portrait = resourceKey == null ? null : GetTexture(resourceKey);
+            return portrait ?? GetTexture(isLocalPlayer
+                ? "portrait_arithmetist"
+                : "portrait_enemy_fallback");
         }
 
         /// <summary>
@@ -130,6 +190,8 @@ namespace Fida
             // However, if they are created manually, they need to be disposed manually.
             Pixel?.Dispose();
             Pixel = null;
+            AntialiasedLine?.Dispose();
+            AntialiasedLine = null;
         }
     }
 }

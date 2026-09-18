@@ -103,6 +103,29 @@ public class ChooseNumberIndexStateTests
     }
 
     [Fact]
+    public void Execute_ReportsDirectionalOperandsBeforeChangingTheNumber()
+    {
+        var gm = new GameManager();
+        var alice = MakePlayer(0, "alice", n0: 4, n1: 9);
+        var bob = MakePlayer(1, "bob", n0: 2, n1: 7);
+        gm.Initialize([alice, bob]);
+        NumberOperationEventArgs? operation = null;
+        gm.NumberOperationResolved += (_, e) => operation = e;
+
+        var state = new ChooseNumberIndexState(gm, alice.PlayerId);
+        InvokeExecute(state, Actions(firstIndex: 0, targetPlayerId: 1, secondIndex: 1));
+
+        Assert.NotNull(operation);
+        Assert.Equal(alice.PlayerId, operation!.SourcePlayerId);
+        Assert.Equal(0, operation.BaseNumberIndex);
+        Assert.Equal(4, operation.BaseValue);
+        Assert.Equal(bob.PlayerId, operation.AddendPlayerId);
+        Assert.Equal(1, operation.AddendNumberIndex);
+        Assert.Equal(7, operation.AddendValue);
+        Assert.Equal(1, operation.ResultValue);
+    }
+
+    [Fact]
     public void ValidateStep_RejectsPickingSameNumberIndex()
     {
         var gm = new GameManager();

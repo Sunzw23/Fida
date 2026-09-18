@@ -73,7 +73,9 @@ Loaded 5 models
 
 ### 本地模式
 
-主菜单「开始」→ 关卡选择（`Content/scenes/*.csv`，5 个场景）→ 技能选择（14 种可选技能）→ 本地玩家 + 由 ONNX 模型驱动的 AI 对手。AI 决策分两个阶段（`ChooseNumberIndex` 选第一个数字、`ChooseTarget` 选目标），共 5 个 ONNX 模型文件。
+主菜单「开始」→ 树状战役地图 → 在节点预算内配置多个已解锁技能 → 本地小队战。战役包含 18 个节点、两条中期分支、动态增援与普通/完整路线结局；进度保存在本机应用数据目录。
+
+内置章节按文件拆分在 `Campaign/Data/`。额外节点可写入 `Content/campaign/nodes.json`，无需修改地图 UI；相同 ID 会覆盖内置节点。无效父节点、循环依赖、超编敌人和未实现技能会被校验并安全回退。
 
 ## 联机
 
@@ -186,6 +188,11 @@ Fida/
 ├── Agent/
 │   ├── AgentManager.cs      AI 代理（事件驱动，ONNX 推理）
 │   └── OnnxInference.cs     ONNX 推理封装
+├── Campaign/
+│   ├── Data/                按章节拆分的18个内置节点
+│   ├── Battle/              规则/脚本Agent、控制器工厂、动态增援
+│   ├── Infrastructure/      JSON节点扩展与可替换存档
+│   └── Campaign*.cs         图校验、技能预算、进度与战斗工厂
 ├── Logic/
 │   ├── GameManager.cs       核心：玩家/分组/回合/状态委托
 │   ├── GameQuery.cs         只读查询封装
@@ -207,9 +214,10 @@ Fida/
 ├── UI/                      按钮/标签/焦点/动画
 ├── Scene/PlayingSceneManager.cs  对局场景
 ├── Content/screens/*.json    界面布局（主菜单/规则/关卡选择/技能选择/联机…）
-├── Content/scenes/*.csv     场景配置（关卡玩家列表：id,name,hp,skills,positionIndex）
+├── Content/campaign/        可增补或覆盖的战役节点配置
+├── Content/scenes/*.csv     旧版场景配置（保留兼容）
 ├── Content/                 字体 + ONNX 模型
-└── Fida.Tests/              xUnit 测试（48 个）
+└── Fida.Tests/              xUnit 测试
 ```
 
 ## 测试

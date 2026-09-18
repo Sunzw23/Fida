@@ -41,7 +41,7 @@ namespace Fida.States
             if (_networkManager.CheckHostConnection())
             {
                 _uiManager.BuildHostingScreen(_networkManager.StatusText, code);
-                _stateMachine.SwitchToState(State.OnlineLobby);
+                _stateMachine.SwitchToState(State.MainMenu);
             }
         }
     }

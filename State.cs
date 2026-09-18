@@ -21,6 +21,7 @@ namespace Fida
         Connecting,
         OnlinePlaying,
         OnlineLobby,
+        DuelDraft,
     }
 
 }

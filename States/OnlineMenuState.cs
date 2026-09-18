@@ -13,6 +13,17 @@ namespace Fida.States
 
         public override void OnEnter()
         {
+            if (_networkManager.IsConnected)
+            {
+                BindButton("backToMain", () => _stateMachine.SwitchToState(State.MainMenu));
+                BindButton("disconnect", () =>
+                {
+                    _networkManager.Cleanup();
+                    _stateMachine.SwitchToState(State.MainMenu);
+                });
+                return;
+            }
+
             BindButton("hostGame", () =>
             {
                 _networkManager.StartHosting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), _networkManager.GetServerIsRelay());

@@ -20,15 +20,16 @@ namespace Fida.Logic
 
         public override void Enter()
         {
-            // OrderedAttack 技能推栈（先于 OrderingAttack 处理）
-            foreach (var skill in SourcePlayer.Skills)
+            // OrderedAttack 技能每次攻击只入栈一次；多技能配装下本状态会递归进入多次。
+            if (!_ctx.OrderedAttackSkillsQueued)
             {
-                if (skill.Trigger == SkillTrigger.OrderedAttack && skill.CanUse(GameManager, SourcePlayer))
+                _ctx.OrderedAttackSkillsQueued = true;
+                foreach (var skill in SourcePlayer.Skills)
                 {
-                    var state = skill.CreateState(GameManager, new SkillContext(SourcePlayerId));
-                    if (state != null)
+                    if (skill.Trigger == SkillTrigger.OrderedAttack && skill.CanUse(GameManager, SourcePlayer))
                     {
-                        GameManager.StateStack.Push(state);
+                        var state = skill.CreateState(GameManager, new SkillContext(SourcePlayerId));
+                        if (state != null) GameManager.StateStack.Push(state);
                     }
                 }
             }

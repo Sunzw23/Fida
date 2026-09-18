@@ -1,0 +1,69 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Fida.Logic;
+
+namespace Fida.Campaign.Battle
+{
+    /// <summary>
+    /// 仅负责关卡阶段与增援，不处理绘制或输入。场景层监听 ReinforcementsDeployed 更新 UI 和控制器。
+    /// </summary>
+    public sealed class CampaignEncounterCoordinator
+    {
+        private readonly GameManager _game;
+        private readonly List<Player> _observedPlayers = [];
+        private CampaignBattleSetup _setup;
+        private bool _deployed;
+        private int _round;
+
+        public event Action<IReadOnlyList<Player>> ReinforcementsDeployed;
+
+        public CampaignEncounterCoordinator(GameManager game)
+        {
+            _game = game;
+            _game.TurnStarted += OnTurnStarted;
+        }
+
+        public void Configure(CampaignBattleSetup setup)
+        {
+            foreach (var player in _observedPlayers) player.HealthChanged -= OnHealthChanged;
+            _observedPlayers.Clear();
+            _setup = setup;
+            _deployed = false;
+            _round = 0;
+
+            foreach (var player in setup.Players.Where(p => p.PlayerId != _game.LocalPlayerId))
+            {
+                player.HealthChanged += OnHealthChanged;
+                _observedPlayers.Add(player);
+            }
+        }
+
+        private void OnTurnStarted(object sender, TurnStartEventArgs e)
+        {
+            if (_setup == null || _deployed) return;
+            if (e.SourcePlayerId == _game.LocalPlayerId) _round++;
+            TryDeploy();
+        }
+
+        private void OnHealthChanged(Player player)
+        {
+            if (player.Health == 0) TryDeploy();
+        }
+
+        private void TryDeploy()
+        {
+            if (_setup == null || _deployed || _setup.Reinforcements.Count == 0) return;
+            int deaths = _setup.Players.Count(p => p.PlayerId != _game.LocalPlayerId && !p.IsAlive());
+            bool byRound = _setup.Node.ReinforcementRound > 0 && _round >= _setup.Node.ReinforcementRound;
+            bool byDeaths = _setup.Node.ReinforcementAfterEnemyDeaths > 0 &&
+                            deaths >= _setup.Node.ReinforcementAfterEnemyDeaths;
+            if (!byRound && !byDeaths) return;
+
+            _deployed = true;
+            foreach (var reinforcement in _setup.Reinforcements) _game.AddPlayer(reinforcement, 1);
+            _game.SetGameMessage($"Reinforcements arrived: {string.Join(", ", _setup.Reinforcements.Select(p => p.Name))}");
+            ReinforcementsDeployed?.Invoke(_setup.Reinforcements);
+        }
+    }
+}

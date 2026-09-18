@@ -45,7 +45,11 @@ namespace Fida.UI
         // 缓存 MeasureString 结果，避免每帧重复计算
         private Vector2 _cachedTextSize;
         private Vector2 _cachedTextPos;
+        private string _cachedDisplayText = "";
         private bool _textSizeDirty = true;
+
+        /// <summary>Card-owned buttons remain interactive controls but are drawn by their parent card.</summary>
+        public bool ParentDrawOnly { get; set; }
 
         public UIAnimatedButton(int id, Rectangle bounds, string text, Texture2D pixel, SpriteFont font) : base(id)
         {
@@ -90,13 +94,30 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
+            if (ParentDrawOnly) return;
+            DrawInternal(sb, gameTime);
+        }
+
+        public void DrawAt(SpriteBatch sb, GameTime gameTime, Rectangle bounds)
+        {
+            Rectangle original = Bounds;
+            Bounds = bounds;
+            _textSizeDirty = true;
+            DrawInternal(sb, gameTime);
+            Bounds = original;
+            _textSizeDirty = true;
+        }
+
+        private void DrawInternal(SpriteBatch sb, GameTime gameTime)
+        {
             if (!IsVisible) return; // 不可见时不绘制（数字面板非 ChooseNumber 步骤时隐藏）
             // 更新文字尺寸缓存
             if (_textSizeDirty)
             {
                 if (!string.IsNullOrEmpty(Text))
                 {
-                    _cachedTextSize = Font.MeasureString(Text);
+                    _cachedDisplayText = UIFontGuard.Sanitize(Font, Text);
+                    _cachedTextSize = Font.MeasureString(_cachedDisplayText);
                     _cachedTextPos = new Vector2(
                         Bounds.Center.X - _cachedTextSize.X / 2,
                         Bounds.Center.Y - _cachedTextSize.Y / 2
@@ -116,7 +137,7 @@ namespace Fida.UI
             // 绘制文字（居中，使用缓存坐标）
             if (!string.IsNullOrEmpty(Text))
             {
-                sb.DrawString(Font, Text, _cachedTextPos, foreColor);
+                sb.DrawString(Font, _cachedDisplayText, _cachedTextPos, foreColor);
             }
 
             // 绘制边框（禁用状态 borderThickness=0，不绘制）
@@ -139,6 +160,22 @@ namespace Fida.UI
                 {
                     UIUtils.DrawRectangleOutlines(sb, Bounds, borderColor, borderThickness, Pixel);
                 }
+            }
+
+            // A locked first number remains visibly alive while the opponent
+            // considers the second number, making the two-beat action readable.
+            if (State == UIAnimatedButtonState.Selected)
+            {
+                float pulse = 0.5f + 0.5f * (float)Math.Sin(
+                    gameTime.TotalGameTime.TotalSeconds * 8.0);
+                int expansion = 3 + (int)(pulse * 3);
+                var pulseBounds = new Rectangle(
+                    Bounds.X - expansion,
+                    Bounds.Y - expansion,
+                    Bounds.Width + expansion * 2,
+                    Bounds.Height + expansion * 2);
+                UIUtils.DrawRectangleOutlines(sb, pulseBounds,
+                    Color.Lerp(UITheme.Gold, UITheme.GoldBright, pulse), 2, Pixel);
             }
 
             // 绘制白色擦除块（从左到右扫过）

@@ -1,4 +1,4 @@
 id,name,hp,skills,positionIndex
-0,You,6,"神",0
-1,Enemy 1,6,"双倍防御",1
-2,Enemy 2,6,"三倍生命",2
+0,You,6,"God",0
+1,Enemy 1,6,"Double Defense",1
+2,Enemy 2,6,"Triple Health",2

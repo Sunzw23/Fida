@@ -1,4 +1,4 @@
 id,name,hp,skills,positionIndex
-0,You,6,"三倍生命",0
-1,Enemy 1,6,"血",1
-2,Enemy 2,6,"血",2
+0,You,6,"Triple Health",0
+1,Enemy 1,6,"Blood",1
+2,Enemy 2,6,"Blood",2

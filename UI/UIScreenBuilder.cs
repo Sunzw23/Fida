@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using Fida.Logic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Fida.UI.Campaign;
+using CampaignBalance = Fida.Campaign.CampaignSkillBalance;
 
 namespace Fida.UI
 {
@@ -18,6 +20,7 @@ namespace Fida.UI
         private readonly ResourceManager _resourceManager;
         private readonly List<UIControl> _uiControls;
         private readonly UIFocusManager _focusManager;
+        private readonly UICampaignScreenBuilder _campaignScreens;
 
         public UIScreenBuilder(
             ResourceManager resourceManager,
@@ -27,13 +30,21 @@ namespace Fida.UI
             _resourceManager = resourceManager;
             _uiControls = uiControls;
             _focusManager = focusManager;
+            _campaignScreens = new UICampaignScreenBuilder(resourceManager, uiControls, focusManager);
         }
 
         /// <summary>构建主菜单</summary>
-        public void BuildMainMenu()
+        public void BuildMainMenu(bool connected = false, bool isHost = false)
         {
             Clear();
-            BuildFromScreen("MainMenu");
+            if (connected)
+            {
+                BuildFromScreen("ConnectedMainMenu", new Dictionary<string, string>
+                {
+                    { "role", isHost ? "HOST" : "GUEST" }
+                });
+            }
+            else BuildFromScreen("MainMenu");
         }
 
         /// <summary>构建暂停菜单</summary>
@@ -56,10 +67,10 @@ namespace Fida.UI
         }
 
         /// <summary>构建在线菜单</summary>
-        public void BuildOnlineMenu()
+        public void BuildOnlineMenu(bool connected = false)
         {
             Clear();
-            BuildFromScreen("OnlineMenu");
+            BuildFromScreen(connected ? "ConnectedOnlineMenu" : "OnlineMenu");
         }
 
         /// <summary>构建房主等待界面</summary>
@@ -89,19 +100,60 @@ namespace Fida.UI
             BuildFromScreen("OnlineLobby");
         }
 
+        /// <summary>Builds the shared ban/pick board from the canonical skill catalog.</summary>
+        public void BuildDuelDraft()
+        {
+            Clear();
+            _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
+            _uiControls.Add(new UITitle(1, "Duel Draft", new Vector2(960, 105),
+                _resourceManager.Pixel, _resourceManager.TitleFont) { Name = "title" });
+            _uiControls.Add(new UILabel(2, "BAN - choose one skill", new Vector2(960, 190),
+                _resourceManager.Font) { Name = "draftPhase", MaximumWidth = 1300 });
+            _uiControls.Add(new UILabel(3, "Both bans are revealed together.", new Vector2(960, 238),
+                _resourceManager.Font) { Name = "draftStatus", MaximumWidth = 1500 });
+
+            int index = 0;
+            foreach (SkillType skill in SkillFactory.SelectableSkills)
+            {
+                int column = index % 2;
+                int row = index / 2;
+                var bounds = new Rectangle(365 + column * 610, 278 + row * 66, 580, 54);
+                var button = new UIButton(500 + index, bounds,
+                    $"{GameText.SkillName(skill)}  [{CampaignBalance.Cost(skill)} SP]",
+                    _resourceManager.Pixel, _resourceManager.Font)
+                {
+                    Name = $"draftSkill_{skill}",
+                    FocusIndex = index
+                };
+                _uiControls.Add(button);
+                index++;
+            }
+
+            _uiControls.Add(new UIButton(550, new Rectangle(620, 885, 320, 72),
+                "Lock Loadout", _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "draftCommit", FocusIndex = index++ });
+            _uiControls.Add(new UIButton(551, new Rectangle(980, 885, 320, 72),
+                "Disconnect", _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "draftBack", FocusIndex = index });
+            if (_focusManager.CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
+        }
+
         /// <summary>构建关卡选择界面</summary>
         public void BuildLevelSelect()
         {
             Clear();
-            BuildFromScreen("LevelSelect");
+            _campaignScreens.BuildMap();
         }
 
         /// <summary>构建技能选择界面</summary>
         public void BuildSkillSelect()
         {
             Clear();
-            BuildFromScreen("SkillSelect");
+            _campaignScreens.BuildLoadout(GameSetup.SelectedNode);
         }
+
+        public void BuildCampaignResult(bool won, string message) =>
+            _campaignScreens.BuildResult(won, message, GameSetup.SelectedNode);
 
         /// <summary>清空控件列表（由构建方法调用，不直接对外）</summary>
         public void Clear()

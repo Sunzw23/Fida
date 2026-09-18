@@ -54,8 +54,8 @@ namespace Fida.UI
         /// <summary>背景渐变 + 暗角（菜单与对局通用，铺满整个视口）。</summary>
         public static void DrawBackground(SpriteBatch sb, Texture2D pixel, Viewport vp)
         {
-            // 纵向渐变：上深下浅（约 12 段，平滑度足够且开销极低）
-            int bands = 12;
+            // More bands avoid visible color stepping on high-density displays.
+            int bands = 48;
             int bandH = vp.Height / bands;
             for (int i = 0; i < bands; i++)
             {
@@ -85,10 +85,7 @@ namespace Fida.UI
         {
             var rect = PanelRect(vp);
             sb.Draw(pixel, rect, Panel);
-            // 外金 + 内墨 双线框
-            UIUtils.DrawRectangleOutlines(sb, rect, Gold, 3, pixel);
-            var inner = new Rectangle(rect.X + 3, rect.Y + 3, rect.Width - 6, rect.Height - 6);
-            UIUtils.DrawRectangleOutlines(sb, inner, Ink, 1, pixel);
+            UIUtils.DrawEngravedFrame(sb, rect, pixel, Gold, Ink, 3, 8, 24);
         }
     }
 }

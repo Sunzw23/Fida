@@ -59,6 +59,14 @@ namespace Fida.Logic
                 return;
             }
 
+            if (_ctx.Damage <= 0)
+            {
+                GameManager.SetGameMessage($"{targetPlayer.Name}'s Stone blocked the additional attack.");
+                GameManager.TransitionTo(new HandleStackState(GameManager));
+                return;
+            }
+
+            targetPlayer.RecordAttackReceived();
             targetPlayer.TakeDamage(_ctx.Damage);
             GameManager.SetGameMessage(GameText.Damaged(targetPlayer.Name, _ctx.Damage));
 

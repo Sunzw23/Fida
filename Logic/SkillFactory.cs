@@ -29,6 +29,10 @@ namespace Fida.Logic
             SkillType.Di,
             SkillType.Long,
             SkillType.Bian,
+            SkillType.SuperGod,
+            SkillType.SuperImmortal,
+            SkillType.SuperEmperor,
+            SkillType.Shi,
         ];
 
         /// <summary>
@@ -50,7 +54,11 @@ namespace Fida.Logic
             SkillType.Di => new DiSkill(),
             SkillType.Long => new LongSkill(),
             SkillType.Bian => new BianSkill(),
-            _ => throw new InvalidOperationException($"SkillType {type} 没有对应的技能实现。")
+            SkillType.SuperGod => new SuperGodSkill(),
+            SkillType.SuperImmortal => new SuperImmortalSkill(),
+            SkillType.SuperEmperor => new SuperEmperorSkill(),
+            SkillType.Shi => new StoneSkill(),
+            _ => throw new InvalidOperationException($"SkillType {type} has no skill implementation.")
         };
 
         /// <summary>
@@ -116,6 +124,10 @@ namespace Fida.Logic
             { "帝", SkillType.Di },
             { "龙", SkillType.Long },
             { "变", SkillType.Bian },
+            { "超神", SkillType.SuperGod },
+            { "超仙", SkillType.SuperImmortal },
+            { "超帝", SkillType.SuperEmperor },
+            { "石", SkillType.Shi },
         };
     }
 }

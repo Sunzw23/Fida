@@ -76,7 +76,7 @@ namespace Fida.Network
                     var codeBuf = new byte[5];
                     await ReadFullAsync(_stream, codeBuf, _cts.Token);
                     if (codeBuf[0] != MsgCodeAssign)
-                        throw new IOException($"握手失败: 期望 0x{MsgCodeAssign:X2}，收到 0x{codeBuf[0]:X2}");
+                        throw new IOException($"Handshake failed: expected 0x{MsgCodeAssign:X2}, received 0x{codeBuf[0]:X2}.");
                     _roomCode = Encoding.ASCII.GetString(codeBuf, 1, 4);
 
                     // 阻塞等待客机加入（relay 发 0x02）；
@@ -112,7 +112,7 @@ namespace Fida.Network
             {
                 int n = await stream.ReadAsync(buffer, offset, buffer.Length - offset, ct);
                 if (n <= 0)
-                    throw new IOException("relay 连接在握手期间断开");
+                    throw new IOException("The relay connection closed during the handshake.");
                 offset += n;
             }
         }
@@ -187,7 +187,7 @@ namespace Fida.Network
             if (_clientConnected)
             {
                 _clientConnected = false;
-                ClientDisconnected?.Invoke("与 relay 的连接已断开");
+                ClientDisconnected?.Invoke("Connection to the relay was lost.");
             }
         }
 

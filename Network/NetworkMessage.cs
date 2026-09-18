@@ -31,6 +31,9 @@ namespace Fida.Network
         LobbyLeave = 0x35,
         StartGamePvP = 0x36,
         StartGameCoop = 0x37,
+        DraftBan = 0x38,
+        DraftLock = 0x39,
+        DraftStart = 0x3A,
         ChatMessage = 0x20,
         Disconnect = 0xFF,
     }

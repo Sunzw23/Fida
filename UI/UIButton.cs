@@ -64,12 +64,13 @@ namespace Fida.UI
             sb.Draw(Pixel, Bounds, backColor);
 
             // 绘制文字（居中）
-            var size = Font.MeasureString(Text);
+            string displayText = UIFontGuard.Sanitize(Font, Text);
+            var size = Font.MeasureString(displayText);
             var pos = new Vector2(
                 Bounds.Center.X - size.X / 2,
                 Bounds.Center.Y - size.Y / 2
             );
-            sb.DrawString(Font, Text, pos, foreColor);
+            sb.DrawString(Font, displayText, pos, foreColor);
 
             // 绘制边框（禁用状态 borderThickness=0，不绘制）
             if (borderThickness > 0)

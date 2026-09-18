@@ -29,9 +29,10 @@ namespace Fida.UI
             if (string.IsNullOrEmpty(_text)) return;
 
             // 居中绘制衬线标题
-            var size = _font.MeasureString(_text);
+            string displayText = UIFontGuard.Sanitize(_font, _text);
+            var size = _font.MeasureString(displayText);
             var pos = new Vector2(_position.X - size.X / 2, _position.Y - size.Y / 2);
-            sb.DrawString(_font, _text, pos, UITheme.Ink);
+            sb.DrawString(_font, displayText, pos, UITheme.Ink);
 
             // 标题下方的描金装饰短线（宽约为文字宽度的一半，居中）
             float ruleW = size.X * 0.5f;

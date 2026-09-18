@@ -51,12 +51,12 @@ namespace Fida.UI
             // 绘制擦除动画块（从左到右扫过，仅覆盖文字区域，不覆盖边框）
             if (_isAnimating && !string.IsNullOrEmpty(Text))
             {
-                int wipeWidth = (int)(_cachedTextSize.X * _wipeProgress);
+                int wipeWidth = (int)(_cachedTextSize.X * _cachedTextScale * _wipeProgress);
                 var wipeRect = new Rectangle(
                     (int)_cachedTextPos.X,
                     (int)_cachedTextPos.Y,
                     wipeWidth,
-                    (int)_cachedTextSize.Y
+                    (int)(_cachedTextSize.Y * _cachedTextScale)
                 );
                 sb.Draw(Pixel, wipeRect, BackColor);
             }

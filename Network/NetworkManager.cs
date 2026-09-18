@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
 using Fida.Logic;
 
 namespace Fida.Network
@@ -51,6 +52,9 @@ namespace Fida.Network
 
         /// <summary>收到大厅游戏开始结果时触发（客机端）</summary>
         public event System.Action<int> LobbyGameStarting;
+        public event System.Action<int, SkillType> DraftBanReceived;
+        public event System.Action<int, IReadOnlyList<SkillType>> DraftLockReceived;
+        public event System.Action<IReadOnlyList<SkillType>, IReadOnlyList<SkillType>> DraftStarting;
 
         /// <summary>当前游戏模式（0=PvP, 1=Co-op），在游戏开始时设置</summary>
         public int CurrentGameMode { get; set; } = 0;
@@ -169,6 +173,96 @@ namespace Fida.Network
                         break;
                 }
             }
+        }
+
+        public void ProcessDraftMessages()
+        {
+            var messages = ReceiveAvailableMessages();
+            if (messages == null) return;
+            foreach (var msg in messages)
+            {
+                using var stream = new MemoryStream(msg.Payload ?? []);
+                using var reader = new BinaryReader(stream);
+                if (msg.Type == MessageType.DraftBan && stream.Length >= 8)
+                    DraftBanReceived?.Invoke(reader.ReadInt32(), (SkillType)reader.ReadInt32());
+                else if (msg.Type == MessageType.DraftLock && stream.Length >= 8)
+                {
+                    int playerId = reader.ReadInt32();
+                    int count = reader.ReadInt32();
+                    var skills = new List<SkillType>();
+                    for (int i = 0; i < count && stream.Position + 4 <= stream.Length; i++)
+                        skills.Add((SkillType)reader.ReadInt32());
+                    DraftLockReceived?.Invoke(playerId, skills);
+                }
+                else if (msg.Type == MessageType.DraftStart && stream.Length >= 8)
+                {
+                    var first = ReadSkillList(reader, stream);
+                    var second = ReadSkillList(reader, stream);
+                    DraftStarting?.Invoke(first, second);
+                }
+            }
+        }
+
+        public void SendDraftBan(int playerId, SkillType skill) =>
+            SendMessage(BuildDraftMessage(MessageType.DraftBan, writer =>
+            {
+                writer.Write(playerId);
+                writer.Write((int)skill);
+            }));
+
+        public void SendDraftLock(int playerId, IReadOnlyCollection<SkillType> skills) =>
+            SendMessage(BuildDraftMessage(MessageType.DraftLock, writer =>
+            {
+                writer.Write(playerId);
+                WriteSkillList(writer, skills);
+            }));
+
+        public void SendDraftStart(IReadOnlyCollection<SkillType> first,
+            IReadOnlyCollection<SkillType> second) =>
+            SendMessage(BuildDraftMessage(MessageType.DraftStart, writer =>
+            {
+                WriteSkillList(writer, first);
+                WriteSkillList(writer, second);
+            }));
+
+        private List<NetworkMessage> ReceiveAvailableMessages()
+        {
+            if (_isHost && _gameServer != null) return _gameServer.ReceiveMessages();
+            if (_isHost && _relayHost != null) return _relayHost.ReceiveMessages();
+            if (!_isHost && _gameClient != null) return _gameClient.ReceiveMessages();
+            return null;
+        }
+
+        private void SendMessage(NetworkMessage message)
+        {
+            if (_isHost && _gameServer != null) _gameServer.SendToClient(message);
+            else if (_isHost && _relayHost != null) _relayHost.SendToClient(message);
+            else if (!_isHost && _gameClient != null) _gameClient.SendMessage(message);
+        }
+
+        private static NetworkMessage BuildDraftMessage(MessageType type, Action<BinaryWriter> write)
+        {
+            using var stream = new MemoryStream();
+            using var writer = new BinaryWriter(stream);
+            write(writer);
+            return new NetworkMessage(type, stream.ToArray());
+        }
+
+        private static void WriteSkillList(BinaryWriter writer, IEnumerable<SkillType> skills)
+        {
+            var list = (skills ?? []).ToList();
+            writer.Write(list.Count);
+            foreach (var skill in list) writer.Write((int)skill);
+        }
+
+        private static IReadOnlyList<SkillType> ReadSkillList(BinaryReader reader, Stream stream)
+        {
+            if (stream.Position + 4 > stream.Length) return [];
+            int count = reader.ReadInt32();
+            var result = new List<SkillType>();
+            for (int i = 0; i < count && stream.Position + 4 <= stream.Length; i++)
+                result.Add((SkillType)reader.ReadInt32());
+            return result;
         }
 
         /// <summary>

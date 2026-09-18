@@ -15,6 +15,10 @@ namespace Fida.UI
         private readonly List<UIControl> _uiControls;
         private readonly ResourceManager _resourceManager;
         private UIBoxLabel _gameMessageLabel;
+        private UIBoxLabel _actionCueLabel;
+        private UINumberFlowEffect _numberFlowEffect;
+        private UICardCombatAnimator _cardCombatAnimator;
+        private UIDecideApplyDialog _decideApplyDialog;
         private GameManager _gameManager;
 
         // 玩家头像纹理字典，key 为 PlayerId，value 为头像纹理（可为 null）
@@ -42,15 +46,47 @@ namespace Fida.UI
 
         public void BuildPlayingUI(GameManager gameManager)
         {
+            if (_gameManager != null)
+            {
+                _gameManager.MessageUpdated -= OnMessageUpdated;
+                _gameManager.GameStateChanged -= OnGameStateChanged;
+                _gameManager.PlayerActionRequired -= OnPlayerActionRequired;
+            }
             _gameManager = gameManager;
             _uiPlayers.Clear();
 
-            _gameMessageLabel = new UIBoxLabel(0, UIConfig.Rect("gameMessageArea"), gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
+            int viewportWidth = _resourceManager.GraphicsDevice.Viewport.Width;
+            int messageMargin = System.Math.Clamp(viewportWidth / 20, 12, 48);
+            int messageWidth = System.Math.Max(1, viewportWidth - messageMargin * 2);
+            var messageBounds = new Rectangle(messageMargin, 24, messageWidth, 64);
+            _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
             {
-                Alignment = UIBoxLabelAlignment.Left,
-                BorderThickness = 0
+                Alignment = UIBoxLabelAlignment.Center,
+                BorderThickness = 1,
+                AutoFitText = true,
+                MinimumTextScale = 0.45f,
+                TextPadding = 18,
+                BackColor = UITheme.Ink,
+                ForeColor = UITheme.PanelLight
             };
             _uiControls.Add(_gameMessageLabel);
+
+            int cueMargin = System.Math.Clamp(viewportWidth / 8, 20, 188);
+            var cueBounds = new Rectangle(cueMargin, 100,
+                System.Math.Max(1, viewportWidth - cueMargin * 2), 56);
+            _actionCueLabel = new UIBoxLabel(-1, cueBounds, "", _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Alignment = UIBoxLabelAlignment.Center,
+                AutoFitText = true,
+                MinimumTextScale = 0.5f,
+                TextPadding = 16,
+                BackColor = UITheme.PanelLight,
+                ForeColor = UITheme.Ink,
+                BorderColor = UITheme.GoldBright,
+                BorderThickness = 2,
+                IsVisible = false
+            };
+            _uiControls.Add(_actionCueLabel);
 
             // 订阅事件
             _gameManager.MessageUpdated += OnMessageUpdated;
@@ -64,8 +100,14 @@ namespace Fida.UI
             {
                 var player = gameManager.Players[i];
                 
-                // 尝试获取该玩家的头像纹理，如果未设置则为 null（不显示头像）
-                _portraitTextures.TryGetValue(player.PlayerId, out Texture2D portraitTexture);
+                // Explicit per-player overrides take precedence; data-driven portrait keys
+                // then resolve through the resource catalog with a safe team fallback.
+                if (!_portraitTextures.TryGetValue(player.PlayerId, out Texture2D portraitTexture))
+                {
+                    portraitTexture = _resourceManager.GetPortrait(
+                        player.PortraitKey,
+                        player.PlayerId == gameManager.LocalPlayerId);
+                }
                 
                 var uiPlayer = new UIPlayer(player.PlayerId, player, positions[player.PlayerId], _resourceManager.Font, _resourceManager.Pixel, portraitTexture);
                 
@@ -91,10 +133,27 @@ namespace Fida.UI
                 _uiPlayers.Add(uiPlayer);
             }
 
+            // Draw last so the stream remains visible above cards and number buttons.
+            _numberFlowEffect = new UINumberFlowEffect(-2, _resourceManager.Pixel)
+            {
+                IsVisible = false
+            };
+            _cardCombatAnimator = new UICardCombatAnimator(-3);
+
             // ─── 构建 ChooseNumber 数字面板（0-9，2 行 × 5 列）─────────────
             // 位置取自 uiconfig 的 numberSelectionArea（10,100,260×110），
             // 即原先 UIInputHandler.ActionChooseNumber 中硬编码的隐形点击区位置。
             BuildNumberPad();
+            _uiControls.Add(_numberFlowEffect);
+            _uiControls.Add(_cardCombatAnimator);
+
+            _decideApplyDialog = new UIDecideApplyDialog(-4,
+                _resourceManager.GraphicsDevice, _resourceManager.Pixel, _resourceManager.Font);
+            _decideApplyDialog.ApplyButton.EnabledChecker = ShouldDecisionButtonsBeEnabled;
+            _decideApplyDialog.PassButton.EnabledChecker = ShouldDecisionButtonsBeEnabled;
+            _uiControls.Add(_decideApplyDialog);
+            _uiControls.Add(_decideApplyDialog.ApplyButton);
+            _uiControls.Add(_decideApplyDialog.PassButton);
         }
 
         /// <summary>
@@ -173,6 +232,58 @@ namespace Fida.UI
             _gameMessageLabel?.Update(message);
         }
 
+        /// <summary>Shows the current AI decision beat and highlights its card.</summary>
+        public void ShowActionCue(int playerId, string message)
+        {
+            foreach (var uiPlayer in _uiPlayers)
+                uiPlayer.IsPresentingAction = uiPlayer.Player.PlayerId == playerId;
+
+            if (_actionCueLabel == null) return;
+            _actionCueLabel.Update(message);
+            _actionCueLabel.IsVisible = true;
+        }
+
+        public void HideActionCue()
+        {
+            foreach (var uiPlayer in _uiPlayers)
+                uiPlayer.IsPresentingAction = false;
+            if (_actionCueLabel != null) _actionCueLabel.IsVisible = false;
+        }
+
+        public bool IsNumberFlowActive => _numberFlowEffect?.IsPlaying == true;
+        public bool IsCardCombatAnimationActive => _cardCombatAnimator?.IsPlaying == true;
+        public bool IsBlockingPresentationActive =>
+            IsNumberFlowActive || IsCardCombatAnimationActive;
+
+        /// <summary>
+        /// Sends a golden stream from the selected addend to the base number.
+        /// Direction alone communicates the operation; no equation is rendered.
+        /// </summary>
+        public void PlayNumberFlow(int addendPlayerId, int addendNumberIndex,
+            int basePlayerId, int baseNumberIndex)
+        {
+            var addendPlayer = GetUIPlayer(addendPlayerId);
+            var basePlayer = GetUIPlayer(basePlayerId);
+            if (addendPlayer == null || basePlayer == null) return;
+
+            foreach (var uiPlayer in _uiPlayers)
+                uiPlayer.IsPresentingAction = false;
+            if (_actionCueLabel != null) _actionCueLabel.IsVisible = false;
+
+            _numberFlowEffect?.Start(
+                addendPlayer.GetNumberBounds(addendNumberIndex),
+                basePlayer.GetNumberBounds(baseNumberIndex));
+        }
+
+        public void PlayCardAction(int sourcePlayerId, int targetPlayerId, bool damaging)
+        {
+            var source = GetUIPlayer(sourcePlayerId);
+            var target = GetUIPlayer(targetPlayerId);
+            if (source == null || target == null) return;
+            HideActionCue();
+            _cardCombatAnimator?.Start(source, target, damaging);
+        }
+
         private void OnMessageUpdated(object sender, GameEventArgs e)
         {
             UpdateGameMessage(e.Message);
@@ -184,6 +295,7 @@ namespace Fida.UI
         /// </summary>
         private void OnGameStateChanged(object sender, GameStateEventArgs e)
         {
+            HideDecideApplyDialog();
             // 游戏状态变化时，强制刷新所有按钮的状态
             // 通过清除上一帧的状态记录，让按钮在下次 Update 时重新计算并通知状态变化
             foreach (var uiPlayer in _uiPlayers)
@@ -199,6 +311,34 @@ namespace Fida.UI
             // 每次步骤切换时（包括同状态内 StepIndex++），更新按钮的 Selected 状态
             UpdateButtonSelectedStates();
             UpdateNumberPadVisibility();
+            if (e.RequiredActionType == ActionType.DecideApply &&
+                e.SourcePlayerId == _gameManager.LocalPlayerId)
+                ShowDecideApplyDialog(e.Message);
+            else
+                HideDecideApplyDialog();
+        }
+
+        private bool ShouldDecisionButtonsBeEnabled() =>
+            _decideApplyDialog?.IsVisible == true &&
+            _gameManager != null &&
+            _gameManager.CurrentActionType == ActionType.DecideApply &&
+            _gameManager.Query.IsLocalPlayerSource();
+
+        private void ShowDecideApplyDialog(string prompt)
+        {
+            if (_decideApplyDialog == null) return;
+            _decideApplyDialog.Show(prompt);
+            foreach (var control in _uiControls)
+                if (control.IsFocused) control.SetFocus(false);
+            _decideApplyDialog.ApplyButton.SetFocus(true);
+        }
+
+        private void HideDecideApplyDialog()
+        {
+            if (_decideApplyDialog == null) return;
+            _decideApplyDialog.Hide();
+            _decideApplyDialog.ApplyButton.SetFocus(false);
+            _decideApplyDialog.PassButton.SetFocus(false);
         }
 
         /// <summary>
@@ -257,9 +397,11 @@ namespace Fida.UI
         private bool ShouldPlayerCardBeEnabled(int playerId)
         {
             if (_gameManager == null) return false;
-            if (_gameManager.Query.CurrentPlayerId != _gameManager.LocalPlayerId) return false;
+            if (!_gameManager.Query.IsLocalPlayerSource()) return false;
             if (_gameManager.CurrentActionType != ActionType.ChooseTarget) return false;
-            return _gameManager.Players[playerId].IsAlive();
+            var player = _gameManager.Players.FirstOrDefault(p => p.PlayerId == playerId);
+            return player != null && player.IsAlive() &&
+                (_gameManager.CurrentStepValidTargets.Count == 0 || _gameManager.CurrentStepValidTargets.Contains(playerId));
         }
 
         /// <summary>

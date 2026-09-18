@@ -146,6 +146,9 @@ namespace Fida.Logic
                 SkillType.Bian => "Transform",
                 SkillType.Huo => "Fire",
                 SkillType.Shi => "Stone",
+                SkillType.SuperGod => "Super God",
+                SkillType.SuperImmortal => "Super Immortal",
+                SkillType.SuperEmperor => "Super Emperor",
                 _ => throw new ArgumentOutOfRangeException(nameof(skill), skill, null)
             };
         }
@@ -187,6 +190,9 @@ namespace Fida.Logic
                 "Transform" => SkillType.Bian,
                 "Fire" => SkillType.Huo,
                 "Stone" => SkillType.Shi,
+                "Super God" => SkillType.SuperGod,
+                "Super Immortal" => SkillType.SuperImmortal,
+                "Super Emperor" => SkillType.SuperEmperor,
                 _ => throw new ArgumentException($"'{skillName}' is not a valid skill name.", nameof(skillName))
             };
         }

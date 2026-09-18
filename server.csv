@@ -1,9 +1,9 @@
-# Fida 联机服务器配置文件
-# 格式: Address,Port,Name,relay(可选)
-# relay 列填 "relay" 表示通过 VPS 中继连接（绕过 NAT），不填则直连
-# 以 # 开头的行为注释
+# Fida multiplayer server configuration
+# Format: Address,Port,Name,relay(optional)
+# Set the relay column to "relay" to connect through the VPS relay; leave it blank for a direct connection
+# Lines beginning with # are comments
 #
-# 示例:
-175.27.254.213,8888,游戏服务器,relay
-::1,8888,本地测试服务器
-# 2001:db8::1,8888,远程服务器1
+# Examples:
+175.27.254.213,8888,Game Server,relay
+::1,8888,Local Test Server
+# 2001:db8::1,8888,Remote Server 1

@@ -35,6 +35,9 @@ namespace Fida
 
             _graphics.PreferredBackBufferWidth = 1920;
             _graphics.PreferredBackBufferHeight = 1200;
+            _graphics.GraphicsProfile = GraphicsProfile.HiDef;
+            _graphics.PreferMultiSampling = true;
+            _graphics.SynchronizeWithVerticalRetrace = true;
             _graphics.IsFullScreen = false;
             _graphics.ApplyChanges();
         }
@@ -64,7 +67,7 @@ namespace Fida
 
             if (_stateMachine.CurrentState == State.MainMenu)
             {
-                _uiManager.BuildMainMenu();
+                _uiManager.BuildMainMenu(_networkManager.IsConnected, _networkManager.IsHost);
                 _menuInput.OnInitialEnter();
             }
         }
@@ -89,13 +92,23 @@ namespace Fida
                 case State.MainMenu:      _menuInput.HandleMenuInput(gameTime); break;
                 case State.LevelSelect:   _menuInput.HandleMenuInput(gameTime); break;
                 case State.Skills:        _menuInput.HandleMenuInput(gameTime); break;
-                case State.Playing:       _gameSession.HandlePlayerInput(gameTime); _gameSession.EnsureGameStarted(); break;
+                case State.GameOver:      _menuInput.HandleMenuInput(gameTime); break;
+                case State.Playing:
+                    _gameSession.EnsureGameStarted();
+                    if (_stateMachine.CurrentState == State.Playing)
+                        _gameSession.HandlePlayerInput(gameTime);
+                    break;
                 case State.Paused:        _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlineMenu:    _menuInput.HandleMenuInput(gameTime); break;
                 case State.Hosting:       _menuInput.HandleHostingInput(gameTime); break;
                 case State.Connecting:    _menuInput.HandleConnectingInput(gameTime); break;
                 case State.OnlineLobby:   _menuInput.HandleMenuInput(gameTime); break;
-                case State.OnlinePlaying: _gameSession.HandleOnlinePlayingInput(gameTime); _gameSession.EnsureOnlineGameStarted(); break;
+                case State.DuelDraft:     _menuInput.HandleMenuInput(gameTime); break;
+                case State.OnlinePlaying:
+                    _gameSession.EnsureOnlineGameStarted();
+                    if (_stateMachine.CurrentState == State.OnlinePlaying)
+                        _gameSession.HandleOnlinePlayingInput(gameTime);
+                    break;
             }
 
             base.Update(gameTime);
@@ -127,6 +140,7 @@ namespace Fida
             {
                 _networkManager?.Dispose();
                 _uiManager?.Dispose();
+                _resourceManager?.Dispose();
             }
             base.Dispose(disposing);
         }

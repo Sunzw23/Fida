@@ -22,6 +22,57 @@ namespace Fida.UI
             sb.Draw(pixel, new Rectangle(rect.Right - width, rect.Top, width, rect.Height), color); // Right
         }
 
+        /// <summary>
+        /// Draws the shared engraved frame used by cards and modal panels. Keeping the
+        /// ornament here prevents every new screen from inventing another border style.
+        /// </summary>
+        public static void DrawEngravedFrame(SpriteBatch sb, Rectangle rect, Texture2D pixel,
+            Color outerColor, Color innerColor, int outerWidth = 3, int inset = 8,
+            int cornerLength = 20, bool drawShadow = true)
+        {
+            if (rect.Width <= inset * 2 || rect.Height <= inset * 2) return;
+
+            if (drawShadow)
+            {
+                var shadow = new Rectangle(rect.X + 5, rect.Y + 6, rect.Width, rect.Height);
+                DrawRectangleOutlines(sb, shadow, UITheme.Vignette * 0.34f,
+                    System.Math.Max(2, outerWidth), pixel);
+            }
+
+            DrawRectangleOutlines(sb, rect, outerColor, outerWidth, pixel);
+            var inner = new Rectangle(rect.X + inset, rect.Y + inset,
+                rect.Width - inset * 2, rect.Height - inset * 2);
+            DrawRectangleOutlines(sb, inner, innerColor, 1, pixel);
+
+            int length = System.Math.Min(cornerLength,
+                System.Math.Min(inner.Width / 4, inner.Height / 4));
+            int accent = System.Math.Max(2, outerWidth - 1);
+            DrawCorner(sb, inner.Left, inner.Top, 1, 1, length, accent, outerColor, pixel);
+            DrawCorner(sb, inner.Right - 1, inner.Top, -1, 1, length, accent, outerColor, pixel);
+            DrawCorner(sb, inner.Left, inner.Bottom - 1, 1, -1, length, accent, outerColor, pixel);
+            DrawCorner(sb, inner.Right - 1, inner.Bottom - 1, -1, -1, length, accent, outerColor, pixel);
+
+            // Small engraved ticks break up long, rigid edges without visual clutter.
+            int tick = System.Math.Max(5, length / 3);
+            int cx = rect.Center.X;
+            int cy = rect.Center.Y;
+            sb.Draw(pixel, new Rectangle(cx - tick, rect.Top, tick * 2, outerWidth + 1), outerColor);
+            sb.Draw(pixel, new Rectangle(cx - tick, rect.Bottom - outerWidth - 1,
+                tick * 2, outerWidth + 1), outerColor);
+            sb.Draw(pixel, new Rectangle(rect.Left, cy - tick, outerWidth + 1, tick * 2), outerColor);
+            sb.Draw(pixel, new Rectangle(rect.Right - outerWidth - 1, cy - tick,
+                outerWidth + 1, tick * 2), outerColor);
+        }
+
+        private static void DrawCorner(SpriteBatch sb, int x, int y, int dx, int dy,
+            int length, int width, Color color, Texture2D pixel)
+        {
+            int horizontalX = dx > 0 ? x : x - length + 1;
+            int verticalY = dy > 0 ? y : y - length + 1;
+            sb.Draw(pixel, new Rectangle(horizontalX, y - width / 2, length, width), color);
+            sb.Draw(pixel, new Rectangle(x - width / 2, verticalY, width, length), color);
+        }
+
 
         
         /// <summary>

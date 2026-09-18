@@ -1,6 +1,6 @@
 {
   "rules": "Rules:\n 1. Several players take turns in order.\n 2. On your turn, first pick one of your two numbers,\n then pick another number of yours or of any player,\n and add it onto the first number.\n 3. After a number changes, the combination is checked for effects:\n 7 => -1 \n 8 => -1 \n 9 => +1 \n 1-6 => -2 \n 5-5 => -3 \n 6-6 => -5 \n 0 => gain a shield (blocks one attack)\n 0-0 => +5\n\nThe game ends when a player's health reaches exactly zero.\nGood luck.",
-  "skills": "       Skill list\n1. Double Attack: your attack damage is doubled.\n2. Double Defense: damage you take is halved.\n3. Triple Health: your max health triples.\n4. God: once per turn, when you take damage, you may change one number.\n5. Immortal: once per turn, when you attack, you may change one number.\n6. Demon: when attacked, return half the damage to any opponent.\n7. Blood: after your attack deals damage, heal for that much.\n8. Same: at the start of each turn, if your two numbers are equal, you may change both.\n9. Emperor: at the start of each turn, you may change one number.\n10. Fire: when attacking, you may hit all targets at once.\n11. Stone: the first attack you receive each turn does no damage.\n12. Transform: when attacking, set a number to any value from 1 to 5.\n13. Dragon: when attacking, set a number to the sum of your two numbers.\n",
+    "skills": "       Skill list\n1. Double Attack: your attack damage is doubled.\n2. Double Defense: damage you take is halved.\n3. Triple Health: your max health triples.\n4. God: after taking damage, change one number.\n5. Immortal: after attacking, change one number.\n6. Demon: when attacked, return half the damage to any opponent.\n7. Blood: after your attack deals damage, heal for that much.\n8. Same: at the start of a turn, apply one result to both numbers.\n9. Emperor: at the start of your turn, change one number.\n10. Stone: only the first incoming attack each turn can deal damage.\n11. Transform: when attacking, choose damage from 1 to 5.\n12. Dragon: use the sum of your two numbers as damage.\n",
   "skillNames": {
     "PlusAttack": "Attack Up",
     "PlusDefence": "Defense Up",
@@ -19,6 +19,9 @@
     "Huo": "Fire",
     "Bian": "Transform",
     "Shi": "Stone"
+    ,"SuperGod": "Super God"
+    ,"SuperImmortal": "Super Immortal"
+    ,"SuperEmperor": "Super Emperor"
   },
   "messages": {
     "gameStart": "Game start!",

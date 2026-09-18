@@ -1,7 +1,8 @@
-using System;
-using System.Linq;
+using Microsoft.Xna.Framework;
 using Fida.Logic;
 using Fida.UI;
+using Fida.Campaign;
+using Fida.UI.Campaign;
 
 namespace Fida.States
 {
@@ -16,18 +17,24 @@ namespace Fida.States
 
         public override void OnEnter()
         {
-            var scenes = SceneLibrary.SceneNames();
-            foreach (var scene in scenes)
+            // The campaign map is a composite browser; it exposes intents instead of
+            // requiring one UI binding for every data-driven node.
+        }
+
+        public override void HandleInput(GameTime gameTime)
+        {
+            base.HandleInput(gameTime);
+            var map = _uiManager.GetControlByName<UICampaignMap>("campaign_map");
+            if (map == null) return;
+
+            if (map.ConsumeBackRequest())
             {
-                string name = scene;
-                BindButton(name, () =>
-                {
-                    GameSetup.SelectScene(name);
-                    _stateMachine.SwitchToState(State.Skills);
-                });
+                _stateMachine.SwitchToState(State.MainMenu);
+                return;
             }
 
-            BindButton("back", () => _stateMachine.SwitchToState(State.MainMenu));
+            if (map.TryConsumeSelectedNode(out string nodeId) && GameSetup.SelectCampaignNode(nodeId))
+                _stateMachine.SwitchToState(State.Skills);
         }
     }
 }

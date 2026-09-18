@@ -11,6 +11,10 @@ namespace Fida.UI
         Vector2 Position { get; set; }
         SpriteFont Font { get; set; }
 
+        /// <summary>Optional text width constraint. Zero means unconstrained.</summary>
+        public float MaximumWidth { get; set; }
+        public float MinimumScale { get; set; } = 0.45f;
+
         public UILabel(int id, string text, Vector2 position, SpriteFont font) : base(id)
         {
             Text = text;
@@ -25,6 +29,11 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
+            DrawAt(sb, gameTime, Position, 1f);
+        }
+
+        public void DrawAt(SpriteBatch sb, GameTime gameTime, Vector2 position, float visualScale)
+        {
             if (!IsVisible)
             {
                 return; // 如果不可见，则不绘制
@@ -34,12 +43,18 @@ namespace Fida.UI
                 return;
             }
 
-            var textSize = Font.MeasureString(Text);
+            string displayText = UIFontGuard.Sanitize(Font, Text);
+            var textSize = Font.MeasureString(displayText);
+            float scale = MaximumWidth > 0 && textSize.X > MaximumWidth
+                ? MathHelper.Max(MinimumScale, MaximumWidth / textSize.X)
+                : 1f;
+            scale *= visualScale;
             var pos = new Vector2(
-                Position.X - textSize.X / 2,
-                Position.Y - textSize.Y / 2
+                position.X - textSize.X * scale / 2,
+                position.Y - textSize.Y * scale / 2
             );
-            sb.DrawString(Font, Text, pos, Color);
+            sb.DrawString(Font, displayText, pos, Color, 0f, Vector2.Zero, scale,
+                SpriteEffects.None, 0f);
         }
 
 

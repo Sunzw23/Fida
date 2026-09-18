@@ -176,7 +176,9 @@ namespace Fida.Agent
             {
                 // 攻击时，选择一个存活的敌方玩家作为目标
                 // 优先选择生命值最低的敌人
-                var enemyPlayers = _gameManager.Players.Where(p => p.PlayerId != sourcePlayerId && p.IsAlive()).ToList();
+                var validTargets = _gameManager.CurrentStepValidTargets;
+                var enemyPlayers = _gameManager.Players
+                    .Where(p => p.IsAlive() && validTargets.Contains(p.PlayerId)).ToList();
                 if (enemyPlayers.Count > 0)
                 {
                     var targetPlayer = enemyPlayers.OrderBy(p => p.Health).First();
@@ -186,8 +188,11 @@ namespace Fida.Agent
             }
             else if (_gameManager.Query.IsHealing())
             {
-                // 治疗时，选择自己或生命值最低的队友
-                return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = sourcePlayerId };
+                // 治疗时，在状态机允许的友方中选择生命比例最低者
+                var allies = _gameManager.Players
+                    .Where(p => p.IsAlive() && _gameManager.CurrentStepValidTargets.Contains(p.PlayerId))
+                    .OrderBy(p => (double)p.Health / Math.Max(1, p.MaxHealth)).ToList();
+                return new GameAction { Type = ActionType.ChooseTarget, TargetPlayerId = allies.FirstOrDefault()?.PlayerId ?? sourcePlayerId };
             }
             else
             {
@@ -197,7 +202,12 @@ namespace Fida.Agent
 
         private GameAction HandleDecideApplyAction(int sourcePlayerId)
         {
-            return new GameAction { Type = ActionType.DecideApply, IsApply = true };
+            return new GameAction
+            {
+                Type = ActionType.DecideApply,
+                TargetPlayerId = sourcePlayerId,
+                IsApply = true
+            };
         }
 
         private GameAction HandleChooseNumberAction(int sourcePlayerId)

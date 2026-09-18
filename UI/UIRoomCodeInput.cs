@@ -130,6 +130,7 @@ namespace Fida.UI
             string text = _value;
             if (string.IsNullOrEmpty(text))
                 text = _placeholder;
+            text = UIFontGuard.Sanitize(_font, text);
 
             Color textColor = string.IsNullOrEmpty(_value) ? UITheme.InkMuted : UITheme.Ink;
             var textSize = _font.MeasureString(text);
@@ -142,7 +143,7 @@ namespace Fida.UI
             // 闪烁光标（聚焦时）
             if (_focused && (gameTime.TotalGameTime.TotalMilliseconds / 400) % 2 == 0)
             {
-                float cursorX = _bounds.X + 12 + _font.MeasureString(_value).X + 3;
+                float cursorX = _bounds.X + 12 + _font.MeasureString(UIFontGuard.Sanitize(_font, _value)).X + 3;
                 var cursor = new Rectangle(
                     (int)cursorX,
                     _bounds.Top + 8,

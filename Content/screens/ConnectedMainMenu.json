@@ -1,0 +1,12 @@
+{
+  "controls": [
+    { "type": "panel", "name": "panel", "id": 0 },
+    { "type": "title", "name": "title", "id": 1, "text": "Fida - Connected", "position": { "x": 960, "y": 210 } },
+    { "type": "label", "name": "role", "id": 2, "text": "Session: {role}", "position": { "x": 960, "y": 310 } },
+    { "type": "button", "name": "startGame", "id": 3, "text": "Co-op Campaign", "bounds": { "x": 760, "y": 385, "width": 400, "height": 72 } },
+    { "type": "button", "name": "duel", "id": 4, "text": "Duel - 8 SP", "bounds": { "x": 760, "y": 477, "width": 400, "height": 72 } },
+    { "type": "button", "name": "connectionSettings", "id": 5, "text": "Connection", "bounds": { "x": 760, "y": 569, "width": 400, "height": 72 } },
+    { "type": "button", "name": "disconnect", "id": 6, "text": "Disconnect", "bounds": { "x": 760, "y": 661, "width": 400, "height": 72 } },
+    { "type": "button", "name": "exit", "id": 7, "text": "Exit", "bounds": { "x": 760, "y": 753, "width": 400, "height": 72 } }
+  ]
+}

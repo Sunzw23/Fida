@@ -31,6 +31,7 @@ namespace Fida.UI
         private readonly GraphicsDevice _graphicsDevice;
         private readonly SpriteBatch _spriteBatch;
         private readonly ResourceManager _resourceManager;
+        private readonly RasterizerState _uiRasterizerState;
 
         private readonly List<UIControl> _uiControls = new List<UIControl>();
         private readonly UIPlayerManager _playerManager;
@@ -47,6 +48,12 @@ namespace Fida.UI
         {
             _graphicsDevice = graphicsDevice;
             _spriteBatch = new SpriteBatch(graphicsDevice);
+            _uiRasterizerState = new RasterizerState
+            {
+                CullMode = CullMode.None,
+                MultiSampleAntiAlias = true,
+                ScissorTestEnable = false
+            };
             _resourceManager = resourceManager;
 
             _playerManager = new UIPlayerManager(_uiControls, _resourceManager);
@@ -64,7 +71,8 @@ namespace Fida.UI
         {
             _graphicsDevice.Clear(UITheme.BgTop);
 
-            _spriteBatch.Begin();
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
+                SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState);
             // 绘制主题背景（暖墨渐变桌面 + 暗角），菜单与对局通用
             UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel, _graphicsDevice.Viewport);
             foreach (UIControl control in _uiControls)
@@ -99,20 +107,27 @@ namespace Fida.UI
             }
         }
 
-        public void Dispose() => _spriteBatch?.Dispose();
+        public void Dispose()
+        {
+            _uiRasterizerState.Dispose();
+            _spriteBatch.Dispose();
+        }
 
         // ─── 屏幕构建（委托 UIScreenBuilder） ─────────────
 
-        public void BuildMainMenu() => _screenBuilder.BuildMainMenu();
+        public void BuildMainMenu(bool connected = false, bool isHost = false) =>
+            _screenBuilder.BuildMainMenu(connected, isHost);
         public void BuildPauseMenu() => _screenBuilder.BuildPauseMenu();
         public void BuildSettingsScreen() => _screenBuilder.BuildSettingsScreen();
         public void BuildRulesScreen() => _screenBuilder.BuildRulesScreen();
-        public void BuildOnlineMenu() => _screenBuilder.BuildOnlineMenu();
+        public void BuildOnlineMenu(bool connected = false) => _screenBuilder.BuildOnlineMenu(connected);
         public void BuildHostingScreen(string statusText, string roomCode = "") => _screenBuilder.BuildHostingScreen(statusText, roomCode);
         public void BuildConnectingScreen(string statusText) => _screenBuilder.BuildConnectingScreen(statusText);
         public void BuildOnlineLobby(bool isHost) => _screenBuilder.BuildOnlineLobby(isHost);
+        public void BuildDuelDraft() => _screenBuilder.BuildDuelDraft();
         public void BuildLevelSelect() => _screenBuilder.BuildLevelSelect();
         public void BuildSkillSelect() => _screenBuilder.BuildSkillSelect();
+        public void BuildCampaignResult(bool won, string message) => _screenBuilder.BuildCampaignResult(won, message);
 
         /// <summary>构建对局 UI（玩家面板 + 焦点初始化）</summary>
         public void BuildPlayingUI(GameManager gameManager)
@@ -125,8 +140,33 @@ namespace Fida.UI
             }
         }
 
+        /// <summary>阵容动态变化后重建战斗控件。</summary>
+        public void RebuildPlayingUI(GameManager gameManager)
+        {
+            Clear();
+            BuildPlayingUI(gameManager);
+        }
+
         /// <summary>更新游戏消息文本</summary>
         public void UpdateGameMessage(string message) => _playerManager.UpdateGameMessage(message);
+
+        /// <summary>Displays a paced AI action cue without exposing UI controls to scene code.</summary>
+        public void ShowActionCue(int playerId, string message) =>
+            _playerManager.ShowActionCue(playerId, message);
+
+        public void HideActionCue() => _playerManager.HideActionCue();
+
+        public void PlayNumberFlow(int addendPlayerId, int addendNumberIndex,
+            int basePlayerId, int baseNumberIndex) =>
+            _playerManager.PlayNumberFlow(addendPlayerId, addendNumberIndex,
+                basePlayerId, baseNumberIndex);
+
+        public bool IsNumberFlowActive => _playerManager.IsNumberFlowActive;
+
+        public void PlayCardAction(int sourcePlayerId, int targetPlayerId, bool damaging) =>
+            _playerManager.PlayCardAction(sourcePlayerId, targetPlayerId, damaging);
+
+        public bool IsBlockingPresentationActive => _playerManager.IsBlockingPresentationActive;
 
         // ─── 交互更新 ───────────────────────────────────
 
@@ -205,6 +245,16 @@ namespace Fida.UI
             {
                 if (control is UILabel lbl && lbl.Name == name)
                     return lbl;
+            }
+            return null;
+        }
+
+        /// <summary>Finds a named control without coupling callers to the complete control list.</summary>
+        public T? GetControlByName<T>(string name) where T : UIControl
+        {
+            foreach (var control in _uiControls)
+            {
+                if (control is T typed && typed.Name == name) return typed;
             }
             return null;
         }

@@ -1,48 +1,39 @@
-using System;
-using System.Linq;
+using Fida.Campaign;
 using Fida.Logic;
 using Fida.UI;
+using Fida.UI.Campaign;
+using Microsoft.Xna.Framework;
 
 namespace Fida.States
 {
-    /// <summary>
-    /// 技能选择状态：选择本地玩家使用的技能，确认后进入对局。
-    /// 默认高亮所选场景中本地玩家（id 0）的 CSV 技能。
-    /// </summary>
-    public class SkillSelectState : StateBase
+    /// <summary>战役配装状态：在节点预算内选择任意数量的已解锁技能。</summary>
+    public sealed class SkillSelectState : StateBase
     {
-        public SkillSelectState(UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
-            : base(uiManager, networkManager, stateMachine) { }
+        public SkillSelectState(UIManager uiManager, Network.NetworkManager networkManager,
+            GameStateMachine stateMachine) : base(uiManager, networkManager, stateMachine) { }
 
         public override void OnEnter()
         {
-            // 预选该场景本地玩家的默认技能作为当前选择
-            var defaultSkill = GameSetup.GetDefaultLocalSkill(GameSetup.SelectedSceneName);
-            Highlight(defaultSkill);
-
-            foreach (var type in SkillFactory.SelectableSkills)
-            {
-                SkillType chosen = type;
-                BindButton("skill_" + chosen, () =>
-                {
-                    GameSetup.SelectedLocalSkill = chosen;
-                    Highlight(chosen);
-                });
-            }
-
-            BindButton("back", () => _stateMachine.SwitchToState(State.LevelSelect));
-            BindButton("confirm", () => _stateMachine.SwitchToState(State.Playing));
+            // The wheel is a data-driven composite control. Input is consumed below so
+            // adding a skill does not require adding another button or event binding.
         }
 
-        /// <summary>高亮指定技能按钮，其余取消高亮；<c>null</c> 表示全部取消。</summary>
-        private void Highlight(SkillType? selected)
+        public override void HandleInput(GameTime gameTime)
         {
-            foreach (var type in SkillFactory.SelectableSkills)
+            base.HandleInput(gameTime);
+            var wheel = _uiManager.GetControlByName<UICampaignSkillWheel>("skill_wheel");
+            if (wheel == null) return;
+
+            if (wheel.ConsumeBackRequest())
             {
-                var btn = _uiManager.GetButtonByName("skill_" + type);
-                if (btn != null)
-                    btn.SetSelected(type == selected);
+                _stateMachine.SwitchToState(State.LevelSelect);
+                return;
             }
+
+            if (wheel.TryConsumeToggle(out SkillType skill)) GameSetup.ToggleCampaignSkill(skill);
+
+            if (wheel.ConsumeStartRequest())
+                _stateMachine.SwitchToState(State.Playing);
         }
     }
 }

@@ -148,7 +148,7 @@ public class RelayTests
 
         SpinWait.SpinUntil(() => disconnectMsg != null, 5000);
         Assert.NotNull(disconnectMsg);
-        Assert.Contains("连接失败", disconnectMsg!);
+        Assert.Contains("Connection failed", disconnectMsg!);
         Assert.False(connected, "错误房间码不应触发 Connected");
     }
 

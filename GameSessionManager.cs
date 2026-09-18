@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using System.Linq;
 using Fida.Agent;
 using Fida.Logic;
 using Fida.Network;
 using Fida.Scene;
 using Fida.UI;
+using Fida.Campaign;
 
 namespace Fida
 {
@@ -31,6 +33,18 @@ namespace Fida
 
             // 监听网络断开事件，在游戏中时强制结束游戏
             _networkManager.Disconnected += OnNetworkDisconnected;
+            _uiManager.GameManager.GameEnded += OnGameEnded;
+        }
+
+        private void OnGameEnded(object sender, GameEndEventArgs e)
+        {
+            if (_stateMachine.CurrentState != State.Playing) return;
+            bool won = !e.IsDraw && e.WinnerPlayerId == _uiManager.GameManager.LocalPlayerId;
+            if (won) CampaignRuntime.Complete(GameSetup.SelectedNode);
+            GameSetup.LastBattleWon = won;
+            GameSetup.LastBattleMessage = e.Message;
+            _playingSceneManager.IsInitialized = false;
+            _stateMachine.SwitchToState(State.GameOver);
         }
 
         /// <summary>
@@ -61,9 +75,12 @@ namespace Fida
         /// </summary>
         public void EnsureGameStarted()
         {
+            // A battle can end while HandlePlayerInput is still unwinding. Never
+            // rebuild gameplay UI after the state machine has entered results.
+            if (_stateMachine.CurrentState != State.Playing) return;
             if (!_playingSceneManager.IsInitialized)
             {
-                _playingSceneManager.Initialize(GameSetup.LoadLocalPlayers());
+                _playingSceneManager.InitializeCampaign(GameSetup.LoadCampaignBattle());
                 _playingSceneManager.StartGame();
             }
         }
@@ -73,6 +90,7 @@ namespace Fida
         /// </summary>
         public void EnsureOnlineGameStarted()
         {
+            if (_stateMachine.CurrentState != State.OnlinePlaying) return;
             if (_networkGameStarted) return;
             _networkGameStarted = true;
 
@@ -84,8 +102,10 @@ namespace Fida
                 // PvP 模式：两个玩家对战
                 var players = new List<Player>
                 {
-                    new Player(0, "Player 1"),
-                    new Player(1, "Player 2")
+                    new Player(0, "Player 1", 11,
+                        OnlineModeRules.GetDuelLoadout(0).Select(SkillFactory.CreateSkill).ToList()),
+                    new Player(1, "Player 2", 11,
+                        OnlineModeRules.GetDuelLoadout(1).Select(SkillFactory.CreateSkill).ToList())
                 };
 
                 _uiManager.GameManager.LocalPlayerId = localId;
@@ -101,8 +121,8 @@ namespace Fida
                 {
                     new Player(0, "Player 1"),   // 主机
                     new Player(1, "Player 2"),   // 客机
-                    new Player(2, "Agent 1"), // AI 对手
-                    new Player(3, "Agent 2")  // AI 对手
+                    new Player(2, "Agent 1", OnlineModeRules.CoopEnemyHealth, []),
+                    new Player(3, "Agent 2", OnlineModeRules.CoopEnemyHealth, [])
                 };
 
                 // 分组：人类玩家一组，Agent 一组
@@ -127,8 +147,13 @@ namespace Fida
         /// </summary>
         public void HandlePlayerInput(GameTime gameTime)
         {
+            _playingSceneManager.Update(gameTime);
+            if (_stateMachine.CurrentState != State.Playing) return;
             var gm = _uiManager.GameManager;
             _uiManager.UpdateUIButtons(gm);
+
+            if (_playingSceneManager.IsPresentationBlocking)
+                return;
 
             // 手柄输入更新
             _uiManager.UpdateControllerInput(gameTime);
@@ -151,8 +176,13 @@ namespace Fida
         /// </summary>
         public void HandleOnlinePlayingInput(GameTime gameTime)
         {
+            _playingSceneManager.Update(gameTime);
+            if (_stateMachine.CurrentState != State.OnlinePlaying) return;
             var gm = _uiManager.GameManager;
             _uiManager.UpdateUIButtons(gm);
+
+            if (_playingSceneManager.IsPresentationBlocking)
+                return;
 
             // 手柄输入更新
             _uiManager.UpdateControllerInput(gameTime);

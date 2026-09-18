@@ -13,14 +13,35 @@ namespace Fida.Logic
     {
         public String Name { get; private set;  } // 玩家名称
         public int PlayerId { get; private set; } // 玩家ID
+        /// <summary>
+        /// Logical portrait asset key. UI resolves this key through ResourceManager,
+        /// keeping gameplay data independent from content file paths.
+        /// </summary>
+        public string PortraitKey { get; set; } = "";
         public int[] Numbers {get; private set; } = [1, 1];
         public int Health { get; set; } = 11; // 玩家生命值
+        public int AttacksReceivedThisTurn { get; private set; }
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
         public IEnumerator<Skill> GetSkillsByTrigger(SkillTrigger trigger)
         {
-            return Skills.Where(skill => skill.Trigger == trigger).GetEnumerator();
+            var matching = Skills.Where(skill => skill.Trigger == trigger);
+            if (trigger == SkillTrigger.OrderingAttack)
+                matching = matching.OrderBy(AttackModifierPriority);
+            return matching.GetEnumerator();
         }
+
+        /// <summary>
+        /// Damage replacement must resolve before additive and multiplicative modifiers;
+        /// otherwise Dragon/Transform overwrite Double Attack and make it appear broken.
+        /// </summary>
+        private static int AttackModifierPriority(Skill skill) => skill.Type switch
+        {
+            SkillType.Long or SkillType.Bian => 0,
+            SkillType.PlusAttack => 1,
+            SkillType.DoubleAttack => 2,
+            _ => 1
+        };
 
 
         public int MaxHealth { get; set; } = 11; // 生命值上限
@@ -141,5 +162,9 @@ namespace Fida.Logic
                 skill.Usage.Reset();
             }
         }
+
+        public void RecordAttackReceived() => AttacksReceivedThisTurn++;
+
+        public void ResetAttacksReceivedThisTurn() => AttacksReceivedThisTurn = 0;
     }
 }

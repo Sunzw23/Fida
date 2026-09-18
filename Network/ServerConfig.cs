@@ -75,7 +75,7 @@ namespace Fida.Network
                 {
                     Address = "::1",
                     Port = 8888,
-                    Name = "本地测试服务器 (默认)"
+                    Name = "Local Test Server (Default)"
                 });
                 return config;
             }
@@ -120,7 +120,7 @@ namespace Fida.Network
                 {
                     Address = "::1",
                     Port = 8888,
-                    Name = "本地测试服务器 (默认)"
+                    Name = "Local Test Server (Default)"
                 });
             }
 
@@ -133,15 +133,15 @@ namespace Fida.Network
         /// <param name="filePath">目标文件路径</param>
         public static void CreateDefaultConfig(string filePath)
         {
-            string content = @"# Fida 联机服务器配置文件
-# 格式: Address,Port,Name
-# 支持 IPv6 地址
-# 以 # 开头的行为注释
+            string content = @"# Fida multiplayer server configuration
+# Format: Address,Port,Name
+# IPv6 addresses are supported
+# Lines beginning with # are comments
 #
-# 示例:
-::1,8888,本地测试服务器
-# 2001:db8::1,8888,远程服务器1
-# fe80::1,9999,局域网服务器
+# Examples:
+::1,8888,Local Test Server
+# 2001:db8::1,8888,Remote Server 1
+# fe80::1,9999,LAN Server
 ";
 
             File.WriteAllText(filePath, content);

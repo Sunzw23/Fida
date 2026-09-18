@@ -17,10 +17,13 @@ namespace Fida.Logic
         public event EventHandler<PlayerActionRequiredEventArgs> PlayerActionRequired;
         public event EventHandler<GameEndEventArgs> GameEnded;
         public event EventHandler<GameEventArgs> MessageUpdated;
+        public event EventHandler<NumberOperationEventArgs> NumberOperationResolved;
+        public event EventHandler<CardActionEventArgs> CardActionStarted;
         /// <summary>
         /// 游戏状态变化事件 - 当 GameState 发生变化时触发，用于通知 UI 层刷新按钮状态
         /// </summary>
         public event EventHandler<GameStateEventArgs> GameStateChanged;
+        public event EventHandler RosterChanged;
 
         // --- Game Data ---
         public List<Player> Players { get; private set; } = [];
@@ -44,6 +47,8 @@ namespace Fida.Logic
         /// 本地玩家 ID（单机默认 0，联机由 NetworkManager 设置）
         /// </summary>
         public int LocalPlayerId { get; set; } = 0;
+        public bool IsGameEnded { get; private set; }
+        private int _gameEndDeferralDepth;
 
         // --- State Management ---
         private GameState _currentState;
@@ -72,6 +77,8 @@ namespace Fida.Logic
             GameMessage = string.Empty;
             _currentState = null;
             StateStack.Clear();
+            IsGameEnded = false;
+            _gameEndDeferralDepth = 0;
         }
 
         /// <summary>
@@ -85,6 +92,8 @@ namespace Fida.Logic
             GameMessage = string.Empty;
             _currentState = null;
             StateStack.Clear();
+            IsGameEnded = false;
+            _gameEndDeferralDepth = 0;
         }
         
         public void StartGame()
@@ -97,6 +106,7 @@ namespace Fida.Logic
         /// </summary>
         public void UpdateGame(GameAction action)
         {
+            if (IsGameEnded) return;
             if (CheckGameEnd()) return;
 
             _currentState?.Handle(action);
@@ -143,6 +153,46 @@ namespace Fida.Logic
 
         public Player GetCurrentPlayer() => Players[CurrentPlayerIndex];
 
+        public Group GetGroupForPlayer(int playerId) =>
+            Groups.FirstOrDefault(g => g.Players.Any(p => p.PlayerId == playerId));
+
+        public bool AreAllies(int firstPlayerId, int secondPlayerId)
+        {
+            var first = GetGroupForPlayer(firstPlayerId);
+            var second = GetGroupForPlayer(secondPlayerId);
+            return first != null && second != null && first.GroupId == second.GroupId;
+        }
+
+        public void AddPlayer(Player player, int groupId)
+        {
+            if (player == null || Players.Any(p => p.PlayerId == player.PlayerId)) return;
+            Players.Add(player);
+            var group = Groups.FirstOrDefault(g => g.GroupId == groupId);
+            if (group == null)
+            {
+                group = new Group(groupId, $"Group {groupId}");
+                Groups.Add(group);
+            }
+            group.AddPlayer(player);
+            RosterChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void SkipCurrentTurn()
+        {
+            if (IsGameEnded || Players.Count == 0) return;
+            StateStack.Clear();
+            TransitionTo(new PlayerTurnEndState(this, GetCurrentPlayer().PlayerId));
+        }
+
+        /// <summary>Delays terminal evaluation until an action presentation completes.</summary>
+        public void DeferGameEndCheck() => _gameEndDeferralDepth++;
+
+        public void ResumeGameEndCheck()
+        {
+            if (_gameEndDeferralDepth > 0) _gameEndDeferralDepth--;
+            if (_gameEndDeferralDepth == 0 && !IsGameEnded) CheckGameEnd();
+        }
+
 
         public void SetGameMessage(string message)
         {
@@ -164,6 +214,10 @@ namespace Fida.Logic
         }
         public void OnGameEnded(GameEndEventArgs e) => GameEnded?.Invoke(this, e);
         public void OnMessageUpdated(GameEventArgs e) => MessageUpdated?.Invoke(this, e);
+        public void OnNumberOperationResolved(NumberOperationEventArgs e) =>
+            NumberOperationResolved?.Invoke(this, e);
+        public void OnCardActionStarted(CardActionEventArgs e) =>
+            CardActionStarted?.Invoke(this, e);
         public void OnGameStateChanged(GameStateEventArgs e) => GameStateChanged?.Invoke(this, e);
 
         #endregion
@@ -173,6 +227,8 @@ namespace Fida.Logic
         /// </summary>
         public void ForceEndGame(int winnerPlayerId)
         {
+            if (IsGameEnded) return;
+            IsGameEnded = true;
             var winner = Players.FirstOrDefault(p => p.PlayerId == winnerPlayerId);
             var winnerName = winner?.Name ?? $"Player {winnerPlayerId}";
             SetGameMessage(GameText.GameEndWithWinner(winnerName));
@@ -189,11 +245,16 @@ namespace Fida.Logic
         /// <returns></returns>
         private bool CheckGameEnd()
         {
+            if (IsGameEnded) return true;
+            if (_gameEndDeferralDepth > 0) return false;
             if (Groups.Count > 0)
             {
                 var aliveGroups = Groups.Where(g => g.IsAlive()).ToList();
                 if (aliveGroups.Count <= 1)
                 {
+                    // Lock the terminal state before notifying subscribers. Result
+                    // handlers may synchronously switch screens or query the game.
+                    IsGameEnded = true;
                     if (aliveGroups.Count == 1)
                     {
                         var winnerGroup = aliveGroups[0];
@@ -218,6 +279,7 @@ namespace Fida.Logic
             var alivePlayers = Players.Where(p => p.IsAlive()).ToList();
             if (alivePlayers.Count <= 1)
             {
+                IsGameEnded = true;
                 if (alivePlayers.Count == 1)
                 {
                     var winner = alivePlayers[0];

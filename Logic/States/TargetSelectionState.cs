@@ -21,11 +21,17 @@ namespace Fida.Logic
 
         protected override void BuildSteps()
         {
+            bool damaging = _ctx.Damage > 0;
             Steps.Add(new ActionStep
             {
                 RequiredType = ActionType.ChooseTarget,
-                ValidTargets = GameManager.Players.Where(p => p.IsAlive()).Select(p => p.PlayerId).ToList(),
-                Prompt = _ctx.Damage > 0 ? GameText.ChooseTargetForDamaging : GameText.ChooseTargetForHealing
+                ValidTargets = GameManager.Players
+                    .Where(p => p.IsAlive() && (damaging
+                        ? p.PlayerId == SourcePlayerId ||
+                          !GameManager.AreAllies(SourcePlayerId, p.PlayerId)
+                        : GameManager.AreAllies(SourcePlayerId, p.PlayerId)))
+                    .Select(p => p.PlayerId).ToList(),
+                Prompt = damaging ? GameText.ChooseTargetForDamaging : GameText.ChooseTargetForHealing
             });
         }
 
@@ -41,6 +47,13 @@ namespace Fida.Logic
             if (targetPlayer == null || !targetPlayer.IsAlive()) return;
 
             _ctx.TargetPlayerId = targetId;
+            GameManager.OnCardActionStarted(new CardActionEventArgs
+            {
+                SourcePlayerId = SourcePlayerId,
+                TargetPlayerId = targetId,
+                Damage = _ctx.Damage,
+                Healing = _ctx.Healing
+            });
 
             if (_ctx.Damage > 0)
             {

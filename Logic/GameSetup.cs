@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Fida.Campaign;
 
 namespace Fida.Logic
 {
@@ -9,11 +10,31 @@ namespace Fida.Logic
     /// </summary>
     public static class GameSetup
     {
+        private static readonly HashSet<SkillType> SelectedSkills = [];
+
+        /// <summary>当前树状战役节点。</summary>
+        public static string SelectedNodeId { get; private set; } = "P";
+
+        public static CampaignNode SelectedNode => CampaignCatalog.GetNode(SelectedNodeId) ?? CampaignCatalog.Nodes[0];
+
+        public static IReadOnlyCollection<SkillType> SelectedLocalSkills => SelectedSkills;
+
+        public static bool LastBattleWon { get; set; }
+        public static string LastBattleMessage { get; set; } = "";
+
         /// <summary>当前选择的场景名（默认 DefaultScene）。</summary>
         public static string SelectedSceneName { get; set; } = "DefaultScene";
 
         /// <summary>本地玩家（id 0）最终使用的技能；为 null 时沿用该场景 CSV 中的默认技能。</summary>
-        public static SkillType? SelectedLocalSkill { get; set; }
+        public static SkillType? SelectedLocalSkill
+        {
+            get => SelectedSkills.Count == 1 ? SelectedSkills.First() : null;
+            set
+            {
+                SelectedSkills.Clear();
+                if (value.HasValue) SelectedSkills.Add(value.Value);
+            }
+        }
 
         /// <summary>
         /// 按当前选择加载单机玩家列表：加载所选场景，并将本地玩家（id 0）的技能
@@ -21,6 +42,9 @@ namespace Fida.Logic
         /// </summary>
         public static List<Player> LoadLocalPlayers()
         {
+            if (CampaignCatalog.GetNode(SelectedNodeId) is { } campaignNode)
+                return CampaignBattleFactory.Create(campaignNode, SelectedSkills).Players;
+
             string sceneName = SceneLibrary.SceneNames().Contains(SelectedSceneName) ? SelectedSceneName : "DefaultScene";
             var players = SceneLibrary.LoadScene(sceneName);
 
@@ -51,5 +75,27 @@ namespace Fida.Logic
             SelectedSceneName = sceneName;
             SelectedLocalSkill = null;
         }
+
+        public static bool SelectCampaignNode(string nodeId)
+        {
+            var node = CampaignCatalog.GetNode(nodeId);
+            if (node == null || !CampaignCatalog.IsUnlocked(CampaignRuntime.Progress, node)) return false;
+            SelectedNodeId = node.Id;
+            SelectedSkills.Clear();
+            return true;
+        }
+
+        public static bool ToggleCampaignSkill(SkillType skill)
+        {
+            if (SelectedSkills.Remove(skill)) return true;
+            if (!CampaignLoadout.CanSelect(CampaignRuntime.Progress, SelectedNode, SelectedSkills, skill)) return false;
+            SelectedSkills.Add(skill);
+            return true;
+        }
+
+        public static int SelectedSkillCost => CampaignSkillBalance.TotalCost(SelectedSkills);
+
+        public static CampaignBattleSetup LoadCampaignBattle() =>
+            CampaignBattleFactory.Create(SelectedNode, SelectedSkills);
     }
 }

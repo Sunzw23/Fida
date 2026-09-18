@@ -88,7 +88,22 @@ namespace Fida.Logic
             }
 
             var firstNumberIndex = firstAction.NumberIndex;
-            var newCalculatedNumber = (SourcePlayer.Numbers[firstNumberIndex] + otherPlayerSelected.Numbers[secondAction.NumberIndex]) % 10;
+            int baseValue = SourcePlayer.Numbers[firstNumberIndex];
+            int addendValue = otherPlayerSelected.Numbers[secondAction.NumberIndex];
+            var newCalculatedNumber = (baseValue + addendValue) % 10;
+
+            // Broadcast the operands before mutating either card. Presentation code
+            // uses only player/number indices to draw a directional golden flow.
+            GameManager.OnNumberOperationResolved(new NumberOperationEventArgs
+            {
+                SourcePlayerId = SourcePlayerId,
+                BaseNumberIndex = firstNumberIndex,
+                BaseValue = baseValue,
+                AddendPlayerId = otherPlayerSelected.PlayerId,
+                AddendNumberIndex = secondAction.NumberIndex,
+                AddendValue = addendValue,
+                ResultValue = newCalculatedNumber
+            });
 
 
             if (_changeBothNumbers)

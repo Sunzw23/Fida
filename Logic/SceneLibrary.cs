@@ -48,9 +48,9 @@ namespace Fida.Logic
             {
                 var local = players.FirstOrDefault(p => p.PlayerId == 0) ?? players[0];
                 if (local.Skills.Count > 0)
-                    description = "技能：" + string.Join("、", local.Skills.Select(s => GameText.SkillName(s.Type)));
+                    description = "Skills: " + string.Join(", ", local.Skills.Select(s => GameText.SkillName(s.Type)));
                 else
-                    description = "无技能";
+                    description = "No skills";
             }
             return new SceneInfo(name, description);
         }

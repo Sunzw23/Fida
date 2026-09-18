@@ -26,10 +26,15 @@ namespace Fida.UI
         public Color BorderColor { get; set; } = UITheme.Gold;
         public int BorderThickness { get; set; } = 1;
         public UIBoxLabelAlignment Alignment { get; set; } = UIBoxLabelAlignment.Center;
+        public bool AutoFitText { get; set; }
+        public float MinimumTextScale { get; set; } = 0.4f;
+        public int TextPadding { get; set; } = 12;
 
         // 缓存 MeasureString 结果，避免每帧重复计算
         protected Vector2 _cachedTextSize;
         protected Vector2 _cachedTextPos;
+        protected string _cachedDisplayText = "";
+        protected float _cachedTextScale = 1f;
         private bool _textSizeDirty = true;
 
         public UIBoxLabel(int id, Rectangle bounds, string text, Texture2D pixel, SpriteFont font)
@@ -45,19 +50,31 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
+            if (!IsVisible) return;
+
             // 更新文字尺寸缓存
             if (_textSizeDirty)
             {
                 if (!string.IsNullOrEmpty(Text))
                 {
-                    _cachedTextSize = Font.MeasureString(Text);
+                    _cachedDisplayText = UIFontGuard.Sanitize(Font, Text);
+                    _cachedTextSize = Font.MeasureString(_cachedDisplayText);
+                    float availableWidth = MathHelper.Max(1, Bounds.Width - TextPadding * 2);
+                    float availableHeight = MathHelper.Max(1, Bounds.Height - TextPadding * 2);
+                    _cachedTextScale = AutoFitText
+                        ? MathHelper.Clamp(MathHelper.Min(
+                            availableWidth / MathHelper.Max(1, _cachedTextSize.X),
+                            availableHeight / MathHelper.Max(1, _cachedTextSize.Y)),
+                            MinimumTextScale, 1f)
+                        : 1f;
+                    Vector2 displaySize = _cachedTextSize * _cachedTextScale;
                     float x = Alignment switch
                     {
-                        UIBoxLabelAlignment.Left => Bounds.X + BorderThickness + 2,
-                        UIBoxLabelAlignment.Right => Bounds.Right - _cachedTextSize.X - BorderThickness - 2,
-                        _ => Bounds.Center.X - _cachedTextSize.X / 2
+                        UIBoxLabelAlignment.Left => Bounds.X + TextPadding,
+                        UIBoxLabelAlignment.Right => Bounds.Right - displaySize.X - TextPadding,
+                        _ => Bounds.Center.X - displaySize.X / 2
                     };
-                    _cachedTextPos = new Vector2(x, Bounds.Center.Y - _cachedTextSize.Y / 2);
+                    _cachedTextPos = new Vector2(x, Bounds.Center.Y - displaySize.Y / 2);
                 }
                 _textSizeDirty = false;
             }
@@ -68,7 +85,8 @@ namespace Fida.UI
             // 绘制文字（使用缓存坐标）
             if (!string.IsNullOrEmpty(Text))
             {
-                sb.DrawString(Font, Text, _cachedTextPos, ForeColor);
+                sb.DrawString(Font, _cachedDisplayText, _cachedTextPos, ForeColor,
+                    0f, Vector2.Zero, _cachedTextScale, SpriteEffects.None, 0f);
             }
 
             // 绘制边框

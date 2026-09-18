@@ -86,7 +86,7 @@ namespace Fida.Network
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
-                    ClientDisconnected?.Invoke($"服务器启动失败: {ex.Message}");
+                    ClientDisconnected?.Invoke($"Failed to start the server: {ex.Message}");
                     Stop();
                 }
             });
@@ -173,7 +173,7 @@ namespace Fida.Network
             {
                 _isRunning = false;
                 _clientConnected = false;
-                ClientDisconnected?.Invoke("对手已断开连接");
+                ClientDisconnected?.Invoke("The opponent disconnected.");
             }
         }
 

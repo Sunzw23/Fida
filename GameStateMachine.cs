@@ -37,11 +37,11 @@ namespace Fida
         }
 
         /// <summary>
-        /// 返回主菜单（清理网络资源）
+        /// Returns to the main menu while preserving an established online session.
+        /// Explicit disconnect actions own network cleanup.
         /// </summary>
         public void GoToMainMenu()
         {
-            _networkManager.Cleanup();
             _playingSceneManager.IsInitialized = false;
             SwitchToState(State.MainMenu);
         }
@@ -51,7 +51,9 @@ namespace Fida
         /// </summary>
         public void SwitchToState(State newState)
         {
-            if (newState == CurrentState) return;
+            // Main-menu presentation depends on live connection state. Re-entering it
+            // after connect/disconnect must rebuild controls even though the enum is unchanged.
+            if (newState == CurrentState && newState != State.MainMenu) return;
 
             // 通知旧状态即将退出
             OnStateExiting?.Invoke(CurrentState);
@@ -61,7 +63,7 @@ namespace Fida
 
             switch (newState)
             {
-                case State.MainMenu:      _uiManager.BuildMainMenu(); break;
+                case State.MainMenu:      _uiManager.BuildMainMenu(_networkManager.IsConnected, _networkManager.IsHost); break;
                 case State.Rules:         _uiManager.BuildRulesScreen(); break;
                 case State.Settings:      _uiManager.BuildSettingsScreen(); break;
                 case State.LevelSelect:   _uiManager.BuildLevelSelect(); break;
@@ -69,17 +71,18 @@ namespace Fida
                 case State.Playing:
                     if (!_playingSceneManager.IsInitialized)
                     {
-                        _playingSceneManager.Initialize(GameSetup.LoadLocalPlayers());
+                        _playingSceneManager.InitializeCampaign(GameSetup.LoadCampaignBattle());
                         _playingSceneManager.StartGame();
                     }
                     else _uiManager.BuildPlayingUI(_uiManager.GameManager);
                     break;
                 case State.Paused:        _uiManager.BuildPauseMenu(); break;
-                case State.GameOver:      break;
-                case State.OnlineMenu:    _uiManager.BuildOnlineMenu(); break;
+                case State.GameOver:      _uiManager.BuildCampaignResult(GameSetup.LastBattleWon, GameSetup.LastBattleMessage); break;
+                case State.OnlineMenu:    _uiManager.BuildOnlineMenu(_networkManager.IsConnected); break;
                 case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText, _networkManager.HostRoomCode); break;
                 case State.Connecting:    _uiManager.BuildConnectingScreen(_networkManager.StatusText); break;
                 case State.OnlineLobby:   _uiManager.BuildOnlineLobby(_networkManager.IsHost); break;
+                case State.DuelDraft:     _uiManager.BuildDuelDraft(); break;
                 case State.OnlinePlaying: _uiManager.BuildPlayingUI(_uiManager.GameManager); break;
             }
 

@@ -27,10 +27,12 @@ namespace Fida
                 { State.Paused,      new PausedState(uiManager, networkManager, stateMachine) },
                 { State.LevelSelect, new LevelSelectState(uiManager, networkManager, stateMachine) },
                 { State.Skills,      new SkillSelectState(uiManager, networkManager, stateMachine) },
+                { State.GameOver,    new GameOverState(uiManager, networkManager, stateMachine) },
                 { State.OnlineMenu,  new OnlineMenuState(uiManager, networkManager, stateMachine) },
                 { State.Hosting,     new HostingState(uiManager, networkManager, stateMachine) },
                 { State.Connecting,  new ConnectingState(uiManager, networkManager, stateMachine) },
                 { State.OnlineLobby, new OnlineLobbyState(uiManager, networkManager, stateMachine) },
+                { State.DuelDraft,    new DuelDraftState(uiManager, networkManager, stateMachine) },
             };
 
             // 订阅状态机生命周期事件

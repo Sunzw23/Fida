@@ -67,12 +67,12 @@ namespace Fida.Network
                     if (roleByte != 0)
                     {
                         if (string.IsNullOrEmpty(roomCode))
-                            throw new System.IO.IOException("relay 模式需要 4 位房间码");
+                        throw new System.IO.IOException("Relay mode requires a four-digit room code.");
 
                         // 发 'C' + 0x01 + 4 位 ASCII 房间码（大写归一化）
                         string code = roomCode.Trim().ToUpperInvariant();
                         if (code.Length != 4)
-                            throw new System.IO.IOException("房间码无效（需要 4 位）");
+                        throw new System.IO.IOException("Invalid room code. Enter four digits.");
 
                         var payload = new byte[6];
                         payload[0] = roleByte;
@@ -89,7 +89,7 @@ namespace Fida.Network
                         int n = _stream.Read(ack, 0, 1);
                         _tcpClient.ReceiveTimeout = oldTimeout;
                         if (n <= 0 || ack[0] != 0x03)
-                            throw new System.IO.IOException("房间码无效或房间已满");
+                        throw new System.IO.IOException("The room code is invalid or the room is full.");
                     }
 
                     _isConnected = true;
@@ -103,7 +103,7 @@ namespace Fida.Network
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
-                    Disconnected?.Invoke($"连接失败: {ex.Message}");
+                    Disconnected?.Invoke($"Connection failed: {ex.Message}");
                 }
             });
         }
@@ -185,7 +185,7 @@ namespace Fida.Network
             if (_isConnected)
             {
                 _isConnected = false;
-                Disconnected?.Invoke("与服务器的连接已断开");
+                Disconnected?.Invoke("Connection to the server was lost.");
             }
         }
 
