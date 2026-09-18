@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Fida.Logic;
 
 namespace Fida.Campaign.Battle
@@ -32,6 +33,14 @@ namespace Fida.Campaign.Battle
             {
                 ActionType.ChooseNumberIndex when game.Query.IsChooseFirstNumberIndexState() =>
                     new GameAction(ActionType.ChooseNumberIndex) { TargetPlayerId = PlayerId, NumberIndex = plan.first },
+                ActionType.ChooseNumberIndex when game.Query.GetFirstChosenNumberIndex() < 0 =>
+                    new GameAction(ActionType.ChooseNumberIndex)
+                    {
+                        TargetPlayerId = args.ValidTargets.Contains(PlayerId)
+                            ? PlayerId
+                            : args.ValidTargets.FirstOrDefault(PlayerId),
+                        NumberIndex = 0
+                    },
                 ActionType.ChooseNumberIndex =>
                     new GameAction(ActionType.ChooseNumberIndex) { TargetPlayerId = PlayerId, NumberIndex = plan.second },
                 ActionType.ChooseTarget =>

@@ -69,6 +69,13 @@ namespace Fida.Logic
             if (action.Type != step.RequiredType) return;
             if (step.ValidTargets.Count > 0 && !step.ValidTargets.Contains(action.TargetPlayerId)) return;
             if (step.ValidNumbers.Count > 0 && !step.ValidNumbers.Contains(action.Number)) return;
+            if (action.Type == ActionType.ChooseNumberIndex)
+            {
+                var target = GameManager.Players.FirstOrDefault(
+                    player => player.PlayerId == action.TargetPlayerId);
+                if (target == null || action.NumberIndex < 0 || action.NumberIndex >= target.Numbers.Length)
+                    return;
+            }
             if (!ValidateStep(step, action)) return;
 
             step.Result = action;

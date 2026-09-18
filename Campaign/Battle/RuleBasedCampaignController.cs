@@ -35,6 +35,21 @@ namespace Fida.Campaign.Battle
 
             var source = game.Players.First(p => p.PlayerId == PlayerId);
             int first = game.Query.GetFirstChosenNumberIndex();
+            if (first < 0)
+            {
+                // A skill such as God is asking which of the owner's numbers to
+                // rewrite. This is not the second operand of the normal turn flow.
+                int targetId = args.ValidTargets.Contains(PlayerId)
+                    ? PlayerId
+                    : args.ValidTargets.FirstOrDefault(PlayerId);
+                var target = game.Players.FirstOrDefault(p => p.PlayerId == targetId) ?? source;
+                int index = target.Numbers.Length > 1 && target.Numbers[1] < target.Numbers[0] ? 1 : 0;
+                return new GameAction(ActionType.ChooseNumberIndex)
+                {
+                    TargetPlayerId = target.PlayerId,
+                    NumberIndex = index
+                };
+            }
             var candidates = game.Players
                 .Where(p => p.IsAlive() && (args.ValidTargets.Count == 0 || args.ValidTargets.Contains(p.PlayerId)))
                 .SelectMany(p => new[] { (player: p, index: 0), (player: p, index: 1) })

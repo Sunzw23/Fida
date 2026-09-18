@@ -6,6 +6,50 @@ namespace Fida.Tests;
 
 public class DecideApplyTests
 {
+    [Fact]
+    public void BrokenGodPriest_AutomationChoosesAValidSkillNumberIndex()
+    {
+        var player = new Player(0, "Player", 11, []);
+        var priest = new Player(1, "Broken God Priest", 6, [SkillFactory.CreateSkill(SkillType.Shen)]);
+        priest.SetNumber(0, 6);
+        priest.SetNumber(1, 3);
+        var game = new GameManager();
+        game.Initialize(
+            [player, priest],
+            [new Group(0, "Allies", [player]), new Group(1, "Enemies", [priest])]);
+        var controller = new RuleBasedCampaignController(priest.PlayerId);
+        PlayerActionRequiredEventArgs? request = null;
+        var changes = new List<(int index, int value)>();
+        game.PlayerActionRequired += (_, args) => request = args;
+        priest.NumberChanged += (_, index, _, value) => changes.Add((index, value));
+
+        game.TransitionTo(new ShenSkillState(game, new SkillContext(priest.PlayerId)));
+        controller.RequestAction(game, request!);
+        controller.RequestAction(game, request!);
+
+        Assert.Contains((1, 8), changes);
+        Assert.IsType<TargetSelectionState>(game.CurrentState);
+    }
+
+    [Fact]
+    public void NumberIndexAction_OutsideTargetBoundsIsIgnored()
+    {
+        var player = new Player(0, "Player", 11, []);
+        var opponent = new Player(1, "Opponent", 11, []);
+        var game = new GameManager();
+        game.Initialize([player, opponent]);
+        game.TransitionTo(new ShenSkillState(game, new SkillContext(player.PlayerId)));
+
+        game.UpdateGame(new GameAction(ActionType.ChooseNumberIndex)
+        {
+            TargetPlayerId = player.PlayerId,
+            NumberIndex = 2
+        });
+
+        Assert.IsType<ShenSkillState>(game.CurrentState);
+        Assert.Equal(new[] { 1, 1 }, player.Numbers);
+    }
+
     [Theory]
     [InlineData(true, 3)]
     [InlineData(false, 2)]
