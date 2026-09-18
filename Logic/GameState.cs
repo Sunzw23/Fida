@@ -45,6 +45,12 @@ namespace Fida.Logic
         /// </summary>
         public virtual void Enter()
         {
+            if (!CanActorAct())
+            {
+                GameManager.TransitionTo(new HandleStackState(GameManager));
+                return;
+            }
+
             Steps.Clear();
             StepIndex = 0;
             BuildSteps();
@@ -63,6 +69,12 @@ namespace Fida.Logic
         /// </summary>
         public virtual void Handle(GameAction action)
         {
+            if (!CanActorAct())
+            {
+                GameManager.TransitionTo(new HandleStackState(GameManager));
+                return;
+            }
+
             if (StepIndex >= Steps.Count) return;
 
             var step = Steps[StepIndex];
@@ -95,6 +107,9 @@ namespace Fida.Logic
         protected virtual bool ValidateStep(ActionStep step, GameAction action) => true;
 
         protected virtual void Execute(List<GameAction> actions) { }
+
+        private bool CanActorAct() =>
+            SourcePlayerId == -1 || (SourcePlayer != null && SourcePlayer.IsAlive());
 
         protected void BroadcastCurrentStep()
         {

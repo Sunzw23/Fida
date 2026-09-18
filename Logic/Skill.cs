@@ -152,6 +152,7 @@ namespace Fida.Logic
 
         public bool CanUse(GameManager gameManager, Player player)
         {
+            if (player == null || !player.IsAlive()) return false;
             if (!Usage.CanUse()) return false;
             return CheckCondition(gameManager, player);
         }
