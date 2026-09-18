@@ -11,11 +11,12 @@ namespace Fida.Logic
             Type = SkillType.Shen;
             Value = 2;
             Trigger = SkillTrigger.Damaged;
-            Usage = new SkillUsageState();
+            Usage = new SkillUsageState(SkillUsageLimit.PerTurn);
         }
 
         public override GameState CreateState(GameManager gameManager, SkillContext context)
         {
+            Usage.MarkUsed();
             return new ShenSkillState(gameManager, context);
         }
     }

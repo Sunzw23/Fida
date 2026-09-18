@@ -11,11 +11,12 @@ namespace Fida.Logic
             Type = SkillType.Xian;
             Value = 1;
             Trigger = SkillTrigger.OrderedAttack;
-            Usage = new SkillUsageState();
+            Usage = new SkillUsageState(SkillUsageLimit.PerTurn);
         }
 
         public override GameState CreateState(GameManager gameManager, SkillContext context)
         {
+            Usage.MarkUsed();
             return new XianSkillState(gameManager, context);
         }
     }
