@@ -137,7 +137,16 @@ namespace Fida.UI
             // 绘制文字（居中，使用缓存坐标）
             if (!string.IsNullOrEmpty(Text))
             {
-                sb.DrawString(Font, _cachedDisplayText, _cachedTextPos, foreColor);
+                float availableWidth = MathHelper.Max(1, Bounds.Width - 24);
+                float availableHeight = MathHelper.Max(1, Bounds.Height - 16);
+                float textScale = MathHelper.Min(1f, MathHelper.Min(
+                    availableWidth / MathHelper.Max(1, _cachedTextSize.X),
+                    availableHeight / MathHelper.Max(1, _cachedTextSize.Y)));
+                Vector2 textPos = new(
+                    Bounds.Center.X - _cachedTextSize.X * textScale / 2,
+                    Bounds.Center.Y - _cachedTextSize.Y * textScale / 2);
+                sb.DrawString(Font, _cachedDisplayText, textPos, foreColor,
+                    0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
             }
 
             // 绘制边框（禁用状态 borderThickness=0，不绘制）

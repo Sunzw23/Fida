@@ -31,13 +31,25 @@ namespace Fida.UI
             // 居中绘制衬线标题
             string displayText = UIFontGuard.Sanitize(_font, _text);
             var size = _font.MeasureString(displayText);
-            var pos = new Vector2(_position.X - size.X / 2, _position.Y - size.Y / 2);
-            sb.DrawString(_font, displayText, pos, UITheme.Ink);
+            Rectangle panel = UITheme.PanelRect(sb.GraphicsDevice.Viewport);
+            float maxWidth = MathHelper.Max(1, panel.Width - 120);
+            float maxHeight = MathHelper.Max(1, panel.Height * 0.13f);
+            float scale = MathHelper.Min(1f, MathHelper.Min(
+                maxWidth / MathHelper.Max(1, size.X),
+                maxHeight / MathHelper.Max(1, size.Y)));
+            Vector2 displaySize = size * scale;
+            float centerX = MathHelper.Clamp(_position.X,
+                panel.Left + displaySize.X / 2 + 24, panel.Right - displaySize.X / 2 - 24);
+            float centerY = MathHelper.Clamp(_position.Y,
+                panel.Top + displaySize.Y / 2 + 28, panel.Bottom - displaySize.Y / 2 - 28);
+            var pos = new Vector2(centerX - displaySize.X / 2, centerY - displaySize.Y / 2);
+            sb.DrawString(_font, displayText, pos, UITheme.Ink, 0f, Vector2.Zero,
+                scale, SpriteEffects.None, 0f);
 
             // 标题下方的描金装饰短线（宽约为文字宽度的一半，居中）
-            float ruleW = size.X * 0.5f;
-            float ruleX = _position.X - ruleW / 2;
-            float ruleY = _position.Y + size.Y / 2 + 6f;
+            float ruleW = displaySize.X * 0.5f;
+            float ruleX = centerX - ruleW / 2;
+            float ruleY = centerY + displaySize.Y / 2 + 6f;
             sb.Draw(_pixel, new Rectangle((int)ruleX, (int)ruleY, (int)ruleW, 2), UITheme.Gold);
         }
     }

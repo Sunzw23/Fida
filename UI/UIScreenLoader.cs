@@ -146,8 +146,8 @@ namespace Fida.UI
                     if (ctrl.Bounds != null)
                     {
                         Rectangle bounds = ctrl.Bounds.ToRectangle();
-                        float scaleX = DisplaySettingsManager.Current.Width / 1920f;
-                        float scaleY = DisplaySettingsManager.Current.Height / 1200f;
+                        float scaleX = DisplaySettingsManager.LayoutWidth / 1920f;
+                        float scaleY = DisplaySettingsManager.LayoutHeight / 1200f;
                         descriptor.Bounds = new Rectangle(
                             (int)(bounds.X * scaleX), (int)(bounds.Y * scaleY),
                             (int)(bounds.Width * scaleX), (int)(bounds.Height * scaleY));
@@ -157,8 +157,8 @@ namespace Fida.UI
                     {
                         Vector2 position = ctrl.Position.ToVector2();
                         descriptor.Position = new Vector2(
-                            position.X * DisplaySettingsManager.Current.Width / 1920f,
-                            position.Y * DisplaySettingsManager.Current.Height / 1200f);
+                            position.X * DisplaySettingsManager.LayoutWidth / 1920f,
+                            position.Y * DisplaySettingsManager.LayoutHeight / 1200f);
                     }
 
                     result.Add(descriptor);

@@ -22,6 +22,8 @@ namespace Fida
         private static GraphicsDeviceManager? _graphics;
         public static DisplaySettingsData Current { get; private set; } = new();
         public static string ResolutionLabel => $"{Current.Width} x {Current.Height}";
+        public static int LayoutWidth => _graphics?.GraphicsDevice.Viewport.Width ?? Current.Width;
+        public static int LayoutHeight => _graphics?.GraphicsDevice.Viewport.Height ?? Current.Height;
 
         public static void Initialize(GraphicsDeviceManager graphics)
         {
@@ -49,8 +51,8 @@ namespace Fida
 
         public static void Normalize(DisplaySettingsData settings)
         {
-            if (settings.Width < 1024 || settings.Height < 576 ||
-                settings.Width > 7680 || settings.Height > 4320)
+            if (Array.FindIndex(Resolutions,
+                value => value.Width == settings.Width && value.Height == settings.Height) < 0)
             {
                 settings.Width = 1920;
                 settings.Height = 1200;

@@ -66,11 +66,17 @@ namespace Fida.UI
             // 绘制文字（居中）
             string displayText = UIFontGuard.Sanitize(Font, Text);
             var size = Font.MeasureString(displayText);
+            float availableWidth = MathHelper.Max(1, Bounds.Width - 32);
+            float availableHeight = MathHelper.Max(1, Bounds.Height - 20);
+            float textScale = MathHelper.Min(1f, MathHelper.Min(
+                availableWidth / MathHelper.Max(1, size.X),
+                availableHeight / MathHelper.Max(1, size.Y)));
             var pos = new Vector2(
-                Bounds.Center.X - size.X / 2,
-                Bounds.Center.Y - size.Y / 2
+                Bounds.Center.X - size.X * textScale / 2,
+                Bounds.Center.Y - size.Y * textScale / 2
             );
-            sb.DrawString(Font, displayText, pos, foreColor);
+            sb.DrawString(Font, displayText, pos, foreColor, 0f, Vector2.Zero,
+                textScale, SpriteEffects.None, 0f);
 
             // 绘制边框（禁用状态 borderThickness=0，不绘制）
             if (borderThickness > 0)

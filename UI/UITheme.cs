@@ -49,7 +49,10 @@ namespace Fida.UI
         // ─── 布局 ───────────────────────────────────────
         /// <summary>菜单面板在 1920×1200 下的居中几何（宽屏亦居中）。</summary>
         public static Rectangle PanelRect(Viewport vp) =>
-            new(vp.Width / 2 - 500, vp.Height / 2 - 440, 1000, 880);
+            new((vp.Width - System.Math.Min(1000, vp.Width - 48)) / 2,
+                (vp.Height - System.Math.Min(880, vp.Height - 48)) / 2,
+                System.Math.Min(1000, vp.Width - 48),
+                System.Math.Min(880, vp.Height - 48));
 
         /// <summary>背景渐变 + 暗角（菜单与对局通用，铺满整个视口）。</summary>
         public static void DrawBackground(SpriteBatch sb, Texture2D pixel, Viewport vp)

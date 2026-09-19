@@ -134,16 +134,21 @@ namespace Fida.UI
 
             Color textColor = string.IsNullOrEmpty(_value) ? UITheme.InkMuted : UITheme.Ink;
             var textSize = _font.MeasureString(text);
+            float textScale = MathHelper.Min(1f, MathHelper.Min(
+                MathHelper.Max(1, _bounds.Width - 24) / MathHelper.Max(1, textSize.X),
+                MathHelper.Max(1, _bounds.Height - 12) / MathHelper.Max(1, textSize.Y)));
             var pos = new Vector2(
                 _bounds.X + 12,
-                _bounds.Center.Y - textSize.Y / 2
+                _bounds.Center.Y - textSize.Y * textScale / 2
             );
-            sb.DrawString(_font, text, pos, textColor);
+            sb.DrawString(_font, text, pos, textColor, 0f, Vector2.Zero,
+                textScale, SpriteEffects.None, 0f);
 
             // 闪烁光标（聚焦时）
             if (_focused && (gameTime.TotalGameTime.TotalMilliseconds / 400) % 2 == 0)
             {
-                float cursorX = _bounds.X + 12 + _font.MeasureString(UIFontGuard.Sanitize(_font, _value)).X + 3;
+                float cursorX = _bounds.X + 12 +
+                    _font.MeasureString(UIFontGuard.Sanitize(_font, _value)).X * textScale + 3;
                 var cursor = new Rectangle(
                     (int)cursorX,
                     _bounds.Top + 8,
