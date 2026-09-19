@@ -6,11 +6,22 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
     <DisableMonoGameContentPipeline>true</DisableMonoGameContentPipeline>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Fida.Core\**;Fida.Android\**</DefaultItemExcludes>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="Fida.Core\Fida.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Fida.Core\**" />
+    <Compile Remove="Fida.Android\**\*.cs" />
+    <Compile Remove="Logic\**\*.cs" />
+    <Compile Remove="Campaign\**\*.cs" />
+    <Compile Include="Logic\AgentPlayerController.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Remove="onnx_models\**" />
     <EmbeddedResource Remove="onnx_models\**" />

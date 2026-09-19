@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationId>com.fida.game</ApplicationId>
+    <ApplicationTitle>Fida</ApplicationTitle>
+    <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
+    <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Fida.Core\Fida.Core.csproj" />
+    <PackageReference Include="MonoGame.Framework.Android" Version="3.8.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidAsset Include="..\Content\campaign\**\*.json" Link="Content\campaign\%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="..\Content\gametext.json" Link="Content\gametext.json" />
+  </ItemGroup>
+</Project>
