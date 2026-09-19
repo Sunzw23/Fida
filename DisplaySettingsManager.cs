@@ -35,6 +35,7 @@ namespace Fida
 
         public static void SetFullscreen(bool fullscreen)
         {
+            if (Current.Fullscreen == fullscreen) return;
             Current.Fullscreen = fullscreen;
             ApplyAndSave();
         }
@@ -68,12 +69,23 @@ namespace Fida
         private static void Apply()
         {
             if (_graphics == null) return;
-            _graphics.PreferredBackBufferWidth = Current.Width;
-            _graphics.PreferredBackBufferHeight = Current.Height;
-            _graphics.IsFullScreen = Current.Fullscreen;
+            DisplayMode desktop = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
+            var backBuffer = ResolveBackBuffer(Current, desktop.Width, desktop.Height);
+
+            // Borderless fullscreen must use the desktop mode. Reusing the selected
+            // window size here can create an oversized surface or fail on 16:9 displays.
             _graphics.HardwareModeSwitch = false;
+            _graphics.PreferredBackBufferWidth = backBuffer.Width;
+            _graphics.PreferredBackBufferHeight = backBuffer.Height;
+            _graphics.IsFullScreen = Current.Fullscreen;
             _graphics.ApplyChanges();
         }
+
+        public static (int Width, int Height) ResolveBackBuffer(
+            DisplaySettingsData settings, int desktopWidth, int desktopHeight) =>
+            settings.Fullscreen
+                ? (Math.Max(1, desktopWidth), Math.Max(1, desktopHeight))
+                : (settings.Width, settings.Height);
 
         private static DisplaySettingsData Load()
         {

@@ -28,4 +28,34 @@ public class DisplaySettingsTests
         Assert.Equal(1920, settings.Width);
         Assert.Equal(1200, settings.Height);
     }
+
+    [Fact]
+    public void Fullscreen_UsesDesktopResolutionInsteadOfWindowSize()
+    {
+        var settings = new DisplaySettingsData
+        {
+            Fullscreen = true,
+            Width = 1920,
+            Height = 1200
+        };
+
+        var result = DisplaySettingsManager.ResolveBackBuffer(settings, 1920, 1080);
+
+        Assert.Equal((1920, 1080), result);
+    }
+
+    [Fact]
+    public void WindowedMode_RestoresSelectedWindowSize()
+    {
+        var settings = new DisplaySettingsData
+        {
+            Fullscreen = false,
+            Width = 2240,
+            Height = 1400
+        };
+
+        var result = DisplaySettingsManager.ResolveBackBuffer(settings, 1920, 1080);
+
+        Assert.Equal((2240, 1400), result);
+    }
 }
