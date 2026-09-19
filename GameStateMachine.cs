@@ -17,6 +17,7 @@ namespace Fida
         private readonly NetworkManager _networkManager;
 
         public State CurrentState { get; private set; }
+        private State _settingsReturnState = State.MainMenu;
 
         /// <summary>
         /// 状态即将切换时触发（切换前调用旧状态的 OnExit）
@@ -58,6 +59,9 @@ namespace Fida
             // 通知旧状态即将退出
             OnStateExiting?.Invoke(CurrentState);
 
+            if (newState == State.Settings && CurrentState != State.Settings)
+                _settingsReturnState = CurrentState;
+
             CurrentState = newState;
             _uiManager.Clear();
 
@@ -89,5 +93,8 @@ namespace Fida
             // 通知新状态已进入
             OnStateEntered?.Invoke(newState);
         }
+
+        public void ReturnFromSettings() => SwitchToState(
+            _settingsReturnState == State.Paused ? State.Paused : State.MainMenu);
     }
 }

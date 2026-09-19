@@ -57,6 +57,7 @@ namespace Fida.States
                 else
                     _stateMachine.SwitchToState(State.OnlineMenu);
             });
+            BindButton("settings", () => _stateMachine.SwitchToState(State.Settings));
             BindButton("exit", () => Environment.Exit(0));
         }
 

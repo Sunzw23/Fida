@@ -20,6 +20,7 @@ namespace Fida.States
             {
                 _stateMachine.GoToMainMenu();
             });
+            BindButton("settings", () => _stateMachine.SwitchToState(State.Settings));
         }
     }
 }

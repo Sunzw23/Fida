@@ -33,13 +33,10 @@ namespace Fida
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
-            _graphics.PreferredBackBufferWidth = 1920;
-            _graphics.PreferredBackBufferHeight = 1200;
             _graphics.GraphicsProfile = GraphicsProfile.HiDef;
             _graphics.PreferMultiSampling = true;
             _graphics.SynchronizeWithVerticalRetrace = true;
-            _graphics.IsFullScreen = false;
-            _graphics.ApplyChanges();
+            DisplaySettingsManager.Initialize(_graphics);
         }
 
         protected override void Initialize()
@@ -99,6 +96,7 @@ namespace Fida
                         _gameSession.HandlePlayerInput(gameTime);
                     break;
                 case State.Paused:        _menuInput.HandleMenuInput(gameTime); break;
+                case State.Settings:      _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlineMenu:    _menuInput.HandleMenuInput(gameTime); break;
                 case State.Hosting:       _menuInput.HandleHostingInput(gameTime); break;
                 case State.Connecting:    _menuInput.HandleConnectingInput(gameTime); break;

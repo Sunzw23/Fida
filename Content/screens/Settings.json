@@ -1,0 +1,11 @@
+{
+  "controls": [
+    { "type": "panel", "name": "panel", "id": 0 },
+    { "type": "title", "name": "title", "id": 1, "text": "Settings", "position": { "x": 960, "y": 270 } },
+    { "type": "label", "name": "modeLabel", "id": 2, "text": "Display Mode: {mode}", "position": { "x": 960, "y": 405 } },
+    { "type": "button", "name": "fullscreen", "id": 3, "text": "Fullscreen", "bounds": { "x": 590, "y": 470, "width": 350, "height": 84 } },
+    { "type": "button", "name": "windowed", "id": 4, "text": "Windowed", "bounds": { "x": 980, "y": 470, "width": 350, "height": 84 } },
+    { "type": "button", "name": "resolution", "id": 5, "text": "Window Size: {resolution}", "bounds": { "x": 590, "y": 594, "width": 740, "height": 84 } },
+    { "type": "button", "name": "back", "id": 6, "text": "Back", "bounds": { "x": 760, "y": 742, "width": 400, "height": 84 } }
+  ]
+}

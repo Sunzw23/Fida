@@ -25,6 +25,7 @@ namespace Fida
             {
                 { State.MainMenu,    new MainMenuState(uiManager, networkManager, stateMachine) },
                 { State.Paused,      new PausedState(uiManager, networkManager, stateMachine) },
+                { State.Settings,    new SettingsState(uiManager, networkManager, stateMachine) },
                 { State.LevelSelect, new LevelSelectState(uiManager, networkManager, stateMachine) },
                 { State.Skills,      new SkillSelectState(uiManager, networkManager, stateMachine) },
                 { State.GameOver,    new GameOverState(uiManager, networkManager, stateMachine) },

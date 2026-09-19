@@ -58,6 +58,11 @@ namespace Fida.UI
         public void BuildSettingsScreen()
         {
             Clear();
+            BuildFromScreen("Settings", new Dictionary<string, string>
+            {
+                { "mode", DisplaySettingsManager.Current.Fullscreen ? "Fullscreen" : "Windowed" },
+                { "resolution", DisplaySettingsManager.ResolutionLabel }
+            });
         }
 
         /// <summary>构建规则界面</summary>
