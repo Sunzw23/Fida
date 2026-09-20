@@ -34,6 +34,12 @@ namespace Fida.UI.Campaign
         private int _selectedIndex;
         private string _pendingNodeId = "";
         private bool _backRequested;
+#if FIDA_ANDROID
+        private readonly List<int> _mobileChoices = new();
+        private readonly List<Rectangle> _mobileChoiceBounds = new();
+        private Rectangle _mobileEnterBounds;
+        private Rectangle _mobileBackBounds;
+#endif
 
         public float Zoom => _camera.Zoom;
         public string SelectedNodeId => _selectedIndex >= 0 && _selectedIndex < _nodes.Count
@@ -57,6 +63,10 @@ namespace Fida.UI.Campaign
                 _options.MinimumZoom, _options.MaximumZoom);
             _camera.SetViewport(_options.GetMapViewport(_graphicsDevice.Viewport));
             _selectedIndex = FindInitialSelection();
+#if FIDA_ANDROID
+            RebuildMobileChoices();
+            LayoutMobile();
+#endif
         }
 
         public bool TryConsumeSelectedNode(out string nodeId)
@@ -79,6 +89,10 @@ namespace Fida.UI.Campaign
 
         public override void Update(GameTime gameTime)
         {
+#if FIDA_ANDROID
+            UpdateMobileKeyboard(gameTime);
+            return;
+#else
             EnsureViewport();
             var keyboard = Keyboard.GetState();
             var gamePad = GamePad.GetState(PlayerIndex.One);
@@ -132,10 +146,15 @@ namespace Fida.UI.Campaign
 
             _previousKeyboard = keyboard;
             _previousGamePad = gamePad;
+#endif
         }
 
         public override void Update(MouseState mouse)
         {
+#if FIDA_ANDROID
+            UpdateMobileMouse(mouse);
+            return;
+#else
             EnsureViewport();
             if (!_inputInitialized)
             {
@@ -186,10 +205,15 @@ namespace Fida.UI.Campaign
             }
 
             _previousMouse = mouse;
+#endif
         }
 
         public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
+#if FIDA_ANDROID
+            DrawMobile(spriteBatch);
+            return;
+#else
             EnsureViewport();
             Rectangle viewport = _camera.Viewport;
 
@@ -200,7 +224,258 @@ namespace Fida.UI.Campaign
             DrawConnections(spriteBatch);
             for (int i = 0; i < _nodes.Count; i++) DrawNode(spriteBatch, i);
             DrawFooter(spriteBatch);
+#endif
         }
+
+#if FIDA_ANDROID
+        private Rectangle MobilePanel()
+        {
+            Viewport viewport = _graphicsDevice.Viewport;
+            return new Rectangle(20, 112,
+                Math.Max(1, viewport.Width - 40),
+                Math.Max(1, viewport.Height - 236));
+        }
+
+        private void LayoutMobile()
+        {
+            Rectangle panel = MobilePanel();
+            _mobileChoiceBounds.Clear();
+
+            int cardTop = panel.Top + 142;
+            int footerHeight = 150;
+            int gap = 10;
+            int available = Math.Max(1, panel.Bottom - cardTop - footerHeight);
+            int count = Math.Max(1, _mobileChoices.Count);
+            int cardHeight = Math.Clamp(
+                (available - Math.Max(0, count - 1) * gap) / count, 86, 148);
+            int cardWidth = Math.Max(1, panel.Width - 40);
+
+            for (int i = 0; i < _mobileChoices.Count; i++)
+            {
+                _mobileChoiceBounds.Add(new Rectangle(panel.Left + 20,
+                    cardTop + i * (cardHeight + gap), cardWidth, cardHeight));
+            }
+
+            int buttonGap = 10;
+            int buttonWidth = Math.Max(1, (panel.Width - 40 - buttonGap) / 2);
+            int buttonY = panel.Bottom - 70;
+            _mobileEnterBounds = new Rectangle(panel.Left + 20, buttonY, buttonWidth, 58);
+            _mobileBackBounds = new Rectangle(panel.Left + 20 + buttonWidth + buttonGap,
+                buttonY, buttonWidth, 58);
+        }
+
+        private void RebuildMobileChoices()
+        {
+            _mobileChoices.Clear();
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                CampaignNode node = _nodes[i];
+                if (! _progress.IsCompleted(node.Id) && CampaignCatalog.IsUnlocked(_progress, node))
+                    _mobileChoices.Add(i);
+            }
+
+            // Once every open node is cleared, keep the browser useful with a small
+            // review list instead of showing the entire completed graph again.
+            if (_mobileChoices.Count == 0)
+            {
+                for (int i = _nodes.Count - 1; i >= 0 && _mobileChoices.Count < 4; i--)
+                {
+                    if (CampaignCatalog.IsUnlocked(_progress, _nodes[i]))
+                        _mobileChoices.Insert(0, i);
+                }
+            }
+
+            if (_mobileChoices.Count == 0 && _nodes.Count > 0)
+                _mobileChoices.Add(0);
+
+            if (_mobileChoices.Count > 0 && !_mobileChoices.Contains(_selectedIndex))
+                _selectedIndex = _mobileChoices[0];
+        }
+
+        private void DrawMobile(SpriteBatch spriteBatch)
+        {
+            LayoutMobile();
+            Rectangle panel = MobilePanel();
+            Viewport viewport = _graphicsDevice.Viewport;
+            DrawCentered(spriteBatch, _titleFont, "Campaign",
+                new Vector2(viewport.Width / 2f, 34f), viewport.Width - 48f,
+                0.56f, UITheme.Ink);
+            DrawCentered(spriteBatch, _font,
+                "Choose an open route. Tap a card to inspect it, then enter the node.",
+                new Vector2(viewport.Width / 2f, 78f), viewport.Width - 54f,
+                0.25f, UITheme.GoldBright);
+
+            spriteBatch.Draw(_pixel, panel, UITheme.Panel);
+            UIUtils.DrawRectangleOutlines(spriteBatch, panel, UITheme.Gold, 2, _pixel);
+            UIUtils.DrawRectangleOutlines(spriteBatch,
+                new Rectangle(panel.X + 8, panel.Y + 8, panel.Width - 16, panel.Height - 16),
+                UITheme.Gold * 0.28f, 1, _pixel);
+
+            int completed = _progress.CompletedNodes.Count;
+            string progress = $"ROUTE PROGRESS  {completed}/{_nodes.Count} CLEARED";
+            DrawCentered(spriteBatch, _font, progress,
+                new Vector2(panel.Center.X, panel.Top + 46), panel.Width - 48f,
+                0.26f, UITheme.InkMuted);
+            DrawCentered(spriteBatch, _font, "AVAILABLE ROUTES",
+                new Vector2(panel.Center.X, panel.Top + 96), panel.Width - 48f,
+                0.3f, UITheme.GoldBright);
+
+            for (int i = 0; i < _mobileChoices.Count; i++)
+            {
+                CampaignNode node = _nodes[_mobileChoices[i]];
+                Rectangle bounds = _mobileChoiceBounds[i];
+                bool selected = _mobileChoices[i] == _selectedIndex;
+                bool completedNode = _progress.IsCompleted(node.Id);
+                Color background = selected ? UITheme.PanelPressed :
+                    completedNode ? UITheme.PanelDark : UITheme.PanelLight;
+                Color border = selected ? UITheme.GoldBright :
+                    completedNode ? UITheme.InkMuted : UITheme.Gold;
+                Color foreground = completedNode ? UITheme.InkMuted : UITheme.Ink;
+
+                spriteBatch.Draw(_pixel, bounds, background);
+                UIUtils.DrawRectangleOutlines(spriteBatch, bounds, border,
+                    selected ? 3 : 1, _pixel);
+                DrawCentered(spriteBatch, _font,
+                    $"{node.Id}  {node.Name}",
+                    new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.36f),
+                    bounds.Width - 28f, 0.36f, foreground);
+                DrawCentered(spriteBatch, _font,
+                    $"{node.Chapter}   |   {node.SkillBudget} SP   |   Reward: {node.RewardText}",
+                    new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.70f),
+                    bounds.Width - 28f, 0.23f,
+                    completedNode ? UITheme.InkMuted : UITheme.GoldBright);
+            }
+
+            CampaignNode selectedNode = _selectedIndex >= 0 && _selectedIndex < _nodes.Count
+                ? _nodes[_selectedIndex] : null;
+            if (selectedNode != null)
+            {
+                string status = _progress.IsCompleted(selectedNode.Id) ? "CLEARED" :
+                    CampaignCatalog.IsUnlocked(_progress, selectedNode) ? "OPEN" : "LOCKED";
+                DrawCentered(spriteBatch, _font,
+                    $"Selected: {selectedNode.Id}  •  {status}",
+                    new Vector2(panel.Center.X, panel.Bottom - 112), panel.Width - 48f,
+                    0.27f, UITheme.Ink);
+            }
+
+            DrawMobileButton(spriteBatch, _mobileEnterBounds,
+                selectedNode != null && CampaignCatalog.IsUnlocked(_progress, selectedNode)
+                    ? "Enter Node" : "Unavailable", selectedNode != null &&
+                    CampaignCatalog.IsUnlocked(_progress, selectedNode));
+            DrawMobileButton(spriteBatch, _mobileBackBounds, "Back", true);
+        }
+
+        private void DrawMobileButton(SpriteBatch spriteBatch, Rectangle bounds,
+            string text, bool enabled)
+        {
+            spriteBatch.Draw(_pixel, bounds, enabled ? UITheme.PanelLight : UITheme.PanelDark);
+            UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
+                enabled ? UITheme.Gold : UITheme.InkMuted, enabled ? 2 : 1, _pixel);
+            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(),
+                bounds.Width - 18f, 0.27f, enabled ? UITheme.Ink : UITheme.InkMuted);
+        }
+
+        private void UpdateMobileKeyboard(GameTime gameTime)
+        {
+            LayoutMobile();
+            KeyboardState keyboard = Keyboard.GetState();
+            GamePadState gamePad = GamePad.GetState(PlayerIndex.One);
+            if (!_inputInitialized)
+            {
+                _previousKeyboard = keyboard;
+                _previousGamePad = gamePad;
+                return;
+            }
+
+            if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.Left) ||
+                Pressed(gamePad, Buttons.DPadUp) || Pressed(gamePad, Buttons.DPadLeft))
+                MoveMobileSelection(-1);
+            if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.Right) ||
+                Pressed(gamePad, Buttons.DPadDown) || Pressed(gamePad, Buttons.DPadRight))
+                MoveMobileSelection(1);
+            if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space) ||
+                Pressed(gamePad, Buttons.A))
+                ConfirmSelection();
+            if (Pressed(keyboard, Keys.Escape) || Pressed(gamePad, Buttons.B) ||
+                Pressed(gamePad, Buttons.Back))
+                _backRequested = true;
+
+            _previousKeyboard = keyboard;
+            _previousGamePad = gamePad;
+        }
+
+        private void UpdateMobileMouse(MouseState mouse)
+        {
+            LayoutMobile();
+            if (!_inputInitialized)
+            {
+                _previousMouse = mouse;
+                _previousKeyboard = Keyboard.GetState();
+                _previousGamePad = GamePad.GetState(PlayerIndex.One);
+                _inputInitialized = true;
+                return;
+            }
+
+            Point position = new(mouse.X, mouse.Y);
+            int hovered = HitMobileCard(position);
+            if (hovered >= 0) _selectedIndex = _mobileChoices[hovered];
+
+            bool pressed = mouse.LeftButton == ButtonState.Pressed &&
+                _previousMouse.LeftButton == ButtonState.Released;
+            if (pressed)
+                _pressedTarget = HitMobileTarget(position);
+
+            bool released = mouse.LeftButton == ButtonState.Released &&
+                _previousMouse.LeftButton == ButtonState.Pressed;
+            if (released)
+            {
+                string target = HitMobileTarget(position);
+                if (target == _pressedTarget) ActivateMobileTarget(target);
+                _pressedTarget = "";
+            }
+
+            _previousMouse = mouse;
+        }
+
+        private int HitMobileCard(Point point)
+        {
+            for (int i = _mobileChoiceBounds.Count - 1; i >= 0; i--)
+            {
+                if (_mobileChoiceBounds[i].Contains(point)) return i;
+            }
+            return -1;
+        }
+
+        private string HitMobileTarget(Point point)
+        {
+            int card = HitMobileCard(point);
+            if (card >= 0) return "node:" + card;
+            if (_mobileEnterBounds.Contains(point)) return "enter";
+            if (_mobileBackBounds.Contains(point)) return "back";
+            return "";
+        }
+
+        private void ActivateMobileTarget(string target)
+        {
+            if (target == "enter") ConfirmSelection();
+            else if (target == "back") _backRequested = true;
+            else if (target.StartsWith("node:", StringComparison.Ordinal) &&
+                int.TryParse(target.AsSpan(5), out int choice) &&
+                choice >= 0 && choice < _mobileChoices.Count)
+            {
+                _selectedIndex = _mobileChoices[choice];
+            }
+        }
+
+        private void MoveMobileSelection(int offset)
+        {
+            if (_mobileChoices.Count == 0) return;
+            int current = _mobileChoices.IndexOf(_selectedIndex);
+            if (current < 0) current = 0;
+            current = Math.Clamp(current + Math.Sign(offset), 0, _mobileChoices.Count - 1);
+            _selectedIndex = _mobileChoices[current];
+        }
+#endif
 
         private void DrawHeader(SpriteBatch spriteBatch)
         {
