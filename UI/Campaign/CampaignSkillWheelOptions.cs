@@ -16,12 +16,12 @@ namespace Fida.UI.Campaign
         {
             VisibleNeighborCount = 2,
             WheelCenterOffsetFromPanelTop = 850,
-            FocusedWidthRatio = 0.82f,
-            FocusedHeight = 154,
-            NeighborSpacing = 132,
-            FocusedTextScale = 0.62f,
-            NearTextScale = 0.54f,
-            FarTextScale = 0.44f
+            FocusedWidthRatio = 0.86f,
+            FocusedHeight = 166,
+            NeighborSpacing = 144,
+            FocusedTextScale = 0.72f,
+            NearTextScale = 0.62f,
+            FarTextScale = 0.52f
         };
     }
 }
