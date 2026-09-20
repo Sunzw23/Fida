@@ -14,6 +14,11 @@
          intermediate files. Serial project-reference builds are deterministic
          in Visual Studio as well as on the command line. -->
     <BuildInParallel>false</BuildInParallel>
+    <!-- Xamarin.Android can create implicit ABI inner builds even when no RID
+         is passed. Keep those inner builds serial as well; otherwise MSBuild
+         may report a false zero-error failure while they share build.props. -->
+    <_AndroidBuildRuntimeIdentifiersInParallel>false</_AndroidBuildRuntimeIdentifiersInParallel>
+    <_AndroidDetectParallelBuilds>false</_AndroidDetectParallelBuilds>
     <!-- A plain Visual Studio build has no RuntimeIdentifier. Keep the content
          cache name valid in both that case and RID-specific APK builds. -->
     <FidaContentSuffix Condition="'$(RuntimeIdentifier)' == ''">default</FidaContentSuffix>
