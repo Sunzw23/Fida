@@ -230,7 +230,6 @@ namespace Fida.UI
             { Name = "title" });
 
             int width = Math.Max(1, panel.Width - 112);
-            int left = panel.Left + 56;
             _uiControls.Add(new UILabel(2, "Display: Portrait / Fullscreen",
                 new Vector2(panel.Center.X, panel.Top + 232), _resourceManager.Font)
             {
@@ -245,9 +244,9 @@ namespace Fida.UI
                 MaximumWidth = width,
                 MinimumScale = 0.62f
             });
-            _uiControls.Add(new UIButton(4,
-                new Rectangle(left, panel.Top + 414, width, 78),
-                "Back", _resourceManager.Pixel, _resourceManager.Font)
+            _uiControls.Add(new UIIconButton(4,
+                new Rectangle(panel.Left + 24, panel.Top + 20, 64, 64),
+                UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Name = "back",
                 FocusIndex = 0
@@ -277,7 +276,20 @@ namespace Fida.UI
                 { Name = title.Name });
             }
 
-            var content = descriptors.Where(d => d.Type != "panel" && d.Type != "title").ToList();
+            var back = descriptors.FirstOrDefault(d =>
+                d.Type == "button" && d.Name == "backToMain");
+            if (back != null)
+            {
+                _uiControls.Add(new UIIconButton(back.Id,
+                    new Rectangle(panel.Left + 24, panel.Top + 20, 64, 64),
+                    UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
+                {
+                    Name = back.Name
+                });
+            }
+
+            var content = descriptors.Where(d => d.Type != "panel" && d.Type != "title" &&
+                d != back).ToList();
             int interactiveCount = content.Count(d => d.Type == "button" || d.Type == "textbox");
             int labelCount = content.Count(d => d.Type == "label");
             int top = panel.Top + (title == null ? 100 : 220);
@@ -289,6 +301,13 @@ namespace Fida.UI
                 : Math.Clamp((available - Math.Max(0, interactiveCount - 1) * rowGap - labelCount * 70) /
                     Math.Max(1, interactiveCount), 72, 108);
             int focusIndex = 0;
+
+            if (back != null)
+            {
+                UIButton iconButton = _uiControls.OfType<UIButton>()
+                    .First(button => button.Name == back.Name);
+                iconButton.FocusIndex = focusIndex++;
+            }
 
             foreach (var desc in content)
             {
