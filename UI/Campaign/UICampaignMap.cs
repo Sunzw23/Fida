@@ -37,8 +37,11 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
         private readonly List<int> _mobileChoices = new();
         private readonly List<Rectangle> _mobileChoiceBounds = new();
-        private Rectangle _mobileEnterBounds;
         private Rectangle _mobileBackBounds;
+        private Rectangle _mobileModalBounds;
+        private Rectangle _mobileModalEnterBounds;
+        private Rectangle _mobileModalCloseBounds;
+        private bool _mobileDetailsOpen;
 #endif
 
         public float Zoom => _camera.Zoom;
@@ -232,7 +235,7 @@ namespace Fida.UI.Campaign
         {
             Viewport viewport = _graphicsDevice.Viewport;
             Rectangle safe = UIMobileSafeArea.Get(viewport);
-            int top = safe.Top + 96;
+            int top = safe.Top + 72;
             return new Rectangle(safe.Left + 4, top,
                 Math.Max(1, safe.Width - 8),
                 Math.Max(1, safe.Bottom - top - 8));
@@ -243,13 +246,13 @@ namespace Fida.UI.Campaign
             Rectangle panel = MobilePanel();
             _mobileChoiceBounds.Clear();
 
-            int cardTop = panel.Top + 142;
-            int footerHeight = 150;
-            int gap = 10;
+            int cardTop = panel.Top + 102;
+            int footerHeight = 28;
+            int gap = 12;
             int available = Math.Max(1, panel.Bottom - cardTop - footerHeight);
             int count = Math.Max(1, _mobileChoices.Count);
             int cardHeight = Math.Clamp(
-                (available - Math.Max(0, count - 1) * gap) / count, 106, 138);
+                (available - Math.Max(0, count - 1) * gap) / count, 94, 116);
             int cardWidth = Math.Max(1, panel.Width - 40);
 
             for (int i = 0; i < _mobileChoices.Count; i++)
@@ -258,12 +261,17 @@ namespace Fida.UI.Campaign
                     cardTop + i * (cardHeight + gap), cardWidth, cardHeight));
             }
 
-            int buttonGap = 10;
-            int buttonWidth = Math.Max(1, (panel.Width - 40 - buttonGap) / 2);
-            int buttonY = panel.Bottom - 70;
-            _mobileEnterBounds = new Rectangle(panel.Left + 20, buttonY, buttonWidth, 58);
-            _mobileBackBounds = new Rectangle(panel.Left + 20 + buttonWidth + buttonGap,
-                buttonY, buttonWidth, 58);
+            Rectangle safe = UIMobileSafeArea.Get(_graphicsDevice.Viewport);
+            _mobileBackBounds = new Rectangle(safe.Left + 8, safe.Top + 8, 54, 54);
+
+            int modalWidth = Math.Max(1, panel.Width - 48);
+            int modalHeight = Math.Min(620, Math.Max(1, panel.Height - 120));
+            _mobileModalBounds = new Rectangle(panel.Center.X - modalWidth / 2,
+                panel.Center.Y - modalHeight / 2, modalWidth, modalHeight);
+            _mobileModalCloseBounds = new Rectangle(_mobileModalBounds.Right - 62,
+                _mobileModalBounds.Top + 12, 48, 48);
+            _mobileModalEnterBounds = new Rectangle(_mobileModalBounds.Left + 28,
+                _mobileModalBounds.Bottom - 92, _mobileModalBounds.Width - 56, 64);
         }
 
         private void RebuildMobileChoices()
@@ -301,12 +309,9 @@ namespace Fida.UI.Campaign
             Viewport viewport = _graphicsDevice.Viewport;
             Rectangle safe = UIMobileSafeArea.Get(viewport);
             DrawCentered(spriteBatch, _titleFont, "Campaign",
-                new Vector2(safe.Center.X, safe.Top + 30f), safe.Width - 28f,
-                0.56f, UITheme.Ink);
-            DrawCentered(spriteBatch, _font,
-                "SELECT AN OPEN ROUTE  //  TAP TO INSPECT",
-                new Vector2(safe.Center.X, safe.Top + 72f), safe.Width - 40f,
-                0.52f, UITheme.GoldBright);
+                new Vector2(safe.Center.X, safe.Top + 32f), safe.Width - 150f,
+                0.60f, UITheme.Ink);
+            DrawBackIcon(spriteBatch, _mobileBackBounds);
 
             spriteBatch.Draw(_pixel, panel, UITheme.Panel);
             UIUtils.DrawGlowFrame(spriteBatch, panel, _pixel, UITheme.Gold, 2, 0.72f);
@@ -316,11 +321,13 @@ namespace Fida.UI.Campaign
             DrawMobileStructure(spriteBatch, panel);
 
             int completed = _progress.CompletedNodes.Count;
-            string progress = $"ROUTE PROGRESS  {completed}/{_nodes.Count} CLEARED";
-            DrawCentered(spriteBatch, _font, progress,
-                new Vector2(panel.Center.X, panel.Top + 46), panel.Width - 48f,
-                0.48f, UITheme.InkMuted);
-            Rectangle progressTrack = new(panel.Left + 30, panel.Top + 70,
+            DrawCentered(spriteBatch, _font, "ROUTES",
+                new Vector2(panel.Left + 86, panel.Top + 38), 120f,
+                0.56f, UITheme.GoldBright);
+            DrawCentered(spriteBatch, _font, $"{completed} / {_nodes.Count}",
+                new Vector2(panel.Right - 82, panel.Top + 38), 120f,
+                0.56f, UITheme.InkMuted);
+            Rectangle progressTrack = new(panel.Left + 30, panel.Top + 68,
                 Math.Max(1, panel.Width - 60), 5);
             spriteBatch.Draw(_pixel, progressTrack, UITheme.PanelDark);
             float completion = _nodes.Count == 0 ? 0f :
@@ -328,9 +335,6 @@ namespace Fida.UI.Campaign
             spriteBatch.Draw(_pixel, new Rectangle(progressTrack.X, progressTrack.Y,
                 (int)(progressTrack.Width * completion), progressTrack.Height),
                 UITheme.AccentGreen);
-            DrawCentered(spriteBatch, _font, "AVAILABLE ROUTES",
-                new Vector2(panel.Center.X, panel.Top + 96), panel.Width - 48f,
-                0.52f, UITheme.GoldBright);
 
             for (int i = 0; i < _mobileChoices.Count; i++)
             {
@@ -360,38 +364,20 @@ namespace Fida.UI.Campaign
                     bounds.Top, chipWidth, 3), UITheme.AccentGreen * 0.85f);
                 DrawCentered(spriteBatch, _font,
                     $"{node.Id}  {node.Name}",
-                    new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.28f),
-                    bounds.Width - 42f, 0.62f, foreground);
+                    new Vector2(bounds.Center.X - 8, bounds.Top + bounds.Height * 0.35f),
+                    bounds.Width - 92f, 0.66f, foreground);
                 DrawCentered(spriteBatch, _font,
-                    $"{node.Chapter}  //  {node.SkillBudget} SP",
-                    new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.58f),
-                    bounds.Width - 42f, 0.50f,
+                    $"{node.SkillBudget} SP   //   {node.RewardText}",
+                    new Vector2(bounds.Center.X - 8, bounds.Top + bounds.Height * 0.72f),
+                    bounds.Width - 92f, 0.52f,
                     completedNode ? UITheme.InkMuted : accent);
-                DrawCentered(spriteBatch, _font,
-                    $"REWARD  //  {node.RewardText}",
-                    new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.82f),
-                    bounds.Width - 42f, 0.44f, UITheme.InkMuted);
+                DrawChevron(spriteBatch, new Vector2(bounds.Right - 34, bounds.Center.Y), accent);
             }
 
             CampaignNode selectedNode = _selectedIndex >= 0 && _selectedIndex < _nodes.Count
                 ? _nodes[_selectedIndex] : null;
-            if (selectedNode != null)
-            {
-                string status = _progress.IsCompleted(selectedNode.Id) ? "CLEARED" :
-                    CampaignCatalog.IsUnlocked(_progress, selectedNode) ? "OPEN" : "LOCKED";
-                DrawCentered(spriteBatch, _font,
-                    $"SELECTED  //  {selectedNode.Id}  //  {status}",
-                    new Vector2(panel.Center.X, panel.Bottom - 112), panel.Width - 48f,
-                    0.48f, UITheme.Ink);
-                DrawMissionDossier(spriteBatch, panel, selectedNode);
-            }
-
-            DrawMobileButton(spriteBatch, _mobileEnterBounds,
-                selectedNode != null && CampaignCatalog.IsUnlocked(_progress, selectedNode)
-                    ? "Enter Node" : "Unavailable", selectedNode != null &&
-                    CampaignCatalog.IsUnlocked(_progress, selectedNode), UITheme.AccentGreen);
-            DrawMobileButton(spriteBatch, _mobileBackBounds, "Back", true,
-                UITheme.AccentBlue);
+            if (_mobileDetailsOpen && selectedNode != null)
+                DrawMissionModal(spriteBatch, viewport, selectedNode);
         }
 
         private void DrawMobileButton(SpriteBatch spriteBatch, Rectangle bounds,
@@ -406,6 +392,35 @@ namespace Fida.UI.Campaign
                 Math.Max(18, bounds.Width / 6), 3), accent);
             DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(),
                 bounds.Width - 18f, 0.58f, enabled ? UITheme.Ink : UITheme.InkMuted);
+        }
+
+        private void DrawBackIcon(SpriteBatch spriteBatch, Rectangle bounds)
+        {
+            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
+            UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, UITheme.AccentBlue, 2, 0.48f);
+            Vector2 tip = new(bounds.Left + 15, bounds.Center.Y);
+            Vector2 tail = new(bounds.Right - 13, bounds.Center.Y);
+            DrawLine(spriteBatch, tip, tail, UITheme.Ink, 3);
+            DrawLine(spriteBatch, tip, new Vector2(bounds.Left + 27, bounds.Top + 14),
+                UITheme.Ink, 3);
+            DrawLine(spriteBatch, tip, new Vector2(bounds.Left + 27, bounds.Bottom - 14),
+                UITheme.Ink, 3);
+        }
+
+        private void DrawChevron(SpriteBatch spriteBatch, Vector2 center, Color color)
+        {
+            DrawLine(spriteBatch, new Vector2(center.X - 6, center.Y - 11), center, color, 3);
+            DrawLine(spriteBatch, center, new Vector2(center.X - 6, center.Y + 11), color, 3);
+        }
+
+        private void DrawCloseIcon(SpriteBatch spriteBatch, Rectangle bounds)
+        {
+            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
+            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.AccentBlue, 1, _pixel);
+            DrawLine(spriteBatch, new Vector2(bounds.Left + 14, bounds.Top + 14),
+                new Vector2(bounds.Right - 14, bounds.Bottom - 14), UITheme.Ink, 3);
+            DrawLine(spriteBatch, new Vector2(bounds.Right - 14, bounds.Top + 14),
+                new Vector2(bounds.Left + 14, bounds.Bottom - 14), UITheme.Ink, 3);
         }
 
         private void DrawMobileStructure(SpriteBatch spriteBatch, Rectangle panel)
@@ -427,49 +442,60 @@ namespace Fida.UI.Campaign
             }
         }
 
-        private void DrawMissionDossier(SpriteBatch spriteBatch, Rectangle panel,
+        private void DrawMissionModal(SpriteBatch spriteBatch, Viewport viewport,
             CampaignNode node)
         {
-            int contentTop = _mobileChoiceBounds.Count == 0
-                ? panel.Top + 250
-                : _mobileChoiceBounds[^1].Bottom + 20;
-            int contentBottom = panel.Bottom - 146;
-            int available = contentBottom - contentTop;
-            if (available < 250) return;
-
-            int height = Math.Min(340, available);
-            int y = contentTop + Math.Max(0, (available - height) / 2);
-            Rectangle dossier = new(panel.Left + 34, y,
-                Math.Max(1, panel.Width - 68), height);
-            spriteBatch.Draw(_pixel, dossier, UITheme.PanelDark * 0.94f);
-            UIUtils.DrawGlowFrame(spriteBatch, dossier, _pixel,
-                UITheme.AccentBlue, 2, 0.46f);
-            spriteBatch.Draw(_pixel, new Rectangle(dossier.Left, dossier.Top,
-                Math.Max(48, dossier.Width / 4), 4), UITheme.AccentViolet);
-            spriteBatch.Draw(_pixel, new Rectangle(dossier.Right - Math.Max(48, dossier.Width / 4),
-                dossier.Bottom - 4, Math.Max(48, dossier.Width / 4), 4),
+            spriteBatch.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height),
+                Color.Black * 0.72f);
+            Rectangle modal = _mobileModalBounds;
+            spriteBatch.Draw(_pixel, modal, UITheme.PanelDark);
+            UIUtils.DrawGlowFrame(spriteBatch, modal, _pixel,
+                UITheme.Gold, 3, 0.78f);
+            UIUtils.DrawRectangleOutlines(spriteBatch,
+                new Rectangle(modal.Left + 8, modal.Top + 8, modal.Width - 16, modal.Height - 16),
+                UITheme.AccentBlue * 0.62f, 1, _pixel);
+            spriteBatch.Draw(_pixel, new Rectangle(modal.Left, modal.Top,
+                Math.Max(48, modal.Width / 3), 4), UITheme.AccentViolet);
+            spriteBatch.Draw(_pixel, new Rectangle(modal.Right - Math.Max(48, modal.Width / 3),
+                modal.Bottom - 4, Math.Max(48, modal.Width / 3), 4),
                 UITheme.AccentGreen);
+            DrawCloseIcon(spriteBatch, _mobileModalCloseBounds);
 
-            DrawCentered(spriteBatch, _font, "MISSION DOSSIER",
-                new Vector2(dossier.Center.X, dossier.Top + 32), dossier.Width - 40,
-                0.52f, UITheme.GoldBright);
+            DrawCentered(spriteBatch, _titleFont, $"{node.Id}  {node.Name}",
+                new Vector2(modal.Center.X, modal.Top + 68), modal.Width - 150,
+                0.58f, UITheme.Ink);
+            DrawCentered(spriteBatch, _font,
+                $"{node.Chapter}   //   {node.SkillBudget} SP",
+                new Vector2(modal.Center.X, modal.Top + 122), modal.Width - 70,
+                0.56f, UITheme.GoldBright);
 
-            string story = WrapText(node.Story, dossier.Width - 60, 0.46f, 3);
+            string story = WrapText(node.Story, modal.Width - 72, 0.56f, 4);
             DrawCentered(spriteBatch, _font, story,
-                new Vector2(dossier.Center.X, dossier.Top + 88), dossier.Width - 60,
-                0.46f, UITheme.Ink);
+                new Vector2(modal.Center.X, modal.Top + 210), modal.Width - 72,
+                0.56f, UITheme.Ink);
+            DrawCentered(spriteBatch, _font, node.RewardText,
+                new Vector2(modal.Center.X, modal.Top + 314), modal.Width - 72,
+                0.60f, UITheme.AccentGreen);
 
             int chipGap = 8;
-            int chipWidth = Math.Max(1, (dossier.Width - 40 - chipGap * 2) / 3);
-            int chipY = dossier.Bottom - 104;
-            DrawDossierChip(spriteBatch, new Rectangle(dossier.Left + 20, chipY,
+            int chipWidth = Math.Max(1, (modal.Width - 48 - chipGap * 2) / 3);
+            int chipY = modal.Bottom - 174;
+            DrawDossierChip(spriteBatch, new Rectangle(modal.Left + 24, chipY,
                 chipWidth, 58), "ENEMIES", node.Enemies.Count.ToString(), UITheme.Gold);
-            DrawDossierChip(spriteBatch, new Rectangle(dossier.Left + 20 + chipWidth + chipGap,
+            DrawDossierChip(spriteBatch, new Rectangle(modal.Left + 24 + chipWidth + chipGap,
                 chipY, chipWidth, 58), "BACKUP", node.Reinforcements.Count.ToString(),
                 UITheme.AccentViolet);
-            DrawDossierChip(spriteBatch, new Rectangle(dossier.Left + 20 +
+            DrawDossierChip(spriteBatch, new Rectangle(modal.Left + 24 +
                 (chipWidth + chipGap) * 2, chipY, chipWidth, 58), "CLASS",
                 node.IsBoss ? "BOSS" : "STANDARD", UITheme.AccentGreen);
+
+            bool enabled = CampaignCatalog.IsUnlocked(_progress, node);
+            DrawMobileButton(spriteBatch, _mobileModalEnterBounds,
+                enabled ? "Enter Mission" : "Unavailable", enabled, UITheme.AccentGreen);
+            if (enabled)
+                DrawChevron(spriteBatch,
+                    new Vector2(_mobileModalEnterBounds.Right - 28,
+                        _mobileModalEnterBounds.Center.Y), UITheme.AccentGreen);
         }
 
         private void DrawDossierChip(SpriteBatch spriteBatch, Rectangle bounds,
@@ -520,18 +546,24 @@ namespace Fida.UI.Campaign
                 return;
             }
 
-            if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.Left) ||
-                Pressed(gamePad, Buttons.DPadUp) || Pressed(gamePad, Buttons.DPadLeft))
+            if (!_mobileDetailsOpen && (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.Left) ||
+                Pressed(gamePad, Buttons.DPadUp) || Pressed(gamePad, Buttons.DPadLeft)))
                 MoveMobileSelection(-1);
-            if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.Right) ||
-                Pressed(gamePad, Buttons.DPadDown) || Pressed(gamePad, Buttons.DPadRight))
+            if (!_mobileDetailsOpen && (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.Right) ||
+                Pressed(gamePad, Buttons.DPadDown) || Pressed(gamePad, Buttons.DPadRight)))
                 MoveMobileSelection(1);
             if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space) ||
                 Pressed(gamePad, Buttons.A))
-                ConfirmSelection();
+            {
+                if (_mobileDetailsOpen) ConfirmSelection();
+                else _mobileDetailsOpen = _selectedIndex >= 0;
+            }
             if (Pressed(keyboard, Keys.Escape) || Pressed(gamePad, Buttons.B) ||
                 Pressed(gamePad, Buttons.Back))
-                _backRequested = true;
+            {
+                if (_mobileDetailsOpen) _mobileDetailsOpen = false;
+                else _backRequested = true;
+            }
 
             _previousKeyboard = keyboard;
             _previousGamePad = gamePad;
@@ -550,8 +582,6 @@ namespace Fida.UI.Campaign
             }
 
             Point position = new(mouse.X, mouse.Y);
-            int hovered = HitMobileCard(position);
-            if (hovered >= 0) _selectedIndex = _mobileChoices[hovered];
 
             bool pressed = mouse.LeftButton == ButtonState.Pressed &&
                 _previousMouse.LeftButton == ButtonState.Released;
@@ -581,22 +611,30 @@ namespace Fida.UI.Campaign
 
         private string HitMobileTarget(Point point)
         {
+            if (_mobileDetailsOpen)
+            {
+                if (_mobileModalCloseBounds.Contains(point)) return "modal_close";
+                if (_mobileModalEnterBounds.Contains(point)) return "modal_enter";
+                return _mobileModalBounds.Contains(point) ? "" : "modal_close";
+            }
+
+            if (_mobileBackBounds.Contains(point)) return "back";
             int card = HitMobileCard(point);
             if (card >= 0) return "node:" + card;
-            if (_mobileEnterBounds.Contains(point)) return "enter";
-            if (_mobileBackBounds.Contains(point)) return "back";
             return "";
         }
 
         private void ActivateMobileTarget(string target)
         {
-            if (target == "enter") ConfirmSelection();
+            if (target == "modal_enter") ConfirmSelection();
+            else if (target == "modal_close") _mobileDetailsOpen = false;
             else if (target == "back") _backRequested = true;
             else if (target.StartsWith("node:", StringComparison.Ordinal) &&
                 int.TryParse(target.AsSpan(5), out int choice) &&
                 choice >= 0 && choice < _mobileChoices.Count)
             {
                 _selectedIndex = _mobileChoices[choice];
+                _mobileDetailsOpen = true;
             }
         }
 
