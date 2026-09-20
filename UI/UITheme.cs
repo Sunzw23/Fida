@@ -55,12 +55,10 @@ namespace Fida.UI
         public static Rectangle PanelRect(Viewport vp)
         {
 #if FIDA_ANDROID
-            // Portrait screens need the available height for stacked controls.
-            // Leave a small, consistent safe margin for rounded display corners.
-            int width = System.Math.Max(1, vp.Width - 48);
-            int height = System.Math.Max(1, vp.Height - 48);
-            return new Rectangle((vp.Width - width) / 2, (vp.Height - height) / 2,
-                width, height);
+            Rectangle safe = UIMobileSafeArea.Get(vp);
+            return new Rectangle(safe.X + 8, safe.Y + 8,
+                System.Math.Max(1, safe.Width - 16),
+                System.Math.Max(1, safe.Height - 16));
 #else
             return new Rectangle((vp.Width - System.Math.Min(1000, vp.Width - 48)) / 2,
                 (vp.Height - System.Math.Min(880, vp.Height - 48)) / 2,

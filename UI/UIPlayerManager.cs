@@ -56,10 +56,12 @@ namespace Fida.UI
             _gameManager = gameManager;
             _uiPlayers.Clear();
 
-            int viewportWidth = _resourceManager.GraphicsDevice.Viewport.Width;
+            Viewport viewport = _resourceManager.GraphicsDevice.Viewport;
+            Rectangle safeArea = UIMobileSafeArea.Get(viewport);
+            int viewportWidth = viewport.Width;
             int messageMargin = System.Math.Clamp(viewportWidth / 20, 12, 48);
             int messageWidth = System.Math.Max(1, viewportWidth - messageMargin * 2);
-            var messageBounds = new Rectangle(messageMargin, 24, messageWidth, 64);
+            var messageBounds = new Rectangle(messageMargin, safeArea.Top + 12, messageWidth, 64);
             _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Alignment = UIBoxLabelAlignment.Center,
@@ -74,7 +76,7 @@ namespace Fida.UI
             _uiControls.Add(_gameMessageLabel);
 
             int cueMargin = System.Math.Clamp(viewportWidth / 8, 20, 188);
-            var cueBounds = new Rectangle(cueMargin, 100,
+            var cueBounds = new Rectangle(cueMargin, safeArea.Top + 88,
                 System.Math.Max(1, viewportWidth - cueMargin * 2), 56);
             _actionCueLabel = new UIBoxLabel(-1, cueBounds, "", _resourceManager.Pixel, _resourceManager.Font)
             {
@@ -172,11 +174,12 @@ namespace Fida.UI
             // always spans the safe width, so names, skill icons and number
             // controls remain large enough for touch interaction.
             int viewportWidth = _resourceManager.GraphicsDevice.Viewport.Width;
-            int viewportHeight = _resourceManager.GraphicsDevice.Viewport.Height;
+            Rectangle safeArea = UIMobileSafeArea.Get(_resourceManager.GraphicsDevice.Viewport);
             int mobileCardWidth = UIConfig.Int("cardWidth");
             int mobileCardHeight = UIConfig.Int("cardHeight");
             const int gap = 24;
-            int centerX = Math.Max(24, (viewportWidth - mobileCardWidth) / 2);
+            int centerX = Math.Max(safeArea.Left,
+                safeArea.Left + (safeArea.Width - mobileCardWidth) / 2);
 
             Group localGroupMobile = null;
             foreach (var group in gameManager.Groups)
@@ -194,18 +197,21 @@ namespace Fida.UI
                 .Where(p => !localPlayersMobile.Any(local => local.PlayerId == p.PlayerId)).ToList();
 
             int localHeight = localPlayersMobile.Count * mobileCardHeight + Math.Max(0, localPlayersMobile.Count - 1) * gap;
-            int localStartY = Math.Max(140, viewportHeight - localHeight - 32);
+            int localStartY = Math.Max(safeArea.Top + 150,
+                safeArea.Bottom - localHeight - 16);
             for (int i = 0; i < localPlayersMobile.Count; i++)
                 positions[localPlayersMobile[i].PlayerId] = new Vector2(centerX, localStartY + i * (mobileCardHeight + gap));
 
             for (int i = 0; i < enemyPlayersMobile.Count; i++)
-                positions[enemyPlayersMobile[i].PlayerId] = new Vector2(centerX, 140 + i * (mobileCardHeight + gap));
+                positions[enemyPlayersMobile[i].PlayerId] = new Vector2(centerX,
+                    safeArea.Top + 150 + i * (mobileCardHeight + gap));
 
             // Defensive fallback for unusual network rosters that are not in a
             // group yet: every player still receives a deterministic card slot.
             for (int i = 0; i < gameManager.Players.Count; i++)
                 if (!positions.ContainsKey(gameManager.Players[i].PlayerId))
-                    positions[gameManager.Players[i].PlayerId] = new Vector2(centerX, 140 + i * (mobileCardHeight + gap));
+                    positions[gameManager.Players[i].PlayerId] = new Vector2(centerX,
+                        safeArea.Top + 150 + i * (mobileCardHeight + gap));
             return positions;
 #else
 

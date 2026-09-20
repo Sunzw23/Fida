@@ -348,9 +348,9 @@ namespace Fida.UI.Campaign
         private static Rectangle PanelBounds(Viewport viewport)
         {
 #if FIDA_ANDROID
-            int width = Math.Max(1, viewport.Width - 48);
-            return new Rectangle((viewport.Width - width) / 2, 24, width,
-                Math.Max(1, viewport.Height - 48));
+            Rectangle safe = UIMobileSafeArea.Get(viewport);
+            return new Rectangle(safe.Left + 8, safe.Top + 8,
+                Math.Max(1, safe.Width - 16), Math.Max(1, safe.Height - 16));
 #else
             int width = Math.Min(viewport.Width - 72, 1400);
             return new Rectangle(viewport.Width / 2 - width / 2, 28, width, viewport.Height - 56);
