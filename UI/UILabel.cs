@@ -13,6 +13,8 @@ namespace Fida.UI
 
         /// <summary>Optional text width constraint. Zero means unconstrained.</summary>
         public float MaximumWidth { get; set; }
+        /// <summary>Optional text height constraint. Zero means unconstrained.</summary>
+        public float MaximumHeight { get; set; }
         public float MinimumScale { get; set; } = 0.58f;
 
         public UILabel(int id, string text, Vector2 position, SpriteFont font) : base(id)
@@ -45,9 +47,17 @@ namespace Fida.UI
 
             string displayText = UIFontGuard.Sanitize(Font, Text);
             var textSize = Font.MeasureString(displayText);
-            float scale = MaximumWidth > 0 && textSize.X > MaximumWidth
-                ? MathHelper.Max(MinimumScale, MaximumWidth / textSize.X)
+            float widthScale = MaximumWidth > 0
+                ? MaximumWidth / MathHelper.Max(1f, textSize.X)
                 : 1f;
+            float heightScale = MaximumHeight > 0
+                ? MaximumHeight / MathHelper.Max(1f, textSize.Y)
+                : 1f;
+            float scale = MathHelper.Min(1f, MathHelper.Min(widthScale, heightScale));
+            // The minimum is only a preference: a hard height constraint must
+            // always win so labels cannot collide with adjacent mobile regions.
+            if (MaximumHeight <= 0)
+                scale = MathHelper.Max(MinimumScale, scale);
             scale *= visualScale;
             var pos = new Vector2(
                 position.X - textSize.X * scale / 2,

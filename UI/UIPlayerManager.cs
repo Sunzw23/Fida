@@ -177,7 +177,7 @@ namespace Fida.UI
             Rectangle safeArea = UIMobileSafeArea.Get(_resourceManager.GraphicsDevice.Viewport);
             int mobileCardWidth = UIConfig.Int("cardWidth");
             int mobileCardHeight = UIConfig.Int("cardHeight");
-            int gap = Math.Clamp(mobileCardHeight / 12, 10, 16);
+            int gap = Math.Clamp(mobileCardHeight / 10, 16, 22);
             int centerX = Math.Max(safeArea.Left,
                 safeArea.Left + (safeArea.Width - mobileCardWidth) / 2);
 
@@ -204,7 +204,7 @@ namespace Fida.UI
 
             for (int i = 0; i < enemyPlayersMobile.Count; i++)
                 positions[enemyPlayersMobile[i].PlayerId] = new Vector2(centerX,
-                    safeArea.Top + 158 + i * (mobileCardHeight + gap));
+                    safeArea.Top + 172 + i * (mobileCardHeight + gap));
 
             // Defensive fallback for unusual network rosters that are not in a
             // group yet: every player still receives a deterministic card slot.

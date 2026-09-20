@@ -132,23 +132,33 @@ namespace Fida.UI
             int infoLeft = PortraitBounds.Right + Math.Clamp(CardBounds.Width / 45, 12, 24);
             int infoRight = Number0Bounds.Left - Math.Clamp(CardBounds.Width / 55, 10, 18);
             int infoWidth = Math.Max(80, infoRight - infoLeft);
-            _nameCenter = new Vector2(infoLeft + infoWidth / 2f, CardBounds.Top + padding + 18);
+            int nameAreaHeight = Math.Clamp(CardBounds.Height / 4, 38, 50);
+            int healthHeight = Math.Clamp(CardBounds.Height / 9, 18, 24);
+            int nameTop = CardBounds.Top + padding;
+            _nameCenter = new Vector2(infoLeft + infoWidth / 2f,
+                nameTop + nameAreaHeight / 2f);
             NameLabel = new UILabel(0, player.Name, _nameCenter, font)
             {
-                MaximumWidth = infoWidth,
-                MinimumScale = 0.55f
+                MaximumWidth = infoWidth - 8,
+                MaximumHeight = nameAreaHeight - 6,
+                MinimumScale = 0.48f
             };
 
-            HealthBounds = new Rectangle(infoLeft, CardBounds.Top + padding + 40,
-                infoWidth, Math.Clamp(CardBounds.Height / 7, 16, 24));
+            HealthBounds = new Rectangle(infoLeft, nameTop + nameAreaHeight + 5,
+                infoWidth, healthHeight);
             _healthCenter = new Vector2(HealthBounds.Center.X, HealthBounds.Center.Y);
-            _skillStripBounds = new Rectangle(infoLeft, HealthBounds.Bottom + 8,
-                infoWidth, Math.Max(24, CardBounds.Bottom - padding - HealthBounds.Bottom - 8));
+            _skillStripBounds = new Rectangle(infoLeft, HealthBounds.Bottom + 10,
+                infoWidth, Math.Max(28, CardBounds.Bottom - padding - HealthBounds.Bottom - 10));
 
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
                 pixel, font) { ParentDrawOnly = true };
-            HealthLabel = new UILabel(11, player.Health.ToString(), _healthCenter, font);
+            HealthLabel = new UILabel(11, player.Health.ToString(), _healthCenter, font)
+            {
+                MaximumWidth = Math.Max(1, infoWidth - 12),
+                MaximumHeight = Math.Max(1, healthHeight - 4),
+                MinimumScale = 0.35f
+            };
             Number1Button = new UIAnimatedButton(12, Number1Bounds,
                 player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
                 pixel, font) { ParentDrawOnly = true };

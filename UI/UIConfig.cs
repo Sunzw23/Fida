@@ -41,8 +41,8 @@ namespace Fida.UI
             if (key == "cardWidth") return Math.Max(1, width - 40);
             // Compact horizontal roster cards keep large touch targets while
             // leaving enough vertical room for multi-member teams and effects.
-            if (key == "cardHeight") return Math.Clamp(height / 9, 136, 190);
-            if (key == "portraitSize") return Math.Clamp(height / 11, 108, 166);
+            if (key == "cardHeight") return Math.Clamp((int)(height / 7.5f), 176, 224);
+            if (key == "portraitSize") return Math.Clamp(height / 10, 124, 176);
             if (key == "nameHeight") return Math.Clamp(height / 42, 32, 44);
             if (key == "bottomElementWidth") return Math.Clamp(width / 8, 72, 112);
             if (key == "bottomElementHeight") return Math.Clamp(height / 20, 68, 92);
