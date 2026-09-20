@@ -29,6 +29,8 @@ namespace Fida.UI
         public bool AutoFitText { get; set; }
         public float MinimumTextScale { get; set; } = 0.55f;
         public int TextPadding { get; set; } = 12;
+        /// <summary>Draws bracket-like signal rails for the primary battle command HUD.</summary>
+        public bool SignalRails { get; set; }
 
         // 缓存 MeasureString 结果，避免每帧重复计算
         protected Vector2 _cachedTextSize;
@@ -98,6 +100,20 @@ namespace Fida.UI
                 else
                     UIUtils.DrawRectangleOutlines(sb, Bounds, BorderColor,
                         BorderThickness, Pixel);
+            }
+
+            if (SignalRails)
+            {
+                int rail = System.Math.Clamp(Bounds.Height / 3, 16, 30);
+                int line = System.Math.Clamp(Bounds.Width / 12, 28, 64);
+                sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Center.Y - rail, 3, rail * 2),
+                    UITheme.GoldBright);
+                sb.Draw(Pixel, new Rectangle(Bounds.Left + 3, Bounds.Center.Y, line, 2),
+                    UITheme.GoldBright);
+                sb.Draw(Pixel, new Rectangle(Bounds.Right - 3, Bounds.Center.Y - rail, 3, rail * 2),
+                    UITheme.GoldBright);
+                sb.Draw(Pixel, new Rectangle(Bounds.Right - line - 3, Bounds.Center.Y, line, 2),
+                    UITheme.GoldBright);
             }
         }
 

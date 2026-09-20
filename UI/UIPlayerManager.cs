@@ -61,18 +61,37 @@ namespace Fida.UI
             int viewportWidth = viewport.Width;
             int messageMargin = System.Math.Clamp(viewportWidth / 20, 12, 48);
             int messageWidth = System.Math.Max(1, viewportWidth - messageMargin * 2);
+#if FIDA_ANDROID
+            messageMargin = System.Math.Clamp(viewportWidth / 22, 24, 44);
+            messageWidth = System.Math.Max(1, viewportWidth - messageMargin * 2);
+            var messageBounds = new Rectangle(messageMargin, safeArea.Top + 20, messageWidth, 88);
+#else
             var messageBounds = new Rectangle(messageMargin, safeArea.Top + 12, messageWidth, 64);
+#endif
             _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Alignment = UIBoxLabelAlignment.Center,
                 AutoFitText = true,
+#if FIDA_ANDROID
+                MinimumTextScale = 0.48f,
+                TextPadding = 72,
+#else
                 MinimumTextScale = 0.60f,
                 TextPadding = 18,
+#endif
                 BackColor = UITheme.PanelDark,
                 ForeColor = UITheme.Ink,
                 BorderColor = UITheme.Gold,
-                BorderThickness = 2
+                BorderThickness = 2,
+#if FIDA_ANDROID
+                SignalRails = true
+#else
+                SignalRails = false
+#endif
             };
+#if FIDA_ANDROID
+            _gameMessageLabel.Update(FormatMobileCommand(gameManager.GameMessage));
+#endif
             _uiControls.Add(_gameMessageLabel);
 
             int cueMargin = System.Math.Clamp(viewportWidth / 8, 20, 188);
@@ -279,8 +298,27 @@ namespace Fida.UI
 
         public void UpdateGameMessage(string message)
         {
+#if FIDA_ANDROID
+            _gameMessageLabel?.Update(FormatMobileCommand(message));
+#else
             _gameMessageLabel?.Update(message);
+#endif
         }
+
+#if FIDA_ANDROID
+        private static string FormatMobileCommand(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message)) return "AWAITING COMMAND";
+            string command = message.Trim();
+            int comma = command.IndexOf(',');
+            if (comma >= 0 && comma + 1 < command.Length)
+                command = command[(comma + 1)..].Trim();
+            int separator = command.IndexOf(" - ", StringComparison.Ordinal);
+            if (separator >= 0 && separator + 3 < command.Length)
+                command = command[(separator + 3)..].Trim();
+            return command.TrimEnd(':', '.', ' ').ToUpperInvariant();
+        }
+#endif
 
         /// <summary>Shows the current AI decision beat and highlights its card.</summary>
         public void ShowActionCue(int playerId, string message)
@@ -289,8 +327,13 @@ namespace Fida.UI
                 uiPlayer.IsPresentingAction = uiPlayer.Player.PlayerId == playerId;
 
             if (_actionCueLabel == null) return;
+#if FIDA_ANDROID
+            _gameMessageLabel?.Update(FormatMobileCommand(message));
+            _actionCueLabel.IsVisible = false;
+#else
             _actionCueLabel.Update(message);
             _actionCueLabel.IsVisible = true;
+#endif
         }
 
         public void HideActionCue()
@@ -298,6 +341,10 @@ namespace Fida.UI
             foreach (var uiPlayer in _uiPlayers)
                 uiPlayer.IsPresentingAction = false;
             if (_actionCueLabel != null) _actionCueLabel.IsVisible = false;
+#if FIDA_ANDROID
+            if (_gameManager != null)
+                _gameMessageLabel?.Update(FormatMobileCommand(_gameManager.GameMessage));
+#endif
         }
 
         public bool IsNumberFlowActive => _numberFlowEffect?.IsPlaying == true;

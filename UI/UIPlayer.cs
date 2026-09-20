@@ -144,9 +144,12 @@ namespace Fida.UI
                 MinimumScale = 0.48f
             };
 
+            int healthValueWidth = Math.Clamp(infoWidth / 7, 38, 54);
+            int healthGap = 8;
             HealthBounds = new Rectangle(infoLeft, nameTop + nameAreaHeight + 5,
-                infoWidth, healthHeight);
-            _healthCenter = new Vector2(HealthBounds.Center.X, HealthBounds.Center.Y);
+                Math.Max(40, infoWidth - healthValueWidth - healthGap), healthHeight);
+            _healthCenter = new Vector2(HealthBounds.Right + healthGap + healthValueWidth / 2f,
+                HealthBounds.Center.Y);
             _skillStripBounds = new Rectangle(infoLeft, HealthBounds.Bottom + 10,
                 infoWidth, Math.Max(28, CardBounds.Bottom - padding - HealthBounds.Bottom - 10));
 
@@ -155,9 +158,9 @@ namespace Fida.UI
                 pixel, font) { ParentDrawOnly = true };
             HealthLabel = new UILabel(11, player.Health.ToString(), _healthCenter, font)
             {
-                MaximumWidth = Math.Max(1, infoWidth - 12),
-                MaximumHeight = Math.Max(1, healthHeight - 4),
-                MinimumScale = 0.35f
+                MaximumWidth = healthValueWidth,
+                MaximumHeight = Math.Clamp(CardBounds.Height / 5, 32, 44),
+                MinimumScale = 0.48f
             };
             Number1Button = new UIAnimatedButton(12, Number1Bounds,
                 player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
