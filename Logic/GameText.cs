@@ -78,9 +78,10 @@ namespace Fida.Logic
                 string jsonString = null;
                 foreach (var path in possiblePaths)
                 {
-                    if (File.Exists(path))
+                    string candidate = ContentSource.ReadText(path);
+                    if (candidate != null)
                     {
-                        jsonString = File.ReadAllText(path);
+                        jsonString = candidate;
                         Console.WriteLine($"Loaded gametext.json from: {path}");
                         break;
                     }

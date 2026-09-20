@@ -33,10 +33,19 @@ namespace Fida
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
+#if FIDA_ANDROID
+            IsMouseVisible = false;
+            _graphics.GraphicsProfile = GraphicsProfile.Reach;
+            _graphics.IsFullScreen = true;
+            DisplaySettingsManager.InitializeMobile(_graphics);
+#else
             _graphics.GraphicsProfile = GraphicsProfile.HiDef;
+#endif
             _graphics.PreferMultiSampling = true;
             _graphics.SynchronizeWithVerticalRetrace = true;
+#if !FIDA_ANDROID
             DisplaySettingsManager.Initialize(_graphics);
+#endif
         }
 
         protected override void Initialize()
@@ -82,7 +91,9 @@ namespace Fida
             _uiManager.UpdateInputMode();
 
             // 根据输入模式切换鼠标可见性
+#if !FIDA_ANDROID
             IsMouseVisible = _uiManager.CurrentInputMode == InputMode.Mouse;
+#endif
 
             switch (_stateMachine.CurrentState)
             {

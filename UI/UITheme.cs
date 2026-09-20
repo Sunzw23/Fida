@@ -48,11 +48,22 @@ namespace Fida.UI
 
         // ─── 布局 ───────────────────────────────────────
         /// <summary>菜单面板在 1920×1200 下的居中几何（宽屏亦居中）。</summary>
-        public static Rectangle PanelRect(Viewport vp) =>
-            new((vp.Width - System.Math.Min(1000, vp.Width - 48)) / 2,
+        public static Rectangle PanelRect(Viewport vp)
+        {
+#if FIDA_ANDROID
+            // Portrait screens need the available height for stacked controls.
+            // Leave a small, consistent safe margin for rounded display corners.
+            int width = System.Math.Max(1, vp.Width - 48);
+            int height = System.Math.Max(1, vp.Height - 48);
+            return new Rectangle((vp.Width - width) / 2, (vp.Height - height) / 2,
+                width, height);
+#else
+            return new Rectangle((vp.Width - System.Math.Min(1000, vp.Width - 48)) / 2,
                 (vp.Height - System.Math.Min(880, vp.Height - 48)) / 2,
                 System.Math.Min(1000, vp.Width - 48),
                 System.Math.Min(880, vp.Height - 48));
+#endif
+        }
 
         /// <summary>背景渐变 + 暗角（菜单与对局通用，铺满整个视口）。</summary>
         public static void DrawBackground(SpriteBatch sb, Texture2D pixel, Viewport vp)

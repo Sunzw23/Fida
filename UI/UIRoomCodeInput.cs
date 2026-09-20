@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -24,6 +25,10 @@ namespace Fida.UI
         private string _placeholder;
         private bool _focused;
         private HashSet<Keys> _lastKeys = new HashSet<Keys>();
+#if FIDA_ANDROID
+        private bool _mobileKeyboardPending;
+        private string _pendingMobileValue;
+#endif
 
         /// <summary>当前输入值（已归一化为大写）</summary>
         public string Value => _value;
@@ -58,7 +63,12 @@ namespace Fida.UI
                 var pos = new Point(mouseState.X, mouseState.Y);
                 bool inside = _bounds.Contains(pos);
                 if (inside && !_focused)
+                {
                     _focused = true;
+#if FIDA_ANDROID
+                    ShowMobileKeyboard();
+#endif
+                }
                 else if (!inside && _focused)
                     _focused = false;
             }
@@ -67,6 +77,18 @@ namespace Fida.UI
         /// <summary>聚焦时读取键盘：字母/数字输入、Backspace、Enter 提交、Esc 失焦</summary>
         public override void Update(GameTime gameTime)
         {
+#if FIDA_ANDROID
+            if (_pendingMobileValue != null)
+            {
+                string submitted = _pendingMobileValue;
+                _pendingMobileValue = null;
+                _value = new string(submitted.ToUpperInvariant()
+                    .Where(char.IsLetterOrDigit).Take(MaxLen).ToArray());
+                _focused = false;
+                if (_value.Length == MaxLen) Submitted?.Invoke(_value);
+            }
+            return;
+#else
             var pressed = Keyboard.GetState().GetPressedKeys();
 
             if (!_focused)
@@ -111,7 +133,23 @@ namespace Fida.UI
                 }
             }
             _lastKeys = new HashSet<Keys>(pressed);
+#endif
         }
+
+#if FIDA_ANDROID
+        private void ShowMobileKeyboard()
+        {
+            if (_mobileKeyboardPending || KeyboardInput.IsVisible) return;
+            _mobileKeyboardPending = true;
+            KeyboardInput.Show("Join Game", "Enter the 4-character room code", _value, false)
+                .ContinueWith(task =>
+                {
+                    _mobileKeyboardPending = false;
+                    if (task.Status == System.Threading.Tasks.TaskStatus.RanToCompletion && task.Result != null)
+                        _pendingMobileValue = task.Result;
+                });
+        }
+#endif
 
         /// <summary>清空输入</summary>
         public void Clear()

@@ -187,6 +187,9 @@ namespace Fida.UI.Campaign
         {
             float centerX = viewport.Width / 2f;
             int centerY = panel.Top + _options.WheelCenterOffsetFromPanelTop;
+#if FIDA_ANDROID
+            centerY = Math.Min(centerY, panel.Bottom - 500);
+#endif
             int focusedWidth = (int)(panel.Width * _options.FocusedWidthRatio);
             Rectangle focusedBounds = new((int)centerX - focusedWidth / 2,
                 centerY - _options.FocusedHeight / 2, focusedWidth, _options.FocusedHeight);
@@ -238,8 +241,10 @@ namespace Fida.UI.Campaign
         {
             DrawSmallButton(spriteBatch, BackButton(viewport, panel), "Back to Map");
             DrawSmallButton(spriteBatch, StartButton(viewport, panel), "Start Battle");
+#if !FIDA_ANDROID
             DrawCentered(spriteBatch, _font, "F5 / Controller Start also begins the battle",
                 new Vector2(viewport.Width / 2f, panel.Bottom - 34), panel.Width - 80, 0.28f, UITheme.InkMuted);
+#endif
         }
 
         private void DrawSmallButton(SpriteBatch spriteBatch, Rectangle bounds, string text)
@@ -333,14 +338,23 @@ namespace Fida.UI.Campaign
 
         private static Rectangle PanelBounds(Viewport viewport)
         {
+#if FIDA_ANDROID
+            int width = Math.Max(1, viewport.Width - 48);
+            return new Rectangle((viewport.Width - width) / 2, 24, width,
+                Math.Max(1, viewport.Height - 48));
+#else
             int width = Math.Min(viewport.Width - 72, 1400);
             return new Rectangle(viewport.Width / 2 - width / 2, 28, width, viewport.Height - 56);
+#endif
         }
 
         private Rectangle FocusedBounds(Viewport viewport, Rectangle panel)
         {
             int width = (int)(panel.Width * _options.FocusedWidthRatio);
             int centerY = panel.Top + _options.WheelCenterOffsetFromPanelTop;
+#if FIDA_ANDROID
+            centerY = Math.Min(centerY, panel.Bottom - 500);
+#endif
             return new Rectangle(viewport.Width / 2 - width / 2,
                 centerY - _options.FocusedHeight / 2, width, _options.FocusedHeight);
         }
@@ -352,9 +366,17 @@ namespace Fida.UI.Campaign
             new(focused.Right + 24, focused.Center.Y + 11, 96, 46);
 
         private static Rectangle BackButton(Viewport viewport, Rectangle panel) =>
+#if FIDA_ANDROID
+            new(panel.Left + 48, panel.Bottom - 178, panel.Width - 96, 64);
+#else
             new(panel.Left + 42, panel.Bottom - 108, 280, 60);
+#endif
 
         private static Rectangle StartButton(Viewport viewport, Rectangle panel) =>
+#if FIDA_ANDROID
+            new(panel.Left + 48, panel.Bottom - 98, panel.Width - 96, 64);
+#else
             new(panel.Right - 322, panel.Bottom - 108, 280, 60);
+#endif
     }
 }

@@ -1,20 +1,64 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-android</TargetFramework>
+    <TargetFramework>net10.0-android</TargetFramework>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <ApplicationId>com.fida.game</ApplicationId>
     <ApplicationTitle>Fida</ApplicationTitle>
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
     <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
+    <DefineConstants>$(DefineConstants);FIDA_ANDROID</DefineConstants>
+    <MonoGamePlatform>Android</MonoGamePlatform>
+    <!-- The Android content pipeline and Xamarin.Android packaging both write
+         intermediate files. Serial project-reference builds are deterministic
+         in Visual Studio as well as on the command line. -->
+    <BuildInParallel>false</BuildInParallel>
+    <!-- A plain Visual Studio build has no RuntimeIdentifier. Keep the content
+         cache name valid in both that case and RID-specific APK builds. -->
+    <FidaContentSuffix Condition="'$(RuntimeIdentifier)' == ''">default</FidaContentSuffix>
+    <FidaContentSuffix Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</FidaContentSuffix>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Fida.Core\Fida.Core.csproj" />
+    <ProjectReference Include="..\Fida.Core\Fida.Core.csproj">
+      <SetTargetFramework>TargetFramework=net10.0</SetTargetFramework>
+      <GlobalPropertiesToRemove>RuntimeIdentifier;RuntimeIdentifiers;SelfContained</GlobalPropertiesToRemove>
+    </ProjectReference>
     <PackageReference Include="MonoGame.Framework.Android" Version="3.8.4.1" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.4.1" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidAsset Include="..\Content\campaign\**\*.json" Link="Content\campaign\%(RecursiveDir)%(Filename)%(Extension)" />
-    <AndroidAsset Include="..\Content\gametext.json" Link="Content\gametext.json" />
+    <Compile Include="..\Agent\AgentManager.cs" Link="Agent\AgentManager.cs" />
+    <Compile Include="..\Logic\AgentPlayerController.cs" Link="Logic\AgentPlayerController.cs" />
+    <Compile Include="..\Network\**\*.cs" LinkBase="Network" />
+    <Compile Include="..\Scene\**\*.cs" LinkBase="Scene" />
+    <Compile Include="..\States\**\*.cs" LinkBase="States" />
+    <Compile Include="..\UI\**\*.cs" LinkBase="UI" />
+    <Compile Include="..\DisplaySettingsManager.cs" Link="DisplaySettingsManager.cs" />
+    <Compile Include="..\ExitHandler.cs" Link="ExitHandler.cs" />
+    <Compile Include="..\Game1.cs" Link="Game1.cs" />
+    <Compile Include="..\GameSessionManager.cs" Link="GameSessionManager.cs" />
+    <Compile Include="..\GameStateMachine.cs" Link="GameStateMachine.cs" />
+    <Compile Include="..\MenuInputHandler.cs" Link="MenuInputHandler.cs" />
+    <Compile Include="..\ResourceManager.cs" Link="ResourceManager.cs" />
+    <Compile Include="..\SceneConfig.cs" Link="SceneConfig.cs" />
+    <Compile Include="..\State.cs" Link="State.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Keep MGCB caches isolated per configuration/RID. Visual Studio can build
+         emulator and device targets concurrently; sharing one Content.Android
+         cache makes the native font/texture pipeline race and occasionally exit
+         with CLR code 0xE0434352. ContentFolder preserves assets/Content/*.xnb. -->
+    <MonoGameContentReference Include="..\Content\Content.Android.mgcb"
+                              ContentFolder="Content"
+                              OutputFolder="Fida.Android.$(Configuration).$(FidaContentSuffix)" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\campaign\**\*.json" Link="Content\campaign\%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\gametext.json" Link="Content\gametext.json" />
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\screens\**\*.json" Link="Content\screens\%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\uiconfig.json" Link="Content\uiconfig.json" />
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\scenes\**\*.csv" Link="Content\scenes\%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\server.csv" Link="server.csv" />
   </ItemGroup>
 </Project>

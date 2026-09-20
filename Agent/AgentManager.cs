@@ -155,6 +155,12 @@ namespace Fida.Agent
                 {
                     _actionIndex = onnxInference.InferActionIndex(GetState(_gameManager, sourcePlayerId, 0));
                 }
+                else
+                {
+                    // Mobile builds intentionally omit the optional ONNX runtime.
+                    // Keep both halves of the number-selection sequence valid.
+                    _actionIndex = 0;
+                }
                 return new GameAction { Type = ActionType.ChooseNumberIndex, TargetPlayerId = sourcePlayerId, NumberIndex = _actionIndex / 3 };
             }
             else

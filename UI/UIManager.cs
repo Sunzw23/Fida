@@ -173,7 +173,7 @@ namespace Fida.UI
         /// <summary>更新所有 UI 按钮的状态（让按钮通过 EnabledChecker 询问环境来决定是否启用）</summary>
         public void UpdateUIButtons(GameManager gameManager)
         {
-            var mouseState = Mouse.GetState();
+            var mouseState = UIPointer.GetState();
             foreach (UIControl control in _uiControls)
             {
                 control.Update(mouseState);

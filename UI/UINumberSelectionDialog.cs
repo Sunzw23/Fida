@@ -36,9 +36,25 @@ namespace Fida.UI
 
             Rectangle panel = GetPanelBounds();
             const int columns = 5;
-            const int gap = 14;
-            int buttonWidth = System.Math.Min(112, (panel.Width - 128 - gap * 4) / columns);
-            const int buttonHeight = 68;
+            int gap =
+#if FIDA_ANDROID
+                16;
+#else
+                14;
+#endif
+            int buttonWidth = System.Math.Min(
+#if FIDA_ANDROID
+                144,
+#else
+                112,
+#endif
+                (panel.Width - 128 - gap * 4) / columns);
+            int buttonHeight =
+#if FIDA_ANDROID
+                82;
+#else
+                68;
+#endif
             int gridWidth = columns * buttonWidth + gap * (columns - 1);
             int startX = panel.Center.X - gridWidth / 2;
             int startY = panel.Y + 174;
@@ -94,10 +110,17 @@ namespace Fida.UI
         private Rectangle GetPanelBounds()
         {
             var viewport = _graphicsDevice.Viewport;
+#if FIDA_ANDROID
+            int width = System.Math.Max(1, viewport.Width - 48);
+            int height = System.Math.Min(560, viewport.Height - 48);
+            return new Rectangle((viewport.Width - width) / 2,
+                (viewport.Height - height) / 2, width, height);
+#else
             int width = System.Math.Min(760, viewport.Width - 48);
             int height = System.Math.Min(430, viewport.Height - 48);
             return new Rectangle((viewport.Width - width) / 2,
                 (viewport.Height - height) / 2, width, height);
+#endif
         }
 
         private void DrawCentered(SpriteBatch sb, string text, float centerX, float centerY,

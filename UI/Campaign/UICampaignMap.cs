@@ -270,9 +270,15 @@ namespace Fida.UI.Campaign
                 string status = _progress.IsCompleted(selected.Id) ? "CLEARED" :
                     CampaignCatalog.IsUnlocked(_progress, selected) ? "OPEN" : "LOCKED";
                 string detail = $"{selected.Chapter} | {selected.Id}: {selected.Name} | {selected.SkillBudget} SP | {status}";
+#if FIDA_ANDROID
+                DrawCentered(spriteBatch, _font, detail,
+                    new Vector2(viewport.Width / 2f, viewport.Height - 122f),
+                    viewport.Width - 56f, 0.26f, UITheme.PanelLight);
+#else
                 float centerX = (plus.Right + back.Left) / 2f;
                 DrawCentered(spriteBatch, _font, detail, new Vector2(centerX, viewport.Height - 47f),
                     Math.Max(120f, back.Left - plus.Right - 35f), 0.18f, UITheme.PanelLight);
+#endif
             }
         }
 
@@ -390,10 +396,43 @@ namespace Fida.UI.Campaign
         private bool Pressed(GamePadState current, Buttons button) =>
             current.IsButtonDown(button) && _previousGamePad.IsButtonUp(button);
 
-        private static Rectangle MinusButton(Viewport viewport) => new(36, viewport.Height - 76, 54, 50);
-        private static Rectangle FitButton(Viewport viewport) => new(100, viewport.Height - 76, 82, 50);
-        private static Rectangle PlusButton(Viewport viewport) => new(192, viewport.Height - 76, 54, 50);
-        private static Rectangle BackButton(Viewport viewport) => new(viewport.Width - 286, viewport.Height - 76, 250, 50);
+        private static Rectangle MinusButton(Viewport viewport)
+        {
+#if FIDA_ANDROID
+            return new Rectangle(28, viewport.Height - 78, 72, 56);
+#else
+            return new Rectangle(36, viewport.Height - 76, 54, 50);
+#endif
+        }
+
+        private static Rectangle FitButton(Viewport viewport)
+        {
+#if FIDA_ANDROID
+            return new Rectangle(112, viewport.Height - 78, 92, 56);
+#else
+            return new Rectangle(100, viewport.Height - 76, 82, 50);
+#endif
+        }
+
+        private static Rectangle PlusButton(Viewport viewport)
+        {
+#if FIDA_ANDROID
+            return new Rectangle(244, viewport.Height - 78, 72, 56);
+#else
+            return new Rectangle(192, viewport.Height - 76, 54, 50);
+#endif
+        }
+
+        private static Rectangle BackButton(Viewport viewport)
+        {
+#if FIDA_ANDROID
+            int left = Math.Min(340, Math.Max(28, viewport.Width / 3));
+            return new Rectangle(left, viewport.Height - 78,
+                Math.Max(180, viewport.Width - left - 28), 56);
+#else
+            return new Rectangle(viewport.Width - 286, viewport.Height - 76, 250, 50);
+#endif
+        }
 
         private void DrawLine(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color, int thickness)
         {

@@ -37,7 +37,7 @@ namespace Fida.UI
         /// </summary>
         public GameAction UpdateMouseAndCheckClicks(GameManager gameManager)
         {
-            _currentMouseState = Mouse.GetState();
+            _currentMouseState = UIPointer.GetState();
             KeyboardState currentKeyboard = Keyboard.GetState();
 
             if (gameManager.CurrentActionType == ActionType.DecideApply)
@@ -334,7 +334,7 @@ namespace Fida.UI
         /// </summary>
         public bool HasMouseActivity()
         {
-            var current = Mouse.GetState();
+            var current = UIPointer.GetState();
             bool moved = current.X != _previousMouseState.X || current.Y != _previousMouseState.Y;
             bool clicked = current.LeftButton == ButtonState.Pressed && _previousMouseState.LeftButton == ButtonState.Released;
             return moved || clicked;

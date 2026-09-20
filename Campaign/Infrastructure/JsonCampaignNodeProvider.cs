@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fida.Logic;
 
 namespace Fida.Campaign.Infrastructure
 {
@@ -18,14 +19,15 @@ namespace Fida.Campaign.Infrastructure
         {
             try
             {
-                if (Directory.Exists(_path))
+                var files = ContentSource.List(_path, ".json");
+                if (files.Count > 0)
                 {
                     var nodes = new List<CampaignNode>();
-                    foreach (string file in Directory.GetFiles(_path, "*.json").OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+                    foreach (string file in files)
                         nodes.AddRange(LoadFile(file));
                     return nodes;
                 }
-                if (!File.Exists(_path)) return Array.Empty<CampaignNode>();
+                if (ContentSource.ReadText(_path) == null) return Array.Empty<CampaignNode>();
                 return LoadFile(_path);
             }
             catch (Exception exception) when (exception is IOException or JsonException or NotSupportedException)
@@ -38,7 +40,8 @@ namespace Fida.Campaign.Infrastructure
         {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 options.Converters.Add(new JsonStringEnumConverter());
-                var nodes = JsonSerializer.Deserialize<List<CampaignNode>>(File.ReadAllText(path), options);
+                string json = ContentSource.ReadText(path) ?? "[]";
+                var nodes = JsonSerializer.Deserialize<List<CampaignNode>>(json, options);
                 return nodes ?? new List<CampaignNode>();
         }
 

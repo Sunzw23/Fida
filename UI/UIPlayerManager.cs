@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Fida.Logic;
@@ -165,6 +166,48 @@ namespace Fida.UI
         {
             var positions = new Dictionary<int, Vector2>();
 
+#if FIDA_ANDROID
+            // Portrait layout: each team is a readable vertical stack. A card
+            // always spans the safe width, so names, skill icons and number
+            // controls remain large enough for touch interaction.
+            int viewportWidth = _resourceManager.GraphicsDevice.Viewport.Width;
+            int viewportHeight = _resourceManager.GraphicsDevice.Viewport.Height;
+            int mobileCardWidth = UIConfig.Int("cardWidth");
+            int mobileCardHeight = UIConfig.Int("cardHeight");
+            const int gap = 24;
+            int centerX = Math.Max(24, (viewportWidth - mobileCardWidth) / 2);
+
+            Group localGroupMobile = null;
+            foreach (var group in gameManager.Groups)
+            {
+                if (group.Players.Any(p => p.PlayerId == gameManager.LocalPlayerId))
+                {
+                    localGroupMobile = group;
+                    break;
+                }
+            }
+
+            var localPlayersMobile = localGroupMobile?.Players.ToList() ??
+                gameManager.Players.Where(p => p.PlayerId == gameManager.LocalPlayerId).ToList();
+            var enemyPlayersMobile = gameManager.Players
+                .Where(p => !localPlayersMobile.Any(local => local.PlayerId == p.PlayerId)).ToList();
+
+            int localHeight = localPlayersMobile.Count * mobileCardHeight + Math.Max(0, localPlayersMobile.Count - 1) * gap;
+            int localStartY = Math.Max(140, viewportHeight - localHeight - 32);
+            for (int i = 0; i < localPlayersMobile.Count; i++)
+                positions[localPlayersMobile[i].PlayerId] = new Vector2(centerX, localStartY + i * (mobileCardHeight + gap));
+
+            for (int i = 0; i < enemyPlayersMobile.Count; i++)
+                positions[enemyPlayersMobile[i].PlayerId] = new Vector2(centerX, 140 + i * (mobileCardHeight + gap));
+
+            // Defensive fallback for unusual network rosters that are not in a
+            // group yet: every player still receives a deterministic card slot.
+            for (int i = 0; i < gameManager.Players.Count; i++)
+                if (!positions.ContainsKey(gameManager.Players[i].PlayerId))
+                    positions[gameManager.Players[i].PlayerId] = new Vector2(centerX, 140 + i * (mobileCardHeight + gap));
+            return positions;
+#else
+
             // 找到本地玩家所在的组
             Group localGroup = null;
             foreach (var group in gameManager.Groups)
@@ -224,6 +267,7 @@ namespace Fida.UI
             }
 
             return positions;
+#endif
         }
 
         public void UpdateGameMessage(string message)

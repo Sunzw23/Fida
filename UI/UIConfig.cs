@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using Fida.Logic;
 
 namespace Fida.UI
 {
@@ -17,9 +19,9 @@ namespace Fida.UI
         {
             try
             {
-                if (File.Exists(PathConfig))
+                string? json = ContentSource.ReadText(PathConfig);
+                if (json != null)
                 {
-                    string json = File.ReadAllText(PathConfig);
                     _settings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? new();
                 }
             }
@@ -28,7 +30,25 @@ namespace Fida.UI
 
         // --- 通用获取方法 ---
 
-        public static int Int(string key, int def = 0) => _settings.TryGetValue(key, out var e) ? e.GetInt32() : def;
+        public static int Int(string key, int def = 0)
+        {
+#if FIDA_ANDROID
+            // Card metrics are derived from the actual portrait viewport rather
+            // than the desktop JSON canvas. This keeps text and touch targets
+            // readable on both phones and tablets without changing the rules UI.
+            int width = Math.Max(1, DisplaySettingsManager.LayoutWidth);
+            int height = Math.Max(1, DisplaySettingsManager.LayoutHeight);
+            if (key == "cardWidth") return Math.Max(1, width - 48);
+            // Reserve roughly one fifth of the viewport per card so a 2v2
+            // portrait battle remains visible without scrolling.
+            if (key == "cardHeight") return Math.Clamp(height / 5, 320, 480);
+            if (key == "portraitSize") return Math.Clamp(Math.Min(width - 96, height / 8), 160, 320);
+            if (key == "nameHeight") return 48;
+            if (key == "bottomElementWidth") return Math.Clamp(width / 6, 74, 150);
+            if (key == "bottomElementHeight") return Math.Clamp(height / 24, 68, 104);
+#endif
+            return _settings.TryGetValue(key, out var e) ? e.GetInt32() : def;
+        }
 
         public static float Float(string key, float def = 0f) => _settings.TryGetValue(key, out var e) ? e.GetSingle() : def;
 

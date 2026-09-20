@@ -11,5 +11,17 @@ namespace Fida.UI.Campaign
         public float FocusedTextScale { get; init; } = 0.66f;
         public float NearTextScale { get; init; } = 0.46f;
         public float FarTextScale { get; init; } = 0.34f;
+
+        public static CampaignSkillWheelOptions Mobile() => new()
+        {
+            VisibleNeighborCount = 2,
+            WheelCenterOffsetFromPanelTop = 850,
+            FocusedWidthRatio = 0.82f,
+            FocusedHeight = 154,
+            NeighborSpacing = 132,
+            FocusedTextScale = 0.62f,
+            NearTextScale = 0.44f,
+            FarTextScale = 0.32f
+        };
     }
 }

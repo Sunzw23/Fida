@@ -18,6 +18,18 @@ namespace Fida.UI.Campaign
         public int HeaderHeight { get; init; } = 120;
         public int FooterHeight { get; init; } = 94;
 
+        public static CampaignMapOptions Mobile() => new()
+        {
+            NodeWidth = 420f,
+            NodeHeight = 104f,
+            ContentPadding = 110f,
+            MinimumZoom = 0.42f,
+            MaximumZoom = 2.4f,
+            ScreenMargin = 24,
+            HeaderHeight = 142,
+            FooterHeight = 196
+        };
+
         public Rectangle GetMapViewport(Viewport viewport)
         {
             int width = System.Math.Max(1, viewport.Width - ScreenMargin * 2);

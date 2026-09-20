@@ -16,11 +16,7 @@ namespace Fida.Logic
         /// </summary>
         public static List<string> SceneNames()
         {
-            var dir = SceneDirectory();
-            if (dir == null)
-                return new List<string> { "DefaultScene" };
-
-            var names = Directory.GetFiles(dir, "*.csv")
+            var names = ContentSource.List(SceneDirectory(), ".csv")
                 .Select(Path.GetFileNameWithoutExtension)
                 .Where(n => !string.IsNullOrWhiteSpace(n))
                 .Distinct()
@@ -60,13 +56,13 @@ namespace Fida.Logic
         /// </summary>
         public static List<Player> LoadScene(string name)
         {
-            string dir = SceneDirectory();
-            string path = dir != null ? Path.Combine(dir, name + ".csv") : "";
-            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            string path = Path.Combine(SceneDirectory(), name + ".csv");
+            string? csv = ContentSource.ReadText(path);
+            if (csv == null)
                 return new List<Player>();
 
             var players = new List<Player>();
-            foreach (var raw in File.ReadAllLines(path))
+            foreach (var raw in csv.Replace("\r", "").Split('\n'))
             {
                 string line = raw.Trim();
                 if (line.Length == 0 || line.StartsWith("#"))
@@ -108,11 +104,8 @@ namespace Fida.Logic
             return players;
         }
 
-        private static string SceneDirectory()
-        {
-            var dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "scenes");
-            return Directory.Exists(dir) ? dir : null;
-        }
+        private static string SceneDirectory() => Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory, "Content", "scenes");
 
         private static string CleanField(string s) => s?.Trim().Trim('"').Trim() ?? "";
     }

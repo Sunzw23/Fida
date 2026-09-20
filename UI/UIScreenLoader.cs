@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fida.Logic;
 
 namespace Fida.UI
 {
@@ -112,12 +113,10 @@ namespace Fida.UI
         public static List<ControlDescriptor> Load(string screenName, Dictionary<string, string>? replacements = null)
         {
             string path = Path.Combine(ScreensDirectory, screenName + ".json");
-            if (!File.Exists(path))
-                return new List<ControlDescriptor>();
-
             try
             {
-                string json = File.ReadAllText(path);
+                string? json = ContentSource.ReadText(path);
+                if (json == null) return new List<ControlDescriptor>();
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var screenData = JsonSerializer.Deserialize<ScreenData>(json, options);
                 if (screenData == null)

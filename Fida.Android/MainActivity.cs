@@ -1,36 +1,29 @@
 ﻿#nullable enable
 using Android.App;
+using Android.Content.PM;
 using Android.OS;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace Fida.Android;
 
 [Activity(Label = "Fida", MainLauncher = true,
+    // The Android UI is designed around a single-column portrait layout.
+    // Keeping the activity locked avoids a mid-battle resize that would move
+    // cards and modal controls underneath the user's finger.
+    ScreenOrientation = ScreenOrientation.Portrait,
     ConfigurationChanges = global::Android.Content.PM.ConfigChanges.Orientation |
                            global::Android.Content.PM.ConfigChanges.ScreenSize |
                            global::Android.Content.PM.ConfigChanges.KeyboardHidden)]
 public sealed class MainActivity : AndroidGameActivity
 {
-    private AndroidGame? _game;
+    private global::Fida.Game1? _game;
 
     protected override void OnCreate(Bundle? bundle)
     {
         base.OnCreate(bundle);
-        _game = new AndroidGame();
+        AndroidAssetContent.Initialize(Assets!);
+        _game = new global::Fida.Game1();
         SetContentView((global::Android.Views.View)_game.Services.GetService(typeof(global::Android.Views.View))!);
-    }
-}
-
-/// <summary>Thin Android host; game rules remain in Fida.Core.</summary>
-internal sealed class AndroidGame : Game
-{
-    private readonly GraphicsDeviceManager _graphics;
-
-    public AndroidGame()
-    {
-        _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
-        IsMouseVisible = false;
+        _game.Run();
     }
 }

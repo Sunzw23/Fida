@@ -2,6 +2,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Fida.Logic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -110,6 +111,9 @@ namespace Fida.UI
         {
             Clear();
             _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
+#if FIDA_ANDROID
+            BuildMobileDuelDraft();
+#else
             _uiControls.Add(new UITitle(1, "Duel Draft", new Vector2(960, 105),
                 _resourceManager.Pixel, _resourceManager.TitleFont) { Name = "title" });
             _uiControls.Add(new UILabel(2, "BAN - choose one skill", new Vector2(960, 190),
@@ -141,6 +145,7 @@ namespace Fida.UI
                 "Disconnect", _resourceManager.Pixel, _resourceManager.Font)
             { Name = "draftBack", FocusIndex = index });
             if (_focusManager.CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
+#endif
         }
 
         /// <summary>构建关卡选择界面</summary>
@@ -173,6 +178,9 @@ namespace Fida.UI
         private void BuildFromScreen(string screenName, Dictionary<string, string>? replacements = null)
         {
             var descriptors = UIScreenLoader.Load(screenName, replacements);
+#if FIDA_ANDROID
+            BuildMobileFromDescriptors(descriptors);
+#else
             int focusIndex = 0;
             foreach (var desc in descriptors)
             {
@@ -199,6 +207,134 @@ namespace Fida.UI
             {
                 _focusManager.FocusFirst();
             }
+#endif
         }
+
+#if FIDA_ANDROID
+        /// <summary>
+        /// Builds a JSON screen using a portrait-first flow. The JSON files remain
+        /// the source of labels and control names, while geometry is calculated from
+        /// the current viewport so adding a new screen does not require desktop
+        /// coordinates or a second Android-specific JSON file.
+        /// </summary>
+        private void BuildMobileFromDescriptors(IReadOnlyList<UIScreenLoader.ControlDescriptor> descriptors)
+        {
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+            _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
+
+            var title = descriptors.FirstOrDefault(d => d.Type == "title");
+            if (title != null)
+            {
+                _uiControls.Add(new UITitle(title.Id, title.Text,
+                    new Vector2(panel.Center.X, panel.Top + 96),
+                    _resourceManager.Pixel, _resourceManager.TitleFont)
+                { Name = title.Name });
+            }
+
+            var content = descriptors.Where(d => d.Type != "panel" && d.Type != "title").ToList();
+            int interactiveCount = content.Count(d => d.Type == "button" || d.Type == "textbox");
+            int labelCount = content.Count(d => d.Type == "label");
+            int top = panel.Top + (title == null ? 100 : 220);
+            int bottom = panel.Bottom - 56;
+            int available = Math.Max(240, bottom - top);
+            int rowGap = interactiveCount > 5 ? 18 : 28;
+            int rowHeight = interactiveCount == 0
+                ? 76
+                : Math.Clamp((available - Math.Max(0, interactiveCount - 1) * rowGap - labelCount * 70) /
+                    Math.Max(1, interactiveCount), 72, 108);
+            int focusIndex = 0;
+
+            foreach (var desc in content)
+            {
+                if (desc.Type == "label")
+                {
+                    var label = new UILabel(desc.Id, desc.Text,
+                        new Vector2(panel.Center.X, top + 28), _resourceManager.Font)
+                    {
+                        Name = desc.Name,
+                        MaximumWidth = panel.Width - 96,
+                        MinimumScale = 0.56f
+                    };
+                    _uiControls.Add(label);
+                    top += 70;
+                    continue;
+                }
+
+                if (desc.Type == "button")
+                {
+                    int width = Math.Max(1, panel.Width - 112);
+                    var button = new UIButton(desc.Id,
+                        new Rectangle(panel.Left + 56, top, width, rowHeight),
+                        desc.Text, _resourceManager.Pixel, _resourceManager.Font)
+                    {
+                        Name = desc.Name,
+                        FocusIndex = focusIndex++
+                    };
+                    _uiControls.Add(button);
+                    top += rowHeight + rowGap;
+                    continue;
+                }
+
+                if (desc.Type == "textbox")
+                {
+                    int width = Math.Max(1, panel.Width - 112);
+                    var input = new UIRoomCodeInput(desc.Id,
+                        new Rectangle(panel.Left + 56, top, width, Math.Max(76, rowHeight - 8)),
+                        desc.Text, _resourceManager.Pixel, _resourceManager.Font)
+                    { Name = desc.Name };
+                    _uiControls.Add(input);
+                    top += rowHeight + rowGap;
+                }
+            }
+
+            if (_focusManager.CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
+        }
+
+        private void BuildMobileDuelDraft()
+        {
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+            _uiControls.Add(new UITitle(1, "Duel Draft",
+                new Vector2(panel.Center.X, panel.Top + 92),
+                _resourceManager.Pixel, _resourceManager.TitleFont) { Name = "title" });
+            _uiControls.Add(new UILabel(2, "BAN - choose one skill",
+                new Vector2(panel.Center.X, panel.Top + 178), _resourceManager.Font)
+            { Name = "draftPhase", MaximumWidth = panel.Width - 96, MinimumScale = 0.62f });
+            _uiControls.Add(new UILabel(3, "Both bans are revealed together.",
+                new Vector2(panel.Center.X, panel.Top + 226), _resourceManager.Font)
+            { Name = "draftStatus", MaximumWidth = panel.Width - 96, MinimumScale = 0.56f });
+
+            int index = 0;
+            int y = panel.Top + 270;
+            int width = panel.Width - 112;
+            int gap = 10;
+            int skillAreaBottom = panel.Bottom - 230;
+            int height = Math.Clamp((skillAreaBottom - y -
+                Math.Max(0, SkillFactory.SelectableSkills.Count - 1) * gap) /
+                Math.Max(1, SkillFactory.SelectableSkills.Count), 52, 84);
+            foreach (SkillType skill in SkillFactory.SelectableSkills)
+            {
+                _uiControls.Add(new UIButton(500 + index,
+                    new Rectangle(panel.Left + 56, y, width, height),
+                    $"{GameText.SkillName(skill)}  [{CampaignBalance.Cost(skill)} SP]",
+                    _resourceManager.Pixel, _resourceManager.Font)
+                {
+                    Name = $"draftSkill_{skill}",
+                    FocusIndex = index++
+                });
+                y += height + gap;
+            }
+
+            int footerY = panel.Bottom - 118;
+            _uiControls.Add(new UIButton(550,
+                new Rectangle(panel.Left + 56, footerY, width, 72),
+                "Lock Loadout", _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "draftCommit", FocusIndex = index++ });
+            _uiControls.Add(new UIButton(551,
+                new Rectangle(panel.Left + 56, footerY + 84, width, 72),
+                "Disconnect", _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "draftBack", FocusIndex = index });
+            if (_focusManager.CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
+        }
+#endif
     }
 }

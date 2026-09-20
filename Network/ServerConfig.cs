@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using Fida.Logic;
 
 namespace Fida.Network
 {
@@ -68,7 +69,8 @@ namespace Fida.Network
         {
             var config = new ServerConfig();
 
-            if (!File.Exists(filePath))
+            string content = ContentSource.ReadText(filePath);
+            if (content == null)
             {
                 // 如果文件不存在，返回默认的本地测试服务器
                 config._servers.Add(new ServerEntry
@@ -80,7 +82,7 @@ namespace Fida.Network
                 return config;
             }
 
-            string[] lines = File.ReadAllLines(filePath);
+            string[] lines = content.Replace("\r", "").Split('\n');
             foreach (string line in lines)
             {
                 string trimmed = line.Trim();

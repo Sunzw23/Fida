@@ -36,6 +36,19 @@ namespace Fida.UI
             _font = font;
             Rectangle panel = GetPanelBounds();
             int buttonY = panel.Bottom - 94;
+#if FIDA_ANDROID
+            int buttonWidth = System.Math.Min(360, System.Math.Max(180, (panel.Width - 132) / 2));
+            ApplyButton = new UIAnimatedButton(ApplyButtonId,
+                new Rectangle(panel.Left + 44, buttonY, buttonWidth, 72), "Apply", pixel, font)
+            {
+                FocusIndex = 410
+            };
+            PassButton = new UIAnimatedButton(PassButtonId,
+                new Rectangle(panel.Right - 44 - buttonWidth, buttonY, buttonWidth, 72), "Pass", pixel, font)
+            {
+                FocusIndex = 411
+            };
+#else
             ApplyButton = new UIAnimatedButton(ApplyButtonId,
                 new Rectangle(panel.X + 78, buttonY, 250, 66), "Apply", pixel, font)
             {
@@ -46,6 +59,7 @@ namespace Fida.UI
             {
                 FocusIndex = 411
             };
+#endif
             IsVisible = false;
         }
 
@@ -84,10 +98,17 @@ namespace Fida.UI
         private Rectangle GetPanelBounds()
         {
             var viewport = _graphicsDevice.Viewport;
+#if FIDA_ANDROID
+            int width = System.Math.Max(1, viewport.Width - 48);
+            int height = System.Math.Min(460, viewport.Height - 48);
+            return new Rectangle((viewport.Width - width) / 2,
+                (viewport.Height - height) / 2, width, height);
+#else
             int width = System.Math.Min(780, viewport.Width - 48);
             int height = 340;
             return new Rectangle((viewport.Width - width) / 2,
                 (viewport.Height - height) / 2, width, height);
+#endif
         }
 
         private void DrawCentered(SpriteBatch sb, string text, float centerX, float centerY,

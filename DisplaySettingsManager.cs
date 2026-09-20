@@ -33,21 +33,36 @@ namespace Fida
             Apply();
         }
 
+        /// <summary>Registers the native full-screen surface without applying desktop window modes.</summary>
+        public static void InitializeMobile(GraphicsDeviceManager graphics)
+        {
+            _graphics = graphics;
+            Current = new DisplaySettingsData { Fullscreen = true };
+        }
+
         public static void SetFullscreen(bool fullscreen)
         {
+#if FIDA_ANDROID
+            return;
+#else
             if (Current.Fullscreen == fullscreen) return;
             Current.Fullscreen = fullscreen;
             ApplyAndSave();
+#endif
         }
 
         public static void CycleResolution()
         {
+#if FIDA_ANDROID
+            return;
+#else
             int index = Array.FindIndex(Resolutions,
                 value => value.Width == Current.Width && value.Height == Current.Height);
             var next = Resolutions[(index + 1 + Resolutions.Length) % Resolutions.Length];
             Current.Width = next.Width;
             Current.Height = next.Height;
             ApplyAndSave();
+#endif
         }
 
         public static void Normalize(DisplaySettingsData settings)
