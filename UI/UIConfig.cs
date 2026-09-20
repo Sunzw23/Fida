@@ -38,14 +38,14 @@ namespace Fida.UI
             // readable on both phones and tablets without changing the rules UI.
             int width = Math.Max(1, DisplaySettingsManager.LayoutWidth);
             int height = Math.Max(1, DisplaySettingsManager.LayoutHeight);
-            if (key == "cardWidth") return Math.Max(1, width - 48);
-            // Reserve roughly one fifth of the viewport per card so a 2v2
-            // portrait battle remains visible without scrolling.
-            if (key == "cardHeight") return Math.Clamp(height / 5, 320, 480);
-            if (key == "portraitSize") return Math.Clamp(Math.Min(width - 96, height / 8), 160, 320);
-            if (key == "nameHeight") return 48;
-            if (key == "bottomElementWidth") return Math.Clamp(width / 6, 74, 150);
-            if (key == "bottomElementHeight") return Math.Clamp(height / 24, 68, 104);
+            if (key == "cardWidth") return Math.Max(1, width - 40);
+            // Compact horizontal roster cards keep large touch targets while
+            // leaving enough vertical room for multi-member teams and effects.
+            if (key == "cardHeight") return Math.Clamp(height / 9, 136, 190);
+            if (key == "portraitSize") return Math.Clamp(height / 11, 108, 166);
+            if (key == "nameHeight") return Math.Clamp(height / 42, 32, 44);
+            if (key == "bottomElementWidth") return Math.Clamp(width / 8, 72, 112);
+            if (key == "bottomElementHeight") return Math.Clamp(height / 20, 68, 92);
 #endif
             return _settings.TryGetValue(key, out var e) ? e.GetInt32() : def;
         }

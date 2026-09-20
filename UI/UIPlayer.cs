@@ -53,6 +53,7 @@ namespace Fida.UI
         private bool _mouseWasDown = false;
         private Vector2 _nameCenter;
         private Vector2 _healthCenter;
+        private Rectangle _skillStripBounds;
         private int? _deferredHealth;
         private int[] _deferredNumbers;
         public bool DeferNumberVisual { get; private set; }
@@ -112,6 +113,46 @@ namespace Fida.UI
 
             int verticalSpacing = (InnerCardBounds.Height - UIConfig.Int("portraitSize") - UIConfig.Int("nameHeight") - UIConfig.Int("bottomElementHeight")) / 4;
 
+#if FIDA_ANDROID
+            int padding = Math.Clamp(CardBounds.Height / 14, 8, 14);
+            int portraitSize = Math.Min(CardBounds.Height - padding * 2, UIConfig.Int("portraitSize"));
+            PortraitBounds = new Rectangle(InnerCardBounds.Left + padding,
+                CardBounds.Center.Y - portraitSize / 2, portraitSize, portraitSize);
+
+            int numberWidth = UIConfig.Int("bottomElementWidth");
+            int numberHeight = Math.Min(CardBounds.Height - padding * 2,
+                UIConfig.Int("bottomElementHeight"));
+            int numberGap = Math.Clamp(CardBounds.Width / 90, 6, 12);
+            int numberRight = InnerCardBounds.Right - padding;
+            Number1Bounds = new Rectangle(numberRight - numberWidth,
+                CardBounds.Center.Y - numberHeight / 2, numberWidth, numberHeight);
+            Number0Bounds = new Rectangle(Number1Bounds.Left - numberGap - numberWidth,
+                Number1Bounds.Y, numberWidth, numberHeight);
+
+            int infoLeft = PortraitBounds.Right + Math.Clamp(CardBounds.Width / 45, 12, 24);
+            int infoRight = Number0Bounds.Left - Math.Clamp(CardBounds.Width / 55, 10, 18);
+            int infoWidth = Math.Max(80, infoRight - infoLeft);
+            _nameCenter = new Vector2(infoLeft + infoWidth / 2f, CardBounds.Top + padding + 18);
+            NameLabel = new UILabel(0, player.Name, _nameCenter, font)
+            {
+                MaximumWidth = infoWidth,
+                MinimumScale = 0.55f
+            };
+
+            HealthBounds = new Rectangle(infoLeft, CardBounds.Top + padding + 40,
+                infoWidth, Math.Clamp(CardBounds.Height / 7, 16, 24));
+            _healthCenter = new Vector2(HealthBounds.Center.X, HealthBounds.Center.Y);
+            _skillStripBounds = new Rectangle(infoLeft, HealthBounds.Bottom + 8,
+                infoWidth, Math.Max(24, CardBounds.Bottom - padding - HealthBounds.Bottom - 8));
+
+            Number0Button = new UIAnimatedButton(10, Number0Bounds,
+                player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
+                pixel, font) { ParentDrawOnly = true };
+            HealthLabel = new UILabel(11, player.Health.ToString(), _healthCenter, font);
+            Number1Button = new UIAnimatedButton(12, Number1Bounds,
+                player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
+                pixel, font) { ParentDrawOnly = true };
+#else
             int portraitX = InnerCardBounds.Center.X - UIConfig.Int("portraitSize") / 2;
             int portraitY = InnerCardBounds.Y + verticalSpacing;
             PortraitBounds = new Rectangle(portraitX, portraitY, UIConfig.Int("portraitSize"), UIConfig.Int("portraitSize"));
@@ -154,6 +195,7 @@ namespace Fida.UI
             Number1Button = new UIAnimatedButton(12, Number1Bounds,
                 player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
                pixel, font) { ParentDrawOnly = true };
+#endif
 
             // 直接监听 Player 的数字变化，UI 自动刷新
             player.NumberChanged += (p, idx, oldVal, newVal) => UpdateNumbers();
@@ -343,6 +385,7 @@ namespace Fida.UI
             Rectangle portraitBounds = TransformRect(PortraitBounds, pivot, drawScale, drawOffset);
             Rectangle number0Bounds = TransformRect(Number0Bounds, pivot, drawScale, drawOffset);
             Rectangle number1Bounds = TransformRect(Number1Bounds, pivot, drawScale, drawOffset);
+            Rectangle healthBounds = TransformRect(HealthBounds, pivot, drawScale, drawOffset);
             Vector2 nameCenter = TransformPoint(_nameCenter, pivot, drawScale, drawOffset);
             Vector2 healthCenter = TransformPoint(_healthCenter, pivot, drawScale, drawOffset);
 
@@ -410,6 +453,9 @@ namespace Fida.UI
 
             // 绘制底部元素
             Number0Button.DrawAt(sb, gameTime, number0Bounds);
+#if FIDA_ANDROID
+            DrawHealthBar(sb, healthBounds, drawScale);
+#endif
             HealthLabel.SetColor(foreColor);
             HealthLabel.DrawAt(sb, gameTime, healthCenter, drawScale);
             Number1Button.DrawAt(sb, gameTime, number1Bounds);
@@ -426,6 +472,19 @@ namespace Fida.UI
             }
         }
 
+        private void DrawHealthBar(SpriteBatch sb, Rectangle bounds, float scale)
+        {
+            sb.Draw(Pixel, bounds, UITheme.PanelDark);
+            float ratio = Player.MaxHealth <= 0 ? 0f : MathHelper.Clamp(Player.Health / (float)Player.MaxHealth, 0f, 1f);
+            int inset = Math.Max(2, (int)(2f * scale));
+            int fillWidth = Math.Max(0, (int)((bounds.Width - inset * 2) * ratio));
+            if (fillWidth > 0)
+                sb.Draw(Pixel, new Rectangle(bounds.Left + inset, bounds.Top + inset,
+                    fillWidth, Math.Max(1, bounds.Height - inset * 2)), UITheme.AccentGreen * 0.82f);
+            UIUtils.DrawRectangleOutlines(sb, bounds, UITheme.Gold,
+                Math.Max(1, (int)(scale)), Pixel);
+        }
+
         private static Rectangle TransformRect(Rectangle source, Vector2 pivot, float scale, Vector2 offset)
         {
             Vector2 center = TransformPoint(source.Center.ToVector2(), pivot, scale, offset);
@@ -440,6 +499,34 @@ namespace Fida.UI
         private void DrawSkillMedallions(SpriteBatch sb, Rectangle cardBounds,
             Rectangle portraitBounds, Vector2 nameCenter, Rectangle numberBounds, float scale)
         {
+#if FIDA_ANDROID
+            Rectangle strip = TransformRect(_skillStripBounds, CardBounds.Center.ToVector2(), scale,
+                VisualOffset + (CardState == UIButtonState.Hovered ? new Vector2(0f, -9f) : Vector2.Zero));
+            if (Player.Skills.Count == 0)
+            {
+                DrawCompactText(sb, "NO MODULES", strip.Center.ToVector2(), UITheme.InkMuted,
+                    0.34f * scale, strip.Width);
+                return;
+            }
+
+            const int maximumVisibleMobile = 5;
+            int visibleMobile = Math.Min(maximumVisibleMobile, Player.Skills.Count);
+            int sizeMobile = Math.Min(strip.Height, Math.Max(22, (int)(32 * scale)));
+            int gapMobile = Math.Max(4, (int)(6 * scale));
+            int totalMobile = visibleMobile * sizeMobile + (visibleMobile - 1) * gapMobile;
+            int startMobile = strip.Center.X - totalMobile / 2;
+            for (int i = 0; i < visibleMobile; i++)
+            {
+                Skill skill = Player.Skills[i];
+                var bounds = new Rectangle(startMobile + i * (sizeMobile + gapMobile),
+                    strip.Center.Y - sizeMobile / 2, sizeMobile, sizeMobile);
+                sb.Draw(Pixel, bounds, UISkillIconCatalog.Fill(skill));
+                UIUtils.DrawRectangleOutlines(sb, bounds, UITheme.GoldBright, 1, Pixel);
+                DrawCompactText(sb, UISkillIconCatalog.Glyph(skill.Type), bounds.Center.ToVector2(),
+                    UITheme.Ink, 0.44f * scale, sizeMobile - 5f);
+            }
+            return;
+#else
             if (Player.Skills.Count == 0)
             {
                 DrawCompactText(sb, "NO SKILLS", new Vector2(cardBounds.Center.X,
@@ -472,6 +559,7 @@ namespace Fida.UI
                 DrawCompactText(sb, $"+{Player.Skills.Count - maximumVisible}", last,
                     UITheme.Ink, 0.40f * scale, size - 3f);
             }
+#endif
         }
 
         private void DrawSkillDetails(SpriteBatch sb, Rectangle portraitBounds, float scale)
