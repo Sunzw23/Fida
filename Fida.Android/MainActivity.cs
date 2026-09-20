@@ -35,6 +35,14 @@ public sealed class MainActivity : AndroidGameActivity
     {
         public WindowInsets OnApplyWindowInsets(View view, WindowInsets insets)
         {
+            if (view.Width <= 0 || view.Height <= 0)
+            {
+                // The first callback can precede layout. Re-request after the
+                // view is attached/measured instead of publishing invalid scale data.
+                view.Post(view.RequestApplyInsets);
+                return insets;
+            }
+
             int left;
             int top;
             int right;
