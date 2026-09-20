@@ -135,9 +135,29 @@ namespace Fida.UI
             sb.Draw(Pixel, Bounds, backColor);
 
             if (State == UIAnimatedButtonState.Hovered)
-                sb.Draw(Pixel, Bounds, UITheme.Gold * 0.10f);
+                sb.Draw(Pixel, Bounds, UITheme.Gold * 0.14f);
             else if (State == UIAnimatedButtonState.Pressed || State == UIAnimatedButtonState.Selected)
-                sb.Draw(Pixel, Bounds, UITheme.Gold * 0.18f);
+                sb.Draw(Pixel, Bounds, UITheme.AccentViolet * 0.22f);
+
+            bool emphasized = State is UIAnimatedButtonState.Hovered or
+                UIAnimatedButtonState.Pressed or UIAnimatedButtonState.Selected;
+            if (emphasized)
+            {
+                float pulse = 0.72f + 0.20f * (float)Math.Sin(
+                    gameTime.TotalGameTime.TotalSeconds * 7.0);
+                UIUtils.DrawGlowFrame(sb, Bounds, Pixel,
+                    State == UIAnimatedButtonState.Selected
+                        ? UITheme.AccentGreen : UITheme.Gold,
+                    borderThickness, pulse);
+            }
+            else
+            {
+                int accentWidth = Math.Max(18, Bounds.Width / 7);
+                sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Top, accentWidth, 2),
+                    UITheme.AccentBlue * 0.85f);
+                sb.Draw(Pixel, new Rectangle(Bounds.Right - accentWidth, Bounds.Bottom - 2,
+                    accentWidth, 2), UITheme.AccentViolet * 0.75f);
+            }
 
             // 绘制文字（居中，使用缓存坐标）
             if (!string.IsNullOrEmpty(Text))
@@ -149,7 +169,11 @@ namespace Fida.UI
                     availableHeight / MathHelper.Max(1, _cachedTextSize.Y)));
                 Vector2 textPos = new(
                     Bounds.Center.X - _cachedTextSize.X * textScale / 2,
-                    Bounds.Center.Y - _cachedTextSize.Y * textScale / 2);
+                    Bounds.Center.Y - _cachedTextSize.Y * textScale / 2 +
+                    (State == UIAnimatedButtonState.Pressed ? 2f : 0f));
+                sb.DrawString(Font, _cachedDisplayText, textPos + new Vector2(1.5f, 2f),
+                    UITheme.AccentBlue * 0.55f, 0f, Vector2.Zero, textScale,
+                    SpriteEffects.None, 0f);
                 sb.DrawString(Font, _cachedDisplayText, textPos, foreColor,
                     0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
             }
@@ -160,7 +184,10 @@ namespace Fida.UI
                 if (HasDoubleBorder())
                 {
                     // 外层边框（描金）
-                    UIUtils.DrawRectangleOutlines(sb, Bounds, UITheme.Gold, borderThickness, Pixel);
+                    UIUtils.DrawRectangleOutlines(sb, Bounds,
+                        State == UIAnimatedButtonState.Selected
+                            ? UITheme.AccentGreen : UITheme.Gold,
+                        borderThickness, Pixel);
                     // 内层边框（深墨），向内偏移
                     var innerBounds = new Rectangle(
                         Bounds.X + borderThickness,
@@ -168,7 +195,8 @@ namespace Fida.UI
                         Bounds.Width - borderThickness * 2,
                         Bounds.Height - borderThickness * 2
                     );
-                    UIUtils.DrawRectangleOutlines(sb, innerBounds, UITheme.Ink, 2, Pixel);
+                    UIUtils.DrawRectangleOutlines(sb, innerBounds,
+                        UITheme.AccentViolet, 2, Pixel);
                 }
                 else
                 {

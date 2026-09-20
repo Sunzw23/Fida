@@ -73,8 +73,9 @@ namespace Fida.UI
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
                 SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState);
-            // 绘制主题背景（暖墨渐变桌面 + 暗角），菜单与对局通用
-            UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel, _graphicsDevice.Viewport);
+            // Animated cyber-grid background shared by menus and battle screens.
+            UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel,
+                _graphicsDevice.Viewport, gameTime);
             foreach (UIControl control in _uiControls)
             {
                 control.Draw(_spriteBatch, gameTime);

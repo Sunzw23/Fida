@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Fida.UI
 {
     /// <summary>
-    /// A text-free directional effect that carries golden particles from the
+    /// A text-free directional effect that carries layered neon particles from the
     /// selected addend into the base number being changed.
     /// </summary>
     public sealed class UINumberFlowEffect : UIControl
@@ -68,7 +68,9 @@ namespace Fida.UI
                     MathHelper.SmoothStep(0f, 1f, t));
                 float strength = 1f - i / 16f;
                 int size = 5 + (int)(strength * 8f);
-                Color color = Color.Lerp(UITheme.Gold, UITheme.GoldBright, strength)
+                Color trail = i < 4 ? UITheme.AccentGreen :
+                    i < 10 ? UITheme.GoldBright : UITheme.AccentViolet;
+                Color color = Color.Lerp(UITheme.AccentBlue, trail, strength)
                     * (0.28f + strength * 0.72f);
                 sb.Draw(_pixel, point, null, color, MathHelper.PiOver4,
                     new Vector2(0.5f), new Vector2(size, size),
@@ -86,8 +88,9 @@ namespace Fida.UI
                 bounds.Y - expansion,
                 bounds.Width + expansion * 2,
                 bounds.Height + expansion * 2);
-            UIUtils.DrawRectangleOutlines(sb, pulseBounds,
-                Color.Lerp(UITheme.Gold, UITheme.GoldBright, wave), 3, _pixel);
+            Color endpoint = outward ? UITheme.AccentViolet : UITheme.AccentGreen;
+            UIUtils.DrawGlowFrame(sb, pulseBounds, _pixel,
+                Color.Lerp(UITheme.Gold, endpoint, wave), 3, 0.72f);
         }
 
         private void DrawPath(SpriteBatch sb, Vector2 origin, Vector2 control, Vector2 target)
@@ -97,7 +100,8 @@ namespace Fida.UI
             {
                 float t = segment / 24f;
                 Vector2 current = QuadraticBezier(origin, control, target, t);
-                DrawLine(sb, previous, current, UITheme.Gold * 0.28f, 2f);
+                DrawLine(sb, previous, current, UITheme.AccentViolet * 0.12f, 6f);
+                DrawLine(sb, previous, current, UITheme.Gold * 0.42f, 2f);
                 previous = current;
             }
         }

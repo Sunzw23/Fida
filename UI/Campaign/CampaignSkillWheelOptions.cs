@@ -10,7 +10,7 @@ namespace Fida.UI.Campaign
         public int NeighborSpacing { get; init; } = 112;
         public float FocusedTextScale { get; init; } = 0.66f;
         public float NearTextScale { get; init; } = 0.46f;
-        public float FarTextScale { get; init; } = 0.34f;
+        public float FarTextScale { get; init; } = 0.42f;
 
         public static CampaignSkillWheelOptions Mobile() => new()
         {
@@ -20,8 +20,8 @@ namespace Fida.UI.Campaign
             FocusedHeight = 154,
             NeighborSpacing = 132,
             FocusedTextScale = 0.62f,
-            NearTextScale = 0.44f,
-            FarTextScale = 0.32f
+            NearTextScale = 0.54f,
+            FarTextScale = 0.44f
         };
     }
 }

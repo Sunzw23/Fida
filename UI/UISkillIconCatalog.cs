@@ -26,10 +26,10 @@ namespace Fida.UI
         public static Color Fill(Skill skill) => skill.Trigger switch
         {
             SkillTrigger.OrderingAttack or SkillTrigger.OrderedAttack or SkillTrigger.Damaging =>
-                new Color(104, 48, 37),
-            SkillTrigger.Defending or SkillTrigger.Damaged => new Color(52, 67, 78),
-            SkillTrigger.GameStart => new Color(70, 60, 91),
-            SkillTrigger.TurnStart => new Color(76, 69, 42),
+                UITheme.AccentViolet,
+            SkillTrigger.Defending or SkillTrigger.Damaged => UITheme.AccentBlue,
+            SkillTrigger.GameStart => UITheme.Gold,
+            SkillTrigger.TurnStart => UITheme.AccentGreen,
             _ => UITheme.Ink
         };
     }

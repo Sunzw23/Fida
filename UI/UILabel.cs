@@ -13,7 +13,7 @@ namespace Fida.UI
 
         /// <summary>Optional text width constraint. Zero means unconstrained.</summary>
         public float MaximumWidth { get; set; }
-        public float MinimumScale { get; set; } = 0.45f;
+        public float MinimumScale { get; set; } = 0.58f;
 
         public UILabel(int id, string text, Vector2 position, SpriteFont font) : base(id)
         {

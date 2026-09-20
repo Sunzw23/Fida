@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Fida.UI
 {
     /// <summary>
-    /// 菜单大标题控件：用衬线字体（TitleFont）居中绘制，下方配一条描金短横线。
+    /// 菜单大标题控件：无衬线高对比标题与分段霓虹信号线。
     /// 非交互控件（不可聚焦、无鼠标逻辑），仅用于菜单屏的视觉层级。
     /// </summary>
     public class UITitle : UIControl
@@ -28,7 +28,6 @@ namespace Fida.UI
             if (!IsVisible) return;
             if (string.IsNullOrEmpty(_text)) return;
 
-            // 居中绘制衬线标题
             string displayText = UIFontGuard.Sanitize(_font, _text);
             var size = _font.MeasureString(displayText);
             Rectangle panel = UITheme.PanelRect(sb.GraphicsDevice.Viewport);
@@ -43,14 +42,25 @@ namespace Fida.UI
             float centerY = MathHelper.Clamp(_position.Y,
                 panel.Top + displaySize.Y / 2 + 28, panel.Bottom - displaySize.Y / 2 - 28);
             var pos = new Vector2(centerX - displaySize.X / 2, centerY - displaySize.Y / 2);
+            sb.DrawString(_font, displayText, pos + new Vector2(3f, 3f),
+                UITheme.AccentViolet * 0.48f, 0f, Vector2.Zero,
+                scale, SpriteEffects.None, 0f);
+            sb.DrawString(_font, displayText, pos + new Vector2(-1.5f, 0f),
+                UITheme.Gold * 0.28f, 0f, Vector2.Zero,
+                scale, SpriteEffects.None, 0f);
             sb.DrawString(_font, displayText, pos, UITheme.Ink, 0f, Vector2.Zero,
                 scale, SpriteEffects.None, 0f);
 
-            // 标题下方的描金装饰短线（宽约为文字宽度的一半，居中）
-            float ruleW = displaySize.X * 0.5f;
+            float ruleW = MathHelper.Max(90f, displaySize.X * 0.62f);
             float ruleX = centerX - ruleW / 2;
             float ruleY = centerY + displaySize.Y / 2 + 6f;
-            sb.Draw(_pixel, new Rectangle((int)ruleX, (int)ruleY, (int)ruleW, 2), UITheme.Gold);
+            int third = System.Math.Max(1, (int)ruleW / 3);
+            sb.Draw(_pixel, new Rectangle((int)ruleX, (int)ruleY, third, 3),
+                UITheme.AccentViolet);
+            sb.Draw(_pixel, new Rectangle((int)ruleX + third, (int)ruleY,
+                third, 3), UITheme.GoldBright);
+            sb.Draw(_pixel, new Rectangle((int)ruleX + third * 2, (int)ruleY,
+                System.Math.Max(1, (int)ruleW - third * 2), 3), UITheme.AccentGreen);
         }
     }
 }

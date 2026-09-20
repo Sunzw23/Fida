@@ -64,7 +64,7 @@ namespace Fida.UI
             {
                 Alignment = UIBoxLabelAlignment.Center,
                 AutoFitText = true,
-                MinimumTextScale = 0.45f,
+                MinimumTextScale = 0.60f,
                 TextPadding = 18,
                 BackColor = UITheme.PanelDark,
                 ForeColor = UITheme.Ink,
@@ -80,7 +80,7 @@ namespace Fida.UI
             {
                 Alignment = UIBoxLabelAlignment.Center,
                 AutoFitText = true,
-                MinimumTextScale = 0.5f,
+                MinimumTextScale = 0.60f,
                 TextPadding = 16,
                 BackColor = UITheme.PanelLight,
                 ForeColor = UITheme.Ink,
@@ -356,7 +356,7 @@ namespace Fida.UI
             UpdateNumberPadVisibility();
         }
 
-        /// <summary>
+        /// <summary>Refreshes contextual controls whenever the required action changes.</summary>
         private void OnPlayerActionRequired(object sender, PlayerActionRequiredEventArgs e)
         {
             // 每次步骤切换时（包括同状态内 StepIndex++），更新按钮的 Selected 状态

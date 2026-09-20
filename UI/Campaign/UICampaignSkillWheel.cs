@@ -153,10 +153,10 @@ namespace Fida.UI.Campaign
             Viewport viewport = _graphicsDevice.Viewport;
             Rectangle panel = PanelBounds(viewport);
             spriteBatch.Draw(_pixel, panel, UITheme.Panel);
-            UIUtils.DrawRectangleOutlines(spriteBatch, panel, UITheme.Gold, 3, _pixel);
+            UIUtils.DrawGlowFrame(spriteBatch, panel, _pixel, UITheme.Gold, 3, 0.72f);
 
             DrawHeader(spriteBatch, viewport, panel);
-            DrawWheel(spriteBatch, viewport, panel);
+            DrawWheel(spriteBatch, viewport, panel, gameTime);
             DrawFooter(spriteBatch, viewport, panel);
         }
 
@@ -166,7 +166,7 @@ namespace Fida.UI.Campaign
             DrawCentered(spriteBatch, _titleFont, $"{_node.Chapter} - {_node.Name}",
                 new Vector2(centerX, panel.Top + 48), panel.Width - 80, 0.54f, UITheme.Ink);
             DrawCentered(spriteBatch, _font, _node.Story,
-                new Vector2(centerX, panel.Top + 112), panel.Width - 100, 0.42f, UITheme.InkMuted);
+                new Vector2(centerX, panel.Top + 112), panel.Width - 100, 0.50f, UITheme.InkMuted);
 
             int used = CampaignSkillBalance.TotalCost(_selected);
             DrawCentered(spriteBatch, _font,
@@ -180,10 +180,11 @@ namespace Fida.UI.Campaign
                 new Vector2(centerX, panel.Top + 222), panel.Width - 100, 0.42f, UITheme.Ink);
             DrawCentered(spriteBatch, _font,
                 "Mouse wheel / arrows / D-pad: browse    Enter / A / click: equip or remove",
-                new Vector2(centerX, panel.Top + 268), panel.Width - 100, 0.34f, UITheme.InkMuted);
+                new Vector2(centerX, panel.Top + 268), panel.Width - 100, 0.46f, UITheme.InkMuted);
         }
 
-        private void DrawWheel(SpriteBatch spriteBatch, Viewport viewport, Rectangle panel)
+        private void DrawWheel(SpriteBatch spriteBatch, Viewport viewport, Rectangle panel,
+            GameTime gameTime)
         {
             float centerX = viewport.Width / 2f;
             int centerY = panel.Top + _options.WheelCenterOffsetFromPanelTop;
@@ -194,21 +195,23 @@ namespace Fida.UI.Campaign
             Rectangle focusedBounds = new((int)centerX - focusedWidth / 2,
                 centerY - _options.FocusedHeight / 2, focusedWidth, _options.FocusedHeight);
 
-            spriteBatch.Draw(_pixel, new Rectangle((int)centerX, centerY - 250, 2, 500), UITheme.Gold);
+            spriteBatch.Draw(_pixel, new Rectangle((int)centerX - 1, centerY - 250, 2, 500), UITheme.Gold);
+            spriteBatch.Draw(_pixel, new Rectangle((int)centerX + 3, centerY - 250, 1, 500),
+                UITheme.AccentViolet * 0.62f);
 
             for (int offset = -_options.VisibleNeighborCount; offset <= _options.VisibleNeighborCount; offset++)
             {
                 SkillType skill = _wheel.GetAtOffset(offset);
                 if (offset == 0)
                 {
-                    DrawFocusedSkill(spriteBatch, skill, focusedBounds);
+                    DrawFocusedSkill(spriteBatch, skill, focusedBounds, gameTime);
                     continue;
                 }
 
                 int y = centerY + offset * _options.NeighborSpacing;
                 bool near = Math.Abs(offset) == 1;
                 float scale = near ? _options.NearTextScale : _options.FarTextScale;
-                Color color = near ? UITheme.InkMuted : new Color(145, 126, 98);
+                Color color = near ? UITheme.InkMuted : UITheme.AccentBlue * 0.72f;
                 string selectedMarker = _selected.Contains(skill) ? "[EQUIPPED] " : "";
                 string text = $"{selectedMarker}{GameText.SkillName(skill)} [{CampaignSkillBalance.Cost(skill)} SP]";
                 DrawCentered(spriteBatch, _font, text, new Vector2(centerX, y),
@@ -219,14 +222,20 @@ namespace Fida.UI.Campaign
             DrawSmallButton(spriteBatch, NextButton(focusedBounds), "DOWN");
         }
 
-        private void DrawFocusedSkill(SpriteBatch spriteBatch, SkillType skill, Rectangle bounds)
+        private void DrawFocusedSkill(SpriteBatch spriteBatch, SkillType skill,
+            Rectangle bounds, GameTime gameTime)
         {
             CampaignSkillAvailability availability = Availability(skill);
             bool selected = availability == CampaignSkillAvailability.Selected;
-            Color background = selected ? new Color(220, 197, 139) :
+            Color background = selected ? UITheme.PanelPressed :
                 availability == CampaignSkillAvailability.Available ? UITheme.PanelLight : UITheme.PanelDark;
             spriteBatch.Draw(_pixel, bounds, background);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.GoldBright, 5, _pixel);
+            float pulse = 0.70f + 0.24f * (float)Math.Sin(
+                gameTime.TotalGameTime.TotalSeconds * 5.2);
+            Color accent = selected ? UITheme.AccentGreen : UITheme.GoldBright;
+            UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, accent, 4, pulse);
+            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 7, bounds.Height),
+                UITheme.AccentViolet);
 
             DrawCentered(spriteBatch, _font,
                 $"{GameText.SkillName(skill)}   {CampaignSkillBalance.Cost(skill)} SP",
@@ -234,7 +243,7 @@ namespace Fida.UI.Campaign
                 _options.FocusedTextScale, availability == CampaignSkillAvailability.Locked ? UITheme.InkMuted : UITheme.Ink);
             DrawCentered(spriteBatch, _font, AvailabilityText(availability),
                 new Vector2(bounds.Center.X, bounds.Center.Y + 31), bounds.Width - 28,
-                0.32f, availability == CampaignSkillAvailability.Available || selected ? UITheme.Ink : UITheme.InkMuted);
+                0.46f, availability == CampaignSkillAvailability.Available || selected ? UITheme.Ink : UITheme.InkMuted);
         }
 
         private void DrawFooter(SpriteBatch spriteBatch, Viewport viewport, Rectangle panel)
@@ -250,8 +259,8 @@ namespace Fida.UI.Campaign
         private void DrawSmallButton(SpriteBatch spriteBatch, Rectangle bounds, string text)
         {
             spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.Gold, 2, _pixel);
-            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12, 0.42f, UITheme.Ink);
+            UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, UITheme.Gold, 2, 0.48f);
+            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12, 0.56f, UITheme.Ink);
         }
 
         private CampaignSkillAvailability Availability(SkillType skill) =>
@@ -322,7 +331,7 @@ namespace Fida.UI.Campaign
             text = UIFontGuard.Sanitize(font, text);
             Vector2 measured = font.MeasureString(text);
             if (measured.X <= 0f) return;
-            float scale = Math.Max(0.18f, Math.Min(preferredScale, maximumWidth / measured.X));
+            float scale = Math.Max(0.30f, Math.Min(preferredScale, maximumWidth / measured.X));
             spriteBatch.DrawString(font, text, center - measured * scale / 2f, color, 0f,
                 Vector2.Zero, scale, SpriteEffects.None, 0f);
         }

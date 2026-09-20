@@ -110,15 +110,17 @@ namespace Fida.UI
         }
 
         /// <summary>
-        /// 根据状态获取背景色（按下/选定反色为深羊皮纸，其余为浅羊皮纸）
+        /// 根据状态获取背景色。
         /// </summary>
         protected Color GetBackColor()
         {
-            return IsPressedOrSelected() ? UITheme.PanelPressed : UITheme.PanelLight;
+            if (IsPressedOrSelected()) return UITheme.PanelPressed;
+            if (IsHoveredState()) return UITheme.PanelHover;
+            return UITheme.PanelLight;
         }
 
         /// <summary>
-        /// 根据状态获取前景色（按下/选定为浅羊皮纸，其余为深墨）
+        /// 根据状态获取前景色。
         /// </summary>
         protected Color GetForeColor()
         {
@@ -127,7 +129,7 @@ namespace Fida.UI
         }
 
         /// <summary>
-        /// 根据状态获取边框颜色（禁用无边框，悬停亮金，其余描金）
+        /// 根据状态获取边框颜色。
         /// </summary>
         protected Color GetBorderColor()
         {

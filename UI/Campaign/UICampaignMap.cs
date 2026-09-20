@@ -211,7 +211,7 @@ namespace Fida.UI.Campaign
         public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
 #if FIDA_ANDROID
-            DrawMobile(spriteBatch);
+            DrawMobile(spriteBatch, gameTime);
             return;
 #else
             EnsureViewport();
@@ -292,7 +292,7 @@ namespace Fida.UI.Campaign
                 _selectedIndex = _mobileChoices[0];
         }
 
-        private void DrawMobile(SpriteBatch spriteBatch)
+        private void DrawMobile(SpriteBatch spriteBatch, GameTime gameTime)
         {
             LayoutMobile();
             Rectangle panel = MobilePanel();
@@ -303,22 +303,30 @@ namespace Fida.UI.Campaign
             DrawCentered(spriteBatch, _font,
                 "Choose an open route. Tap a card to inspect it, then enter the node.",
                 new Vector2(viewport.Width / 2f, 78f), viewport.Width - 54f,
-                0.25f, UITheme.GoldBright);
+                0.48f, UITheme.GoldBright);
 
             spriteBatch.Draw(_pixel, panel, UITheme.Panel);
-            UIUtils.DrawRectangleOutlines(spriteBatch, panel, UITheme.Gold, 2, _pixel);
+            UIUtils.DrawGlowFrame(spriteBatch, panel, _pixel, UITheme.Gold, 2, 0.72f);
             UIUtils.DrawRectangleOutlines(spriteBatch,
                 new Rectangle(panel.X + 8, panel.Y + 8, panel.Width - 16, panel.Height - 16),
-                UITheme.Gold * 0.28f, 1, _pixel);
+                UITheme.AccentBlue * 0.52f, 1, _pixel);
 
             int completed = _progress.CompletedNodes.Count;
             string progress = $"ROUTE PROGRESS  {completed}/{_nodes.Count} CLEARED";
             DrawCentered(spriteBatch, _font, progress,
                 new Vector2(panel.Center.X, panel.Top + 46), panel.Width - 48f,
-                0.26f, UITheme.InkMuted);
+                0.48f, UITheme.InkMuted);
+            Rectangle progressTrack = new(panel.Left + 30, panel.Top + 70,
+                Math.Max(1, panel.Width - 60), 5);
+            spriteBatch.Draw(_pixel, progressTrack, UITheme.PanelDark);
+            float completion = _nodes.Count == 0 ? 0f :
+                MathHelper.Clamp(completed / (float)_nodes.Count, 0f, 1f);
+            spriteBatch.Draw(_pixel, new Rectangle(progressTrack.X, progressTrack.Y,
+                (int)(progressTrack.Width * completion), progressTrack.Height),
+                UITheme.AccentGreen);
             DrawCentered(spriteBatch, _font, "AVAILABLE ROUTES",
                 new Vector2(panel.Center.X, panel.Top + 96), panel.Width - 48f,
-                0.3f, UITheme.GoldBright);
+                0.52f, UITheme.GoldBright);
 
             for (int i = 0; i < _mobileChoices.Count; i++)
             {
@@ -328,22 +336,33 @@ namespace Fida.UI.Campaign
                 bool completedNode = _progress.IsCompleted(node.Id);
                 Color background = selected ? UITheme.PanelPressed :
                     completedNode ? UITheme.PanelDark : UITheme.PanelLight;
-                Color border = selected ? UITheme.GoldBright :
-                    completedNode ? UITheme.InkMuted : UITheme.Gold;
+                Color accent = completedNode ? UITheme.InkMuted : UITheme.RouteAccent(i);
+                Color border = selected ? UITheme.GoldBright : accent;
                 Color foreground = completedNode ? UITheme.InkMuted : UITheme.Ink;
 
                 spriteBatch.Draw(_pixel, bounds, background);
+                if (selected)
+                {
+                    float pulse = 0.72f + 0.22f * (float)Math.Sin(
+                        gameTime.TotalGameTime.TotalSeconds * 5.5);
+                    UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, accent, 3, pulse);
+                }
                 UIUtils.DrawRectangleOutlines(spriteBatch, bounds, border,
                     selected ? 3 : 1, _pixel);
+                spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 6,
+                    bounds.Height), accent);
+                int chipWidth = Math.Max(24, bounds.Width / 9);
+                spriteBatch.Draw(_pixel, new Rectangle(bounds.Right - chipWidth,
+                    bounds.Top, chipWidth, 3), UITheme.AccentGreen * 0.85f);
                 DrawCentered(spriteBatch, _font,
                     $"{node.Id}  {node.Name}",
                     new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.36f),
-                    bounds.Width - 28f, 0.36f, foreground);
+                    bounds.Width - 42f, 0.62f, foreground);
                 DrawCentered(spriteBatch, _font,
                     $"{node.Chapter}   |   {node.SkillBudget} SP   |   Reward: {node.RewardText}",
                     new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.70f),
-                    bounds.Width - 28f, 0.23f,
-                    completedNode ? UITheme.InkMuted : UITheme.GoldBright);
+                    bounds.Width - 42f, 0.43f,
+                    completedNode ? UITheme.InkMuted : accent);
             }
 
             CampaignNode selectedNode = _selectedIndex >= 0 && _selectedIndex < _nodes.Count
@@ -355,24 +374,29 @@ namespace Fida.UI.Campaign
                 DrawCentered(spriteBatch, _font,
                     $"Selected: {selectedNode.Id}  •  {status}",
                     new Vector2(panel.Center.X, panel.Bottom - 112), panel.Width - 48f,
-                    0.27f, UITheme.Ink);
+                    0.48f, UITheme.Ink);
             }
 
             DrawMobileButton(spriteBatch, _mobileEnterBounds,
                 selectedNode != null && CampaignCatalog.IsUnlocked(_progress, selectedNode)
                     ? "Enter Node" : "Unavailable", selectedNode != null &&
-                    CampaignCatalog.IsUnlocked(_progress, selectedNode));
-            DrawMobileButton(spriteBatch, _mobileBackBounds, "Back", true);
+                    CampaignCatalog.IsUnlocked(_progress, selectedNode), UITheme.AccentGreen);
+            DrawMobileButton(spriteBatch, _mobileBackBounds, "Back", true,
+                UITheme.AccentBlue);
         }
 
         private void DrawMobileButton(SpriteBatch spriteBatch, Rectangle bounds,
-            string text, bool enabled)
+            string text, bool enabled, Color accent)
         {
             spriteBatch.Draw(_pixel, bounds, enabled ? UITheme.PanelLight : UITheme.PanelDark);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                enabled ? UITheme.Gold : UITheme.InkMuted, enabled ? 2 : 1, _pixel);
+            if (enabled)
+                UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, accent, 2, 0.55f);
+            else
+                UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.InkMuted, 1, _pixel);
+            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top,
+                Math.Max(18, bounds.Width / 6), 3), accent);
             DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(),
-                bounds.Width - 18f, 0.27f, enabled ? UITheme.Ink : UITheme.InkMuted);
+                bounds.Width - 18f, 0.58f, enabled ? UITheme.Ink : UITheme.InkMuted);
         }
 
         private void UpdateMobileKeyboard(GameTime gameTime)
@@ -484,7 +508,7 @@ namespace Fida.UI.Campaign
                 new Vector2(viewport.Width / 2f, 34f), viewport.Width - 80f, 0.58f, UITheme.PanelLight);
             DrawCentered(spriteBatch, _font,
                 "Browse: drag or WASD | Zoom: wheel or +/- | Select: arrows or D-pad | Open: Enter or A",
-                new Vector2(viewport.Width / 2f, 87f), viewport.Width - 80f, 0.17f, UITheme.GoldBright);
+                new Vector2(viewport.Width / 2f, 87f), viewport.Width - 80f, 0.38f, UITheme.GoldBright);
         }
 
         private void DrawConnections(SpriteBatch spriteBatch)
@@ -513,7 +537,9 @@ namespace Fida.UI.Campaign
             bool unlocked = CampaignCatalog.IsUnlocked(_progress, node);
             bool completed = _progress.IsCompleted(node.Id);
             bool selected = index == _selectedIndex;
-            Color background = completed ? new Color(220, 197, 139) : unlocked ? UITheme.PanelLight : UITheme.PanelDark;
+            Color background = completed
+                ? Color.Lerp(UITheme.PanelLight, UITheme.AccentGreen, 0.30f)
+                : unlocked ? UITheme.PanelLight : UITheme.PanelDark;
             Color foreground = unlocked ? UITheme.Ink : UITheme.InkMuted;
 
             spriteBatch.Draw(_pixel, bounds, background);
@@ -524,7 +550,7 @@ namespace Fida.UI.Campaign
             string marker = completed ? "[C] " : unlocked ? "" : "[L] ";
             DrawCentered(spriteBatch, _font, marker + node.Id + "  " + node.Name,
                 bounds.Center.ToVector2(), bounds.Width - 14f,
-                MathHelper.Clamp(0.24f * _camera.Zoom, 0.14f, 0.43f), foreground);
+                MathHelper.Clamp(0.42f * _camera.Zoom, 0.28f, 0.62f), foreground);
         }
 
         private void DrawFooter(SpriteBatch spriteBatch)
@@ -548,11 +574,11 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
                 DrawCentered(spriteBatch, _font, detail,
                     new Vector2(viewport.Width / 2f, viewport.Height - 122f),
-                    viewport.Width - 56f, 0.26f, UITheme.PanelLight);
+                    viewport.Width - 56f, 0.46f, UITheme.PanelLight);
 #else
                 float centerX = (plus.Right + back.Left) / 2f;
                 DrawCentered(spriteBatch, _font, detail, new Vector2(centerX, viewport.Height - 47f),
-                    Math.Max(120f, back.Left - plus.Right - 35f), 0.18f, UITheme.PanelLight);
+                    Math.Max(120f, back.Left - plus.Right - 35f), 0.40f, UITheme.PanelLight);
 #endif
             }
         }
@@ -561,7 +587,7 @@ namespace Fida.UI.Campaign
         {
             spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
             UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.Gold, 2, _pixel);
-            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12f, 0.19f, UITheme.Ink);
+            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12f, 0.44f, UITheme.Ink);
         }
 
         private void DrawCentered(SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 center,

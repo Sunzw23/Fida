@@ -366,7 +366,8 @@ namespace Fida.UI
                 int expansion = 8 + (int)(SelectionStrength * 5f);
                 var selectedBounds = new Rectangle(cardBounds.X - expansion, cardBounds.Y - expansion,
                     cardBounds.Width + expansion * 2, cardBounds.Height + expansion * 2);
-                UIUtils.DrawRectangleOutlines(sb, selectedBounds, UITheme.GoldBright, 4, Pixel);
+                UIUtils.DrawGlowFrame(sb, selectedBounds, Pixel,
+                    UITheme.AccentGreen, 4, SelectionStrength);
             }
 
             // 绘制外框背景
@@ -382,7 +383,8 @@ namespace Fida.UI
                     cardBounds.Width - outerThickness * 2,
                     cardBounds.Height - outerThickness * 2
                 );
-                UIUtils.DrawRectangleOutlines(sb, pressedInnerBounds, UITheme.Ink, 2, Pixel);
+                UIUtils.DrawRectangleOutlines(sb, pressedInnerBounds,
+                    UITheme.AccentViolet, 2, Pixel);
             }
             else
             {
@@ -461,20 +463,20 @@ namespace Fida.UI
                 UIUtils.DrawRectangleOutlines(sb, bounds, UITheme.GoldBright,
                     System.Math.Max(1, (int)(2 * scale)), Pixel);
                 DrawCompactText(sb, UISkillIconCatalog.Glyph(skill.Type), bounds.Center.ToVector2(),
-                    UITheme.PanelLight, 0.38f * scale, size - 4f);
+                    UITheme.Ink, 0.48f * scale, size - 4f);
             }
 
             if (Player.Skills.Count > maximumVisible)
             {
                 var last = new Vector2(startX + (visible - 1) * (size + gap) + size / 2f, centerY);
                 DrawCompactText(sb, $"+{Player.Skills.Count - maximumVisible}", last,
-                    UITheme.PanelLight, 0.30f * scale, size - 3f);
+                    UITheme.Ink, 0.40f * scale, size - 3f);
             }
         }
 
         private void DrawSkillDetails(SpriteBatch sb, Rectangle portraitBounds, float scale)
         {
-            sb.Draw(Pixel, portraitBounds, UITheme.Ink * 0.92f);
+            sb.Draw(Pixel, portraitBounds, UITheme.PanelDark * 0.96f);
             UIUtils.DrawEngravedFrame(sb, portraitBounds, Pixel, UITheme.GoldBright,
                 UITheme.PanelDark, 2, 6, 14, false);
 
@@ -493,13 +495,13 @@ namespace Fida.UI
                 string line = $"{UISkillIconCatalog.Glyph(skill.Type)}  {GameText.SkillName(skill.Type)}  " +
                     $"[{CampaignSkillBalance.Cost(skill.Type)} SP]";
                 DrawCompactText(sb, line, new Vector2(portraitBounds.Center.X, y + rowHeight / 2f),
-                    UITheme.PanelLight, 0.34f * scale, portraitBounds.Width - 18f);
+                    UITheme.Ink, 0.44f * scale, portraitBounds.Width - 18f);
                 y += rowHeight;
             }
             if (shown < Player.Skills.Count)
                 DrawCompactText(sb, $"+{Player.Skills.Count - shown} MORE",
                     new Vector2(portraitBounds.Center.X, portraitBounds.Bottom - 13f * scale),
-                    UITheme.GoldBright, 0.28f * scale, portraitBounds.Width - 18f);
+                    UITheme.GoldBright, 0.40f * scale, portraitBounds.Width - 18f);
         }
 
         private void DrawCompactText(SpriteBatch sb, string text, Vector2 center,

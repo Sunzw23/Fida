@@ -27,7 +27,7 @@ namespace Fida.UI
         public int BorderThickness { get; set; } = 1;
         public UIBoxLabelAlignment Alignment { get; set; } = UIBoxLabelAlignment.Center;
         public bool AutoFitText { get; set; }
-        public float MinimumTextScale { get; set; } = 0.4f;
+        public float MinimumTextScale { get; set; } = 0.55f;
         public int TextPadding { get; set; } = 12;
 
         // 缓存 MeasureString 结果，避免每帧重复计算
@@ -92,7 +92,12 @@ namespace Fida.UI
             // 绘制边框
             if (BorderThickness > 0)
             {
-                UIUtils.DrawRectangleOutlines(sb, Bounds, BorderColor, BorderThickness, Pixel);
+                if (BorderThickness >= 2)
+                    UIUtils.DrawGlowFrame(sb, Bounds, Pixel, BorderColor,
+                        BorderThickness, 0.55f);
+                else
+                    UIUtils.DrawRectangleOutlines(sb, Bounds, BorderColor,
+                        BorderThickness, Pixel);
             }
         }
 

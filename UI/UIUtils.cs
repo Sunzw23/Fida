@@ -16,10 +16,25 @@ namespace Fida.UI
         /// <param name="pixel"></param>
         public static void DrawRectangleOutlines(SpriteBatch sb, Rectangle rect, Color color, int width, Texture2D pixel)
         {
+            if (rect.Width <= 0 || rect.Height <= 0 || width <= 0) return;
             sb.Draw(pixel, new Rectangle(rect.Left, rect.Top, rect.Width, width), color); // Top
             sb.Draw(pixel, new Rectangle(rect.Left, rect.Bottom - width, rect.Width, width), color); // Bottom
             sb.Draw(pixel, new Rectangle(rect.Left, rect.Top, width, rect.Height), color); // Left
             sb.Draw(pixel, new Rectangle(rect.Right - width, rect.Top, width, rect.Height), color); // Right
+        }
+
+        /// <summary>Draws a restrained multi-layer neon glow without extra textures.</summary>
+        public static void DrawGlowFrame(SpriteBatch sb, Rectangle rect, Texture2D pixel,
+            Color color, int coreWidth = 2, float intensity = 1f)
+        {
+            intensity = MathHelper.Clamp(intensity, 0f, 1f);
+            for (int spread = 8; spread >= 4; spread -= 2)
+            {
+                var glow = new Rectangle(rect.X - spread, rect.Y - spread,
+                    rect.Width + spread * 2, rect.Height + spread * 2);
+                DrawRectangleOutlines(sb, glow, color * (0.035f * intensity), 2, pixel);
+            }
+            DrawRectangleOutlines(sb, rect, color * intensity, coreWidth, pixel);
         }
 
         /// <summary>
