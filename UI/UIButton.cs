@@ -63,6 +63,13 @@ namespace Fida.UI
             // 绘制背景
             sb.Draw(Pixel, Bounds, backColor);
 
+            // Use a fill response as well as a border response so touch feedback
+            // remains visible on high-density phone displays.
+            if (State == UIButtonState.Hovered)
+                sb.Draw(Pixel, Bounds, UITheme.Gold * 0.10f);
+            else if (State == UIButtonState.Pressed || State == UIButtonState.Selected)
+                sb.Draw(Pixel, Bounds, UITheme.Gold * 0.18f);
+
             // 绘制文字（居中）
             string displayText = UIFontGuard.Sanitize(Font, Text);
             var size = Font.MeasureString(displayText);

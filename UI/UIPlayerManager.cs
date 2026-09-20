@@ -63,12 +63,13 @@ namespace Fida.UI
             _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Alignment = UIBoxLabelAlignment.Center,
-                BorderThickness = 1,
                 AutoFitText = true,
                 MinimumTextScale = 0.45f,
                 TextPadding = 18,
-                BackColor = UITheme.Ink,
-                ForeColor = UITheme.PanelLight
+                BackColor = UITheme.PanelDark,
+                ForeColor = UITheme.Ink,
+                BorderColor = UITheme.Gold,
+                BorderThickness = 2
             };
             _uiControls.Add(_gameMessageLabel);
 

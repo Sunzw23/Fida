@@ -5,46 +5,38 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Fida.UI
 {
     /// <summary>
-    /// 全局配色与桌面（tabletop）背景绘制。
+    /// 全局配色与现代科技感背景绘制。
     ///
-    /// 暖墨 + 羊皮纸（ink-and-paper）主题：
-    /// - 桌面背景为暖墨棕的纵向渐变（上深下浅），营造"灯下牌桌"的氛围；
-    /// - 菜单控件铺在一块居中的"羊皮纸"面板上，带描金边框；
-    /// - 按钮/卡片为羊皮纸色（浅色），文字用深墨色，悬停描金；
-    /// - 按下/选中反色为深羊皮纸 + 描金，形成"盖章"质感。
+    /// 深蓝底 + 青色信号色：
+    /// - 深色背景降低长时间游玩时的视觉疲劳；
+    /// - 面板、按钮和卡片使用同一组层级色，保证识别一致；
+    /// - 青色边框代表可交互，亮青色代表焦点/悬停/确认。
     ///
     /// 所有颜色集中于此，各控件不再各自硬编码 Black/White，
     /// 换主题只需改这一处。
     /// </summary>
     public static class UITheme
     {
-        // ─── 背景（桌面） ────────────────────────────────
-        /// <summary>背景渐变顶部色：暖墨深棕。</summary>
-        public static readonly Color BgTop = new Color(38, 31, 25);
-        /// <summary>背景渐变底部色：稍亮的暖棕，模拟灯光由中心泛开。</summary>
-        public static readonly Color BgBottom = new Color(66, 55, 44);
-        /// <summary>面板四周暗角（晕影）色，向边缘加深以聚焦中央。</summary>
-        public static readonly Color Vignette = new Color(18, 14, 11);
+        // ─── Background ─────────────────────────────────
+        public static readonly Color BgTop = new Color(4, 12, 22);
+        public static readonly Color BgBottom = new Color(10, 31, 52);
+        public static readonly Color Vignette = new Color(1, 5, 11);
 
-        // ─── 纸张 / 卡片 ────────────────────────────────
-        /// <summary>羊皮纸面板（菜单底衬）：米色。</summary>
-        public static readonly Color Panel = new Color(232, 221, 199);
-        /// <summary>浅色羊皮纸：按钮/卡片底色，也作"按压态"文字色。</summary>
-        public static readonly Color PanelLight = new Color(243, 236, 221);
-        /// <summary>深羊皮纸：卡片底衬、按压/选中态底色，兼作输入框底。</summary>
-        public static readonly Color PanelDark = new Color(214, 203, 179);
+        // ─── Surfaces ────────────────────────────────────
+        public static readonly Color Panel = new Color(13, 26, 42);
+        public static readonly Color PanelLight = new Color(21, 42, 65);
+        public static readonly Color PanelDark = new Color(8, 18, 31);
+        public static readonly Color PanelHover = new Color(27, 58, 83);
+        public static readonly Color PanelPressed = new Color(18, 74, 94);
 
-        // ─── 墨 / 文字 ──────────────────────────────────
-        /// <summary>深墨色：浅底上的正文、按压态文字。</summary>
-        public static readonly Color Ink = new Color(46, 38, 30);
-        /// <summary>占位 / 次要文字（输入框空值提示）。</summary>
-        public static readonly Color InkMuted = new Color(112, 96, 74);
+        // ─── Text ────────────────────────────────────────
+        public static readonly Color Ink = new Color(231, 247, 255);
+        public static readonly Color InkMuted = new Color(137, 165, 186);
 
-        // ─── 描金 ───────────────────────────────────────
-        /// <summary>描金：按钮/面板/标题装饰线、焦点边框。</summary>
-        public static readonly Color Gold = new Color(186, 152, 84);
-        /// <summary>亮金：悬停边框，比 Gold 更亮以示强调。</summary>
-        public static readonly Color GoldBright = new Color(214, 183, 113);
+        // ─── Interaction signal ─────────────────────────
+        // Names remain Gold/GoldBright for compatibility with existing controls.
+        public static readonly Color Gold = new Color(59, 210, 255);
+        public static readonly Color GoldBright = new Color(138, 244, 255);
 
         // ─── 布局 ───────────────────────────────────────
         /// <summary>菜单面板在 1920×1200 下的居中几何（宽屏亦居中）。</summary>
@@ -94,12 +86,19 @@ namespace Fida.UI
             sb.Draw(pixel, new Rectangle(vp.Width - w, 0, w, vp.Height), c);
         }
 
-        /// <summary>菜单"羊皮纸"面板：米色底 + 描金双线框（菜单专属，对局不画）。</summary>
+        /// <summary>Modern menu panel with a restrained double signal frame.</summary>
         public static void DrawMenuPanel(SpriteBatch sb, Texture2D pixel, Viewport vp)
         {
             var rect = PanelRect(vp);
             sb.Draw(pixel, rect, Panel);
-            UIUtils.DrawEngravedFrame(sb, rect, pixel, Gold, Ink, 3, 8, 24);
+            UIUtils.DrawRectangleOutlines(sb, rect, Gold, 2, pixel);
+            var inner = new Rectangle(rect.X + 8, rect.Y + 8,
+                rect.Width - 16, rect.Height - 16);
+            UIUtils.DrawRectangleOutlines(sb, inner, Gold * 0.28f, 1, pixel);
+            // A short top signal bar gives the panel a modern visual anchor.
+            int signalWidth = System.Math.Max(1, System.Math.Min(320, rect.Width - 80));
+            sb.Draw(pixel, new Rectangle(rect.Center.X - signalWidth / 2, rect.Top + 18,
+                signalWidth, 3), GoldBright);
         }
     }
 }

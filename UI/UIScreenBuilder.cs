@@ -59,11 +59,15 @@ namespace Fida.UI
         public void BuildSettingsScreen()
         {
             Clear();
+#if FIDA_ANDROID
+            BuildMobileSettingsScreen();
+#else
             BuildFromScreen("Settings", new Dictionary<string, string>
             {
                 { "mode", DisplaySettingsManager.Current.Fullscreen ? "Fullscreen" : "Windowed" },
                 { "resolution", DisplaySettingsManager.ResolutionLabel }
             });
+#endif
         }
 
         /// <summary>构建规则界面</summary>
@@ -211,6 +215,48 @@ namespace Fida.UI
         }
 
 #if FIDA_ANDROID
+        /// <summary>
+        /// Android settings intentionally exposes only options that are meaningful on a
+        /// phone. Window mode and desktop resolution controls are omitted instead of
+        /// rendering no-op buttons that make the page look broken.
+        /// </summary>
+        private void BuildMobileSettingsScreen()
+        {
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+            _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
+            _uiControls.Add(new UITitle(1, "Settings",
+                new Vector2(panel.Center.X, panel.Top + 92),
+                _resourceManager.Pixel, _resourceManager.TitleFont)
+            { Name = "title" });
+
+            int width = Math.Max(1, panel.Width - 112);
+            int left = panel.Left + 56;
+            _uiControls.Add(new UILabel(2, "Display: Portrait / Fullscreen",
+                new Vector2(panel.Center.X, panel.Top + 232), _resourceManager.Font)
+            {
+                Name = "displayInfo",
+                MaximumWidth = width,
+                MinimumScale = 0.62f
+            });
+            _uiControls.Add(new UILabel(3, "Touch controls: Enabled",
+                new Vector2(panel.Center.X, panel.Top + 300), _resourceManager.Font)
+            {
+                Name = "touchInfo",
+                MaximumWidth = width,
+                MinimumScale = 0.62f
+            });
+            _uiControls.Add(new UIButton(4,
+                new Rectangle(left, panel.Top + 414, width, 78),
+                "Back", _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Name = "back",
+                FocusIndex = 0
+            });
+
+            if (_focusManager.CurrentInputMode == InputMode.Controller)
+                _focusManager.FocusFirst();
+        }
+
         /// <summary>
         /// Builds a JSON screen using a portrait-first flow. The JSON files remain
         /// the source of labels and control names, while geometry is calculated from

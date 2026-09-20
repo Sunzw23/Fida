@@ -47,7 +47,7 @@ namespace Fida.UI
         /// </summary>
         public override bool CanFocus => IsEnabled && IsVisible;
 
-        // 配色统一取自 UITheme（暖墨 + 羊皮纸主题）
+        // 配色统一取自 UITheme（深色科技主题）
 
         // ---- 鼠标交互状态机 ----
         // _clickStartedOnThis: 当前点击序列是否起始于此按钮
@@ -114,7 +114,7 @@ namespace Fida.UI
         /// </summary>
         protected Color GetBackColor()
         {
-            return IsPressedOrSelected() ? UITheme.PanelDark : UITheme.PanelLight;
+            return IsPressedOrSelected() ? UITheme.PanelPressed : UITheme.PanelLight;
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace Fida.UI
         protected Color GetForeColor()
         {
             if (IsDisabled()) return UITheme.InkMuted;
-            return IsPressedOrSelected() ? UITheme.PanelLight : UITheme.Ink;
+            return IsPressedOrSelected() ? UITheme.GoldBright : UITheme.Ink;
         }
 
         /// <summary>
@@ -131,9 +131,9 @@ namespace Fida.UI
         /// </summary>
         protected Color GetBorderColor()
         {
-            if (IsDisabled()) return UITheme.Panel;            // 禁用：无边框（thickness=0）
-            if (IsHoveredState()) return UITheme.GoldBright;   // 悬停：亮金边框
-            return UITheme.Gold;                               // 其余：描金边框
+            if (IsDisabled()) return UITheme.Panel;            // Disabled: no signal
+            if (IsHoveredState()) return UITheme.GoldBright;   // Focused: bright signal
+            return UITheme.Gold;                               // Normal: cyan signal
         }
 
         /// <summary>
@@ -142,9 +142,9 @@ namespace Fida.UI
         protected int GetBorderThickness()
         {
             if (IsDisabled()) return 0;                 // 禁用：无边框
-            if (IsHoveredState()) return 4;             // 悬浮：大边框
-            if (IsPressedOrSelected()) return 2;        // 按下/选定：中等边框（双层）
-            return 1;                                   // 可用：小边框
+            if (IsHoveredState()) return 3;             // Focused: clear target
+            if (IsPressedOrSelected()) return 3;        // Pressed/selected: strong target
+            return 1;                                   // Normal: quiet signal
         }
 
         /// <summary>

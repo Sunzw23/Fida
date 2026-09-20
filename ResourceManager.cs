@@ -19,11 +19,10 @@ namespace Fida
         // 游戏字体，用于UI文本
         public SpriteFont Font { get; private set; }
 
-        // 衬线标题字体（菜单大标题）。加载失败时回退到 Font，绝不崩溃。
+        // 无衬线标题字体（菜单大标题）。加载失败时回退到 Font，绝不崩溃。
         public SpriteFont TitleFont { get; private set; }
 
-        // High-resolution regular face used by zoomable campaign UI. It is rendered
-        // at half scale so glyphs retain more source pixels along curved serifs.
+        // Clear sans-serif face used by the zoomable campaign UI.
         public SpriteFont MapFont { get; private set; }
 
         // 单像素纹理，用于绘制矩形边框和填充
@@ -50,18 +49,17 @@ namespace Fida
         /// <param name="contentManager">游戏的内容管理器。</param>
         public void LoadContent(ContentManager contentManager)
         {
-            // 加载字体。确保你的字体文件名是"Font"
-            // Load the font. Ensure your font filename is "Font"
-            Font = contentManager.Load<SpriteFont>("ui_serif");
+            // All UI surfaces use one sans-serif family for consistent recognition.
+            Font = contentManager.Load<SpriteFont>("source_han_sans");
             if (Font==null)
             {
                 throw new ContentLoadException("Failed to load font.");
             }
 
-            // 加载衬线标题字体；失败则回退到普通字体，保证不崩溃。
+            // Load the matching sans-serif title face; fall back safely if unavailable.
             try
             {
-                TitleFont = contentManager.Load<SpriteFont>("ui_serif_title");
+                TitleFont = contentManager.Load<SpriteFont>("source_han_title");
                 if (!UI.UIFontGuard.Supports(TitleFont, "Fida Aa-Zz 0-9"))
                 {
                     System.Diagnostics.Debug.WriteLine("Title font lacks required Latin glyphs, falling back to body font.");
@@ -76,7 +74,7 @@ namespace Fida
 
             try
             {
-                MapFont = contentManager.Load<SpriteFont>("ui_serif_map");
+                MapFont = contentManager.Load<SpriteFont>("source_han_sans");
             }
             catch (ContentLoadException)
             {

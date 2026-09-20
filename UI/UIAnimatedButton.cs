@@ -134,6 +134,11 @@ namespace Fida.UI
             // 绘制背景
             sb.Draw(Pixel, Bounds, backColor);
 
+            if (State == UIAnimatedButtonState.Hovered)
+                sb.Draw(Pixel, Bounds, UITheme.Gold * 0.10f);
+            else if (State == UIAnimatedButtonState.Pressed || State == UIAnimatedButtonState.Selected)
+                sb.Draw(Pixel, Bounds, UITheme.Gold * 0.18f);
+
             // 绘制文字（居中，使用缓存坐标）
             if (!string.IsNullOrEmpty(Text))
             {

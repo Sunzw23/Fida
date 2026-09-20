@@ -13,26 +13,19 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin ui_serif.spritefont
+#begin source_han_sans.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
-/build:ui_serif.spritefont
+/build:source_han_sans.spritefont
 
-#begin ui_serif_title.spritefont
+#begin source_han_title.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
-/build:ui_serif_title.spritefont
-
-#begin ui_serif_map.spritefont
-/importer:FontDescriptionImporter
-/processor:FontDescriptionProcessor
-/processorParam:PremultiplyAlpha=True
-/processorParam:TextureFormat=Color
-/build:ui_serif_map.spritefont
+/build:source_han_title.spritefont
 
 #begin portraits/arithmetist.png
 /importer:TextureImporter
