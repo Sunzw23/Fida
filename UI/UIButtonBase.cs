@@ -125,7 +125,7 @@ namespace Fida.UI
         protected Color GetForeColor()
         {
             if (IsDisabled()) return UITheme.InkMuted;
-            return IsPressedOrSelected() ? UITheme.GoldBright : UITheme.Ink;
+            return UITheme.Ink;
         }
 
         /// <summary>

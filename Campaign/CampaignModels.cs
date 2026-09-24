@@ -22,6 +22,8 @@ namespace Fida.Campaign
     {
         public string Id { get; init; } = "";
         public string Chapter { get; init; } = "";
+        // Optional folder path for the campaign browser. Existing content falls back to Chapter.
+        public IReadOnlyList<string> MapPath { get; init; } = Array.Empty<string>();
         public string Name { get; init; } = "";
         public string Story { get; init; } = "";
         public int SkillBudget { get; init; }

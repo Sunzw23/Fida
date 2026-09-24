@@ -42,25 +42,14 @@ namespace Fida.UI
             float centerY = MathHelper.Clamp(_position.Y,
                 panel.Top + displaySize.Y / 2 + 28, panel.Bottom - displaySize.Y / 2 - 28);
             var pos = new Vector2(centerX - displaySize.X / 2, centerY - displaySize.Y / 2);
-            sb.DrawString(_font, displayText, pos + new Vector2(3f, 3f),
-                UITheme.AccentViolet * 0.48f, 0f, Vector2.Zero,
-                scale, SpriteEffects.None, 0f);
-            sb.DrawString(_font, displayText, pos + new Vector2(-1.5f, 0f),
-                UITheme.Gold * 0.28f, 0f, Vector2.Zero,
-                scale, SpriteEffects.None, 0f);
             sb.DrawString(_font, displayText, pos, UITheme.Ink, 0f, Vector2.Zero,
                 scale, SpriteEffects.None, 0f);
 
-            float ruleW = MathHelper.Max(90f, displaySize.X * 0.62f);
+            float ruleW = MathHelper.Max(90f, displaySize.X * 0.42f);
             float ruleX = centerX - ruleW / 2;
             float ruleY = centerY + displaySize.Y / 2 + 6f;
-            int third = System.Math.Max(1, (int)ruleW / 3);
-            sb.Draw(_pixel, new Rectangle((int)ruleX, (int)ruleY, third, 3),
-                UITheme.AccentViolet);
-            sb.Draw(_pixel, new Rectangle((int)ruleX + third, (int)ruleY,
-                third, 3), UITheme.GoldBright);
-            sb.Draw(_pixel, new Rectangle((int)ruleX + third * 2, (int)ruleY,
-                System.Math.Max(1, (int)ruleW - third * 2), 3), UITheme.AccentGreen);
+            sb.Draw(_pixel, new Rectangle((int)ruleX, (int)ruleY, (int)ruleW, 4),
+                UITheme.Gold);
         }
     }
 }

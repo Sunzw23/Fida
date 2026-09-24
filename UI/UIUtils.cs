@@ -23,18 +23,11 @@ namespace Fida.UI
             sb.Draw(pixel, new Rectangle(rect.Right - width, rect.Top, width, rect.Height), color); // Right
         }
 
-        /// <summary>Draws a restrained multi-layer neon glow without extra textures.</summary>
+        /// <summary>Flat focus frame shared by controls and dialogs.</summary>
         public static void DrawGlowFrame(SpriteBatch sb, Rectangle rect, Texture2D pixel,
             Color color, int coreWidth = 2, float intensity = 1f)
         {
-            intensity = MathHelper.Clamp(intensity, 0f, 1f);
-            for (int spread = 8; spread >= 4; spread -= 2)
-            {
-                var glow = new Rectangle(rect.X - spread, rect.Y - spread,
-                    rect.Width + spread * 2, rect.Height + spread * 2);
-                DrawRectangleOutlines(sb, glow, color * (0.035f * intensity), 2, pixel);
-            }
-            DrawRectangleOutlines(sb, rect, color * intensity, coreWidth, pixel);
+            DrawRectangleOutlines(sb, rect, color, coreWidth, pixel);
         }
 
         /// <summary>
@@ -47,36 +40,10 @@ namespace Fida.UI
         {
             if (rect.Width <= inset * 2 || rect.Height <= inset * 2) return;
 
-            if (drawShadow)
-            {
-                var shadow = new Rectangle(rect.X + 4, rect.Y + 5, rect.Width, rect.Height);
-                DrawRectangleOutlines(sb, shadow, UITheme.Vignette * 0.62f,
-                    System.Math.Max(2, outerWidth), pixel);
-            }
-
-            DrawRectangleOutlines(sb, rect, outerColor, outerWidth, pixel);
-            var inner = new Rectangle(rect.X + inset, rect.Y + inset,
-                rect.Width - inset * 2, rect.Height - inset * 2);
-            DrawRectangleOutlines(sb, inner, innerColor * 0.55f, 1, pixel);
-
-            int length = System.Math.Min(cornerLength,
-                System.Math.Min(inner.Width / 4, inner.Height / 4));
-            int accent = System.Math.Max(2, outerWidth);
-            DrawCorner(sb, inner.Left, inner.Top, 1, 1, length, accent, outerColor, pixel);
-            DrawCorner(sb, inner.Right - 1, inner.Top, -1, 1, length, accent, outerColor, pixel);
-            DrawCorner(sb, inner.Left, inner.Bottom - 1, 1, -1, length, accent, outerColor, pixel);
-            DrawCorner(sb, inner.Right - 1, inner.Bottom - 1, -1, -1, length, accent, outerColor, pixel);
-
-            // Small signal ticks break up long edges without visual clutter.
-            int tick = System.Math.Max(5, length / 3);
-            int cx = rect.Center.X;
-            int cy = rect.Center.Y;
-            sb.Draw(pixel, new Rectangle(cx - tick, rect.Top, tick * 2, outerWidth + 1), outerColor);
-            sb.Draw(pixel, new Rectangle(cx - tick, rect.Bottom - outerWidth - 1,
-                tick * 2, outerWidth + 1), outerColor);
-            sb.Draw(pixel, new Rectangle(rect.Left, cy - tick, outerWidth + 1, tick * 2), outerColor);
-            sb.Draw(pixel, new Rectangle(rect.Right - outerWidth - 1, cy - tick,
-                outerWidth + 1, tick * 2), outerColor);
+            DrawRectangleOutlines(sb, rect, outerColor, System.Math.Max(1, outerWidth), pixel);
+            int rule = System.Math.Min(cornerLength * 3, System.Math.Max(24, rect.Width / 4));
+            sb.Draw(pixel, new Rectangle(rect.Left, rect.Top, rule,
+                System.Math.Max(3, outerWidth + 1)), innerColor);
         }
 
         private static void DrawCorner(SpriteBatch sb, int x, int y, int dx, int dy,
