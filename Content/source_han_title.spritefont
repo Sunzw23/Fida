@@ -6,9 +6,9 @@
 
     <Size>76</Size>
 
-    <Spacing>1</Spacing>
+    <Spacing>0</Spacing>
 
-    <UseKerning>true</UseKerning>
+    <UseKerning>false</UseKerning>
 
     <Style>Regular</Style>
 

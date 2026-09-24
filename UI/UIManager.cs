@@ -73,7 +73,7 @@ namespace Fida.UI
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
                 SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState);
-            // Animated cyber-grid background shared by menus and battle screens.
+            // Shared editorial background for menus and battle screens.
             UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel,
                 _graphicsDevice.Viewport, gameTime);
             foreach (UIControl control in _uiControls)
