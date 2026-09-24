@@ -2,9 +2,9 @@
 <XnaContent xmlns:Graphics="Microsoft.Xna.Framework.Content.Pipeline.Graphics">
   <Asset Type="Graphics:FontDescription">
 
-    <FontName>Arial</FontName>
+    <FontName>fonts/IBMPlexSans-Regular.ttf</FontName>
 
-    <Size>38</Size>
+    <Size>42</Size>
 
     <Spacing>0</Spacing>
 
@@ -16,6 +16,10 @@
       <CharacterRegion>
         <Start>&#32;</Start>
         <End>&#126;</End>
+      </CharacterRegion>
+      <CharacterRegion>
+        <Start>&#160;</Start>
+        <End>&#255;</End>
       </CharacterRegion>
     </CharacterRegions>
 

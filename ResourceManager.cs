@@ -19,10 +19,10 @@ namespace Fida
         // 游戏字体，用于UI文本
         public SpriteFont Font { get; private set; }
 
-        // 无衬线标题字体（菜单大标题）。加载失败时回退到 Font，绝不崩溃。
+        // IBM Plex Sans SemiBold for editorial headings; fall back to body font.
         public SpriteFont TitleFont { get; private set; }
 
-        // Clear sans-serif face used by the zoomable campaign UI.
+        // IBM Plex Sans Regular used by the zoomable campaign UI.
         public SpriteFont MapFont { get; private set; }
 
         // 单像素纹理，用于绘制矩形边框和填充
@@ -49,7 +49,7 @@ namespace Fida
         /// <param name="contentManager">游戏的内容管理器。</param>
         public void LoadContent(ContentManager contentManager)
         {
-            // All UI surfaces use one sans-serif family for consistent recognition.
+            // Both platforms bundle the same IBM Plex Sans family.
             Font = contentManager.Load<SpriteFont>("source_han_sans");
             if (Font==null)
             {

@@ -79,6 +79,8 @@ Loaded 5 models
 
 战役地图按文件夹逐层浏览，而不再一次展开所有节点。节点可在 JSON 中设置 `"mapPath": ["Chapter II", "Bell Tower"]` 指定任意深度的地图层级；未设置时按 `chapter` 中的 ` - ` 自动分层。进入文件夹只改变展示范围，关卡的 `parents` 解锁依赖仍跨文件夹生效。
 
+瑞士风格分支的 UI 字体为 IBM Plex Sans（Regular 正文、SemiBold 标题）。字体文件与 OFL 许可随 `Content/fonts/` 一同打包；桌面字体图集采用无损颜色格式，减少小字锯齿。
+
 ## 联机
 
 主菜单「联机模式」→ 服务器列表（`server.csv`）→ 创建房间 / 加入房间 → 大厅 → 选择模式 → 开始。
