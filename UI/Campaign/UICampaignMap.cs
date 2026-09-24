@@ -851,28 +851,58 @@ namespace Fida.UI.Campaign
 
         private void DrawDesktopMissionModal(SpriteBatch spriteBatch, CampaignNode node)
         {
+            const float titleScale = 0.43f;
+            const float bodyScale = 0.45f;
+            const float metricScale = 0.68f;
+            const float captionScale = 0.32f;
+            const float buttonScale = 0.46f;
             Viewport viewport = _graphicsDevice.Viewport;
             spriteBatch.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black * 0.78f);
             Rectangle modal = DesktopModalBounds(viewport);
             spriteBatch.Draw(_pixel, modal, UITheme.PanelDark);
-            UIUtils.DrawGlowFrame(spriteBatch, modal, _pixel, UITheme.Gold, 3, 0.76f);
-            DrawCentered(spriteBatch, _titleFont, $"{node.Id}  {node.Name}",
-                new Vector2(modal.Center.X, modal.Top + 78), modal.Width - 140, 0.48f, UITheme.Ink);
-            DrawCentered(spriteBatch, _font, node.Story,
-                new Vector2(modal.Center.X, modal.Top + 160), modal.Width - 100, 0.36f, UITheme.InkMuted);
-            DrawCentered(spriteBatch, _font, $"{node.SkillBudget} SP",
-                new Vector2(modal.Center.X, modal.Top + 262), modal.Width - 100, 0.60f, UITheme.GoldBright);
-            DrawCentered(spriteBatch, _font, node.RewardText,
-                new Vector2(modal.Center.X, modal.Top + 327), modal.Width - 100, 0.38f, UITheme.AccentGreen);
-            DrawCentered(spriteBatch, _font, $"{node.Enemies.Count}  ENEMIES",
-                new Vector2(modal.Center.X, modal.Top + 396), modal.Width - 100, 0.36f, UITheme.Ink);
+            UIUtils.DrawRectangleOutlines(spriteBatch, modal, UITheme.Gold, 2, _pixel);
+            int left = modal.Left + Math.Clamp(modal.Width / 14, 32, 54);
+            int right = modal.Right - Math.Clamp(modal.Width / 14, 32, 54);
+            int width = Math.Max(1, right - left);
+            DrawLeft(spriteBatch, _font, node.Id.ToUpperInvariant(),
+                new Vector2(left, modal.Top + modal.Height * 0.075f), width,
+                captionScale, UITheme.GoldBright);
+            DrawLeft(spriteBatch, _titleFont, node.Name,
+                new Vector2(left, modal.Top + modal.Height * 0.17f), width - 36,
+                titleScale, UITheme.Ink);
+            DrawLeft(spriteBatch, _font, node.Story,
+                new Vector2(left, modal.Top + modal.Height * 0.285f), width,
+                bodyScale, UITheme.InkMuted);
+
+            int ruleY = modal.Top + (int)(modal.Height * 0.37f);
+            spriteBatch.Draw(_pixel, new Rectangle(left, ruleY, width, 2), UITheme.Ink * 0.28f);
+            int secondColumn = left + width / 2;
+            DrawLeft(spriteBatch, _font, node.SkillBudget.ToString(),
+                new Vector2(left, modal.Top + modal.Height * 0.48f), width / 2 - 20,
+                metricScale, UITheme.GoldBright);
+            DrawLeft(spriteBatch, _font, node.Enemies.Count.ToString(),
+                new Vector2(secondColumn, modal.Top + modal.Height * 0.48f), width / 2 - 20,
+                metricScale, UITheme.Ink);
+            DrawLeft(spriteBatch, _font, "SKILL POINTS",
+                new Vector2(left, modal.Top + modal.Height * 0.555f), width / 2 - 20,
+                captionScale, UITheme.InkMuted);
+            DrawLeft(spriteBatch, _font, "ENEMIES",
+                new Vector2(secondColumn, modal.Top + modal.Height * 0.555f), width / 2 - 20,
+                captionScale, UITheme.InkMuted);
+
+            DrawLeft(spriteBatch, _font, "REWARD",
+                new Vector2(left, modal.Top + modal.Height * 0.665f), width,
+                captionScale, UITheme.InkMuted);
+            DrawLeft(spriteBatch, _font, node.RewardText,
+                new Vector2(left, modal.Top + modal.Height * 0.725f), width,
+                bodyScale, UITheme.AccentGreen);
             Rectangle enter = DesktopModalEnter(modal);
             bool unlocked = CampaignCatalog.IsUnlocked(_progress, node);
             spriteBatch.Draw(_pixel, enter, unlocked ? UITheme.PanelLight : UITheme.Panel);
             UIUtils.DrawRectangleOutlines(spriteBatch, enter,
                 unlocked ? UITheme.AccentGreen : UITheme.InkMuted, 2, _pixel);
             DrawCentered(spriteBatch, _font, unlocked ? "SELECT SKILLS" : "LOCKED",
-                enter.Center.ToVector2(), enter.Width - 30, 0.42f,
+                enter.Center.ToVector2(), enter.Width - 30, buttonScale,
                 unlocked ? UITheme.Ink : UITheme.InkMuted);
             Rectangle close = DesktopModalClose(modal);
             spriteBatch.Draw(_pixel, close, UITheme.PanelLight);
@@ -881,6 +911,18 @@ namespace Fida.UI.Campaign
                 new Vector2(close.Right - 12, close.Bottom - 12), UITheme.Ink, 2);
             DrawLine(spriteBatch, new Vector2(close.Right - 12, close.Top + 12),
                 new Vector2(close.Left + 12, close.Bottom - 12), UITheme.Ink, 2);
+        }
+
+        private void DrawLeft(SpriteBatch spriteBatch, SpriteFont font, string value,
+            Vector2 leftCenter, float maximumWidth, float preferredScale, Color color)
+        {
+            string safe = UIFontGuard.Sanitize(font, value);
+            Vector2 measured = font.MeasureString(safe);
+            if (measured.X <= 0f) return;
+            float scale = Math.Min(preferredScale, maximumWidth / measured.X);
+            spriteBatch.DrawString(font, safe,
+                new Vector2(leftCenter.X, leftCenter.Y - measured.Y * scale / 2f),
+                color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
         }
 
         private void DrawBackIcon(SpriteBatch spriteBatch, Rectangle bounds)
