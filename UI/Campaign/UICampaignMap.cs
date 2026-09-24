@@ -651,11 +651,16 @@ namespace Fida.UI.Campaign
         private void DrawHeader(SpriteBatch spriteBatch)
         {
             var viewport = _graphicsDevice.Viewport;
-            DrawCentered(spriteBatch, _titleFont, "Echoes of the Crown - Campaign Map",
-                new Vector2(viewport.Width / 2f, 34f), viewport.Width - 80f, 0.58f, UITheme.PanelLight);
-            DrawCentered(spriteBatch, _font,
-                "Browse: drag or WASD | Zoom: wheel or +/- | Select: arrows or D-pad | Open: Enter or A",
-                new Vector2(viewport.Width / 2f, 87f), viewport.Width - 80f, 0.38f, UITheme.GoldBright);
+            DrawCentered(spriteBatch, _titleFont, "ECHOES OF THE CROWN",
+                new Vector2(viewport.Width / 2f, 34f), viewport.Width - 160f, 0.52f, UITheme.Ink);
+            DrawCentered(spriteBatch, _font, "CAMPAIGN  //  ROUTE SELECT",
+                new Vector2(viewport.Width / 2f, 78f), viewport.Width - 160f, 0.32f,
+                UITheme.GoldBright);
+            int lineWidth = Math.Min(440, viewport.Width / 3);
+            spriteBatch.Draw(_pixel, new Rectangle(viewport.Width / 2 - lineWidth / 2,
+                100, lineWidth, 2), UITheme.Gold * 0.58f);
+            spriteBatch.Draw(_pixel, new Rectangle(viewport.Width / 2 - 28,
+                98, 56, 6), UITheme.AccentViolet);
         }
 
         private void DrawConnections(SpriteBatch spriteBatch)
@@ -670,7 +675,9 @@ namespace Fida.UI.Campaign
                     Vector2 end = nodeEnd;
                     if (!ClipLine(_camera.Viewport, ref start, ref end)) continue;
                     bool active = _progress.IsCompleted(parentId) || _progress.IsCompleted(node.Id);
-                    DrawLine(spriteBatch, start, end, active ? UITheme.Gold : UITheme.InkMuted, active ? 3 : 2);
+                    DrawLine(spriteBatch, start, end,
+                        active ? UITheme.Gold : UITheme.InkMuted * 0.58f,
+                        active ? 3 : 2);
                 }
             }
         }
@@ -690,14 +697,60 @@ namespace Fida.UI.Campaign
             Color foreground = unlocked ? UITheme.Ink : UITheme.InkMuted;
 
             spriteBatch.Draw(_pixel, bounds, background);
+            Color accent = completed ? UITheme.AccentGreen :
+                unlocked ? UITheme.Gold : UITheme.AccentViolet;
+            if (selected)
+                UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, UITheme.GoldBright, 3, 0.72f);
             UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                selected ? UITheme.GoldBright : completed ? UITheme.Gold : UITheme.InkMuted,
-                selected ? 4 : 2, _pixel);
+                selected ? UITheme.GoldBright : accent * (unlocked ? 0.82f : 0.52f),
+                selected ? 3 : 2, _pixel);
 
-            string marker = completed ? "[C] " : unlocked ? "" : "[L] ";
-            DrawCentered(spriteBatch, _font, marker + node.Id + "  " + node.Name,
-                bounds.Center.ToVector2(), bounds.Width - 14f,
-                MathHelper.Clamp(0.42f * _camera.Zoom, 0.28f, 0.62f), foreground);
+            int signalWidth = Math.Max(18, bounds.Width / 5);
+            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top,
+                signalWidth, Math.Max(2, bounds.Height / 18)), accent);
+            spriteBatch.Draw(_pixel, new Rectangle(bounds.Right - signalWidth,
+                bounds.Bottom - Math.Max(2, bounds.Height / 18), signalWidth,
+                Math.Max(2, bounds.Height / 18)), accent * 0.72f);
+            DrawNodeStateMark(spriteBatch, bounds, completed, unlocked, accent);
+
+            string label = selected ? $"{node.Id}  {node.Name}" : node.Id;
+            DrawCentered(spriteBatch, _font, label,
+                new Vector2(bounds.Center.X - (selected ? 0f : 2f), bounds.Center.Y),
+                bounds.Width - (selected ? 44f : 70f),
+                MathHelper.Clamp((selected ? 0.42f : 0.48f) * _camera.Zoom, 0.30f, 0.64f),
+                foreground);
+        }
+
+        private void DrawNodeStateMark(SpriteBatch spriteBatch, Rectangle bounds,
+            bool completed, bool unlocked, Color accent)
+        {
+            Vector2 center = new(bounds.Right - Math.Max(13, bounds.Height / 4), bounds.Center.Y);
+            float size = Math.Max(5f, bounds.Height / 9f);
+            if (completed)
+            {
+                DrawLine(spriteBatch, new Vector2(center.X - size, center.Y),
+                    new Vector2(center.X - size * 0.2f, center.Y + size * 0.8f),
+                    UITheme.Ink, 2);
+                DrawLine(spriteBatch, new Vector2(center.X - size * 0.2f, center.Y + size * 0.8f),
+                    new Vector2(center.X + size, center.Y - size), UITheme.Ink, 2);
+            }
+            else if (unlocked)
+            {
+                int dot = Math.Max(5, bounds.Height / 8);
+                spriteBatch.Draw(_pixel, new Rectangle((int)center.X - dot / 2,
+                    (int)center.Y - dot / 2, dot, dot), UITheme.GoldBright);
+            }
+            else
+            {
+                DrawLine(spriteBatch, new Vector2(center.X, center.Y - size),
+                    new Vector2(center.X + size, center.Y), accent, 2);
+                DrawLine(spriteBatch, new Vector2(center.X + size, center.Y),
+                    new Vector2(center.X, center.Y + size), accent, 2);
+                DrawLine(spriteBatch, new Vector2(center.X, center.Y + size),
+                    new Vector2(center.X - size, center.Y), accent, 2);
+                DrawLine(spriteBatch, new Vector2(center.X - size, center.Y),
+                    new Vector2(center.X, center.Y - size), accent, 2);
+            }
         }
 
         private void DrawFooter(SpriteBatch spriteBatch)
@@ -708,24 +761,30 @@ namespace Fida.UI.Campaign
             Rectangle plus = PlusButton(viewport);
             Rectangle back = BackButton(viewport);
             DrawSmallButton(spriteBatch, minus, "-");
-            DrawSmallButton(spriteBatch, fit, "Fit");
+            DrawSmallButton(spriteBatch, fit, "FIT");
             DrawSmallButton(spriteBatch, plus, "+");
-            DrawSmallButton(spriteBatch, back, "Back to Main Menu");
+            DrawSmallButton(spriteBatch, back, "BACK");
 
             if (_selectedIndex >= 0 && _selectedIndex < _nodes.Count)
             {
                 CampaignNode selected = _nodes[_selectedIndex];
                 string status = _progress.IsCompleted(selected.Id) ? "CLEARED" :
                     CampaignCatalog.IsUnlocked(_progress, selected) ? "OPEN" : "LOCKED";
-                string detail = $"{selected.Chapter} | {selected.Id}: {selected.Name} | {selected.SkillBudget} SP | {status}";
+                string detail = $"{selected.Id}  {selected.Name}";
 #if FIDA_ANDROID
                 DrawCentered(spriteBatch, _font, detail,
                     new Vector2(viewport.Width / 2f, viewport.Height - 122f),
                     viewport.Width - 56f, 0.46f, UITheme.PanelLight);
 #else
                 float centerX = (plus.Right + back.Left) / 2f;
-                DrawCentered(spriteBatch, _font, detail, new Vector2(centerX, viewport.Height - 47f),
-                    Math.Max(120f, back.Left - plus.Right - 35f), 0.40f, UITheme.PanelLight);
+                float width = Math.Max(120f, back.Left - plus.Right - 35f);
+                DrawCentered(spriteBatch, _font, detail,
+                    new Vector2(centerX, viewport.Height - 58f), width, 0.38f, UITheme.Ink);
+                DrawCentered(spriteBatch, _font,
+                    $"{selected.SkillBudget} SP  //  {status}",
+                    new Vector2(centerX, viewport.Height - 31f), width, 0.27f,
+                    status == "LOCKED" ? UITheme.AccentViolet :
+                    status == "CLEARED" ? UITheme.AccentGreen : UITheme.GoldBright);
 #endif
             }
         }
