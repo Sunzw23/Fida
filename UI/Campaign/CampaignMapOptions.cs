@@ -15,7 +15,7 @@ namespace Fida.UI.Campaign
         public float MinimumZoom { get; init; } = 0.55f;
         public float MaximumZoom { get; init; } = 2.2f;
         public int ScreenMargin { get; init; } = 36;
-        public int HeaderHeight { get; init; } = 120;
+        public int HeaderHeight { get; init; } = 24;
         public int FooterHeight { get; init; } = 94;
 
         public static CampaignMapOptions Mobile() => new()
