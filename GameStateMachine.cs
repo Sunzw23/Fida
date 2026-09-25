@@ -87,6 +87,8 @@ namespace Fida
                 case State.Connecting:    _uiManager.BuildConnectingScreen(_networkManager.StatusText); break;
                 case State.OnlineLobby:   _uiManager.BuildOnlineLobby(_networkManager.IsHost); break;
                 case State.DuelDraft:     _uiManager.BuildDuelDraft(); break;
+                case State.OnlineCampaignMap: _uiManager.BuildLevelSelect(); break;
+                case State.OnlineCampaignSkills: _uiManager.BuildSkillSelect(); break;
                 case State.OnlinePlaying: _uiManager.BuildPlayingUI(_uiManager.GameManager); break;
             }
 

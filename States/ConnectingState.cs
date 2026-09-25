@@ -8,6 +8,8 @@ namespace Fida.States
     /// </summary>
     public class ConnectingState : StateBase
     {
+        private string _lastShownStatus = "";
+
         public ConnectingState(UI.UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
             : base(uiManager, networkManager, stateMachine) { }
 
@@ -26,6 +28,18 @@ namespace Fida.States
         public override void HandleInput(GameTime gameTime)
         {
             base.HandleInput(gameTime);
+
+            if (_networkManager.StatusText != _lastShownStatus)
+            {
+                _lastShownStatus = _networkManager.StatusText;
+                string status = string.IsNullOrWhiteSpace(_lastShownStatus)
+                    ? "Connecting..."
+                    : _lastShownStatus;
+#if FIDA_ANDROID
+                status = status.ToUpperInvariant();
+#endif
+                _uiManager.GetLabelByName("statusLabel")?.Update(status);
+            }
 
             if (_networkManager.IsConnected)
             {

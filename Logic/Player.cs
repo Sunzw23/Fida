@@ -166,5 +166,8 @@ namespace Fida.Logic
         public void RecordAttackReceived() => AttacksReceivedThisTurn++;
 
         public void ResetAttacksReceivedThisTurn() => AttacksReceivedThisTurn = 0;
+
+        /// <summary>Restores per-turn combat counters when applying a network checkpoint.</summary>
+        public void RestoreTurnCounters(int attacksReceived) => AttacksReceivedThisTurn = Math.Max(0, attacksReceived);
     }
 }

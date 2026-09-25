@@ -14,16 +14,17 @@ namespace Fida
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
-        private ResourceManager _resourceManager;
-        private UIManager _uiManager;
-        private AgentManager _agentManager;
-        private PlayingSceneManager _playingSceneManager;
-        private NetworkManager _networkManager;
+        // MonoGame initializes these in Initialize(), after the constructor.
+        private ResourceManager _resourceManager = null!;
+        private UIManager _uiManager = null!;
+        private AgentManager _agentManager = null!;
+        private PlayingSceneManager _playingSceneManager = null!;
+        private NetworkManager _networkManager = null!;
 
-        private GameStateMachine _stateMachine;
-        private MenuInputHandler _menuInput;
-        private GameSessionManager _gameSession;
-        private ExitHandler _exitHandler;
+        private GameStateMachine _stateMachine = null!;
+        private MenuInputHandler _menuInput = null!;
+        private GameSessionManager _gameSession = null!;
+        private ExitHandler _exitHandler = null!;
 
         private bool _isGameActive = true;
 
@@ -113,6 +114,8 @@ namespace Fida
                 case State.Connecting:    _menuInput.HandleConnectingInput(gameTime); break;
                 case State.OnlineLobby:   _menuInput.HandleMenuInput(gameTime); break;
                 case State.DuelDraft:     _menuInput.HandleMenuInput(gameTime); break;
+                case State.OnlineCampaignMap:
+                case State.OnlineCampaignSkills: _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlinePlaying:
                     _gameSession.EnsureOnlineGameStarted();
                     if (_stateMachine.CurrentState == State.OnlinePlaying)

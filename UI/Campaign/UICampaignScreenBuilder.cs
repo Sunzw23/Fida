@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Fida.Campaign;
 using Fida.Logic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Fida.UI.Campaign
 {
@@ -24,7 +25,18 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
             var options = CampaignMapOptions.Mobile();
 #else
-            CampaignMapOptions options = null;
+            float scale = UIDesktopLayout.Scale(_resources.GraphicsDevice.Viewport);
+            CampaignMapOptions options = new()
+            {
+                NodeWidth = 270f * scale,
+                NodeHeight = 64f * scale,
+                ContentPadding = 70f * scale,
+                MinimumZoom = 0.55f,
+                MaximumZoom = 2.2f,
+                ScreenMargin = System.Math.Max(1, (int)System.Math.Round(36 * scale)),
+                HeaderHeight = System.Math.Max(1, (int)System.Math.Round(24 * scale)),
+                FooterHeight = System.Math.Max(1, (int)System.Math.Round(94 * scale))
+            };
 #endif
             _controls.Add(new UICampaignMap(0, _resources.GraphicsDevice, _resources.Pixel,
                 _resources.AntialiasedLine, _resources.MapFont, _resources.TitleFont,
@@ -73,14 +85,32 @@ namespace Fida.UI.Campaign
             FocusIfNeeded();
             return;
 #else
-            _controls.Add(new UITitle(1, won ? "Node Cleared" : "Defeat", new Vector2(960, 310),
+            Viewport viewport = _resources.GraphicsDevice.Viewport;
+            float scale = UIDesktopLayout.Scale(viewport);
+            Vector2 center = UIDesktopLayout.MapPoint(new Vector2(960, 430), viewport);
+            _controls.Add(new UITitle(1, won ? "Node Cleared" : "Defeat",
+                UIDesktopLayout.MapPoint(new Vector2(960, 310), viewport),
                 _resources.Pixel, _resources.TitleFont) { Name = "title" });
-            _controls.Add(new UILabel(2, message, new Vector2(960, 430), _resources.Font) { Name = "result" });
-            string reward = won ? $"Reward: {node.RewardText}" : "Nothing was lost. Adjust your loadout and try again.";
-            _controls.Add(new UILabel(3, reward, new Vector2(960, 500), _resources.Font) { Name = "reward" });
-            _controls.Add(new UIButton(4, new Rectangle(520, 650, 380, 75), "Adjust Loadout",
+            int textWidth = (int)System.Math.Round(1200 * scale);
+            _controls.Add(new UILabel(2, message, center, _resources.Font)
+            {
+                Name = "result",
+                MaximumWidth = textWidth,
+                MinimumScale = 0.45f
+            });
+            string reward = won ? $"Reward: {node.RewardText}" : "Adjust loadout and try again";
+            _controls.Add(new UILabel(3, reward,
+                UIDesktopLayout.MapPoint(new Vector2(960, 500), viewport), _resources.Font)
+            {
+                Name = "reward",
+                MaximumWidth = textWidth,
+                MinimumScale = 0.45f
+            });
+            _controls.Add(new UIButton(4, UIDesktopLayout.MapRectangle(
+                    new Rectangle(520, 650, 380, 75), viewport), "Adjust Loadout",
                 _resources.Pixel, _resources.Font) { Name = "retry", FocusIndex = 0 });
-            _controls.Add(new UIButton(5, new Rectangle(1020, 650, 380, 75), "Campaign Map",
+            _controls.Add(new UIButton(5, UIDesktopLayout.MapRectangle(
+                    new Rectangle(1020, 650, 380, 75), viewport), "Campaign Map",
                 _resources.Pixel, _resources.Font) { Name = "map", FocusIndex = 1 });
             FocusIfNeeded();
 #endif

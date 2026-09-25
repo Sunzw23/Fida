@@ -35,10 +35,10 @@
   {
     "id": "AG", "chapter": "Chapter I", "name": "The Nameless General",
     "story": "The General guards the first memory of the Zero Decree.",
-    "skillBudget": 5, "mapX": 760, "mapY": 355, "parents": ["A1", "A2", "A3"], "requiredCompletedParents": 2,
+    "skillBudget": 4, "mapX": 760, "mapY": 355, "parents": ["A1", "A2", "A3"], "requiredCompletedParents": 2,
     "rewards": ["TripleHealth"], "isBoss": true, "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Nameless General", "health": 8, "skills": ["DoubleAttack"] },
+      { "name": "Nameless General", "health": 8, "skills": ["DoubleAttack", "PlusDefence"] },
       { "name": "Broken Shieldguard", "health": 5, "skills": ["PlusDefence"] }
     ],
     "reinforcements": [

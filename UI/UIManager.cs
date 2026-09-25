@@ -148,6 +148,9 @@ namespace Fida.UI
             BuildPlayingUI(gameManager);
         }
 
+        public void PlayReinforcementEntrance(IEnumerable<int> playerIds) =>
+            _playerManager.PlayReinforcementEntrance(playerIds);
+
         /// <summary>更新游戏消息文本</summary>
         public void UpdateGameMessage(string message) => _playerManager.UpdateGameMessage(message);
 

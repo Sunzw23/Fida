@@ -19,6 +19,7 @@ namespace Fida.Network
         private readonly ServerConfig _serverConfig;
         private bool _isHost;
         private bool _disposed;
+        private readonly Queue<NetworkMessage> _pendingMessages = new();
 
         /// <summary>当前是否为主机</summary>
         public bool IsHost => _isHost;
@@ -55,9 +56,94 @@ namespace Fida.Network
         public event System.Action<int, SkillType> DraftBanReceived;
         public event System.Action<int, IReadOnlyList<SkillType>> DraftLockReceived;
         public event System.Action<IReadOnlyList<SkillType>, IReadOnlyList<SkillType>> DraftStarting;
+        public event Action<string> BattleJoinRequested;
+        public event Action<BattleSnapshot> BattleSnapshotReceived;
+        public event Action<string> BattleSnapshotAcknowledged;
+        public event Action<CampaignPresence> CampaignPresenceReceived;
+        public event Action<string> CampaignCoopStarting;
+        public BattleSnapshot PendingBattleSnapshot { get; private set; }
+        public BattleSnapshot TakePendingBattleSnapshot()
+        {
+            var snapshot = PendingBattleSnapshot;
+            PendingBattleSnapshot = null;
+            return snapshot;
+        }
+        public CampaignPresence RemoteCampaignPresence { get; private set; } = new(1, CampaignOnlinePhase.Map, "", false);
+        public bool IsCampaignSharedBattle { get; set; }
 
-        /// <summary>当前游戏模式（0=PvP, 1=Co-op），在游戏开始时设置</summary>
+        /// <summary>当前游戏模式（0=PvP, 2=Campaign Co-op），在游戏开始时设置</summary>
         public int CurrentGameMode { get; set; } = 0;
+
+        public void SendCampaignPresence(CampaignPresence presence)
+        {
+            using var stream = new MemoryStream();
+            using var writer = new BinaryWriter(stream);
+            writer.Write(presence.PlayerId);
+            writer.Write((byte)presence.Phase);
+            writer.Write(presence.NodeId ?? string.Empty);
+            writer.Write(presence.Ready);
+            var skills = presence.Skills ?? Array.Empty<SkillType>();
+            writer.Write(skills.Count);
+            foreach (var skill in skills) writer.Write((int)skill);
+            writer.Write(presence.SessionId ?? string.Empty);
+            SendMessage(new NetworkMessage(MessageType.CampaignPresence, stream.ToArray()));
+        }
+
+        public void SendCampaignReady(string nodeId) => SendMessage(
+            new NetworkMessage(MessageType.CampaignReady, WriteStringPayload(nodeId)));
+
+        public void SendCampaignCoopStart(string nodeId) => SendMessage(
+            new NetworkMessage(MessageType.CampaignCoopStart, WriteStringPayload(nodeId)));
+
+        /// <summary>Drains map/loadout protocol messages. Call only outside battle action processing.</summary>
+        public void ProcessCampaignMessages()
+        {
+            var messages = TakePendingMessages();
+            if (messages.Count == 0) return;
+            var unhandled = new List<NetworkMessage>();
+            foreach (var message in messages)
+            {
+                try
+                {
+                    if (message.Type == MessageType.CampaignPresence)
+                    {
+                        using var stream = new MemoryStream(message.Payload);
+                        using var reader = new BinaryReader(stream);
+                        var presence = new CampaignPresence(reader.ReadInt32(), (CampaignOnlinePhase)reader.ReadByte(),
+                            reader.ReadString(), reader.ReadBoolean(),
+                            ReadSkillList(reader, stream), reader.ReadString());
+                        RemoteCampaignPresence = presence;
+                        CampaignPresenceReceived?.Invoke(presence);
+                    }
+                    else if (message.Type == MessageType.CampaignReady)
+                    {
+                        string nodeId = ReadStringPayload(message.Payload);
+                        RemoteCampaignPresence = RemoteCampaignPresence with
+                        { Phase = CampaignOnlinePhase.Loadout, NodeId = nodeId, Ready = true };
+                        CampaignPresenceReceived?.Invoke(RemoteCampaignPresence);
+                    }
+                    else if (message.Type == MessageType.CampaignCoopStart)
+                    {
+                        CampaignCoopStarting?.Invoke(ReadStringPayload(message.Payload));
+                    }
+                    else if (message.Type == MessageType.GameAction && CurrentGameMode == 2)
+                    {
+                        // Actions from another independent route must never be replayed
+                        // into this player's later battle.
+                    }
+                    else if (message.Type == MessageType.BattleSnapshot)
+                    {
+                        PendingBattleSnapshot = BattleSnapshot.Deserialize(message.Payload);
+                        BattleSnapshotReceived?.Invoke(PendingBattleSnapshot);
+                    }
+                    else if (message.Type == MessageType.BattleSnapshotAck)
+                        BattleSnapshotAcknowledged?.Invoke(ReadStringPayload(message.Payload));
+                    else unhandled.Add(message);
+                }
+                catch (Exception ex) { StatusText = $"Invalid Campaign message: {ex.Message}"; }
+            }
+            RetainMessages(unhandled);
+        }
 
         public NetworkManager()
         {
@@ -128,18 +214,8 @@ namespace Fida.Network
         /// </summary>
         public void ProcessLobbyMessages()
         {
-            List<NetworkMessage> messages = null;
-
-            if (_isHost && _gameServer != null)
-                messages = _gameServer.ReceiveMessages();
-            else if (_isHost && _relayHost != null)
-                messages = _relayHost.ReceiveMessages();
-            else if (!_isHost && _gameClient != null)
-                messages = _gameClient.ReceiveMessages();
-
-
-            if (messages == null)
-                return;
+            var messages = TakePendingMessages();
+            var unhandled = new List<NetworkMessage>();
 
             foreach (var msg in messages)
             {
@@ -171,14 +247,17 @@ namespace Fida.Network
                             LobbyGameStarting?.Invoke(mode);
                         }
                         break;
+                    default: unhandled.Add(msg); break;
                 }
             }
+            RetainMessages(unhandled);
         }
 
         public void ProcessDraftMessages()
         {
-            var messages = ReceiveAvailableMessages();
-            if (messages == null) return;
+            var messages = TakePendingMessages();
+            var unhandled = new List<NetworkMessage>();
+            if (messages.Count == 0) return;
             foreach (var msg in messages)
             {
                 using var stream = new MemoryStream(msg.Payload ?? []);
@@ -200,7 +279,9 @@ namespace Fida.Network
                     var second = ReadSkillList(reader, stream);
                     DraftStarting?.Invoke(first, second);
                 }
+                else unhandled.Add(msg);
             }
+            RetainMessages(unhandled);
         }
 
         public void SendDraftBan(int playerId, SkillType skill) =>
@@ -231,6 +312,20 @@ namespace Fida.Network
             if (_isHost && _relayHost != null) return _relayHost.ReceiveMessages();
             if (!_isHost && _gameClient != null) return _gameClient.ReceiveMessages();
             return null;
+        }
+
+        private List<NetworkMessage> TakePendingMessages()
+        {
+            var incoming = ReceiveAvailableMessages();
+            var result = new List<NetworkMessage>(_pendingMessages.Count + (incoming?.Count ?? 0));
+            while (_pendingMessages.Count > 0) result.Add(_pendingMessages.Dequeue());
+            if (incoming != null) result.AddRange(incoming);
+            return result;
+        }
+
+        private void RetainMessages(IEnumerable<NetworkMessage> messages)
+        {
+            foreach (var message in messages) _pendingMessages.Enqueue(message);
         }
 
         private void SendMessage(NetworkMessage message)
@@ -310,27 +405,80 @@ namespace Fida.Network
         /// <summary>接收远程消息并应用到 GameManager</summary>
         public void ProcessMessages(GameManager gameManager)
         {
-            List<NetworkMessage> messages = null;
-
-            if (_isHost && _gameServer != null)
-                messages = _gameServer.ReceiveMessages();
-            else if (_isHost && _relayHost != null)
-                messages = _relayHost.ReceiveMessages();
-            else if (!_isHost && _gameClient != null)
-                messages = _gameClient.ReceiveMessages();
-
-
-            if (messages == null)
-                return;
+            var messages = TakePendingMessages();
+            var unhandled = new List<NetworkMessage>();
 
             foreach (var msg in messages)
             {
                 if (msg.Type == MessageType.GameAction)
                 {
+                    if (CurrentGameMode == 2 && !IsCampaignSharedBattle) continue;
                     var action = NetworkMessage.DeserializeAction(msg.Payload);
                     gameManager.UpdateGame(action);
                 }
+                else if (msg.Type == MessageType.BattleJoinRequest)
+                {
+                    BattleJoinRequested?.Invoke(ReadStringPayload(msg.Payload));
+                }
+                else if (msg.Type == MessageType.BattleSnapshot)
+                {
+                    try { BattleSnapshotReceived?.Invoke(BattleSnapshot.Deserialize(msg.Payload)); }
+                    catch (Exception ex) { StatusText = $"Invalid battle snapshot: {ex.Message}"; }
+                }
+                else if (msg.Type == MessageType.BattleSnapshotAck)
+                {
+                    BattleSnapshotAcknowledged?.Invoke(ReadStringPayload(msg.Payload));
+                }
+                else if (msg.Type == MessageType.CampaignPresence)
+                {
+                    using var stream = new MemoryStream(msg.Payload);
+                    using var reader = new BinaryReader(stream);
+                    var presence = new CampaignPresence(reader.ReadInt32(), (CampaignOnlinePhase)reader.ReadByte(),
+                        reader.ReadString(), reader.ReadBoolean(), ReadSkillList(reader, stream), reader.ReadString());
+                    RemoteCampaignPresence = presence;
+                    CampaignPresenceReceived?.Invoke(presence);
+                }
+                else if (msg.Type == MessageType.CampaignReady)
+                {
+                    string nodeId = ReadStringPayload(msg.Payload);
+                    RemoteCampaignPresence = RemoteCampaignPresence with
+                    { Phase = CampaignOnlinePhase.Loadout, NodeId = nodeId, Ready = true };
+                    CampaignPresenceReceived?.Invoke(RemoteCampaignPresence);
+                }
+                else if (msg.Type == MessageType.CampaignCoopStart)
+                    CampaignCoopStarting?.Invoke(ReadStringPayload(msg.Payload));
+                else unhandled.Add(msg);
             }
+            RetainMessages(unhandled);
+        }
+
+        /// <summary>Requests a direct battle-state transfer; no historical actions are sent.</summary>
+        public void RequestBattleJoin(string sessionId) => SendMessage(
+            new NetworkMessage(MessageType.BattleJoinRequest, WriteStringPayload(sessionId)));
+
+        /// <summary>Sends a point-in-time state checkpoint for a reinforcement join.</summary>
+        public void SendBattleSnapshot(BattleSnapshot snapshot)
+        {
+            if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+            SendMessage(new NetworkMessage(MessageType.BattleSnapshot, snapshot.Serialize()));
+        }
+
+        public void AcknowledgeBattleSnapshot(string sessionId) => SendMessage(
+            new NetworkMessage(MessageType.BattleSnapshotAck, WriteStringPayload(sessionId)));
+
+        private static byte[] WriteStringPayload(string value)
+        {
+            using var stream = new MemoryStream();
+            using var writer = new BinaryWriter(stream);
+            writer.Write(value ?? string.Empty);
+            return stream.ToArray();
+        }
+
+        private static string ReadStringPayload(byte[] payload)
+        {
+            using var stream = new MemoryStream(payload ?? []);
+            using var reader = new BinaryReader(stream);
+            return reader.ReadString();
         }
 
         /// <summary>将本地 GameAction 发送给远程玩家</summary>

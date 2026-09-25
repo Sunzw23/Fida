@@ -8,8 +8,11 @@ namespace Fida.States
 
         public override void OnEnter()
         {
-            BindButton("retry", () => _stateMachine.SwitchToState(State.Skills));
-            BindButton("map", () => _stateMachine.SwitchToState(State.LevelSelect));
+            bool onlineCampaign = _networkManager.CurrentGameMode == 2;
+            BindButton("retry", () => _stateMachine.SwitchToState(
+                onlineCampaign ? State.OnlineCampaignSkills : State.Skills));
+            BindButton("map", () => _stateMachine.SwitchToState(
+                onlineCampaign ? State.OnlineCampaignMap : State.LevelSelect));
         }
     }
 }

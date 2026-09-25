@@ -27,11 +27,10 @@ namespace Fida.States
                     _networkManager.SendLobbyGameModeRequest(0);
                 });
 
-                BindButton("startCoop", () =>
+                BindButton("startCampaign", () =>
                 {
-                    // 与好友合作对战Agent (Co-op) - mode 1
-                    _networkManager.CurrentGameMode = 1;
-                    _networkManager.SendLobbyGameModeRequest(1);
+                    _networkManager.CurrentGameMode = 2;
+                    _networkManager.SendLobbyGameModeRequest(2);
                 });
 
                 // 主机监听客机接受响应
@@ -108,7 +107,8 @@ namespace Fida.States
             if (_gameStarting)
             {
                 UnsubscribeEvents();
-                _stateMachine.SwitchToState(State.OnlinePlaying);
+                _stateMachine.SwitchToState(_networkManager.CurrentGameMode == 2
+                    ? State.OnlineCampaignMap : State.DuelDraft);
             }
         }
     }

@@ -34,6 +34,12 @@ namespace Fida.Network
         DraftBan = 0x38,
         DraftLock = 0x39,
         DraftStart = 0x3A,
+        BattleJoinRequest = 0x3B,
+        BattleSnapshot = 0x3C,
+        BattleSnapshotAck = 0x3D,
+        CampaignPresence = 0x40,
+        CampaignReady = 0x41,
+        CampaignCoopStart = 0x42,
         ChatMessage = 0x20,
         Disconnect = 0xFF,
     }

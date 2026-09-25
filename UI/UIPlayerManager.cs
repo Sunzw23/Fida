@@ -63,10 +63,13 @@ namespace Fida.UI
             int messageWidth = System.Math.Max(1, viewportWidth - messageMargin * 2);
 #if FIDA_ANDROID
             messageMargin = System.Math.Clamp(viewportWidth / 22, 24, 44);
-            messageWidth = System.Math.Max(1, viewportWidth - messageMargin * 2);
+            int pauseSize = 72;
+            int pauseGap = 12;
+            messageWidth = System.Math.Max(1,
+                viewportWidth - messageMargin * 2 - pauseSize - pauseGap);
             var messageBounds = new Rectangle(messageMargin, safeArea.Top + 20, messageWidth, 88);
 #else
-            var messageBounds = new Rectangle(messageMargin, safeArea.Top + 12, messageWidth, 64);
+            var messageBounds = new Rectangle(messageMargin, safeArea.Top + 18, messageWidth, 62);
 #endif
             _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
             {
@@ -74,17 +77,25 @@ namespace Fida.UI
                 AutoFitText = true,
 #if FIDA_ANDROID
                 MinimumTextScale = 0.48f,
-                TextPadding = 72,
+                MaximumTextScale = 0.72f,
+                TextPadding = 20,
 #else
-                MinimumTextScale = 0.60f,
-                TextPadding = 18,
+                MinimumTextScale = 0.42f,
+                MaximumTextScale = 0.68f,
+                TextPadding = 28,
 #endif
                 BackColor = UITheme.PanelDark,
                 ForeColor = UITheme.Ink,
                 BorderColor = UITheme.Gold,
-                BorderThickness = 2,
 #if FIDA_ANDROID
-                SignalRails = true
+                BorderThickness = 0,
+                AccentBar = true,
+#else
+                BorderThickness = 0,
+                AccentBar = true,
+#endif
+#if FIDA_ANDROID
+                SignalRails = false
 #else
                 SignalRails = false
 #endif
@@ -94,19 +105,41 @@ namespace Fida.UI
 #endif
             _uiControls.Add(_gameMessageLabel);
 
+#if FIDA_ANDROID
+            _uiControls.Add(new UIIconButton(-10,
+                new Rectangle(messageBounds.Right + pauseGap,
+                    messageBounds.Top + (messageBounds.Height - pauseSize) / 2,
+                    pauseSize, pauseSize), UIIconButton.IconKind.Pause,
+                _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Name = "pauseBattle"
+            });
+#endif
+
             int cueMargin = System.Math.Clamp(viewportWidth / 8, 20, 188);
+#if FIDA_ANDROID
             var cueBounds = new Rectangle(cueMargin, safeArea.Top + 88,
                 System.Math.Max(1, viewportWidth - cueMargin * 2), 56);
+#else
+            var cueBounds = messageBounds;
+#endif
             _actionCueLabel = new UIBoxLabel(-1, cueBounds, "", _resourceManager.Pixel, _resourceManager.Font)
             {
                 Alignment = UIBoxLabelAlignment.Center,
                 AutoFitText = true,
-                MinimumTextScale = 0.60f,
-                TextPadding = 16,
+                MinimumTextScale = 0.42f,
+                MaximumTextScale = 0.68f,
+                TextPadding = 28,
                 BackColor = UITheme.PanelLight,
                 ForeColor = UITheme.Ink,
                 BorderColor = UITheme.GoldBright,
+#if FIDA_ANDROID
                 BorderThickness = 2,
+                AccentBar = false,
+#else
+                BorderThickness = 0,
+                AccentBar = true,
+#endif
                 IsVisible = false
             };
             _uiControls.Add(_actionCueLabel);
@@ -133,7 +166,11 @@ namespace Fida.UI
                         player.PlayerId == gameManager.LocalPlayerId);
                 }
                 
-                var uiPlayer = new UIPlayer(player.PlayerId, player, positions[player.PlayerId], _resourceManager.Font, _resourceManager.Pixel, portraitTexture);
+                bool isAlly = gameManager.Groups.Any(group =>
+                    group.Players.Any(member => member.PlayerId == gameManager.LocalPlayerId) &&
+                    group.Players.Any(member => member.PlayerId == player.PlayerId));
+                var uiPlayer = new UIPlayer(player.PlayerId, player, positions[player.PlayerId],
+                    _resourceManager.Font, _resourceManager.Pixel, portraitTexture, isAlly);
                 
                 // 卡片本身在 ChooseTarget 时可交互
                 int capturedPlayerId = player.PlayerId;
@@ -234,6 +271,21 @@ namespace Fida.UI
             return positions;
 #else
 
+            Viewport desktopViewport = _resourceManager.GraphicsDevice.Viewport;
+            int cardWidth = UIConfig.Int("cardWidth");
+            int rowGap = UIConfig.ScaleDesktopMetric(20);
+            int screenWidth = desktopViewport.Width;
+            void PlaceRow(IReadOnlyList<Player> row, int designY)
+            {
+                if (row.Count == 0) return;
+                int totalWidth = row.Count * cardWidth + (row.Count - 1) * rowGap;
+                int startX = (screenWidth - totalWidth) / 2;
+                int y = (int)System.Math.Round(UIDesktopLayout.MapPoint(
+                    new Vector2(0, designY), desktopViewport).Y);
+                for (int i = 0; i < row.Count; i++)
+                    positions[row[i].PlayerId] = new Vector2(startX + i * (cardWidth + rowGap), y);
+            }
+
             // 找到本地玩家所在的组
             Group localGroup = null;
             foreach (var group in gameManager.Groups)
@@ -249,17 +301,15 @@ namespace Fida.UI
                 if (localGroup != null) break;
             }
 
-            int cardWidth = UIConfig.Int("cardWidth");
-            int screenWidth = _resourceManager.GraphicsDevice.Viewport.Width;
-
             // 如果没有分组（单机 PvP），使用默认的两位置布局
             if (localGroup == null)
             {
-                for (int i = 0; i < gameManager.Players.Count; i++)
-                {
-                    int y = (i == 0) ? SceneConfig.RowBottomY : SceneConfig.RowTopY;
-                    positions[gameManager.Players[i].PlayerId] = new Vector2(100, y);
-                }
+                var soloLocalPlayers = gameManager.Players
+                    .Where(player => player.PlayerId == gameManager.LocalPlayerId).ToList();
+                var opponents = gameManager.Players
+                    .Where(player => player.PlayerId != gameManager.LocalPlayerId).ToList();
+                PlaceRow(opponents, SceneConfig.RowTopY);
+                PlaceRow(soloLocalPlayers, SceneConfig.RowBottomY);
                 return positions;
             }
 
@@ -274,23 +324,8 @@ namespace Fida.UI
                 }
             }
 
-            // 计算底部行（本地组）位置
-            int localCount = localPlayers.Count;
-            int totalLocalWidth = localCount * cardWidth + (localCount - 1) * 20; // 20px 间距
-            int startLocalX = (screenWidth - totalLocalWidth) / 2;
-            for (int i = 0; i < localCount; i++)
-            {
-                positions[localPlayers[i].PlayerId] = new Vector2(startLocalX + i * (cardWidth + 20), SceneConfig.RowBottomY);
-            }
-
-            // 计算顶部行（敌方组）位置
-            int enemyCount = enemyPlayers.Count;
-            int totalEnemyWidth = enemyCount * cardWidth + (enemyCount - 1) * 20;
-            int startEnemyX = (screenWidth - totalEnemyWidth) / 2;
-            for (int i = 0; i < enemyCount; i++)
-            {
-                positions[enemyPlayers[i].PlayerId] = new Vector2(startEnemyX + i * (cardWidth + 20), SceneConfig.RowTopY);
-            }
+            PlaceRow(localPlayers, SceneConfig.RowBottomY);
+            PlaceRow(enemyPlayers, SceneConfig.RowTopY);
 
             return positions;
 #endif
@@ -333,6 +368,7 @@ namespace Fida.UI
 #else
             _actionCueLabel.Update(message);
             _actionCueLabel.IsVisible = true;
+            if (_gameMessageLabel != null) _gameMessageLabel.IsVisible = false;
 #endif
         }
 
@@ -341,6 +377,9 @@ namespace Fida.UI
             foreach (var uiPlayer in _uiPlayers)
                 uiPlayer.IsPresentingAction = false;
             if (_actionCueLabel != null) _actionCueLabel.IsVisible = false;
+#if !FIDA_ANDROID
+            if (_gameMessageLabel != null) _gameMessageLabel.IsVisible = true;
+#endif
 #if FIDA_ANDROID
             if (_gameManager != null)
                 _gameMessageLabel?.Update(FormatMobileCommand(_gameManager.GameMessage));
@@ -349,6 +388,11 @@ namespace Fida.UI
 
         public bool IsNumberFlowActive => _numberFlowEffect?.IsPlaying == true;
         public bool IsCardCombatAnimationActive => _cardCombatAnimator?.IsPlaying == true;
+        public void PlayReinforcementEntrance(IEnumerable<int> playerIds)
+        {
+            foreach (int id in playerIds)
+                GetUIPlayer(id)?.BeginReinforcementEntrance();
+        }
         public bool IsBlockingPresentationActive =>
             IsNumberFlowActive || IsCardCombatAnimationActive;
 
@@ -459,7 +503,7 @@ namespace Fida.UI
         private void ShowNumberSelectionDialog(string prompt)
         {
             if (_numberSelectionDialog == null) return;
-            _numberSelectionDialog.Show(prompt);
+            _numberSelectionDialog.Show(prompt, _gameManager.CurrentStepValidNumbers);
             foreach (var control in _uiControls)
                 if (control.IsFocused) control.SetFocus(false);
 

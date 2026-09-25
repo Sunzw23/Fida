@@ -30,6 +30,8 @@ namespace Fida.Logic
         public List<Player> Players { get; private set; } = [];
         public List<Group> Groups { get; private set; } = [];
         public int CurrentPlayerIndex { get; private set; }
+        /// <summary>Number of player turns begun in this battle (used by online checkpoints).</summary>
+        public int TurnNumber { get; private set; }
         public string GameMessage { get; private set; }
         public ActionType CurrentActionType { get; private set; } = ActionType.None;
         /// <summary>
@@ -75,6 +77,7 @@ namespace Fida.Logic
             Players = players;
             Groups = [.. players.Select(p => new Group(p.PlayerId, p.Name, [p]))];
             CurrentPlayerIndex = 0;
+            TurnNumber = 0;
             GameMessage = string.Empty;
             _currentState = null;
             StateStack.Clear();
@@ -90,11 +93,46 @@ namespace Fida.Logic
             Players = players;
             Groups = groups;
             CurrentPlayerIndex = 0;
+            TurnNumber = 0;
             GameMessage = string.Empty;
             _currentState = null;
             StateStack.Clear();
             IsGameEnded = false;
             _gameEndDeferralDepth = 0;
+        }
+
+        /// <summary>
+        /// Restores a network checkpoint taken between turns. The receiver resumes by
+        /// beginning CurrentPlayerIndex's turn; transient skill/action states are not copied.
+        /// </summary>
+        public void RestoreTurnBoundary(List<Player> players, List<Group> groups,
+            int currentPlayerId, int turnNumber)
+        {
+            if (players == null || players.Count == 0)
+                throw new ArgumentException("A battle checkpoint must contain players.", nameof(players));
+            int currentIndex = players.FindIndex(player => player.PlayerId == currentPlayerId);
+            if (currentIndex < 0)
+                throw new ArgumentException("The current player must exist in the checkpoint roster.", nameof(currentPlayerId));
+
+            Initialize(players, groups ?? []);
+            CurrentPlayerIndex = currentIndex;
+            TurnNumber = Math.Max(0, turnNumber);
+        }
+
+        /// <summary>Continues a restored turn-boundary checkpoint without replaying old actions.</summary>
+        public void ResumeRestoredTurn()
+        {
+            if (Players.Count == 0 || IsGameEnded) return;
+            StateStack.Clear();
+            TransitionTo(new TurnStartState(this, GetCurrentPlayer().PlayerId));
+        }
+
+        /// <summary>Resume a checkpoint captured before the current turn's first number choice.</summary>
+        public void ResumeRestoredInputBoundary()
+        {
+            if (Players.Count == 0 || IsGameEnded) return;
+            StateStack.Clear();
+            TransitionTo(new ChooseNumberIndexState(this, GetCurrentPlayer().PlayerId));
         }
         
         public void StartGame()
@@ -204,7 +242,11 @@ namespace Fida.Logic
         #region Event Invokers
 
         public void OnGameStarted(GameStartEventArgs e) => GameStarted?.Invoke(this, e);
-        public void OnTurnStarted(TurnStartEventArgs e) => TurnStarted?.Invoke(this, e);
+        public void OnTurnStarted(TurnStartEventArgs e)
+        {
+            TurnNumber++;
+            TurnStarted?.Invoke(this, e);
+        }
         public void OnSkillActivated(SkillActivatedEventArgs e) => SkillActivated?.Invoke(this, e);
         public void OnPlayerActionRequired(PlayerActionRequiredEventArgs e)
         {

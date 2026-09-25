@@ -24,6 +24,7 @@ namespace Fida.States
         /// 处理输入 + 房间码刷新 + 连接检查
         /// </summary>
         private string _lastShownCode = "";
+        private string _lastShownStatus = "";
 
         public override void HandleInput(GameTime gameTime)
         {
@@ -36,6 +37,18 @@ namespace Fida.States
                 _lastShownCode = code;
                 _uiManager.GetLabelByName("roomCodeLabel")?.Update(
                     code.Length == 4 ? $"Room: {code}" : "Room: generating...");
+            }
+
+            if (_networkManager.StatusText != _lastShownStatus)
+            {
+                _lastShownStatus = _networkManager.StatusText;
+                string status = string.IsNullOrWhiteSpace(_lastShownStatus)
+                    ? "Waiting for player"
+                    : _lastShownStatus;
+#if FIDA_ANDROID
+                status = status.ToUpperInvariant();
+#endif
+                _uiManager.GetLabelByName("statusLabel")?.Update(status);
             }
 
             if (_networkManager.CheckHostConnection())

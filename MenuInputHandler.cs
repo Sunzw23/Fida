@@ -34,6 +34,8 @@ namespace Fida
                 { State.Connecting,  new ConnectingState(uiManager, networkManager, stateMachine) },
                 { State.OnlineLobby, new OnlineLobbyState(uiManager, networkManager, stateMachine) },
                 { State.DuelDraft,    new DuelDraftState(uiManager, networkManager, stateMachine) },
+                { State.OnlineCampaignMap, new OnlineCampaignMapState(uiManager, networkManager, stateMachine) },
+                { State.OnlineCampaignSkills, new OnlineCampaignSkillsState(uiManager, networkManager, stateMachine) },
             };
 
             // 订阅状态机生命周期事件

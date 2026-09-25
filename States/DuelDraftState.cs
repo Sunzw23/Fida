@@ -4,6 +4,7 @@ using Fida.Campaign;
 using Fida.Logic;
 using Fida.Network;
 using Fida.UI;
+using Fida.UI.Campaign;
 using Microsoft.Xna.Framework;
 
 namespace Fida.States
@@ -15,6 +16,7 @@ namespace Fida.States
     public sealed class DuelDraftState : StateBase
     {
         private readonly HashSet<SkillType> _picks = [];
+        private UICampaignSkillWheel _wheel;
         private SkillType? _localBan;
         private SkillType? _remoteBan;
         private IReadOnlyList<SkillType> _remoteLoadout;
@@ -28,21 +30,27 @@ namespace Fida.States
 
         public override void OnEnter()
         {
+            _picks.Clear();
+            _localBan = null;
+            _remoteBan = null;
+            _remoteLoadout = null;
+            _localLocked = false;
+            _started = false;
             _networkManager.DraftBanReceived += OnBanReceived;
             _networkManager.DraftLockReceived += OnLockReceived;
             _networkManager.DraftStarting += OnDraftStarting;
-
-            foreach (SkillType skill in SkillFactory.SelectableSkills)
+            _wheel = _uiManager.GetControls().OfType<UICampaignSkillWheel>()
+                .FirstOrDefault(control => control.Name == "duel_draft_wheel");
+            if (_wheel != null)
             {
-                SkillType captured = skill;
-                BindButton($"draftSkill_{skill}", () => ChooseSkill(captured));
-                var button = _uiManager.GetButtonByName($"draftSkill_{skill}");
-                if (button != null) button.EnabledChecker = () => CanChoose(captured);
+                _wheel.SetSelection(_picks);
+                _wheel.AvailabilityOverride = Availability;
+                _wheel.AvailabilityLabelOverride = AvailabilityLabel;
+                _wheel.AvailableActionText = "BAN";
+                _wheel.SelectedActionText = "BANNED";
+                _wheel.BackActionText = "EXIT";
+                _wheel.StartActionText = "LOCK";
             }
-            BindButton("draftCommit", LockLoadout);
-            var commit = _uiManager.GetButtonByName("draftCommit");
-            if (commit != null) commit.EnabledChecker = CanLock;
-            BindButton("draftBack", Disconnect);
             RefreshView();
         }
 
@@ -51,12 +59,19 @@ namespace Fida.States
             _networkManager.DraftBanReceived -= OnBanReceived;
             _networkManager.DraftLockReceived -= OnLockReceived;
             _networkManager.DraftStarting -= OnDraftStarting;
+            _wheel = null;
             base.OnExit();
         }
 
         public override void HandleInput(GameTime gameTime)
         {
             base.HandleInput(gameTime);
+            if (_wheel != null)
+            {
+                if (_wheel.TryConsumeToggle(out SkillType skill)) ChooseSkill(skill);
+                if (_wheel.ConsumeBackRequest()) Disconnect();
+                if (_wheel.ConsumeStartRequest()) LockLoadout();
+            }
             _networkManager.ProcessDraftMessages();
         }
 
@@ -81,16 +96,6 @@ namespace Fida.States
                 OnlineModeRules.DuelSkillBudget) return;
             _picks.Add(skill);
             RefreshView();
-        }
-
-        private bool CanChoose(SkillType skill)
-        {
-            if (!Picking) return !_localBan.HasValue;
-            if (_localLocked || IsBanned(skill)) return false;
-            if (_picks.Contains(skill)) return true;
-            return !CampaignSkillBalance.Conflicts(_picks, skill) &&
-                CampaignSkillBalance.TotalCost(_picks) + CampaignSkillBalance.Cost(skill) <=
-                OnlineModeRules.DuelSkillBudget;
         }
 
         private bool CanLock() => Picking && !_localLocked &&
@@ -142,31 +147,65 @@ namespace Fida.States
 
         private void RefreshView()
         {
-            var phase = _uiManager.GetLabelByName("draftPhase");
-            var status = _uiManager.GetLabelByName("draftStatus");
             int spent = CampaignSkillBalance.TotalCost(_picks);
-            if (!Picking)
+            if (_wheel != null)
             {
-                phase?.Update("BAN - choose one skill");
-                status?.Update(_localBan.HasValue
-                    ? "Ban submitted. Waiting for the other player..."
-                    : "Both bans remain hidden until both players submit.");
-            }
-            else
-            {
-                phase?.Update($"PICK - {spent} / {OnlineModeRules.DuelSkillBudget} SP");
-                string bans = _localBan == _remoteBan
-                    ? GameText.SkillName(_localBan.Value)
-                    : $"{GameText.SkillName(_localBan.Value)} / {GameText.SkillName(_remoteBan.Value)}";
-                status?.Update(_localLocked ? $"Banned: {bans} | Locked - waiting..." :
-                    $"Banned: {bans} | Spend exactly {OnlineModeRules.DuelSkillBudget} SP, then lock.");
-            }
-            foreach (SkillType skill in SkillFactory.SelectableSkills)
-            {
-                var button = _uiManager.GetButtonByName($"draftSkill_{skill}");
-                button?.SetSelected((!Picking && _localBan == skill) || _picks.Contains(skill));
+                _wheel.ShowSkillPoints = Picking;
+                _wheel.HeaderText = Picking ? "PICK" : "BAN";
+                _wheel.AvailableActionText = "BAN";
+                _wheel.SelectedActionText = "BANNED";
+                _wheel.StartActionEnabled = CanLock();
+                _wheel.StartActionText = !Picking ? "PICK" : _localLocked ? "WAIT" : "LOCK";
+                if (!Picking)
+                    _wheel.StatusText = _localBan.HasValue
+                        ? "BAN SENT · WAITING FOR OPPONENT"
+                        : "CHOOSE ONE SKILL";
+                else
+                {
+                    string bans = _localBan == _remoteBan
+                        ? GameText.SkillName(_localBan.Value)
+                        : $"{GameText.SkillName(_localBan.Value)} / {GameText.SkillName(_remoteBan.Value)}";
+                    _wheel.StatusText = _localLocked
+                        ? $"LOCKED · BANNED {bans}"
+                        : $"{spent} / {OnlineModeRules.DuelSkillBudget} SP · BANNED {bans}";
+                    _wheel.AvailableActionText = "ADD";
+                    _wheel.SelectedActionText = "REMOVE";
+                }
             }
         }
+
+        private CampaignSkillAvailability Availability(SkillType skill)
+        {
+            if (!Picking)
+            {
+                if (_localBan == skill) return CampaignSkillAvailability.Selected;
+                return _localBan.HasValue
+                    ? CampaignSkillAvailability.Locked
+                    : CampaignSkillAvailability.Available;
+            }
+
+            if (IsBanned(skill)) return CampaignSkillAvailability.Locked;
+            if (_picks.Contains(skill)) return CampaignSkillAvailability.Selected;
+            if (_localLocked) return CampaignSkillAvailability.Locked;
+            if (CampaignSkillBalance.Conflicts(_picks, skill)) return CampaignSkillAvailability.Conflicting;
+            return CampaignSkillBalance.TotalCost(_picks) + CampaignSkillBalance.Cost(skill) >
+                   OnlineModeRules.DuelSkillBudget
+                ? CampaignSkillAvailability.OverBudget
+                : CampaignSkillAvailability.Available;
+        }
+
+        private string AvailabilityLabel(SkillType skill) =>
+            !Picking && _localBan == skill ? "BANNED" : Availability(skill) switch
+            {
+                CampaignSkillAvailability.Available => "AVAILABLE",
+                CampaignSkillAvailability.Selected => "PICKED",
+                CampaignSkillAvailability.Locked when IsBanned(skill) => "BANNED",
+                CampaignSkillAvailability.Locked when _localLocked => "LOCKED",
+                CampaignSkillAvailability.Locked => "WAIT",
+                CampaignSkillAvailability.OverBudget => "NO SP",
+                CampaignSkillAvailability.Conflicting => "CONFLICT",
+                _ => "UNAVAILABLE"
+            };
 
         private bool IsBanned(SkillType skill) => _localBan == skill || _remoteBan == skill;
         private IReadOnlyCollection<SkillType> Bans() =>

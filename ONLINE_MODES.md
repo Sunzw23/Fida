@@ -28,13 +28,13 @@ The playable implementation now uses simultaneous hidden bans followed by indepe
 
 The protocol carries `DraftBan`, `DraftLock`, and a final canonical `DraftStart`. A future alternating-pick variant can add `DraftPick` without changing combat initialization.
 
-## Co-op campaign
+## Campaign Co-op (mode 2)
 
-Co-op uses a separate balance profile instead of reusing solo values unchanged:
+Both players share the campaign map but each owns an independent route:
 
-- Standard co-op enemies currently start at 18 HP.
-- Boss definitions reserve a 1.75 health multiplier.
-- A future co-op map can reuse campaign nodes while supplying different enemy waves, reinforcement triggers, rewards, and two-player skill budgets.
-- Node selection should be host-authoritative and progress should be stored separately from solo progress.
+- Presence is broadcast continuously as `CampaignPresence(PlayerId, Map|Loadout|Battle, NodeId, Ready, Skills, SessionId)`; the peer's node shows a label on the map and in the loadout screen.
+- Entering the same node's loadout screen together requires both players to Ready before the cooperative battle starts (host-authoritative `CampaignCoopStart`). Either player may also start the same node solo.
+- If a peer is already fighting a node, the other player can pick that node and Join: the battle owner captures a turn-boundary `BattleSnapshot` and the joiner rebuilds the battle from it.
+- Battles are independent unless explicitly shared (`IsCampaignSharedBattle`); actions from another route are dropped.
 
 All tuning constants live in `Network/OnlineModeRules.cs` so UI, encounter generation, and tests can share one source of truth.

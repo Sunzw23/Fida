@@ -22,7 +22,7 @@ namespace Fida.States
             {
                 if (_networkManager.IsHost)
                 {
-                    BindButton("startGame", () => RequestMode(1));
+                    BindButton("startGame", () => RequestMode(2));
                     BindButton("duel", () => RequestMode(0));
                     _networkManager.LobbyGameModeAccepted += OnGameModeAccepted;
                 }
@@ -77,9 +77,12 @@ namespace Fida.States
             if (_gameStarting)
             {
                 _gameStarting = false;
-                _stateMachine.SwitchToState(_networkManager.CurrentGameMode == 0
-                    ? State.DuelDraft
-                    : State.OnlinePlaying);
+                _stateMachine.SwitchToState(_networkManager.CurrentGameMode switch
+                {
+                    0 => State.DuelDraft,
+                    2 => State.OnlineCampaignMap,
+                    _ => State.OnlinePlaying
+                });
             }
         }
 

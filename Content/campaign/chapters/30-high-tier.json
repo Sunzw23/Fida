@@ -2,7 +2,7 @@
   {
     "id": "D1", "chapter": "Chapter III - Dragon Tomb", "name": "Dragon Tomb Gate",
     "story": "The dragon is an ancient engine that predicts death by addition.",
-    "skillBudget": 12, "mapX": 220, "mapY": 780, "parents": ["BG"], "requiredCompletedParents": 1,
+    "skillBudget": 5, "mapX": 220, "mapY": 780, "parents": ["BG"], "requiredCompletedParents": 1,
     "rewards": [],
     "enemies": [
       { "name": "Broken Dragon Head", "health": 7, "skills": ["Long"] },
@@ -13,10 +13,10 @@
   {
     "id": "D2", "chapter": "Chapter III - Dragon Tomb", "name": "Dragonbone Array",
     "story": "The array predicted defeat and drove the King to invoke Zero.",
-    "skillBudget": 14, "mapX": 390, "mapY": 900, "parents": ["D1"], "requiredCompletedParents": 1,
+    "skillBudget": 5, "mapX": 390, "mapY": 900, "parents": ["D1"], "requiredCompletedParents": 1,
     "rewards": ["Long"], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Dragonbone Array", "health": 10, "skills": ["Long"] },
+      { "name": "Dragonbone Array", "health": 10, "skills": ["Long", "PlusDefence"] },
       { "name": "Warding Dragonbone", "health": 5, "skills": ["DoubleDefence"] }
     ],
     "reinforcements": [{ "name": "Heir Dragon Head", "health": 7, "skills": ["Long"] }]
@@ -24,7 +24,7 @@
   {
     "id": "E1", "chapter": "Chapter III - Blank Archive", "name": "The Blank Archive",
     "story": "The histories survived, but every number was changed to zero.",
-    "skillBudget": 12, "mapX": 1300, "mapY": 780, "parents": ["CG"], "requiredCompletedParents": 1,
+    "skillBudget": 5, "mapX": 1300, "mapY": 780, "parents": ["CG"], "requiredCompletedParents": 1,
     "rewards": [],
     "enemies": [
       { "name": "Ink Clerk A", "health": 5, "skills": ["Bian"] },
@@ -35,10 +35,10 @@
   {
     "id": "E2", "chapter": "Chapter III - Blank Archive", "name": "The Thousand-Faced Scribe",
     "story": "The Scribe can alter numbers, but not what truly happened.",
-    "skillBudget": 14, "mapX": 1260, "mapY": 900, "parents": ["E1"], "requiredCompletedParents": 1,
+    "skillBudget": 5, "mapX": 1260, "mapY": 900, "parents": ["E1"], "requiredCompletedParents": 1,
     "rewards": ["Bian"], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Thousand-Faced Scribe", "health": 10, "skills": ["Bian"] },
+      { "name": "Thousand-Faced Scribe", "health": 10, "skills": ["Bian", "DoubleDefence"] },
       { "name": "Paper Guard", "health": 5 }
     ],
     "reinforcements": [

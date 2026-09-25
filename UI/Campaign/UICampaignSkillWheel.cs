@@ -21,7 +21,7 @@ namespace Fida.UI.Campaign
         private readonly SpriteFont _titleFont;
         private readonly CampaignNode _node;
         private readonly CampaignProgress _progress;
-        private readonly IReadOnlyCollection<SkillType> _selected;
+        private IReadOnlyCollection<SkillType> _selected;
         private readonly CampaignSkillWheelOptions _options;
         private readonly SkillWheelModel _wheel;
 
@@ -33,6 +33,14 @@ namespace Fida.UI.Campaign
         private SkillType? _pendingToggle;
         private bool _backRequested;
         private bool _startRequested;
+        private Func<SkillType, CampaignSkillAvailability> _availabilityOverride;
+        private Func<SkillType, string> _availabilityLabelOverride;
+        private string _headerText;
+        private string _statusText = "";
+        private string _availableActionText = "EQUIP";
+        private string _selectedActionText = "REMOVE";
+        private string _backActionText = "<";
+        private string _startActionText;
 #if FIDA_ANDROID
         private bool _touchingWheel;
         private bool _touchMoved;
@@ -42,6 +50,26 @@ namespace Fida.UI.Campaign
 
         public SkillType FocusedSkill => _wheel.Focused;
         public int FocusedIndex => _wheel.FocusedIndex;
+        public string HeaderText { get => _headerText; set => _headerText = value ?? ""; }
+        public string StatusText { get => _statusText; set => _statusText = value ?? ""; }
+        public string AvailableActionText { get => _availableActionText; set => _availableActionText = value ?? ""; }
+        public string SelectedActionText { get => _selectedActionText; set => _selectedActionText = value ?? ""; }
+        public string BackActionText { get => _backActionText; set => _backActionText = value ?? ""; }
+        public string StartActionText { get => _startActionText; set => _startActionText = value ?? ""; }
+        public bool StartActionEnabled { get; set; } = true;
+        public Func<SkillType, CampaignSkillAvailability> AvailabilityOverride
+        {
+            get => _availabilityOverride;
+            set => _availabilityOverride = value;
+        }
+        public Func<SkillType, string> AvailabilityLabelOverride
+        {
+            get => _availabilityLabelOverride;
+            set => _availabilityLabelOverride = value;
+        }
+        public bool ShowSkillPoints { get; set; } = true;
+
+        public void SetSelection(IReadOnlyCollection<SkillType> selected) => _selected = selected;
 
         public UICampaignSkillWheel(int id, GraphicsDevice graphicsDevice, Texture2D pixel,
             SpriteFont font, SpriteFont titleFont, CampaignNode node, CampaignProgress progress,
@@ -55,6 +83,12 @@ namespace Fida.UI.Campaign
             _node = node;
             _progress = progress;
             _selected = selected;
+            _headerText = node.Name;
+#if FIDA_ANDROID
+            _startActionText = "START";
+#else
+            _startActionText = "START BATTLE  >";
+#endif
             _options = options ?? new CampaignSkillWheelOptions();
             SkillType? initial = selected.Count > 0 ? selected.First() : FindFirstAvailable(skills);
             _wheel = new SkillWheelModel(skills, initial);
@@ -219,6 +253,8 @@ namespace Fida.UI.Campaign
             DrawWheel(spriteBatch, viewport, panel, gameTime);
 #if !FIDA_ANDROID
             DrawDesktopDetails(spriteBatch, panel);
+#else
+            DrawMobileDetails(spriteBatch, panel);
 #endif
             DrawFooter(spriteBatch, viewport, panel);
         }
@@ -227,33 +263,30 @@ namespace Fida.UI.Campaign
         {
             float centerX = viewport.Width / 2f;
 #if FIDA_ANDROID
-            DrawCentered(spriteBatch, _titleFont, $"{_node.Chapter} - {_node.Name}",
-                new Vector2(centerX, panel.Top + 54), panel.Width - 64, 0.64f, UITheme.Ink);
-            DrawWrappedCentered(spriteBatch, _font, _node.Story,
-                new Vector2(centerX, panel.Top + 124), panel.Width - 80,
-                0.60f, 36f, 2, UITheme.InkMuted);
-
-            int used = CampaignSkillBalance.TotalCost(_selected);
-            DrawSkillPoints(spriteBatch, new Vector2(centerX, panel.Top + 198),
-                panel.Width - 96, used);
-            DrawCentered(spriteBatch, _font, $"REWARD  //  {_node.RewardText}",
-                new Vector2(centerX, panel.Top + 238), panel.Width - 80, 0.54f, UITheme.GoldBright);
-
-            string loadout = _selected.Count == 0
-                ? "LOADOUT  //  NONE"
-                : "LOADOUT  //  " + string.Join(", ", _selected.Select(GameText.SkillName));
-            DrawCentered(spriteBatch, _font, loadout,
-                new Vector2(centerX, panel.Top + 280), panel.Width - 80, 0.54f, UITheme.Ink);
-            DrawCentered(spriteBatch, _font,
-                "SWIPE TO BROWSE  //  USE SELECT TO APPLY",
-                new Vector2(centerX, panel.Top + 324), panel.Width - 80, 0.50f,
-                UITheme.InkMuted);
+            DrawCentered(spriteBatch, _titleFont, _headerText,
+                new Vector2(centerX, panel.Top + 62), panel.Width - 64, 0.60f, UITheme.Ink);
+            if (!string.IsNullOrWhiteSpace(_statusText))
+                DrawCentered(spriteBatch, _font, _statusText,
+                    new Vector2(centerX, panel.Top + 105), panel.Width - 64, 0.46f, UITheme.InkMuted);
+            if (ShowSkillPoints)
+            {
+                int used = CampaignSkillBalance.TotalCost(_selected);
+                DrawSkillPoints(spriteBatch, new Vector2(centerX, panel.Top + 137),
+                    panel.Width - 96, used);
+            }
+            DrawMobileLoadout(spriteBatch, panel);
 #else
-            DrawCentered(spriteBatch, _titleFont, _node.Name,
+            DrawCentered(spriteBatch, _titleFont, _headerText,
                 new Vector2(centerX, panel.Top + 58), panel.Width - 100, 0.48f, UITheme.Ink);
-            int used = CampaignSkillBalance.TotalCost(_selected);
-            DrawSkillPoints(spriteBatch, new Vector2(centerX, panel.Top + 143),
-                panel.Width - 200, used);
+            if (!string.IsNullOrWhiteSpace(_statusText))
+                DrawCentered(spriteBatch, _font, _statusText,
+                    new Vector2(centerX, panel.Top + 101), panel.Width - 100, 0.42f, UITheme.InkMuted);
+            if (ShowSkillPoints)
+            {
+                int used = CampaignSkillBalance.TotalCost(_selected);
+                DrawSkillPoints(spriteBatch, new Vector2(centerX, panel.Top + 143),
+                    panel.Width - 200, used);
+            }
 #endif
         }
 
@@ -284,7 +317,7 @@ namespace Fida.UI.Campaign
             float centerX = viewport.Width / 2f;
             int centerY = panel.Top + _options.WheelCenterOffsetFromPanelTop;
 #if FIDA_ANDROID
-            centerY = Math.Max(panel.Top + 480, Math.Min(centerY, panel.Bottom - 580));
+            centerY = MobileWheelCenterY(panel);
 #else
             centerX = DesktopWheelCenterX(panel);
             centerY = DesktopWheelCenterY(panel);
@@ -322,7 +355,7 @@ namespace Fida.UI.Campaign
                 Color color = near ? UITheme.InkMuted : UITheme.AccentBlue * 0.72f;
                 string text =
 #if FIDA_ANDROID
-                    $"{(_selected.Contains(skill) ? "[EQUIPPED] " : "")}{GameText.SkillName(skill)} [{CampaignSkillBalance.Cost(skill)} SP]";
+                    $"{(_selected.Contains(skill) ? "+ " : "")}{GameText.SkillName(skill)}";
 #else
                     $"{(_selected.Contains(skill) ? "+ " : "")}{GameText.SkillName(skill)}";
 #endif
@@ -363,9 +396,9 @@ namespace Fida.UI.Campaign
 #endif
             DrawCentered(spriteBatch, _font,
 #if FIDA_ANDROID
-                AvailabilityText(availability),
+                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {AvailabilityLabel(skill, availability)}",
 #else
-                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {ShortAvailability(availability)}",
+                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {AvailabilityLabel(skill, availability)}",
 #endif
                 new Vector2(bounds.Center.X, bounds.Center.Y + 31 + contentOffsetY), bounds.Width - 28,
                 statusScale,
@@ -378,37 +411,32 @@ namespace Fida.UI.Campaign
             CampaignSkillAvailability availability = Availability(_wheel.Focused);
             string selectText = availability switch
             {
-                CampaignSkillAvailability.Selected => "Remove Selected Skill",
-                CampaignSkillAvailability.Available => "Equip Selected Skill",
-                _ => "Selected Skill Unavailable"
+                CampaignSkillAvailability.Selected => _selectedActionText,
+                CampaignSkillAvailability.Available => _availableActionText,
+                _ => AvailabilityLabel(_wheel.Focused, availability)
             };
-            DrawSmallButton(spriteBatch, SelectButton(viewport, panel), selectText);
+            DrawSmallButton(spriteBatch, SelectButton(viewport, panel), selectText,
+                availability is CampaignSkillAvailability.Selected or CampaignSkillAvailability.Available);
 #endif
             DrawSmallButton(spriteBatch, BackButton(viewport, panel),
-#if FIDA_ANDROID
-                "Back to Map");
-#else
-                "<");
-#endif
+                _backActionText);
             DrawSmallButton(spriteBatch, StartButton(viewport, panel),
-#if FIDA_ANDROID
-                "Start Battle");
-#else
-                "START BATTLE  >");
-#endif
+                _startActionText, StartActionEnabled);
         }
 
-        private void DrawSmallButton(SpriteBatch spriteBatch, Rectangle bounds, string text)
+        private void DrawSmallButton(SpriteBatch spriteBatch, Rectangle bounds, string text,
+            bool enabled = true)
         {
-            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, UITheme.Gold, 2, 0.48f);
+            spriteBatch.Draw(_pixel, bounds, enabled ? UITheme.PanelLight : UITheme.PanelDark);
+            UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel,
+                enabled ? UITheme.Gold : UITheme.InkMuted, 2, enabled ? 0.48f : 0.25f);
             DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12,
 #if FIDA_ANDROID
                 0.66f,
 #else
                 0.56f,
 #endif
-                UITheme.Ink);
+                enabled ? UITheme.Ink : UITheme.InkMuted);
         }
 
 #if !FIDA_ANDROID
@@ -462,17 +490,18 @@ namespace Fida.UI.Campaign
             DrawCentered(spriteBatch, _font, detail,
                 new Vector2(card.Center.X, card.Top + 197), card.Width - 64, 0.36f, UITheme.InkMuted);
             DrawCentered(spriteBatch, _font,
-                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {ShortAvailability(availability)}",
+                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {AvailabilityLabel(skill, availability)}",
                 new Vector2(card.Center.X, card.Bottom - 96), card.Width - 64, 0.39f,
                 availability == CampaignSkillAvailability.Selected ? UITheme.AccentGreen : accent);
             Rectangle action = DesktopActionBounds(card);
             spriteBatch.Draw(_pixel, action, UITheme.PanelLight);
             UIUtils.DrawRectangleOutlines(spriteBatch, action, accent, 1, _pixel);
             DrawCentered(spriteBatch, _font, availability == CampaignSkillAvailability.Selected
-                ? "REMOVE" : availability == CampaignSkillAvailability.Available ? "EQUIP" : "UNAVAILABLE",
+                ? _selectedActionText : availability == CampaignSkillAvailability.Available ? _availableActionText : "UNAVAILABLE",
                 action.Center.ToVector2(), action.Width - 20, 0.34f, UITheme.Ink);
         }
 
+#endif
         private static string ShortAvailability(CampaignSkillAvailability availability) => availability switch
         {
             CampaignSkillAvailability.Selected => "EQUIPPED",
@@ -483,6 +512,7 @@ namespace Fida.UI.Campaign
             _ => "UNAVAILABLE"
         };
 
+#if !FIDA_ANDROID
         private static Rectangle DesktopDetailBounds(Rectangle panel)
         {
             int left = panel.Left + panel.Width * 56 / 100;
@@ -494,18 +524,61 @@ namespace Fida.UI.Campaign
             new(detail.Left + 38, detail.Bottom - 58, detail.Width - 76, 40);
 #endif
 
-        private CampaignSkillAvailability Availability(SkillType skill) =>
-            CampaignLoadout.Evaluate(_progress, _node, _selected, skill);
-
-        private string AvailabilityText(CampaignSkillAvailability availability) => availability switch
+#if FIDA_ANDROID
+        private void DrawMobileLoadout(SpriteBatch spriteBatch, Rectangle panel)
         {
-            CampaignSkillAvailability.Selected => "EQUIPPED - CONFIRM TO REMOVE",
-            CampaignSkillAvailability.Available => "AVAILABLE - CONFIRM TO EQUIP",
-            CampaignSkillAvailability.Locked => "LOCKED - COMPLETE EARLIER NODES",
-            CampaignSkillAvailability.OverBudget => "NOT ENOUGH SKILL POINTS",
-            CampaignSkillAvailability.Conflicting => "CONFLICTS WITH THE CURRENT LOADOUT",
-            _ => "UNAVAILABLE"
-        };
+            int count = Math.Min(7, _selected.Count);
+            if (count == 0) return;
+            int size = 40;
+            int gap = 9;
+            int left = panel.Center.X - (count * size + (count - 1) * gap) / 2;
+            int index = 0;
+            foreach (SkillType skill in _selected)
+            {
+                if (index >= count) break;
+                Rectangle chip = new(left + index * (size + gap), panel.Top + 181, size, size);
+                spriteBatch.Draw(_pixel, chip, CampaignSkillPresentation.Accent(skill));
+                DrawCentered(spriteBatch, _font, UISkillIconCatalog.Glyph(skill),
+                    chip.Center.ToVector2(), size - 6, 0.54f, UITheme.PanelLight);
+                index++;
+            }
+        }
+
+        private void DrawMobileDetails(SpriteBatch spriteBatch, Rectangle panel)
+        {
+            SkillType skill = _wheel.Focused;
+            var (family, detail) = CampaignSkillPresentation.Describe(skill);
+            Color accent = Availability(skill) == CampaignSkillAvailability.Locked
+                ? UITheme.InkMuted : CampaignSkillPresentation.Accent(skill);
+            int top = MobileWheelCenterY(panel) + _options.NeighborSpacing + 78;
+            int bottom = SelectButton(_graphicsDevice.Viewport, panel).Top - 24;
+            if (bottom - top < 116) return;
+            Rectangle card = new(panel.Left + 46, top, panel.Width - 92,
+                Math.Min(208, bottom - top));
+            spriteBatch.Draw(_pixel, card, UITheme.PanelDark);
+            spriteBatch.Draw(_pixel, new Rectangle(card.Left, card.Top, 6, card.Height), accent);
+            DrawCentered(spriteBatch, _font, family,
+                new Vector2(card.Center.X, card.Top + 42), card.Width - 48, 0.45f, accent);
+            DrawWrappedCentered(spriteBatch, _font, detail,
+                new Vector2(card.Center.X, card.Center.Y + 19), card.Width - 42,
+                0.50f, 39f, 2, UITheme.Ink);
+        }
+
+        private static int MobileWheelCenterY(Rectangle panel)
+        {
+            int desired = panel.Top + (int)(panel.Height * 0.38f);
+            int min = panel.Top + 330;
+            int max = Math.Max(min, panel.Bottom - 400);
+            return Math.Clamp(desired, min, max);
+        }
+#endif
+
+        private string AvailabilityLabel(SkillType skill, CampaignSkillAvailability availability) =>
+            _availabilityLabelOverride?.Invoke(skill) ?? ShortAvailability(availability);
+
+        private CampaignSkillAvailability Availability(SkillType skill) =>
+            _availabilityOverride?.Invoke(skill) ??
+            CampaignLoadout.Evaluate(_progress, _node, _selected, skill);
 
         private void ToggleFocused()
         {
@@ -554,8 +627,8 @@ namespace Fida.UI.Campaign
         private Rectangle WheelGestureBounds(Viewport viewport)
         {
             Rectangle panel = PanelBounds(viewport);
-            int top = panel.Top + 292;
-            int bottom = SelectButton(viewport, panel).Top - 18;
+            int top = panel.Top + 235;
+            int bottom = MobileWheelCenterY(panel) + _options.NeighborSpacing + 45;
             return new Rectangle(panel.Left + 18, top,
                 Math.Max(1, panel.Width - 36), Math.Max(1, bottom - top));
         }
@@ -643,7 +716,7 @@ namespace Fida.UI.Campaign
             int centerY = panel.Top + _options.WheelCenterOffsetFromPanelTop;
             int centerX = viewport.Width / 2;
 #if FIDA_ANDROID
-            centerY = Math.Max(panel.Top + 480, Math.Min(centerY, panel.Bottom - 580));
+            centerY = MobileWheelCenterY(panel);
 #else
             centerY = DesktopWheelCenterY(panel);
             centerX = DesktopWheelCenterX(panel);
@@ -661,19 +734,19 @@ namespace Fida.UI.Campaign
 
 #if FIDA_ANDROID
         private static Rectangle SelectButton(Viewport viewport, Rectangle panel) =>
-            new(panel.Left + 48, panel.Bottom - 258, panel.Width - 96, 64);
+            new(panel.Left + 48, panel.Bottom - 178, panel.Width - 96, 64);
 #endif
 
         private static Rectangle BackButton(Viewport viewport, Rectangle panel) =>
 #if FIDA_ANDROID
-            new(panel.Left + 48, panel.Bottom - 178, panel.Width - 96, 64);
+            new(panel.Left + 40, panel.Bottom - 106, 84, 72);
 #else
             new(panel.Left + 42, panel.Bottom - 108, 280, 60);
 #endif
 
         private static Rectangle StartButton(Viewport viewport, Rectangle panel) =>
 #if FIDA_ANDROID
-            new(panel.Left + 48, panel.Bottom - 98, panel.Width - 96, 64);
+            new(panel.Left + 140, panel.Bottom - 106, panel.Width - 188, 72);
 #else
             new(panel.Right - 322, panel.Bottom - 108, 280, 60);
 #endif

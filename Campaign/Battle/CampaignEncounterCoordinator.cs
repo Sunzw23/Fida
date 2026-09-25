@@ -14,6 +14,8 @@ namespace Fida.Campaign.Battle
         private readonly List<Player> _observedPlayers = [];
         private CampaignBattleSetup _setup;
         private bool _deployed;
+        private bool _deploymentDeferred;
+        private bool _deploymentPending;
         private int _round;
 
         public event Action<IReadOnlyList<Player>> ReinforcementsDeployed;
@@ -30,9 +32,11 @@ namespace Fida.Campaign.Battle
             _observedPlayers.Clear();
             _setup = setup;
             _deployed = false;
+            _deploymentDeferred = false;
+            _deploymentPending = false;
             _round = 0;
 
-            foreach (var player in setup.Players.Where(p => p.PlayerId != _game.LocalPlayerId))
+            foreach (var player in setup.Players.Where(p => !_game.AreAllies(p.PlayerId, _game.LocalPlayerId)))
             {
                 player.HealthChanged += OnHealthChanged;
                 _observedPlayers.Add(player);
@@ -51,14 +55,32 @@ namespace Fida.Campaign.Battle
             if (player.Health == 0) TryDeploy();
         }
 
+        public void DeferDeployment() => _deploymentDeferred = true;
+
+        public void ResumeDeployment()
+        {
+            _deploymentDeferred = false;
+            if (_deploymentPending)
+            {
+                _deploymentPending = false;
+                TryDeploy();
+            }
+        }
+
         private void TryDeploy()
         {
             if (_setup == null || _deployed || _setup.Reinforcements.Count == 0) return;
-            int deaths = _setup.Players.Count(p => p.PlayerId != _game.LocalPlayerId && !p.IsAlive());
+            int deaths = _setup.Players.Count(p => !_game.AreAllies(p.PlayerId, _game.LocalPlayerId) && !p.IsAlive());
             bool byRound = _setup.Node.ReinforcementRound > 0 && _round >= _setup.Node.ReinforcementRound;
             bool byDeaths = _setup.Node.ReinforcementAfterEnemyDeaths > 0 &&
                             deaths >= _setup.Node.ReinforcementAfterEnemyDeaths;
             if (!byRound && !byDeaths) return;
+
+            if (_deploymentDeferred)
+            {
+                _deploymentPending = true;
+                return;
+            }
 
             _deployed = true;
             foreach (var reinforcement in _setup.Reinforcements) _game.AddPlayer(reinforcement, 1);

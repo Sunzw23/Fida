@@ -15,13 +15,6 @@ public class OnlineModeRulesTests
     }
 
     [Fact]
-    public void CoopEnemies_AreStrongerThanSoloPlayerBaseline()
-    {
-        Assert.True(OnlineModeRules.CoopEnemyHealth > 11);
-        Assert.True(OnlineModeRules.CoopBossHealthMultiplier > 1f);
-    }
-
-    [Fact]
     public void DuelLoadout_MustSpendExactlyBudgetAndRespectBans()
     {
         SkillType[] exact = [SkillType.PlusAttack, SkillType.DoubleAttack, SkillType.Shen];

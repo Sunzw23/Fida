@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Fida.Agent;
 using Fida.Logic;
 using Fida.UI;
@@ -7,6 +8,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Fida.Campaign;
 using Fida.Campaign.Battle;
 using Microsoft.Xna.Framework;
+using Fida.Network;
 
 namespace Fida.Scene
 {
@@ -93,31 +95,6 @@ namespace Fida.Scene
         }
 
         /// <summary>
-        /// 初始化玩家控制器（Co-op 联机模式：本地玩家 + 远程玩家 + Agent 玩家）
-        /// </summary>
-        public void InitializeControllers(List<Player> players, int localPlayerId, bool coopMode)
-        {
-            _controllers.Clear();
-            foreach (var player in players)
-            {
-                if (player.PlayerId == localPlayerId)
-                {
-                    _controllers[player.PlayerId] = new LocalPlayerController(player.PlayerId);
-                }
-                else if (player.PlayerId < 2)
-                {
-                    // 另一个人类玩家（远程）
-                    _controllers[player.PlayerId] = new RemotePlayerController(player.PlayerId);
-                }
-                else
-                {
-                    // Agent 玩家
-                    _controllers[player.PlayerId] = new AgentPlayerController(player.PlayerId, _agentManager);
-                }
-            }
-        }
-
-        /// <summary>
         /// 初始化游戏（单机或 PvP 联机）
         /// </summary>
         public void Initialize(List<Player> players)
@@ -134,36 +111,61 @@ namespace Fida.Scene
             }
         }
 
-        /// <summary>
-        /// 初始化游戏（Co-op 联机模式，带分组）
-        /// </summary>
-        public void Initialize(List<Player> players, List<Group> groups)
-        {
-            ResetPresentation();
-            IsInitialized = true;
-            _gameManager.Initialize(players, groups);
-            _uiManager.BuildPlayingUI(_gameManager);
-
-            // 如果没有显式初始化控制器，使用默认的单机模式
-            if (_controllers.Count == 0)
-            {
-                InitializeControllers(players);
-            }
-        }
-
         /// <summary>使用战役编成初始化本地小队战。</summary>
-        public void InitializeCampaign(CampaignBattleSetup setup)
+        public void InitializeCampaign(CampaignBattleSetup setup, int remotePlayerId = -1,
+            bool controlAgentsLocally = true)
         {
             ResetPresentation();
             _campaignSetup = setup;
             _controllers.Clear();
             foreach (var player in setup.Players)
-                _controllers[player.PlayerId] = CreateCampaignController(player.PlayerId, setup);
+                _controllers[player.PlayerId] = player.PlayerId == remotePlayerId
+                    ? new RemotePlayerController(player.PlayerId)
+                    : !controlAgentsLocally && setup.AgentTypes.ContainsKey(player.PlayerId)
+                        ? new RemotePlayerController(player.PlayerId)
+                        : CreateCampaignController(player.PlayerId, setup);
 
             IsInitialized = true;
             _gameManager.Initialize(setup.Players, setup.Groups);
             _campaignEncounter.Configure(setup);
             _uiManager.BuildPlayingUI(_gameManager);
+        }
+
+        public void InitializeCampaignFromSnapshot(CampaignBattleSetup template, BattleSnapshot snapshot,
+            int localPlayerId, int remotePlayerId)
+        {
+            ResetPresentation();
+            snapshot.RestoreInto(_gameManager, localPlayerId, resume: false);
+            var activeIds = _gameManager.Players.Select(player => player.PlayerId).ToHashSet();
+            _campaignSetup = new CampaignBattleSetup
+            {
+                Node = template.Node,
+                Players = _gameManager.Players,
+                Groups = _gameManager.Groups,
+                AgentTypes = template.AgentTypes,
+                Reinforcements = template.Reinforcements.Where(player => !activeIds.Contains(player.PlayerId)).ToList()
+            };
+            _controllers.Clear();
+            foreach (var player in _campaignSetup.Players)
+                _controllers[player.PlayerId] = player.PlayerId == localPlayerId
+                    ? new LocalPlayerController(player.PlayerId)
+                    : player.PlayerId == remotePlayerId
+                        ? new RemotePlayerController(player.PlayerId)
+                        : CreateCampaignController(player.PlayerId, _campaignSetup);
+            IsInitialized = true;
+            _campaignEncounter.Configure(_campaignSetup);
+            _uiManager.BuildPlayingUI(_gameManager);
+            _gameManager.ResumeRestoredInputBoundary();
+        }
+
+        public void AddCampaignRemotePlayer(Player player, int groupId)
+        {
+            _gameManager.AddPlayer(player, groupId);
+            _controllers[player.PlayerId] = new RemotePlayerController(player.PlayerId);
+            if (_campaignSetup != null)
+            {
+                _uiManager.RebuildPlayingUI(_gameManager);
+            }
         }
 
         private IPlayerController CreateCampaignController(int playerId, CampaignBattleSetup setup)
@@ -189,6 +191,7 @@ namespace Fida.Scene
             foreach (var player in players)
                 _controllers[player.PlayerId] = CreateCampaignController(player.PlayerId, _campaignSetup);
             _uiManager.RebuildPlayingUI(_gameManager);
+            _uiManager.PlayReinforcementEntrance(players.Select(player => player.PlayerId));
         }
 
         public void StartGame()
@@ -200,6 +203,10 @@ namespace Fida.Scene
         public void Update(GameTime gameTime)
         {
             if (_uiManager.IsBlockingPresentationActive) return;
+
+            // Keep the defeated card and the full strike visible until recovery ends.
+            // Deploying reinforcements rebuilds the UI, so it must happen afterwards.
+            _campaignEncounter.ResumeDeployment();
 
             if (_deferredGameEndForCardAction)
             {
@@ -270,6 +277,7 @@ namespace Fida.Scene
 
         private void OnCardActionStarted(object sender, CardActionEventArgs e)
         {
+            _campaignEncounter.DeferDeployment();
             if (e.IsDamaging && !_deferredGameEndForCardAction)
             {
                 _gameManager.DeferGameEndCheck();

@@ -22,6 +22,8 @@ namespace Fida
         OnlinePlaying,
         OnlineLobby,
         DuelDraft,
+        OnlineCampaignMap,
+        OnlineCampaignSkills,
     }
 
 }

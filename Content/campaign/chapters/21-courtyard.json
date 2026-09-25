@@ -2,7 +2,7 @@
   {
     "id": "C1", "chapter": "Chapter II - Courtyard", "name": "Altar of the Broken God",
     "story": "The priest believes only the wounded may change fate.",
-    "skillBudget": 8, "mapX": 970, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "skillBudget": 4, "mapX": 970, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
     "rewards": ["Shen"],
     "enemies": [
       { "name": "Broken God Priest", "health": 6, "skills": ["Shen"] },
@@ -13,7 +13,7 @@
   {
     "id": "C2", "chapter": "Chapter II - Courtyard", "name": "Deathless Gallery",
     "story": "The immortals rewrite every outcome, so their battle never ends.",
-    "skillBudget": 8, "mapX": 1260, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "skillBudget": 4, "mapX": 1260, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
     "rewards": ["Xian"],
     "enemies": [
       { "name": "Immortal A", "health": 5, "skills": ["Xian"] },
@@ -24,7 +24,7 @@
   {
     "id": "C3", "chapter": "Chapter II - Courtyard", "name": "Court of the False Emperor",
     "story": "A ruler without subjects still decrees new laws of number.",
-    "skillBudget": 8, "mapX": 1550, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "skillBudget": 4, "mapX": 1550, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
     "rewards": ["Di"],
     "enemies": [
       { "name": "False Emperor", "health": 7, "skills": ["Di"] },
@@ -35,10 +35,10 @@
   {
     "id": "CG", "chapter": "Chapter II - Courtyard", "name": "The Threefold Oracle",
     "story": "The Zero King is the will the old King chose to abandon.",
-    "skillBudget": 11, "mapX": 1260, "mapY": 635, "parents": ["C1", "C2", "C3"], "requiredCompletedParents": 2,
+    "skillBudget": 5, "mapX": 1260, "mapY": 760, "parents": ["C1", "C2", "C3", "C4", "C5"], "requiredCompletedParents": 3,
     "rewards": [], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Threefold Oracle", "health": 10, "skills": ["Shen"] },
+      { "name": "Threefold Oracle", "health": 10, "skills": ["Shen", "PlusDefence"] },
       { "name": "Oracle Attendant", "health": 4 }
     ],
     "reinforcements": [{ "name": "The Third Aspect", "health": 6, "skills": ["Xian"] }]

@@ -2,7 +2,7 @@
   {
     "id": "B1", "chapter": "Chapter II - Bell Tower", "name": "Blood Hunt",
     "story": "The hunters forgot their prey, but remember how to survive.",
-    "skillBudget": 7, "mapX": 100, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "skillBudget": 4, "mapX": 100, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
     "rewards": ["Xue"],
     "enemies": [
       { "name": "Blood Hunter A", "health": 4, "skills": ["Xue"] },
@@ -13,7 +13,7 @@
   {
     "id": "B2", "chapter": "Chapter II - Bell Tower", "name": "Twin Bell Chamber",
     "story": "The twins share one memory that refuses to end.",
-    "skillBudget": 7, "mapX": 390, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "skillBudget": 4, "mapX": 390, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
     "rewards": ["Tong"], "reinforcementRound": 3,
     "enemies": [
       { "name": "First Bellkeeper", "health": 5, "number0": 2, "number1": 2, "skills": ["Tong"] },
@@ -24,7 +24,7 @@
   {
     "id": "B3", "chapter": "Chapter II - Bell Tower", "name": "Retaliation Idols",
     "story": "The idols return every wound to the other side.",
-    "skillBudget": 7, "mapX": 680, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
+    "skillBudget": 4, "mapX": 680, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
     "rewards": ["Mo"],
     "enemies": [
       { "name": "Retaliation Golem", "health": 7, "skills": ["Mo"] },
@@ -35,10 +35,10 @@
   {
     "id": "BG", "chapter": "Chapter II - Bell Tower", "name": "The Blood Bell",
     "story": "Let the war's final day end for the first time.",
-    "skillBudget": 10, "mapX": 390, "mapY": 635, "parents": ["B1", "B2", "B3"], "requiredCompletedParents": 2,
+    "skillBudget": 5, "mapX": 390, "mapY": 760, "parents": ["B1", "B2", "B3", "B4", "B5"], "requiredCompletedParents": 3,
     "rewards": [], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Bell Matriarch", "health": 9, "skills": ["Xue"] },
+      { "name": "Bell Matriarch", "health": 9, "skills": ["Xue", "PlusDefence"] },
       { "name": "Hunter Echo", "health": 4 }
     ],
     "reinforcements": [

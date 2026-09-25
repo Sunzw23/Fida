@@ -12,8 +12,6 @@ namespace Fida.Network
     {
         public const int DuelSkillBudget = 8;
         public const int DuelBanCountPerPlayer = 1;
-        public const int CoopEnemyHealth = 18;
-        public const float CoopBossHealthMultiplier = 1.75f;
 
         /// <summary>
         /// Symmetrical launch preset used until the interactive draft protocol locks

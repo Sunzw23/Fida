@@ -2,7 +2,7 @@
   {
     "id": "F", "chapter": "Finale", "name": "The Crown of Zero",
     "story": "Every path returns to the silent throne.",
-    "skillBudget": 16, "mapX": 820, "mapY": 1030, "parents": ["D2", "E2"], "requiredCompletedParents": 1,
+    "skillBudget": 5, "mapX": 820, "mapY": 1030, "parents": ["D2", "E2"], "requiredCompletedParents": 1,
     "rewards": [], "isBoss": true, "reinforcementAfterEnemyDeaths": 2,
     "enemies": [
       { "name": "The Zero King", "health": 12, "skills": ["Di", "Shen"] },
