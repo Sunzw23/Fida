@@ -342,7 +342,7 @@ namespace Fida.UI
             GetCurrentState();
         }
 
-        public bool Contains(Point point) => Bounds.Contains(point);
-        public bool Contains(int x, int y) => Bounds.Contains(x, y);
+        public virtual bool Contains(Point point) => Bounds.Contains(point);
+        public bool Contains(int x, int y) => Contains(new Point(x, y));
     }
 }

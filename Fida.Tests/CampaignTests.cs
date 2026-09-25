@@ -112,7 +112,7 @@ public class CampaignTests
     public void Catalog_HasUniqueNodesAndValidParents()
     {
         Assert.True(CampaignGraphValidator.IsValid(CampaignCatalog.Nodes));
-        Assert.Equal(18, CampaignCatalog.Nodes.Count);
+        Assert.Equal(26, CampaignCatalog.Nodes.Count);
         Assert.Equal(CampaignCatalog.Nodes.Count, CampaignCatalog.Nodes.Select(n => n.Id).Distinct().Count());
         var ids = CampaignCatalog.Nodes.Select(n => n.Id).ToHashSet();
         Assert.All(CampaignCatalog.Nodes.SelectMany(n => n.Parents), parent => Assert.Contains(parent, ids));
@@ -150,6 +150,26 @@ public class CampaignTests
         Assert.True(CampaignSkillBalance.Cost(SkillType.Di) > basic);
         Assert.True(CampaignSkillBalance.Cost(SkillType.Bian) > basic);
         Assert.Equal(CampaignSkillBalance.Cost(SkillType.Long), CampaignSkillBalance.Cost(SkillType.Bian));
+    }
+
+    [Fact]
+    public void MainRouteBudget_PreventsGodImmortalPair()
+    {
+        var mainRoute = CampaignCatalog.Nodes.Where(node => node.Id != "D4" && node.Id != "E4");
+        Assert.All(mainRoute, node => Assert.True(node.SkillBudget <
+            CampaignSkillBalance.Cost(SkillType.Shen) + CampaignSkillBalance.Cost(SkillType.Xian)));
+        Assert.Equal(6, CampaignCatalog.GetNode("D4").SkillBudget);
+        Assert.Equal(6, CampaignCatalog.GetNode("E4").SkillBudget);
+    }
+
+    [Fact]
+    public void ExpandedCampaign_HasMultiSkillEnemiesAndReachableRewards()
+    {
+        Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "B4" && node.Rewards.Contains(SkillType.Shi));
+        Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "D3" && node.Rewards.Contains(SkillType.SuperEmperor));
+        Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "E3" && node.Rewards.Contains(SkillType.SuperImmortal));
+        Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "D4" && node.Rewards.Contains(SkillType.SuperGod));
+        Assert.Contains(CampaignCatalog.Nodes.SelectMany(node => node.Enemies), enemy => enemy.Skills.Count > 1);
     }
 
     [Fact]
@@ -213,6 +233,25 @@ public class CampaignTests
 
         Assert.Equal(5, game.Players.Count);
         Assert.Equal(4, game.Groups[1].Players.Count);
+    }
+
+    [Fact]
+    public void EncounterCoordinator_WaitsForCardPresentationBeforeDeploying()
+    {
+        var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("AG"), []);
+        var game = new GameManager();
+        game.Initialize(setup.Players, setup.Groups);
+        var coordinator = new CampaignEncounterCoordinator(game);
+        coordinator.Configure(setup);
+        coordinator.DeferDeployment();
+
+        setup.Players[1].TakeDamage(setup.Players[1].Health);
+        Assert.Equal(3, game.Players.Count);
+
+        coordinator.ResumeDeployment();
+        Assert.Equal(5, game.Players.Count);
+        coordinator.ResumeDeployment();
+        Assert.Equal(5, game.Players.Count);
     }
 
     [Fact]

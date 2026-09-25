@@ -31,7 +31,11 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
+#if FIDA_ANDROID
             DrawAt(sb, gameTime, Position, 1f);
+#else
+            DrawAt(sb, gameTime, Position, UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport));
+#endif
         }
 
         public void DrawAt(SpriteBatch sb, GameTime gameTime, Vector2 position, float visualScale)

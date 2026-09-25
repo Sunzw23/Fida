@@ -28,7 +28,9 @@ namespace Fida.UI
         public UIBoxLabelAlignment Alignment { get; set; } = UIBoxLabelAlignment.Center;
         public bool AutoFitText { get; set; }
         public float MinimumTextScale { get; set; } = 0.55f;
+        public float MaximumTextScale { get; set; } = 1f;
         public int TextPadding { get; set; } = 12;
+        public bool AccentBar { get; set; }
         /// <summary>Draws bracket-like signal rails for the primary battle command HUD.</summary>
         public bool SignalRails { get; set; }
 
@@ -67,8 +69,11 @@ namespace Fida.UI
                         ? MathHelper.Clamp(MathHelper.Min(
                             availableWidth / MathHelper.Max(1, _cachedTextSize.X),
                             availableHeight / MathHelper.Max(1, _cachedTextSize.Y)),
-                            MinimumTextScale, 1f)
+                            MinimumTextScale, MaximumTextScale)
                         : 1f;
+#if !FIDA_ANDROID
+                    _cachedTextScale *= UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
+#endif
                     Vector2 displaySize = _cachedTextSize * _cachedTextScale;
                     float x = Alignment switch
                     {
@@ -83,6 +88,9 @@ namespace Fida.UI
 
             // 绘制背景
             sb.Draw(Pixel, Bounds, BackColor);
+            if (AccentBar)
+                sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Top, 6, Bounds.Height),
+                    BorderColor);
 
             // 绘制文字（使用缓存坐标）
             if (!string.IsNullOrEmpty(Text))

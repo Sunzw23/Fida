@@ -145,19 +145,29 @@ namespace Fida.UI
                     if (ctrl.Bounds != null)
                     {
                         Rectangle bounds = ctrl.Bounds.ToRectangle();
+#if FIDA_ANDROID
                         float scaleX = DisplaySettingsManager.LayoutWidth / 1920f;
                         float scaleY = DisplaySettingsManager.LayoutHeight / 1200f;
                         descriptor.Bounds = new Rectangle(
                             (int)(bounds.X * scaleX), (int)(bounds.Y * scaleY),
                             (int)(bounds.Width * scaleX), (int)(bounds.Height * scaleY));
+#else
+                        descriptor.Bounds = UIDesktopLayout.MapRectangle(bounds,
+                            DisplaySettingsManager.LayoutWidth, DisplaySettingsManager.LayoutHeight);
+#endif
                     }
 
                     if (ctrl.Position != null)
                     {
                         Vector2 position = ctrl.Position.ToVector2();
+#if FIDA_ANDROID
                         descriptor.Position = new Vector2(
                             position.X * DisplaySettingsManager.LayoutWidth / 1920f,
                             position.Y * DisplaySettingsManager.LayoutHeight / 1200f);
+#else
+                        descriptor.Position = UIDesktopLayout.MapPoint(position,
+                            DisplaySettingsManager.LayoutWidth, DisplaySettingsManager.LayoutHeight);
+#endif
                     }
 
                     result.Add(descriptor);

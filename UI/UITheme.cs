@@ -44,8 +44,12 @@ namespace Fida.UI
                 System.Math.Max(1, safe.Width - 16),
                 System.Math.Max(1, safe.Height - 16));
 #else
-            int width = System.Math.Min(1000, vp.Width - 48);
-            int height = System.Math.Min(880, vp.Height - 48);
+            float scale = UIDesktopLayout.Scale(vp);
+            int margin = System.Math.Max(8, (int)System.Math.Round(24 * scale));
+            int width = System.Math.Min(System.Math.Max(1, (int)System.Math.Round(1000 * scale)),
+                System.Math.Max(1, vp.Width - margin * 2));
+            int height = System.Math.Min(System.Math.Max(1, (int)System.Math.Round(880 * scale)),
+                System.Math.Max(1, vp.Height - margin * 2));
             return new Rectangle((vp.Width - width) / 2, (vp.Height - height) / 2,
                 width, height);
 #endif

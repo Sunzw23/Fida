@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework;
 
 namespace Fida.Android;
 
-[Activity(Label = "Fida", MainLauncher = true,
+[Activity(Label = "Fida", Icon = "@drawable/fida_icon", MainLauncher = true,
     // The Android UI is designed around a single-column portrait layout.
     // Keeping the activity locked avoids a mid-battle resize that would move
     // cards and modal controls underneath the user's finger.

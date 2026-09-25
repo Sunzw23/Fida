@@ -45,7 +45,7 @@ public class DisplaySettingsTests
     }
 
     [Fact]
-    public void WindowedMode_RestoresSelectedWindowSize()
+    public void WindowedMode_ClampsWindowToUsableDesktopArea()
     {
         var settings = new DisplaySettingsData
         {
@@ -56,6 +56,19 @@ public class DisplaySettingsTests
 
         var result = DisplaySettingsManager.ResolveBackBuffer(settings, 1920, 1080);
 
-        Assert.Equal((2240, 1400), result);
+        Assert.Equal((1888, 984), result);
+    }
+
+    [Fact]
+    public void WindowResolutionChoices_FitInside1080pDesktop()
+    {
+        var resolutions = DisplaySettingsManager.GetWindowResolutions(1920, 1080);
+
+        Assert.All(resolutions, resolution =>
+        {
+            Assert.True(resolution.Width <= 1888);
+            Assert.True(resolution.Height <= 984);
+        });
+        Assert.Contains((1600, 900), resolutions);
     }
 }

@@ -35,7 +35,7 @@ namespace Fida.UI
             _pixel = pixel;
             _font = font;
             Rectangle panel = GetPanelBounds();
-            int buttonY = panel.Bottom - 94;
+            int buttonY = panel.Bottom - UIConfig.ScaleDesktopMetric(94);
 #if FIDA_ANDROID
             int buttonWidth = System.Math.Min(360, System.Math.Max(180, (panel.Width - 132) / 2));
             ApplyButton = new UIAnimatedButton(ApplyButtonId,
@@ -50,12 +50,14 @@ namespace Fida.UI
             };
 #else
             ApplyButton = new UIAnimatedButton(ApplyButtonId,
-                new Rectangle(panel.X + 78, buttonY, 250, 66), "Apply", pixel, font)
+                new Rectangle(panel.X + UIConfig.ScaleDesktopMetric(78), buttonY,
+                    UIConfig.ScaleDesktopMetric(250), UIConfig.ScaleDesktopMetric(66)), "Apply", pixel, font)
             {
                 FocusIndex = 410
             };
             PassButton = new UIAnimatedButton(PassButtonId,
-                new Rectangle(panel.Right - 328, buttonY, 250, 66), "Pass", pixel, font)
+                new Rectangle(panel.Right - UIConfig.ScaleDesktopMetric(328), buttonY,
+                    UIConfig.ScaleDesktopMetric(250), UIConfig.ScaleDesktopMetric(66)), "Pass", pixel, font)
             {
                 FocusIndex = 411
             };
@@ -79,20 +81,42 @@ namespace Fida.UI
                 UITheme.Vignette * 0.78f);
 
             Rectangle panel = GetPanelBounds();
+#if FIDA_ANDROID
+            const float uiScale = 1f;
+#else
+            float uiScale = UIDesktopLayout.Scale(viewport);
+#endif
             sb.Draw(_pixel, panel, UITheme.PanelLight);
             UIUtils.DrawEngravedFrame(sb, panel, _pixel, UITheme.GoldBright,
-                UITheme.Ink, 4, 10, 28);
+                UITheme.Ink, UIConfig.ScaleDesktopMetric(4), UIConfig.ScaleDesktopMetric(10),
+                UIConfig.ScaleDesktopMetric(28));
 
-            DrawCentered(sb, "OPTIONAL EFFECT", panel.Center.X, panel.Y + 48,
-                UITheme.Ink, 1f, panel.Width - 80);
-            sb.Draw(_pixel, new Rectangle(panel.X + 80, panel.Y + 88,
-                panel.Width - 160, 2), UITheme.Gold);
-            DrawCentered(sb, _prompt, panel.Center.X, panel.Y + 132,
-                UITheme.Ink, 0.82f, panel.Width - 100);
-            DrawCentered(sb, "Apply this effect?", panel.Center.X, panel.Y + 184,
-                UITheme.InkMuted, 0.72f, panel.Width - 100);
-            DrawCentered(sb, "Enter / A: Apply        Esc: Pass", panel.Center.X,
-                panel.Bottom - 15, UITheme.InkMuted, 0.48f, panel.Width - 80);
+            DrawCentered(sb, "OPTIONAL SKILL", panel.Center.X,
+                panel.Y + UIConfig.ScaleDesktopMetric(50), UITheme.Ink, 0.76f * uiScale,
+                panel.Width - UIConfig.ScaleDesktopMetric(80));
+            sb.Draw(_pixel, new Rectangle(panel.X + UIConfig.ScaleDesktopMetric(80),
+                panel.Y + UIConfig.ScaleDesktopMetric(86),
+                panel.Width - UIConfig.ScaleDesktopMetric(160), UIConfig.ScaleDesktopMetric(2)), UITheme.Gold);
+
+            const string separator = " triggered skill: ";
+            int split = _prompt.IndexOf(separator, System.StringComparison.OrdinalIgnoreCase);
+            if (split >= 0)
+            {
+                string actor = _prompt.Substring(0, split);
+                string skill = _prompt.Substring(split + separator.Length).TrimEnd('.');
+                DrawCentered(sb, actor, panel.Center.X,
+                    panel.Y + UIConfig.ScaleDesktopMetric(126), UITheme.InkMuted,
+                    0.56f * uiScale, panel.Width - UIConfig.ScaleDesktopMetric(100));
+                DrawCentered(sb, skill, panel.Center.X,
+                    panel.Y + UIConfig.ScaleDesktopMetric(178), UITheme.Ink,
+                    0.88f * uiScale, panel.Width - UIConfig.ScaleDesktopMetric(100));
+            }
+            else
+            {
+                DrawCentered(sb, _prompt, panel.Center.X,
+                    panel.Y + UIConfig.ScaleDesktopMetric(152), UITheme.Ink,
+                    0.64f * uiScale, panel.Width - UIConfig.ScaleDesktopMetric(100));
+            }
         }
 
         private Rectangle GetPanelBounds()
@@ -104,8 +128,8 @@ namespace Fida.UI
             return new Rectangle((viewport.Width - width) / 2,
                 (viewport.Height - height) / 2, width, height);
 #else
-            int width = System.Math.Min(780, viewport.Width - 48);
-            int height = 340;
+            int width = System.Math.Min(UIConfig.ScaleDesktopMetric(780), viewport.Width - 48);
+            int height = System.Math.Min(UIConfig.ScaleDesktopMetric(340), viewport.Height - 48);
             return new Rectangle((viewport.Width - width) / 2,
                 (viewport.Height - height) / 2, width, height);
 #endif

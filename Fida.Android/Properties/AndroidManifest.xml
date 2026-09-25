@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
-  <application android:label="Fida" android:allowBackup="false" android:supportsRtl="true" />
+  <application android:label="Fida" android:icon="@drawable/fida_icon" android:allowBackup="false" android:supportsRtl="true" />
   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" />
 </manifest>

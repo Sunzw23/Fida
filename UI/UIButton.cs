@@ -76,6 +76,9 @@ namespace Fida.UI
             float textScale = MathHelper.Min(1f, MathHelper.Min(
                 availableWidth / MathHelper.Max(1, size.X),
                 availableHeight / MathHelper.Max(1, size.Y)));
+#if !FIDA_ANDROID
+            textScale *= UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
+#endif
             float pressOffset = State == UIButtonState.Pressed ? 2f : 0f;
             var pos = new Vector2(
                 Bounds.Center.X - size.X * textScale / 2,

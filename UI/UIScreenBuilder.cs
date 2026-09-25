@@ -7,7 +7,6 @@ using Fida.Logic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Fida.UI.Campaign;
-using CampaignBalance = Fida.Campaign.CampaignSkillBalance;
 
 namespace Fida.UI
 {
@@ -87,69 +86,79 @@ namespace Fida.UI
         public void BuildHostingScreen(string statusText, string roomCode = "")
         {
             Clear();
+#if FIDA_ANDROID
+            BuildMobileHostingScreen(roomCode, statusText);
+#else
             var replacements = new Dictionary<string, string>
             {
                 { "status", statusText },
                 { "roomCode", string.IsNullOrEmpty(roomCode) ? "generating..." : roomCode }
             };
             BuildFromScreen("HostingScreen", replacements);
+#endif
         }
 
         /// <summary>构建连接中界面</summary>
         public void BuildConnectingScreen(string statusText)
         {
             Clear();
+#if FIDA_ANDROID
+            BuildMobileConnectingScreen(statusText);
+#else
             var replacements = new Dictionary<string, string> { { "status", statusText } };
             BuildFromScreen("ConnectingScreen", replacements);
+#endif
         }
 
         /// <summary>构建在线大厅</summary>
         public void BuildOnlineLobby(bool isHost)
         {
             Clear();
-            BuildFromScreen("OnlineLobby");
+            BuildFromScreen("OnlineLobby", new Dictionary<string, string>
+            {
+                { "role", isHost ? "HOST" : "GUEST" }
+            });
+            if (!isHost)
+            {
+                _uiControls.RemoveAll(control => control.Name is "startPvP" or "startCampaign");
+                Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+                _uiControls.Add(new UILabel(6, "WAITING FOR HOST",
+                    new Vector2(panel.Center.X, panel.Top + 365), _resourceManager.Font)
+                {
+                    Name = "lobbyStatus",
+                    MaximumWidth = panel.Width - 96,
+                    MinimumScale = 0.62f
+                });
+                if (_focusManager.CurrentInputMode == InputMode.Controller)
+                    _focusManager.FocusFirst();
+            }
         }
 
         /// <summary>Builds the shared ban/pick board from the canonical skill catalog.</summary>
         public void BuildDuelDraft()
         {
             Clear();
-            _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
-#if FIDA_ANDROID
-            BuildMobileDuelDraft();
-#else
-            _uiControls.Add(new UITitle(1, "Duel Draft", new Vector2(960, 105),
-                _resourceManager.Pixel, _resourceManager.TitleFont) { Name = "title" });
-            _uiControls.Add(new UILabel(2, "BAN - choose one skill", new Vector2(960, 190),
-                _resourceManager.Font) { Name = "draftPhase", MaximumWidth = 1300 });
-            _uiControls.Add(new UILabel(3, "Both bans are revealed together.", new Vector2(960, 238),
-                _resourceManager.Font) { Name = "draftStatus", MaximumWidth = 1500 });
-
-            int index = 0;
-            foreach (SkillType skill in SkillFactory.SelectableSkills)
+            var node = new Fida.Campaign.CampaignNode
             {
-                int column = index % 2;
-                int row = index / 2;
-                var bounds = new Rectangle(365 + column * 610, 278 + row * 66, 580, 54);
-                var button = new UIButton(500 + index, bounds,
-                    $"{GameText.SkillName(skill)}  [{CampaignBalance.Cost(skill)} SP]",
-                    _resourceManager.Pixel, _resourceManager.Font)
-                {
-                    Name = $"draftSkill_{skill}",
-                    FocusIndex = index
-                };
-                _uiControls.Add(button);
-                index++;
-            }
-
-            _uiControls.Add(new UIButton(550, new Rectangle(620, 885, 320, 72),
-                "Lock Loadout", _resourceManager.Pixel, _resourceManager.Font)
-            { Name = "draftCommit", FocusIndex = index++ });
-            _uiControls.Add(new UIButton(551, new Rectangle(980, 885, 320, 72),
-                "Disconnect", _resourceManager.Pixel, _resourceManager.Font)
-            { Name = "draftBack", FocusIndex = index });
-            if (_focusManager.CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
+                Name = "DUEL DRAFT",
+                SkillBudget = Fida.Network.OnlineModeRules.DuelSkillBudget
+            };
+            var progress = new Fida.Campaign.CampaignProgress
+            {
+                UnlockedSkills = SkillFactory.SelectableSkills.ToHashSet()
+            };
+#if FIDA_ANDROID
+            var options = CampaignSkillWheelOptions.Mobile();
+#else
+            CampaignSkillWheelOptions options = null;
 #endif
+            _uiControls.Add(new UICampaignSkillWheel(0, _resourceManager.GraphicsDevice,
+                _resourceManager.Pixel, _resourceManager.Font, _resourceManager.TitleFont,
+                node, progress, new HashSet<SkillType>(), SkillFactory.SelectableSkills, options)
+            {
+                Name = "duel_draft_wheel",
+                HeaderText = "BAN"
+            });
         }
 
         /// <summary>构建关卡选择界面</summary>
@@ -215,6 +224,77 @@ namespace Fida.UI
         }
 
 #if FIDA_ANDROID
+        private void BuildMobileHostingScreen(string roomCode, string statusText)
+        {
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+            _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
+            AddMobileWaitingTitle(panel, "HOST ROOM");
+
+            int codeTop = panel.Top + Math.Max(200, panel.Height * 30 / 100);
+            var codeBox = new Rectangle(panel.Left + 38, codeTop,
+                Math.Max(1, panel.Width - 76), 146);
+            _uiControls.Add(new UIBoxLabel(2, codeBox, "", _resourceManager.Pixel,
+                _resourceManager.Font)
+            {
+                Name = "codePanel",
+                BackColor = UITheme.PanelDark,
+                BorderThickness = 0,
+                AccentBar = true
+            });
+            _uiControls.Add(new UILabel(3,
+                roomCode.Length == 4 ? $"Room: {roomCode}" : "Room: generating...",
+                new Vector2(codeBox.Center.X, codeBox.Center.Y), _resourceManager.Font)
+            {
+                Name = "roomCodeLabel",
+                MaximumWidth = codeBox.Width - 36,
+                MaximumHeight = 72
+            });
+            _uiControls.Add(new UILabel(4,
+                string.IsNullOrWhiteSpace(statusText) ? "WAITING FOR PLAYER" : statusText.ToUpperInvariant(),
+                new Vector2(panel.Center.X, codeBox.Bottom + 64), _resourceManager.Font)
+            {
+                Name = "statusLabel",
+                MaximumWidth = panel.Width - 76,
+                MaximumHeight = 42
+            });
+            _uiControls.Add(new UIIconButton(5, MobileWaitingBackBounds(panel),
+                UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "cancelHost", FocusIndex = 0 });
+        }
+
+        private void BuildMobileConnectingScreen(string statusText)
+        {
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+            _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
+            AddMobileWaitingTitle(panel, "JOIN ROOM");
+            _uiControls.Add(new UILabel(2,
+                string.IsNullOrWhiteSpace(statusText) ? "CONNECTING..." : statusText.ToUpperInvariant(),
+                new Vector2(panel.Center.X, panel.Top + panel.Height * 42 / 100),
+                _resourceManager.Font)
+            {
+                Name = "statusLabel",
+                MaximumWidth = panel.Width - 76,
+                MaximumHeight = 64
+            });
+            _uiControls.Add(new UIIconButton(3, MobileWaitingBackBounds(panel),
+                UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "cancelConnect", FocusIndex = 0 });
+        }
+
+        private void AddMobileWaitingTitle(Rectangle panel, string title)
+        {
+            _uiControls.Add(new UILabel(1, title,
+                new Vector2(panel.Center.X, panel.Top + 88), _resourceManager.TitleFont)
+            {
+                Name = "title",
+                MaximumWidth = panel.Width - 130,
+                MaximumHeight = 58
+            });
+        }
+
+        private static Rectangle MobileWaitingBackBounds(Rectangle panel) =>
+            new(panel.Left + 20, panel.Top + 16, 76, 76);
+
         /// <summary>
         /// Android settings intentionally exposes only options that are meaningful on a
         /// phone. Window mode and desktop resolution controls are omitted instead of
@@ -245,7 +325,7 @@ namespace Fida.UI
                 MinimumScale = 0.62f
             });
             _uiControls.Add(new UIIconButton(4,
-                new Rectangle(panel.Left + 24, panel.Top + 20, 64, 64),
+                new Rectangle(panel.Left + 20, panel.Top + 16, 76, 76),
                 UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Name = "back",
@@ -281,7 +361,7 @@ namespace Fida.UI
             if (back != null)
             {
                 _uiControls.Add(new UIIconButton(back.Id,
-                    new Rectangle(panel.Left + 24, panel.Top + 20, 64, 64),
+                    new Rectangle(panel.Left + 20, panel.Top + 16, 76, 76),
                     UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
                 {
                     Name = back.Name
@@ -355,51 +435,6 @@ namespace Fida.UI
             if (_focusManager.CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
         }
 
-        private void BuildMobileDuelDraft()
-        {
-            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
-            _uiControls.Add(new UITitle(1, "Duel Draft",
-                new Vector2(panel.Center.X, panel.Top + 92),
-                _resourceManager.Pixel, _resourceManager.TitleFont) { Name = "title" });
-            _uiControls.Add(new UILabel(2, "BAN - choose one skill",
-                new Vector2(panel.Center.X, panel.Top + 178), _resourceManager.Font)
-            { Name = "draftPhase", MaximumWidth = panel.Width - 96, MinimumScale = 0.62f });
-            _uiControls.Add(new UILabel(3, "Both bans are revealed together.",
-                new Vector2(panel.Center.X, panel.Top + 226), _resourceManager.Font)
-            { Name = "draftStatus", MaximumWidth = panel.Width - 96, MinimumScale = 0.56f });
-
-            int index = 0;
-            int y = panel.Top + 270;
-            int width = panel.Width - 112;
-            int gap = 10;
-            int skillAreaBottom = panel.Bottom - 230;
-            int height = Math.Clamp((skillAreaBottom - y -
-                Math.Max(0, SkillFactory.SelectableSkills.Count - 1) * gap) /
-                Math.Max(1, SkillFactory.SelectableSkills.Count), 52, 84);
-            foreach (SkillType skill in SkillFactory.SelectableSkills)
-            {
-                _uiControls.Add(new UIButton(500 + index,
-                    new Rectangle(panel.Left + 56, y, width, height),
-                    $"{GameText.SkillName(skill)}  [{CampaignBalance.Cost(skill)} SP]",
-                    _resourceManager.Pixel, _resourceManager.Font)
-                {
-                    Name = $"draftSkill_{skill}",
-                    FocusIndex = index++
-                });
-                y += height + gap;
-            }
-
-            int footerY = panel.Bottom - 118;
-            _uiControls.Add(new UIButton(550,
-                new Rectangle(panel.Left + 56, footerY, width, 72),
-                "Lock Loadout", _resourceManager.Pixel, _resourceManager.Font)
-            { Name = "draftCommit", FocusIndex = index++ });
-            _uiControls.Add(new UIButton(551,
-                new Rectangle(panel.Left + 56, footerY + 84, width, 72),
-                "Disconnect", _resourceManager.Pixel, _resourceManager.Font)
-            { Name = "draftBack", FocusIndex = index });
-            if (_focusManager.CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
-        }
 #endif
     }
 }

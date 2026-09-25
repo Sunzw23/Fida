@@ -47,7 +47,21 @@ namespace Fida.UI
             if (key == "bottomElementWidth") return Math.Clamp(width / 8, 72, 112);
             if (key == "bottomElementHeight") return Math.Clamp(height / 20, 68, 92);
 #endif
-            return _settings.TryGetValue(key, out var e) ? e.GetInt32() : def;
+            int value = _settings.TryGetValue(key, out var e) ? e.GetInt32() : def;
+#if !FIDA_ANDROID
+            return UIDesktopLayout.ScaleMetric(value);
+#else
+            return value;
+#endif
+        }
+
+        public static int ScaleDesktopMetric(int value)
+        {
+#if FIDA_ANDROID
+            return value;
+#else
+            return UIDesktopLayout.ScaleMetric(value);
+#endif
         }
 
         public static float Float(string key, float def = 0f) => _settings.TryGetValue(key, out var e) ? e.GetSingle() : def;

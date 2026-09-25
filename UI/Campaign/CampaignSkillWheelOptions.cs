@@ -14,13 +14,13 @@ namespace Fida.UI.Campaign
 
         public static CampaignSkillWheelOptions Mobile() => new()
         {
-            VisibleNeighborCount = 2,
-            WheelCenterOffsetFromPanelTop = 850,
+            VisibleNeighborCount = 1,
+            WheelCenterOffsetFromPanelTop = 580,
             FocusedWidthRatio = 0.86f,
-            FocusedHeight = 166,
-            NeighborSpacing = 144,
+            FocusedHeight = 150,
+            NeighborSpacing = 132,
             FocusedTextScale = 0.72f,
-            NearTextScale = 0.62f,
+            NearTextScale = 0.58f,
             FarTextScale = 0.52f
         };
     }

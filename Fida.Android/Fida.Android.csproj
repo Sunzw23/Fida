@@ -59,6 +59,7 @@
                               OutputFolder="Fida.Android.$(Configuration).$(FidaContentSuffix)" />
   </ItemGroup>
   <ItemGroup>
+    <AndroidResource Include="Resources\drawable\fida_icon.png" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\campaign\**\*.json" Link="Content\campaign\%(RecursiveDir)%(Filename)%(Extension)" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\gametext.json" Link="Content\gametext.json" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\screens\**\*.json" Link="Content\screens\%(RecursiveDir)%(Filename)%(Extension)" />
