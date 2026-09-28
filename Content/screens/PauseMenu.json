@@ -4,6 +4,7 @@
     { "type": "title", "name": "title", "id": 1, "text": "Paused", "position": { "x": 960, "y": 360 } },
     { "type": "button", "name": "resume", "id": 2, "text": "Resume", "bounds": { "x": 800, "y": 480, "width": 320, "height": 80 } },
     { "type": "button", "name": "settings", "id": 3, "text": "Settings", "bounds": { "x": 800, "y": 590, "width": 320, "height": 80 } },
-    { "type": "button", "name": "backToMenu", "id": 4, "text": "Main Menu", "bounds": { "x": 800, "y": 700, "width": 320, "height": 80 } }
+    { "type": "button", "name": "rules", "id": 4, "text": "Field Guide", "bounds": { "x": 800, "y": 700, "width": 320, "height": 80 } },
+    { "type": "button", "name": "backToMenu", "id": 5, "text": "Main Menu", "bounds": { "x": 800, "y": 810, "width": 320, "height": 80 } }
   ]
 }

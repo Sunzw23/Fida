@@ -28,6 +28,10 @@ namespace Fida
 
         private bool _isGameActive = true;
 
+        // F8 布局重叠调试开关（边沿检测，仅桌面构建）
+        private bool _overlapDebugWasDown;
+        private bool _rulesShortcutWasDown;
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -48,7 +52,6 @@ namespace Fida
             DisplaySettingsManager.Initialize(_graphics);
 #endif
         }
-
         protected override void Initialize()
         {
             _resourceManager = new ResourceManager(GraphicsDevice);
@@ -90,6 +93,26 @@ namespace Fida
             _exitHandler.HandleExitInput();
             _uiManager.Update(gameTime);
             _uiManager.UpdateInputMode();
+            _gameSession.ProcessPendingNetworkEvents();
+
+            bool rulesShortcutDown = Keyboard.GetState().IsKeyDown(Keys.Tab);
+            if (rulesShortcutDown && !_rulesShortcutWasDown)
+            {
+                if (_stateMachine.CurrentState == State.Rules)
+                    _stateMachine.CloseRules();
+                else if (_stateMachine.CurrentState is State.MainMenu or State.Paused or
+                         State.Playing or State.OnlinePlaying)
+                    _stateMachine.OpenRules();
+            }
+            _rulesShortcutWasDown = rulesShortcutDown;
+
+#if !FIDA_ANDROID
+            // F8 开关布局重叠调试器（任意屏幕，边沿检测避免连按）
+            bool overlapDebugDown = Keyboard.GetState().IsKeyDown(Keys.F8);
+            if (overlapDebugDown && !_overlapDebugWasDown)
+                UIOverlapDebugger.Toggle();
+            _overlapDebugWasDown = overlapDebugDown;
+#endif
 
             // 根据输入模式切换鼠标可见性
 #if !FIDA_ANDROID
@@ -108,6 +131,7 @@ namespace Fida
                         _gameSession.HandlePlayerInput(gameTime);
                     break;
                 case State.Paused:        _menuInput.HandleMenuInput(gameTime); break;
+                case State.Rules:         _menuInput.HandleMenuInput(gameTime); break;
                 case State.Settings:      _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlineMenu:    _menuInput.HandleMenuInput(gameTime); break;
                 case State.Hosting:       _menuInput.HandleHostingInput(gameTime); break;

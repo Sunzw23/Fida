@@ -14,13 +14,24 @@ namespace Fida.States
         public override void OnEnter()
         {
             BindButton("resume", () =>
-                _stateMachine.SwitchToState(_networkManager.IsConnected ? State.OnlinePlaying : State.Playing));
+                _stateMachine.SwitchToState(_networkManager.IsConnected ||
+                    _networkManager.IsCampaignBattleContinuingLocally
+                    ? State.OnlinePlaying
+                    : State.Playing));
 
             BindButton("backToMenu", () =>
             {
+                // Leaving an active Duel is a forfeit: closing the socket lets the
+                // opponent's session award the win immediately.
+                bool leavingSharedCampaign = _networkManager.CurrentGameMode == 2 &&
+                    _networkManager.IsCampaignSharedBattle;
+                if (_networkManager.IsConnected &&
+                    (_networkManager.CurrentGameMode == 0 || leavingSharedCampaign))
+                    _networkManager.Cleanup();
                 _stateMachine.GoToMainMenu();
             });
             BindButton("settings", () => _stateMachine.SwitchToState(State.Settings));
+            BindButton("rules", _stateMachine.OpenRules);
         }
     }
 }

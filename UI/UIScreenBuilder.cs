@@ -39,10 +39,7 @@ namespace Fida.UI
             Clear();
             if (connected)
             {
-                BuildFromScreen("ConnectedMainMenu", new Dictionary<string, string>
-                {
-                    { "role", isHost ? "HOST" : "GUEST" }
-                });
+                BuildFromScreen("ConnectedMainMenu");
             }
             else BuildFromScreen("MainMenu");
         }
@@ -69,10 +66,279 @@ namespace Fida.UI
 #endif
         }
 
-        /// <summary>构建规则界面</summary>
-        public void BuildRulesScreen()
+        /// <summary>Build a compact, page-based field guide that scales to phone and desktop.</summary>
+        public void BuildRulesScreen(int page = 0)
         {
             Clear();
+            page = (page % UIManager.RulesPageCount + UIManager.RulesPageCount) %
+                UIManager.RulesPageCount;
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+#if FIDA_ANDROID
+            float layoutScale = 1f;
+#else
+            float layoutScale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
+#endif
+            _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
+
+            _uiControls.Add(new UIIconButton(1, UIIconButton.StandardBounds(
+                _resourceManager.GraphicsDevice.Viewport), UIIconButton.IconKind.Back,
+                _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Name = "back",
+                FocusIndex = 0
+            });
+
+            AddRulesLabel(2, "FIELD GUIDE", new Vector2(panel.Center.X, panel.Top + 78 * layoutScale),
+                _resourceManager.TitleFont, panel.Width - 150, 48, UITheme.Ink);
+
+            string[] pageTitles = ["MAKE A MOVE", "NUMBER EFFECTS", "SKILL TIMING",
+                "SKILL SET  /  01", "SKILL SET  /  02"];
+            string[] pageKickers = ["YOUR TURN", "COMBAT", "TRIGGERS", "LOADOUT", "LOADOUT"];
+            AddRulesLabel(3, pageTitles[page], new Vector2(panel.Center.X, panel.Top + 142 * layoutScale),
+                _resourceManager.TitleFont, panel.Width - 100, 54, UITheme.AccentBlue);
+            AddRulesLabel(4, pageKickers[page], new Vector2(panel.Center.X, panel.Top + 188 * layoutScale),
+                _resourceManager.Font, panel.Width - 120, 32, UITheme.InkMuted);
+
+            int contentTop = panel.Top + (int)(226 * layoutScale);
+            int footerTop = panel.Bottom - (int)(142 * layoutScale);
+            int contentHeight = Math.Max(120, footerTop - contentTop - (int)(10 * layoutScale));
+            if (page == 0)
+                BuildTurnRules(panel, contentTop, contentHeight);
+            else if (page == 1)
+                BuildNumberRules(panel, contentTop, contentHeight);
+            else if (page == 2)
+                BuildSkillTimingRules(panel, contentTop, contentHeight);
+            else
+                BuildSkillSet(panel, contentTop, contentHeight, page - 3);
+
+            int buttonSize = Math.Clamp(panel.Width / 10, 64, 78);
+            int buttonY = panel.Bottom - buttonSize - (int)(48 * layoutScale);
+            _uiControls.Add(new UIIconButton(5,
+                new Rectangle(panel.Center.X - buttonSize - 12, buttonY, buttonSize, buttonSize),
+                UIIconButton.IconKind.PreviousPage, _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Name = "prevPage",
+                FocusIndex = 1
+            });
+            _uiControls.Add(new UIIconButton(6,
+                new Rectangle(panel.Center.X + 12, buttonY, buttonSize, buttonSize),
+                UIIconButton.IconKind.NextPage, _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Name = "nextPage",
+                FocusIndex = 2
+            });
+            AddRulesLabel(7, $"{page + 1:00} / {UIManager.RulesPageCount:00}", new Vector2(panel.Center.X,
+                    panel.Bottom - 28 * layoutScale),
+                _resourceManager.Font, panel.Width - 160, 28, UITheme.InkMuted);
+            _uiControls.Add(new UIBoxLabel(8,
+                new Rectangle(panel.Right - (int)(112 * layoutScale),
+                    panel.Top + (int)(24 * layoutScale), (int)(82 * layoutScale),
+                    (int)(42 * layoutScale)),
+                "TAB", _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Name = "tabHint",
+                BackColor = UITheme.PanelDark,
+                ForeColor = UITheme.InkMuted,
+                BorderColor = UITheme.AccentBlue,
+                BorderThickness = 1,
+                AutoFitText = true,
+                MinimumTextScale = 0.7f,
+                MaximumTextScale = 0.9f,
+                TextPadding = 5
+            });
+
+            if (_focusManager.CurrentInputMode == InputMode.Controller)
+                _focusManager.FocusFirst();
+        }
+
+        private void BuildTurnRules(Rectangle panel, int top, int availableHeight)
+        {
+#if FIDA_ANDROID
+            float scale = 1f;
+#else
+            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
+#endif
+            int side = Math.Max(28, (int)(44 * scale));
+            int width = panel.Width - side * 2;
+            int gap = Math.Max(10, (int)(14 * scale));
+            int equationHeight = Math.Max(34, (int)(72 * scale));
+            int equationGap = Math.Max(5, (int)(16 * scale));
+            int cardHeight = Math.Min((int)(122 * scale),
+                (availableHeight - equationHeight - equationGap - gap * 2) / 3);
+            cardHeight = Math.Max(Math.Max(38, (int)(65 * scale)), cardHeight);
+            var rows = new (string tag, string title, string detail)[]
+            {
+                ("01", "Choose", "Pick one of your two numbers."),
+                ("02", "Add", "Choose another number — yours or any player’s."),
+                ("03", "Resolve", "Add the values; keep the last digit. Then resolve effects.")
+            };
+            Color[] accents = [UITheme.AccentBlue, UITheme.AccentViolet, UITheme.AccentGreen];
+            for (int i = 0; i < rows.Length; i++)
+            {
+                var row = rows[i];
+                AddRuleCard(10 + i,
+                    new Rectangle(panel.Left + side, top + i * (cardHeight + gap), width, cardHeight),
+                    row.tag, row.title, row.detail, accents[i]);
+            }
+
+            int equationY = top + rows.Length * (cardHeight + gap) - gap + equationGap;
+            var equation = new UIBoxLabel(20,
+                new Rectangle(panel.Left + side, equationY, width, equationHeight),
+                "4  +  7  =  11  ->  1", _resourceManager.Pixel, _resourceManager.TitleFont)
+            {
+                Name = "example",
+                BackColor = UITheme.PanelDark,
+                ForeColor = UITheme.AccentBlue,
+                BorderColor = UITheme.AccentBlue,
+                BorderThickness = 1,
+                AccentBar = true,
+                AutoFitText = true,
+                MaximumTextScale = 0.9f,
+                TextPadding = 14
+            };
+            _uiControls.Add(equation);
+        }
+
+        private void BuildNumberRules(Rectangle panel, int top, int availableHeight)
+        {
+#if FIDA_ANDROID
+            float scale = 1f;
+#else
+            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
+#endif
+            int side = Math.Max(24, (int)(38 * scale));
+            int gapX = Math.Max(10, (int)(16 * scale));
+            int gapY = Math.Max(10, (int)(14 * scale));
+            int width = (panel.Width - side * 2 - gapX) / 2;
+            int height = Math.Min((int)(104 * scale), (availableHeight - gapY * 3) / 4);
+            height = Math.Max(Math.Max(34, (int)(58 * scale)), height);
+            var rows = new (string title, string detail)[]
+            {
+                ("7  /  8", "Attack 1"),
+                ("1  +  6", "Attack 2"),
+                ("5  +  5", "Attack 3"),
+                ("6  +  6", "Attack 5"),
+                ("9", "Heal 1"),
+                ("0", "Block one hit"),
+                ("0  +  0", "Heal 10")
+            };
+            for (int i = 0; i < rows.Length; i++)
+            {
+                int column = i % 2;
+                int row = i / 2;
+                var item = rows[i];
+                AddRuleCard(30 + i,
+                    new Rectangle(panel.Left + side + column * (width + gapX),
+                        top + row * (height + gapY), width, height),
+                    "", item.title, item.detail,
+                    i % 2 == 0 ? UITheme.AccentBlue : UITheme.AccentGreen);
+            }
+        }
+
+        private void BuildSkillTimingRules(Rectangle panel, int top, int availableHeight)
+        {
+#if FIDA_ANDROID
+            float scale = 1f;
+#else
+            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
+#endif
+            int side = Math.Max(28, (int)(44 * scale));
+            int gap = Math.Max(8, (int)(10 * scale));
+            int height = Math.Min((int)(98 * scale), (availableHeight - gap * 4) / 5);
+            height = Math.Max(Math.Max(34, (int)(58 * scale)), height);
+            var rows = new (string tag, string title, string detail)[]
+            {
+                ("01", "Order matters", "Skills sharing a trigger resolve top to bottom in your loadout."),
+                ("02", "Once per turn", "Limited skills refresh when a new turn begins."),
+                ("03", "Before damage", "Defensive effects resolve before health is reduced."),
+                ("04", "After damage", "Damage reactions resolve before post-attack effects."),
+                ("05", "Defeat", "A player is out when health reaches zero.")
+            };
+            Color[] accents = [UITheme.AccentBlue, UITheme.AccentViolet,
+                UITheme.AccentGreen, UITheme.AccentBlue, UITheme.InkMuted];
+            for (int i = 0; i < rows.Length; i++)
+            {
+                var row = rows[i];
+                AddRuleCard(50 + i,
+                    new Rectangle(panel.Left + side, top + i * (height + gap),
+                        panel.Width - side * 2, height),
+                    row.tag, row.title, row.detail, accents[i]);
+            }
+        }
+
+        private void BuildSkillSet(Rectangle panel, int top, int availableHeight, int setIndex)
+        {
+#if FIDA_ANDROID
+            float scale = 1f;
+#else
+            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
+#endif
+            int side = Math.Max(24, (int)(38 * scale));
+            int gapX = Math.Max(8, (int)(12 * scale));
+            int gapY = Math.Max(6, (int)(9 * scale));
+            int width = (panel.Width - side * 2 - gapX) / 2;
+            int height = Math.Min((int)(96 * scale), (availableHeight - gapY * 4) / 5);
+            height = Math.Max(Math.Max(34, (int)(56 * scale)), height);
+
+            (string name, string detail)[][] sets =
+            [
+                [
+                    ("Attack Up", "+1 attack damage"),
+                    ("Double Attack", "Double attack damage"),
+                    ("Defense Up", "Reduce incoming damage by 1"),
+                    ("Double Defense", "Halve incoming damage"),
+                    ("Double Health", "Start with double health"),
+                    ("Triple Health", "Start with triple health"),
+                    ("Blood", "Heal damage dealt"),
+                    ("Stone", "Block later hits this turn"),
+                    ("Demon", "Return half the damage"),
+                    ("Same", "Apply one result to both numbers")
+                ],
+                [
+                    ("God", "After damage: set one number"),
+                    ("Immortal", "After attack: set one number"),
+                    ("Seng", "After damage: perform one add"),
+                    ("Dao", "After attack: perform one add"),
+                    ("Emperor", "Turn start: set one number"),
+                    ("Super God", "After damage: set both numbers"),
+                    ("Super Immortal", "After attack: set both numbers"),
+                    ("Super Emperor", "Turn start: set both numbers"),
+                    ("Transform", "Choose attack damage 1-5"),
+                    ("Dragon", "Attack damage equals number sum")
+                ]
+            ];
+
+            var items = sets[setIndex];
+            for (int i = 0; i < items.Length; i++)
+            {
+                int column = i / 5;
+                int row = i % 5;
+                var item = items[i];
+                AddRuleCard(70 + setIndex * 10 + i,
+                    new Rectangle(panel.Left + side + column * (width + gapX),
+                        top + row * (height + gapY), width, height),
+                    $"{i + 1:00}", item.name, item.detail,
+                    (i + setIndex) % 2 == 0 ? UITheme.AccentBlue : UITheme.AccentGreen);
+            }
+        }
+
+        private void AddRuleCard(int id, Rectangle bounds, string tag, string heading,
+            string detail, Color accent) =>
+            _uiControls.Add(new UIRuleCard(id, bounds, tag, heading, detail,
+                _resourceManager.Pixel, _resourceManager.Font, _resourceManager.TitleFont, accent));
+
+        private void AddRulesLabel(int id, string text, Vector2 position, SpriteFont font,
+            float maxWidth, float maxHeight, Color color)
+        {
+            var label = new UILabel(id, text, position, font)
+            {
+                Name = $"ruleLabel{id}",
+                MaximumWidth = maxWidth,
+                MaximumHeight = maxHeight,
+                MinimumScale = 0.65f
+            };
+            label.SetColor(color);
+            _uiControls.Add(label);
         }
 
         /// <summary>构建在线菜单</summary>
@@ -89,12 +355,30 @@ namespace Fida.UI
 #if FIDA_ANDROID
             BuildMobileHostingScreen(roomCode, statusText);
 #else
+            string[] statusLines = (statusText ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             var replacements = new Dictionary<string, string>
             {
-                { "status", statusText },
-                { "roomCode", string.IsNullOrEmpty(roomCode) ? "generating..." : roomCode }
+                { "status", statusLines.Length > 0 ? statusLines[0].ToUpperInvariant() : "WAITING FOR OPPONENT" },
+                { "address", statusLines.Length > 1 ? statusLines[1].ToUpperInvariant() : string.Empty },
+                { "roomCode", string.IsNullOrEmpty(roomCode) ? "····" : roomCode }
             };
             BuildFromScreen("HostingScreen", replacements);
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+            foreach (var (name, height, color) in new[]
+            {
+                ("roomCodeCaption", 34f, UITheme.InkMuted),
+                ("roomCodeLabel", 78f, UITheme.Ink),
+                ("statusLabel", 54f, UITheme.Ink),
+                ("addressLabel", 38f, UITheme.InkMuted)
+            })
+            {
+                var label = _uiControls.OfType<UILabel>().FirstOrDefault(control => control.Name == name);
+                if (label == null) continue;
+                label.MaximumWidth = panel.Width - 120;
+                label.MaximumHeight = height;
+                label.SetColor(color);
+            }
 #endif
         }
 
@@ -114,24 +398,17 @@ namespace Fida.UI
         public void BuildOnlineLobby(bool isHost)
         {
             Clear();
-            BuildFromScreen("OnlineLobby", new Dictionary<string, string>
+            BuildFromScreen("OnlineLobby");
+            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
+            _uiControls.Add(new UILabel(8, "BOTH PLAYERS CONFIRM DUEL",
+                new Vector2(960, 330), _resourceManager.Font)
             {
-                { "role", isHost ? "HOST" : "GUEST" }
+                Name = "lobbyStatus",
+                MaximumWidth = panel.Width - 96,
+                MinimumScale = 0.72f
             });
-            if (!isHost)
-            {
-                _uiControls.RemoveAll(control => control.Name is "startPvP" or "startCampaign");
-                Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
-                _uiControls.Add(new UILabel(6, "WAITING FOR HOST",
-                    new Vector2(panel.Center.X, panel.Top + 365), _resourceManager.Font)
-                {
-                    Name = "lobbyStatus",
-                    MaximumWidth = panel.Width - 96,
-                    MinimumScale = 0.62f
-                });
-                if (_focusManager.CurrentInputMode == InputMode.Controller)
-                    _focusManager.FocusFirst();
-            }
+            if (_focusManager.CurrentInputMode == InputMode.Controller)
+                _focusManager.FocusFirst();
         }
 
         /// <summary>Builds the shared ban/pick board from the canonical skill catalog.</summary>
@@ -162,21 +439,24 @@ namespace Fida.UI
         }
 
         /// <summary>构建关卡选择界面</summary>
-        public void BuildLevelSelect()
+        public void BuildLevelSelect(bool online = false)
         {
             Clear();
-            _campaignScreens.BuildMap();
+            _campaignScreens.BuildMap(online);
         }
 
         /// <summary>构建技能选择界面</summary>
-        public void BuildSkillSelect()
+        public void BuildSkillSelect(bool online = false)
         {
             Clear();
-            _campaignScreens.BuildLoadout(GameSetup.SelectedNode);
+            _campaignScreens.BuildLoadout(GameSetup.SelectedNode, online);
         }
 
         public void BuildCampaignResult(bool won, string message) =>
             _campaignScreens.BuildResult(won, message, GameSetup.SelectedNode);
+
+        public void BuildDuelResult(bool won, string message) =>
+            _campaignScreens.BuildDuelResult(won, message);
 
         /// <summary>清空控件列表（由构建方法调用，不直接对外）</summary>
         public void Clear()
@@ -197,7 +477,10 @@ namespace Fida.UI
             int focusIndex = 0;
             foreach (var desc in descriptors)
             {
-                UIControl control = desc.Type switch
+                UIControl control = desc.Type == "button" && IsNavigationBack(desc.Name)
+                    ? new UIIconButton(desc.Id, DesktopBackIconBounds(), UIIconButton.IconKind.Back,
+                        _resourceManager.Pixel, _resourceManager.Font)
+                    : desc.Type switch
                 {
                     "button" => new UIButton(desc.Id, desc.Bounds!.Value, desc.Text, _resourceManager.Pixel, _resourceManager.Font),
                     "label" => new UILabel(desc.Id, desc.Text, desc.Position!.Value, _resourceManager.Font),
@@ -222,6 +505,12 @@ namespace Fida.UI
             }
 #endif
         }
+
+        private static bool IsNavigationBack(string name) =>
+            name is "back" or "backToMain";
+
+        private Rectangle DesktopBackIconBounds() => UIIconButton.StandardBounds(
+            _resourceManager.GraphicsDevice.Viewport);
 
 #if FIDA_ANDROID
         private void BuildMobileHostingScreen(string roomCode, string statusText)
@@ -293,7 +582,7 @@ namespace Fida.UI
         }
 
         private static Rectangle MobileWaitingBackBounds(Rectangle panel) =>
-            new(panel.Left + 20, panel.Top + 16, 76, 76);
+            new(panel.Left, panel.Top - 4, 64, 64);
 
         /// <summary>
         /// Android settings intentionally exposes only options that are meaningful on a
@@ -325,7 +614,7 @@ namespace Fida.UI
                 MinimumScale = 0.62f
             });
             _uiControls.Add(new UIIconButton(4,
-                new Rectangle(panel.Left + 20, panel.Top + 16, 76, 76),
+                MobileWaitingBackBounds(panel),
                 UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Name = "back",
@@ -357,11 +646,12 @@ namespace Fida.UI
             }
 
             var back = descriptors.FirstOrDefault(d =>
-                d.Type == "button" && d.Name == "backToMain");
+                d.Type == "button" && IsNavigationBack(d.Name));
             if (back != null)
             {
+                Rectangle safe = UIMobileSafeArea.Get(_resourceManager.GraphicsDevice.Viewport);
                 _uiControls.Add(new UIIconButton(back.Id,
-                    new Rectangle(panel.Left + 20, panel.Top + 16, 76, 76),
+                    new Rectangle(safe.Left + 8, safe.Top + 4, 64, 64),
                     UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)
                 {
                     Name = back.Name

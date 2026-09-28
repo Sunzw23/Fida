@@ -18,6 +18,9 @@ namespace Fida
 
         public State CurrentState { get; private set; }
         private State _settingsReturnState = State.MainMenu;
+        private State _rulesReturnState = State.MainMenu;
+        public State RulesReturnState => _rulesReturnState;
+        public int RulesPage { get; private set; }
 
         /// <summary>
         /// 状态即将切换时触发（切换前调用旧状态的 OnExit）
@@ -81,19 +84,43 @@ namespace Fida
                     else _uiManager.BuildPlayingUI(_uiManager.GameManager);
                     break;
                 case State.Paused:        _uiManager.BuildPauseMenu(); break;
-                case State.GameOver:      _uiManager.BuildCampaignResult(GameSetup.LastBattleWon, GameSetup.LastBattleMessage); break;
+                case State.GameOver:
+                    if (GameSetup.LastBattleWasOnlineDuel)
+                        _uiManager.BuildDuelResult(GameSetup.LastBattleWon, GameSetup.LastBattleMessage);
+                    else
+                        _uiManager.BuildCampaignResult(GameSetup.LastBattleWon, GameSetup.LastBattleMessage);
+                    break;
                 case State.OnlineMenu:    _uiManager.BuildOnlineMenu(_networkManager.IsConnected); break;
                 case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText, _networkManager.HostRoomCode); break;
                 case State.Connecting:    _uiManager.BuildConnectingScreen(_networkManager.StatusText); break;
                 case State.OnlineLobby:   _uiManager.BuildOnlineLobby(_networkManager.IsHost); break;
                 case State.DuelDraft:     _uiManager.BuildDuelDraft(); break;
-                case State.OnlineCampaignMap: _uiManager.BuildLevelSelect(); break;
-                case State.OnlineCampaignSkills: _uiManager.BuildSkillSelect(); break;
+                case State.OnlineCampaignMap: _uiManager.BuildLevelSelect(online: true); break;
+                case State.OnlineCampaignSkills: _uiManager.BuildSkillSelect(online: true); break;
                 case State.OnlinePlaying: _uiManager.BuildPlayingUI(_uiManager.GameManager); break;
             }
 
             // 通知新状态已进入
             OnStateEntered?.Invoke(newState);
+        }
+
+        public void OpenRules()
+        {
+            if (CurrentState == State.Rules) return;
+            _rulesReturnState = CurrentState;
+            RulesPage = 0;
+            SwitchToState(State.Rules);
+        }
+
+        public void CloseRules() => SwitchToState(
+            _rulesReturnState == State.Rules ? State.MainMenu : _rulesReturnState);
+
+        public void SetRulesPage(int page)
+        {
+            if (CurrentState != State.Rules) return;
+            RulesPage = (page % UIManager.RulesPageCount + UIManager.RulesPageCount) %
+                UIManager.RulesPageCount;
+            _uiManager.BuildRulesScreen(RulesPage);
         }
 
         public void ReturnFromSettings() => SwitchToState(

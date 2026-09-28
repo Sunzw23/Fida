@@ -5,6 +5,7 @@
     { "type": "button", "name": "startGame", "id": 2, "text": "Start", "bounds": { "x": 800, "y": 450, "width": 320, "height": 80 } },
     { "type": "button", "name": "onlineMode", "id": 3, "text": "Online", "bounds": { "x": 800, "y": 555, "width": 320, "height": 80 } },
     { "type": "button", "name": "settings", "id": 4, "text": "Settings", "bounds": { "x": 800, "y": 660, "width": 320, "height": 80 } },
-    { "type": "button", "name": "exit", "id": 5, "text": "Exit", "bounds": { "x": 800, "y": 765, "width": 320, "height": 80 } }
+    { "type": "button", "name": "rules", "id": 5, "text": "Field Guide", "bounds": { "x": 800, "y": 765, "width": 320, "height": 80 } },
+    { "type": "button", "name": "exit", "id": 6, "text": "Exit", "bounds": { "x": 800, "y": 870, "width": 320, "height": 80 } }
   ]
 }
