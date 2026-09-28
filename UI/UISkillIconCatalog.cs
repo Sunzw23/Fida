@@ -14,6 +14,7 @@ namespace Fida.UI
                 [SkillType.DoubleHealth] = "H2", [SkillType.DoubleAttack] = "A2",
                 [SkillType.DoubleDefence] = "D2", [SkillType.TripleHealth] = "H3",
                 [SkillType.Shen] = "G", [SkillType.Xian] = "I", [SkillType.Mo] = "M",
+                [SkillType.Seng] = "MN", [SkillType.Dao] = "DO",
                 [SkillType.Xue] = "B", [SkillType.Tong] = "=", [SkillType.Di] = "E",
                 [SkillType.Long] = "DR", [SkillType.Bian] = "TR", [SkillType.Shi] = "S",
                 [SkillType.SuperGod] = "G+", [SkillType.SuperImmortal] = "I+",
