@@ -1,8 +1,9 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,15 +12,11 @@ namespace Fida.Network
     /// <summary>
     /// TCP 游戏客户端，使用 IPv6 地址连接服务器
     /// </summary>
-    public class GameClient : IDisposable
+    public class GameClient : MessageTransportBase
     {
         private TcpClient _tcpClient;
         private NetworkStream _stream;
-        private CancellationTokenSource _cts;
-        private readonly ConcurrentQueue<NetworkMessage> _incomingMessages = new();
-        private readonly ConcurrentQueue<NetworkMessage> _outgoingMessages = new();
         private bool _isConnected;
-        private bool _disposed;
 
         /// <summary>
         /// 客户端是否已连接
@@ -35,6 +32,14 @@ namespace Fida.Network
         /// 当连接成功时触发
         /// </summary>
         public event System.Action Connected;
+
+        public GameClient() : base("Connection to the server was lost.")
+        {
+        }
+
+        protected override TcpClient Connection => _tcpClient;
+
+        protected override NetworkStream DataStream => _stream;
 
         /// <summary>
         /// 连接到指定地址和端口的服务器（非阻塞）。
@@ -67,17 +72,17 @@ namespace Fida.Network
                     if (roleByte != 0)
                     {
                         if (string.IsNullOrEmpty(roomCode))
-                        throw new System.IO.IOException("Relay mode requires a four-digit room code.");
+                            throw new IOException("Relay mode requires a four-digit room code.");
 
                         // 发 'C' + 0x01 + 4 位 ASCII 房间码（大写归一化）
                         string code = roomCode.Trim().ToUpperInvariant();
                         if (code.Length != 4)
-                        throw new System.IO.IOException("Invalid room code. Enter four digits.");
+                            throw new IOException("Invalid room code. Enter four digits.");
 
                         var payload = new byte[6];
                         payload[0] = roleByte;
                         payload[1] = 0x01;
-                        System.Text.Encoding.ASCII.GetBytes(code, 0, 4, payload, 2);
+                        Encoding.ASCII.GetBytes(code, 0, 4, payload, 2);
 
                         await _stream.WriteAsync(payload, 0, payload.Length, _cts.Token);
                         await _stream.FlushAsync(_cts.Token);
@@ -89,7 +94,7 @@ namespace Fida.Network
                         int n = _stream.Read(ack, 0, 1);
                         _tcpClient.ReceiveTimeout = oldTimeout;
                         if (n <= 0 || ack[0] != 0x03)
-                        throw new System.IO.IOException("The room code is invalid or the room is full.");
+                            throw new IOException("The room code is invalid or the room is full.");
                     }
 
                     _isConnected = true;
@@ -120,103 +125,26 @@ namespace Fida.Network
         }
 
         /// <summary>
-        /// 获取所有待处理的消息（非阻塞）
-        /// </summary>
-        public List<NetworkMessage> ReceiveMessages()
-        {
-            var messages = new List<NetworkMessage>();
-            while (_incomingMessages.TryDequeue(out NetworkMessage message))
-            {
-                messages.Add(message);
-            }
-            return messages;
-        }
-
-        /// <summary>
         /// 断开连接
         /// </summary>
         public void Disconnect()
         {
             _isConnected = false;
-            _cts?.Cancel();
-
-            try
-            {
-                _stream?.Close();
-                _stream?.Dispose();
-                _tcpClient?.Close();
-                _tcpClient?.Dispose();
-            }
-            catch { }
+            TearDownTransport();
 
             _stream = null;
             _tcpClient = null;
         }
 
-        private async Task ReceiveLoop(CancellationToken ct)
+        protected override void NotifyDisconnected(string message)
         {
-            try
-            {
-                while (!ct.IsCancellationRequested && _tcpClient != null && _tcpClient.Connected)
-                {
-                    NetworkMessage message = await Task.Run(() =>
-                    {
-                        try
-                        {
-                            return NetworkMessage.ReadFromStream(_stream);
-                        }
-                        catch
-                        {
-                            return null;
-                        }
-                    }, ct);
-
-                    if (message == null)
-                    {
-                        break;
-                    }
-
-                    _incomingMessages.Enqueue(message);
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch { }
-
             if (_isConnected)
             {
                 _isConnected = false;
-                Disconnected?.Invoke("Connection to the server was lost.");
+                Disconnected?.Invoke(message);
             }
         }
 
-        private async Task SendLoop(CancellationToken ct)
-        {
-            try
-            {
-                while (!ct.IsCancellationRequested && _tcpClient != null && _tcpClient.Connected)
-                {
-                    if (_outgoingMessages.TryDequeue(out NetworkMessage message))
-                    {
-                        byte[] data = message.Serialize();
-                        await _stream.WriteAsync(data, 0, data.Length, ct);
-                        await _stream.FlushAsync(ct);
-                    }
-                    else
-                    {
-                        await Task.Delay(10, ct);
-                    }
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch { }
-        }
-
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            Disconnect();
-            _cts?.Dispose();
-        }
+        protected override void OnStop() => Disconnect();
     }
 }

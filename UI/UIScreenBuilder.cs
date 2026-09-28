@@ -73,11 +73,7 @@ namespace Fida.UI
             page = (page % UIManager.RulesPageCount + UIManager.RulesPageCount) %
                 UIManager.RulesPageCount;
             Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
-#if FIDA_ANDROID
-            float layoutScale = 1f;
-#else
-            float layoutScale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
-#endif
+            float layoutScale = UIDesktopLayout.LayoutScale(_resourceManager.GraphicsDevice.Viewport);
             _uiControls.Add(new UIPanel(0, _resourceManager.Pixel) { Name = "panel" });
 
             _uiControls.Add(new UIIconButton(1, UIIconButton.StandardBounds(
@@ -153,11 +149,7 @@ namespace Fida.UI
 
         private void BuildTurnRules(Rectangle panel, int top, int availableHeight)
         {
-#if FIDA_ANDROID
-            float scale = 1f;
-#else
-            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
-#endif
+            float scale = UIDesktopLayout.LayoutScale(_resourceManager.GraphicsDevice.Viewport);
             int side = Math.Max(28, (int)(44 * scale));
             int width = panel.Width - side * 2;
             int gap = Math.Max(10, (int)(14 * scale));
@@ -201,11 +193,7 @@ namespace Fida.UI
 
         private void BuildNumberRules(Rectangle panel, int top, int availableHeight)
         {
-#if FIDA_ANDROID
-            float scale = 1f;
-#else
-            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
-#endif
+            float scale = UIDesktopLayout.LayoutScale(_resourceManager.GraphicsDevice.Viewport);
             int side = Math.Max(24, (int)(38 * scale));
             int gapX = Math.Max(10, (int)(16 * scale));
             int gapY = Math.Max(10, (int)(14 * scale));
@@ -237,11 +225,7 @@ namespace Fida.UI
 
         private void BuildSkillTimingRules(Rectangle panel, int top, int availableHeight)
         {
-#if FIDA_ANDROID
-            float scale = 1f;
-#else
-            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
-#endif
+            float scale = UIDesktopLayout.LayoutScale(_resourceManager.GraphicsDevice.Viewport);
             int side = Math.Max(28, (int)(44 * scale));
             int gap = Math.Max(8, (int)(10 * scale));
             int height = Math.Min((int)(98 * scale), (availableHeight - gap * 4) / 5);
@@ -268,11 +252,7 @@ namespace Fida.UI
 
         private void BuildSkillSet(Rectangle panel, int top, int availableHeight, int setIndex)
         {
-#if FIDA_ANDROID
-            float scale = 1f;
-#else
-            float scale = UIDesktopLayout.Scale(_resourceManager.GraphicsDevice.Viewport);
-#endif
+            float scale = UIDesktopLayout.LayoutScale(_resourceManager.GraphicsDevice.Viewport);
             int side = Math.Max(24, (int)(38 * scale));
             int gapX = Math.Max(8, (int)(12 * scale));
             int gapY = Math.Max(6, (int)(9 * scale));

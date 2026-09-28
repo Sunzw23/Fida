@@ -152,44 +152,65 @@ namespace Fida.Network
             {
                 try
                 {
-                    if (message.Type == MessageType.CampaignPresence)
-                    {
-                        using var stream = new MemoryStream(message.Payload);
-                        using var reader = new BinaryReader(stream);
-                        var presence = ReadCampaignPresence(reader, stream);
-                        RemoteCampaignPresence = presence;
-                        CampaignPresenceReceived?.Invoke(presence);
-                    }
-                    else if (message.Type == MessageType.CampaignReady)
-                    {
-                        string nodeId = ReadStringPayload(message.Payload);
-                        RemoteCampaignPresence = RemoteCampaignPresence with
-                        { Phase = CampaignOnlinePhase.Loadout, NodeId = nodeId, Ready = true };
-                        CampaignPresenceReceived?.Invoke(RemoteCampaignPresence);
-                    }
-                    else if (message.Type == MessageType.CampaignCoopStart)
-                    {
-                        var start = ReadCampaignCoopStart(message.Payload);
-                        CampaignSessionId = start.SessionId;
-                        CampaignCoopStarting?.Invoke(start.NodeId, start.SessionId);
-                    }
-                    else if (message.Type == MessageType.GameAction && CurrentGameMode == 2)
+                    if (message.Type == MessageType.GameAction && CurrentGameMode == 2)
                     {
                         // Actions from another independent route must never be replayed
                         // into this player's later battle.
+                        continue;
                     }
-                    else if (message.Type == MessageType.BattleSnapshot)
+                    if (message.Type == MessageType.BattleSnapshot)
                     {
                         PendingBattleSnapshot = BattleSnapshot.Deserialize(message.Payload);
                         BattleSnapshotReceived?.Invoke(PendingBattleSnapshot);
+                        continue;
                     }
-                    else if (message.Type == MessageType.BattleSnapshotAck)
-                        BattleSnapshotAcknowledged?.Invoke(ReadStringPayload(message.Payload));
-                    else unhandled.Add(message);
+                    if (!HandleCampaignProtocolMessage(message))
+                        unhandled.Add(message);
                 }
                 catch (Exception ex) { StatusText = $"Invalid Campaign message: {ex.Message}"; }
             }
             RetainMessages(unhandled);
+        }
+
+        /// <summary>
+        /// Shared campaign-protocol dispatch used by both <see cref="ProcessCampaignMessages"/> and
+        /// <see cref="ProcessMessages"/>. Each handler body is written once here. Returns true when the
+        /// message was handled; false when it belongs to a different protocol and should be retained.
+        /// </summary>
+        private bool HandleCampaignProtocolMessage(NetworkMessage message)
+        {
+            switch (message.Type)
+            {
+                case MessageType.CampaignPresence:
+                {
+                    using var stream = new MemoryStream(message.Payload);
+                    using var reader = new BinaryReader(stream);
+                    var presence = ReadCampaignPresence(reader, stream);
+                    RemoteCampaignPresence = presence;
+                    CampaignPresenceReceived?.Invoke(presence);
+                    return true;
+                }
+                case MessageType.CampaignReady:
+                {
+                    string nodeId = ReadStringPayload(message.Payload);
+                    RemoteCampaignPresence = RemoteCampaignPresence with
+                    { Phase = CampaignOnlinePhase.Loadout, NodeId = nodeId, Ready = true };
+                    CampaignPresenceReceived?.Invoke(RemoteCampaignPresence);
+                    return true;
+                }
+                case MessageType.CampaignCoopStart:
+                {
+                    var start = ReadCampaignCoopStart(message.Payload);
+                    CampaignSessionId = start.SessionId;
+                    CampaignCoopStarting?.Invoke(start.NodeId, start.SessionId);
+                    return true;
+                }
+                case MessageType.BattleSnapshotAck:
+                    BattleSnapshotAcknowledged?.Invoke(ReadStringPayload(message.Payload));
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public NetworkManager()
@@ -437,47 +458,29 @@ namespace Fida.Network
 
             foreach (var msg in messages)
             {
-                if (msg.Type == MessageType.GameAction)
+                try
                 {
-                    if (CurrentGameMode == 2 && !IsCampaignSharedBattle) continue;
-                    var action = NetworkMessage.DeserializeAction(msg.Payload);
-                    gameManager.UpdateGame(action, GameActionOrigin.RemoteNetwork);
+                    if (msg.Type == MessageType.GameAction)
+                    {
+                        if (CurrentGameMode == 2 && !IsCampaignSharedBattle) continue;
+                        var action = NetworkMessage.DeserializeAction(msg.Payload);
+                        gameManager.UpdateGame(action, GameActionOrigin.RemoteNetwork);
+                        continue;
+                    }
+                    if (msg.Type == MessageType.BattleJoinRequest)
+                    {
+                        BattleJoinRequested?.Invoke(ReadStringPayload(msg.Payload));
+                        continue;
+                    }
+                    if (msg.Type == MessageType.BattleSnapshot)
+                    {
+                        BattleSnapshotReceived?.Invoke(BattleSnapshot.Deserialize(msg.Payload));
+                        continue;
+                    }
+                    if (!HandleCampaignProtocolMessage(msg))
+                        unhandled.Add(msg);
                 }
-                else if (msg.Type == MessageType.BattleJoinRequest)
-                {
-                    BattleJoinRequested?.Invoke(ReadStringPayload(msg.Payload));
-                }
-                else if (msg.Type == MessageType.BattleSnapshot)
-                {
-                    try { BattleSnapshotReceived?.Invoke(BattleSnapshot.Deserialize(msg.Payload)); }
-                    catch (Exception ex) { StatusText = $"Invalid battle snapshot: {ex.Message}"; }
-                }
-                else if (msg.Type == MessageType.BattleSnapshotAck)
-                {
-                    BattleSnapshotAcknowledged?.Invoke(ReadStringPayload(msg.Payload));
-                }
-                else if (msg.Type == MessageType.CampaignPresence)
-                {
-                    using var stream = new MemoryStream(msg.Payload);
-                    using var reader = new BinaryReader(stream);
-                    var presence = ReadCampaignPresence(reader, stream);
-                    RemoteCampaignPresence = presence;
-                    CampaignPresenceReceived?.Invoke(presence);
-                }
-                else if (msg.Type == MessageType.CampaignReady)
-                {
-                    string nodeId = ReadStringPayload(msg.Payload);
-                    RemoteCampaignPresence = RemoteCampaignPresence with
-                    { Phase = CampaignOnlinePhase.Loadout, NodeId = nodeId, Ready = true };
-                    CampaignPresenceReceived?.Invoke(RemoteCampaignPresence);
-                }
-                else if (msg.Type == MessageType.CampaignCoopStart)
-                {
-                    var start = ReadCampaignCoopStart(msg.Payload);
-                    CampaignSessionId = start.SessionId;
-                    CampaignCoopStarting?.Invoke(start.NodeId, start.SessionId);
-                }
-                else unhandled.Add(msg);
+                catch (Exception ex) { StatusText = $"Invalid message: {ex.Message}"; }
             }
             RetainMessages(unhandled);
         }

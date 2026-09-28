@@ -448,11 +448,7 @@ namespace Fida.UI
                 UIButtonState.Pressed => 0.985f,
                 _ => 1f
             };
-#if !FIDA_ANDROID
-            float layoutScale = UIDesktopLayout.Scale(Pixel.GraphicsDevice.Viewport);
-#else
-            float layoutScale = 1f;
-#endif
+            float layoutScale = UIDesktopLayout.LayoutScale(Pixel.GraphicsDevice.Viewport);
             Vector2 interactionOffset = CardState == UIButtonState.Hovered
                 ? new Vector2(0f, -9f * layoutScale)
                 : Vector2.Zero;
@@ -769,12 +765,8 @@ namespace Fida.UI
         private void DrawCompactText(SpriteBatch sb, string text, Vector2 center,
             Color color, float preferredScale, float maximumWidth)
         {
-            string display = UIFontGuard.Sanitize(Font, text);
-            Vector2 measured = Font.MeasureString(display);
-            if (measured.X <= 0f) return;
-            float textScale = System.Math.Min(preferredScale, maximumWidth / measured.X);
-            sb.DrawString(Font, display, center - measured * textScale / 2f, color,
-                0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+            UIUtils.DrawCenteredFit(sb, Font, text, center, maximumWidth,
+                preferredScale, color);
         }
     }
 }

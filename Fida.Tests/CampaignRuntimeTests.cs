@@ -13,16 +13,16 @@ public sealed class CampaignRuntimeTests
         string onlinePath = Path.Combine(Path.GetTempPath(), $"fida_online_{Guid.NewGuid():N}.json");
         try
         {
-            CampaignRuntime.UseStore(new CampaignProgressStore(offlinePath));
-            CampaignRuntime.UseOnlineStore(new CampaignProgressStore(onlinePath));
-            CampaignRuntime.Reset(save: false);
-            CampaignRuntime.ResetOnline(save: false);
+            CampaignRuntime.UseStore(CampaignRuntime.Local, new CampaignProgressStore(offlinePath));
+            CampaignRuntime.UseStore(CampaignRuntime.Online, new CampaignProgressStore(onlinePath));
+            CampaignRuntime.Reset(CampaignRuntime.Local, save: false);
+            CampaignRuntime.Reset(CampaignRuntime.Online, save: false);
 
-            CampaignRuntime.Complete(CampaignCatalog.GetNode("P"));
+            CampaignRuntime.Complete(CampaignCatalog.GetNode("P"), CampaignRuntime.Local);
             Assert.True(CampaignRuntime.Progress.IsCompleted("P"));
             Assert.False(CampaignRuntime.OnlineProgress.IsCompleted("P"));
 
-            CampaignRuntime.Complete(CampaignCatalog.GetNode("A1"), online: true);
+            CampaignRuntime.Complete(CampaignCatalog.GetNode("A1"), CampaignRuntime.Online);
             Assert.True(CampaignRuntime.OnlineProgress.IsCompleted("A1"));
             Assert.False(CampaignRuntime.Progress.IsCompleted("A1"));
 
@@ -35,8 +35,8 @@ public sealed class CampaignRuntimeTests
         }
         finally
         {
-            CampaignRuntime.UseStore(new CampaignProgressStore(CampaignProgressStore.DefaultPath()));
-            CampaignRuntime.UseOnlineStore(new CampaignProgressStore(CampaignProgressStore.OnlinePath()));
+            CampaignRuntime.UseStore(CampaignRuntime.Local, new CampaignProgressStore(CampaignProgressStore.DefaultPath()));
+            CampaignRuntime.UseStore(CampaignRuntime.Online, new CampaignProgressStore(CampaignProgressStore.OnlinePath()));
             if (File.Exists(offlinePath)) File.Delete(offlinePath);
             if (File.Exists(onlinePath)) File.Delete(onlinePath);
         }

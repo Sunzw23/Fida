@@ -74,32 +74,13 @@ namespace Fida.Logic
             var attacker = GameManager.Players.FirstOrDefault(p => p.PlayerId == _attackerId);
 
             // Damaging 技能（攻击者）
-            var attackerStates = new List<GameState>();
-            if (attacker != null)
-            {
-                foreach (var skill in attacker.Skills)
-                {
-                    if (skill.Trigger == SkillTrigger.Damaging && skill.CanUse(GameManager, attacker))
-                    {
-                        var state = skill.CreateState(GameManager, _ctx.Derive(attacker.PlayerId));
-                        if (state != null)
-                            attackerStates.Add(state);
-                    }
-                }
-            }
+            var attackerStates = attacker == null
+                ? new List<GameState>()
+                : attacker.CollectTriggeredStates(GameManager, _ctx.Derive(attacker.PlayerId), SkillTrigger.Damaging).ToList();
             GameManager.PushStatesInOrder(attackerStates);
 
             // Damaged 技能（目标玩家）
-            var targetStates = new List<GameState>();
-            foreach (var skill in targetPlayer.Skills)
-            {
-                if (skill.Trigger == SkillTrigger.Damaged && skill.CanUse(GameManager, targetPlayer))
-                {
-                    var state = skill.CreateState(GameManager, _ctx.Derive(targetPlayer.PlayerId));
-                    if (state != null)
-                        targetStates.Add(state);
-                }
-            }
+            var targetStates = targetPlayer.CollectTriggeredStates(GameManager, _ctx.Derive(targetPlayer.PlayerId), SkillTrigger.Damaged).ToList();
             GameManager.PushStatesInOrder(targetStates);
 
             GameManager.TransitionTo(new HandleStackState(GameManager));

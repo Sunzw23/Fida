@@ -16,13 +16,9 @@ namespace Fida.Logic
                 return;
             }
 
-            var triggeredStates = SourcePlayer.Skills.Where(skill =>
-                         (skill.Trigger == SkillTrigger.OrderedAttack ||
-                          skill.Trigger == SkillTrigger.AttackCompleted) &&
-                         skill.CanUse(GameManager, SourcePlayer))
-                .Select(skill => skill.CreateState(GameManager, new SkillContext(SourcePlayerId)))
-                .Where(state => state != null)
-                .ToList();
+            var triggeredStates = SourcePlayer.CollectTriggeredStates(
+                    GameManager, new SkillContext(SourcePlayerId),
+                    SkillTrigger.OrderedAttack, SkillTrigger.AttackCompleted).ToList();
             GameManager.PushStatesInOrder(triggeredStates);
 
             GameManager.TransitionTo(new HandleStackState(GameManager));

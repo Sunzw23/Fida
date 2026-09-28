@@ -11,21 +11,22 @@ namespace Fida.States
 
     public override void OnEnter()
         {
+            bool wasOnlineDuel = _stateMachine.LastBattleOutcome?.WasOnlineDuel == true;
             BindButton("mainMenu", () =>
             {
-                if (GameSetup.LastBattleWasOnlineDuel || _networkManager.CurrentGameMode == 2)
+                if (wasOnlineDuel || _networkManager.CurrentGameMode == 2)
                 {
                     _networkManager.Cleanup();
                 }
                 _stateMachine.SwitchToState(State.MainMenu);
             });
 
-            if (GameSetup.LastBattleWasOnlineDuel) return;
+            if (wasOnlineDuel) return;
 
             bool onlineCampaign = _networkManager.CurrentGameMode == 2;
-        BindButton("retry", () => _stateMachine.SwitchToState(
-                onlineCampaign ? State.OnlineCampaignSkills : State.Skills));
-    }
+            BindButton("retry", () => _stateMachine.SwitchToState(
+                    onlineCampaign ? State.OnlineCampaignSkills : State.Skills));
+        }
 
     public override void HandleInput(GameTime gameTime)
     {

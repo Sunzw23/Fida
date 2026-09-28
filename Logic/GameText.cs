@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -8,9 +7,6 @@ namespace Fida.Logic
     // 用于存储从JSON加载的文本数据的类
     public class GameTextData
     {
-        public string Rules { get; set; } = "";
-        public string Skills { get; set; } = "";
-        public Dictionary<string, string> SkillNames { get; set; } = new Dictionary<string, string>();
         public Messages Messages { get; set; } = new Messages();
     }
 
@@ -109,97 +105,18 @@ namespace Fida.Logic
         {
             return new GameTextData
             {
-                Rules = "Failed to load rules text.",
-                Skills = "Failed to load skills text.",
-                SkillNames = new Dictionary<string, string>(),
                 Messages = new Messages()
             };
         }
 
-        public static string Rules => _textData?.Rules ?? "Failed to load rules text.";
-        public static string Skills => _textData?.Skills ?? "Failed to load skills text.";
-
-        public static string SkillName(SkillType skill)
-        {
-            var skillKey = skill.ToString();
-            if (_textData?.SkillNames?.ContainsKey(skillKey) == true)
-            {
-                return _textData.SkillNames[skillKey];
-            }
-
-            // 如果没有找到，返回默认值
-            return skill switch
-            {
-                SkillType.PlusAttack => "Attack Up",
-                SkillType.PlusDefence => "Defense Up",
-                SkillType.DoubleHealth => "Double Health",
-                SkillType.DoubleAttack => "Double Attack",
-                SkillType.DoubleDefence => "Double Defense",
-                SkillType.TripleHealth => "Triple Health",
-                SkillType.Shen => "God",
-                SkillType.Xian => "Immortal",
-                SkillType.Seng => "Seng",
-                SkillType.Dao => "Dao",
-                SkillType.Mo => "Demon",
-                SkillType.Xue => "Blood",
-                SkillType.Gui => "Ghost",
-                SkillType.Tong => "Same",
-                SkillType.Di => "Emperor",
-                SkillType.Long => "Dragon",
-                SkillType.Bian => "Transform",
-                SkillType.Huo => "Fire",
-                SkillType.Shi => "Stone",
-                SkillType.SuperGod => "Super God",
-                SkillType.SuperImmortal => "Super Immortal",
-                SkillType.SuperEmperor => "Super Emperor",
-                _ => throw new ArgumentOutOfRangeException(nameof(skill), skill, null)
-            };
-        }
+        public static string SkillName(SkillType skill) => SkillCatalog.EnglishName(skill);
 
         public static SkillType SkillTypeFromString(string skillName)
         {
-            // 首先尝试从JSON数据中反向查找
-            if (_textData?.SkillNames != null)
-            {
-                foreach (var kvp in _textData.SkillNames)
-                {
-                    if (kvp.Value == skillName)
-                    {
-                        if (Enum.TryParse<SkillType>(kvp.Key, out var skillType))
-                        {
-                            return skillType;
-                        }
-                    }
-                }
-            }
-
-            // 如果JSON查找失败，使用硬编码的映射
-            return skillName switch
-            {
-                "Attack Up" => SkillType.PlusAttack,
-                "Defense Up" => SkillType.PlusDefence,
-                "Double Health" => SkillType.DoubleHealth,
-                "Double Attack" => SkillType.DoubleAttack,
-                "Double Defense" => SkillType.DoubleDefence,
-                "Triple Health" => SkillType.TripleHealth,
-                "God" => SkillType.Shen,
-                "Immortal" => SkillType.Xian,
-                "Seng" or "僧" => SkillType.Seng,
-                "Dao" or "道" => SkillType.Dao,
-                "Demon" => SkillType.Mo,
-                "Blood" => SkillType.Xue,
-                "Ghost" => SkillType.Gui,
-                "Same" => SkillType.Tong,
-                "Emperor" => SkillType.Di,
-                "Dragon" => SkillType.Long,
-                "Transform" => SkillType.Bian,
-                "Fire" => SkillType.Huo,
-                "Stone" => SkillType.Shi,
-                "Super God" => SkillType.SuperGod,
-                "Super Immortal" => SkillType.SuperImmortal,
-                "Super Emperor" => SkillType.SuperEmperor,
-                _ => throw new ArgumentException($"'{skillName}' is not a valid skill name.", nameof(skillName))
-            };
+            var type = SkillCatalog.FromName(skillName);
+            if (type == null)
+                throw new ArgumentException($"'{skillName}' is not a valid skill name.", nameof(skillName));
+            return type.Value;
         }
 
         public static string GameStart => _textData?.Messages?.GameStart ?? "Game start!";

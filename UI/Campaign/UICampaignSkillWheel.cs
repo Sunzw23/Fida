@@ -670,12 +670,8 @@ namespace Fida.UI.Campaign
         private void DrawCentered(SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 center,
             float maximumWidth, float preferredScale, Color color)
         {
-            text = UIFontGuard.Sanitize(font, text);
-            Vector2 measured = font.MeasureString(text);
-            if (measured.X <= 0f) return;
-            float scale = Math.Max(0.30f, Math.Min(preferredScale, maximumWidth / measured.X));
-            spriteBatch.DrawString(font, text, center - measured * scale / 2f, color, 0f,
-                Vector2.Zero, scale, SpriteEffects.None, 0f);
+            UIUtils.DrawCenteredFit(spriteBatch, font, text, center, maximumWidth,
+                preferredScale, color, 0.30f);
         }
 
 #if FIDA_ANDROID

@@ -29,6 +29,22 @@ namespace Fida.Logic
             return Skills.Where(skill => skill.Trigger == trigger).GetEnumerator();
         }
 
+        /// <summary>
+        /// Collects the non-null states for this player's usable skills whose trigger is one of
+        /// <paramref name="triggers"/>, in loadout order. Used by the batch "trigger + handle" states
+        /// (turn start, game start, attack completed, damage reactions).
+        /// </summary>
+        public IEnumerable<GameState> CollectTriggeredStates(GameManager gm, SkillContext ctx, params SkillTrigger[] triggers)
+        {
+            foreach (var skill in Skills)
+            {
+                if (!triggers.Contains(skill.Trigger)) continue;
+                if (!skill.CanUse(gm, this)) continue;
+                var state = skill.CreateState(gm, ctx);
+                if (state != null) yield return state;
+            }
+        }
+
 
         public int MaxHealth { get; set; } = 11; // 生命值上限
 

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -12,16 +10,12 @@ namespace Fida.Network
     /// TCP 游戏服务器，使用 IPv6 地址监听
     /// 负责接受客户端连接并转发消息
     /// </summary>
-    public class GameServer : IDisposable
+    public class GameServer : MessageTransportBase
     {
         private TcpListener _listener;
         private TcpClient _client;
         private NetworkStream _clientStream;
-        private CancellationTokenSource _cts;
-        private readonly ConcurrentQueue<NetworkMessage> _incomingMessages = new();
-        private readonly ConcurrentQueue<NetworkMessage> _outgoingMessages = new();
         private bool _isRunning;
-        private bool _disposed;
         private bool _clientConnected;
 
         /// <summary>
@@ -49,12 +43,16 @@ namespace Fida.Network
         /// </summary>
         /// <param name="ipAddress">IPv6 地址字符串</param>
         /// <param name="port">端口号</param>
-        public GameServer(string ipAddress, int port)
+        public GameServer(string ipAddress, int port) : base("The opponent disconnected.")
         {
             IPAddress addr = IPAddress.Parse(ipAddress);
             _listener = new TcpListener(addr, port);
             _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
         }
+
+        protected override TcpClient Connection => _client;
+
+        protected override NetworkStream DataStream => _clientStream;
 
         /// <summary>
         /// 启动服务器（非阻塞）
@@ -104,107 +102,30 @@ namespace Fida.Network
         }
 
         /// <summary>
-        /// 获取所有待处理的消息（非阻塞）
-        /// </summary>
-        public List<NetworkMessage> ReceiveMessages()
-        {
-            var messages = new List<NetworkMessage>();
-            while (_incomingMessages.TryDequeue(out NetworkMessage message))
-            {
-                messages.Add(message);
-            }
-            return messages;
-        }
-
-        /// <summary>
         /// 停止服务器
         /// </summary>
         public void Stop()
         {
             _isRunning = false;
             _clientConnected = false;
-            _cts?.Cancel();
+            TearDownTransport();
 
-            try
-            {
-                _clientStream?.Close();
-                _clientStream?.Dispose();
-                _client?.Close();
-                _client?.Dispose();
-                _listener?.Stop();
-            }
-            catch { }
-
+            _listener?.Stop();
             _clientStream = null;
             _client = null;
             _listener = null;
         }
 
-        private async Task ReceiveLoop(CancellationToken ct)
+        protected override void NotifyDisconnected(string message)
         {
-            try
-            {
-                while (!ct.IsCancellationRequested && _client != null && _client.Connected)
-                {
-                    NetworkMessage message = await Task.Run(() =>
-                    {
-                        try
-                        {
-                            return NetworkMessage.ReadFromStream(_clientStream);
-                        }
-                        catch
-                        {
-                            return null;
-                        }
-                    }, ct);
-
-                    if (message == null)
-                    {
-                        break;
-                    }
-
-                    _incomingMessages.Enqueue(message);
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch { }
-
             if (_isRunning)
             {
                 _isRunning = false;
                 _clientConnected = false;
-                ClientDisconnected?.Invoke("The opponent disconnected.");
+                ClientDisconnected?.Invoke(message);
             }
         }
 
-        private async Task SendLoop(CancellationToken ct)
-        {
-            try
-            {
-                while (!ct.IsCancellationRequested && _client != null && _client.Connected)
-                {
-                    if (_outgoingMessages.TryDequeue(out NetworkMessage message))
-                    {
-                        byte[] data = message.Serialize();
-                        await _clientStream.WriteAsync(data, 0, data.Length, ct);
-                        await _clientStream.FlushAsync(ct);
-                    }
-                    else
-                    {
-                        await Task.Delay(10, ct);
-                    }
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch { }
-        }
-
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            Stop();
-            _cts?.Dispose();
-        }
+        protected override void OnStop() => Stop();
     }
 }

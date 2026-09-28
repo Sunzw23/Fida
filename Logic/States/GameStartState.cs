@@ -26,18 +26,7 @@ namespace Fida.Logic
             var triggeredStates = new List<GameState>();
             foreach (var player in GameManager.Players)
             {
-                foreach (var skill in player.Skills)
-                {
-                    if (skill.Trigger == SkillTrigger.GameStart && skill.CanUse(GameManager, player))
-                    {
-                        var playerId = player.PlayerId;
-                        var state = skill.CreateState(GameManager, new SkillContext(playerId));
-                        if (state != null)
-                        {
-                            triggeredStates.Add(state);
-                        }
-                    }
-                }
+                triggeredStates.AddRange(player.CollectTriggeredStates(GameManager, new SkillContext(player.PlayerId), SkillTrigger.GameStart));
             }
 
             GameManager.PushStatesInOrder(triggeredStates);

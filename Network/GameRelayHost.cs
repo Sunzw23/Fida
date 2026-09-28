@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -19,7 +16,7 @@ namespace Fida.Network
     /// SendToClient / ReceiveMessages / Stop），使 <see cref="NetworkManager"/>
     /// 对 relay 与直连两种模式统一处理。
     /// </summary>
-    public class GameRelayHost : IDisposable
+    public class GameRelayHost : MessageTransportBase
     {
         public const byte RoleHost = (byte)'H';
         public const byte MsgCodeAssign = 0x01;
@@ -27,12 +24,8 @@ namespace Fida.Network
 
         private TcpClient _tcpClient;
         private NetworkStream _stream;
-        private CancellationTokenSource _cts;
-        private readonly ConcurrentQueue<NetworkMessage> _incomingMessages = new();
-        private readonly ConcurrentQueue<NetworkMessage> _outgoingMessages = new();
         private bool _isRunning;
         private bool _clientConnected;
-        private bool _disposed;
         private string _roomCode = string.Empty;
 
         /// <summary>是否正在运行</summary>
@@ -49,6 +42,14 @@ namespace Fida.Network
 
         /// <summary>客机断开时触发</summary>
         public event Action<string> ClientDisconnected;
+
+        public GameRelayHost() : base("Connection to the relay was lost.")
+        {
+        }
+
+        protected override TcpClient Connection => _tcpClient;
+
+        protected override NetworkStream DataStream => _stream;
 
         /// <summary>非阻塞启动：连接 relay、接收房间码、等待客机加入（0x02）后桥接。</summary>
         public void Start(string relayAddress, int relayPort)
@@ -124,93 +125,26 @@ namespace Fida.Network
             _outgoingMessages.Enqueue(message);
         }
 
-        /// <summary>获取所有待处理的消息（非阻塞）</summary>
-        public List<NetworkMessage> ReceiveMessages()
-        {
-            var messages = new List<NetworkMessage>();
-            while (_incomingMessages.TryDequeue(out NetworkMessage message))
-            {
-                messages.Add(message);
-            }
-            return messages;
-        }
-
         /// <summary>停止并释放资源</summary>
         public void Stop()
         {
             _isRunning = false;
             _clientConnected = false;
-            _cts?.Cancel();
-
-            try
-            {
-                _stream?.Close();
-                _stream?.Dispose();
-                _tcpClient?.Close();
-                _tcpClient?.Dispose();
-            }
-            catch { }
+            TearDownTransport();
 
             _stream = null;
             _tcpClient = null;
         }
 
-        public void Dispose()
+        protected override void NotifyDisconnected(string message)
         {
-            if (_disposed) return;
-            _disposed = true;
-            Stop();
-            _cts?.Dispose();
-        }
-
-        private async Task ReceiveLoop(CancellationToken ct)
-        {
-            try
-            {
-                while (!ct.IsCancellationRequested && _tcpClient != null && _tcpClient.Connected)
-                {
-                    NetworkMessage message = await Task.Run(() =>
-                    {
-                        try { return NetworkMessage.ReadFromStream(_stream); }
-                        catch { return null; }
-                    }, ct);
-
-                    if (message == null)
-                        break;
-
-                    _incomingMessages.Enqueue(message);
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch { }
-
             if (_clientConnected)
             {
                 _clientConnected = false;
-                ClientDisconnected?.Invoke("Connection to the relay was lost.");
+                ClientDisconnected?.Invoke(message);
             }
         }
 
-        private async Task SendLoop(CancellationToken ct)
-        {
-            try
-            {
-                while (!ct.IsCancellationRequested && _tcpClient != null && _tcpClient.Connected)
-                {
-                    if (_outgoingMessages.TryDequeue(out NetworkMessage message))
-                    {
-                        byte[] data = message.Serialize();
-                        await _stream.WriteAsync(data, 0, data.Length, ct);
-                        await _stream.FlushAsync(ct);
-                    }
-                    else
-                    {
-                        await Task.Delay(10, ct);
-                    }
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch { }
-        }
+        protected override void OnStop() => Stop();
     }
 }

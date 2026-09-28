@@ -110,11 +110,7 @@ namespace Fida.UI
             UIUtils.DrawGlowFrame(spriteBatch, Bounds, Pixel, accent,
                 Math.Max(1, GetBorderThickness()), pulse);
 
-#if FIDA_ANDROID
-            float layoutScale = 1f;
-#else
-            float layoutScale = UIDesktopLayout.Scale(spriteBatch.GraphicsDevice.Viewport);
-#endif
+            float layoutScale = UIDesktopLayout.LayoutScale(spriteBatch.GraphicsDevice.Viewport);
             float pressOffset = State == UIButtonState.Pressed ? 2f * layoutScale : 0f;
             Vector2 center = Bounds.Center.ToVector2() + new Vector2(0f, pressOffset);
             if (_icon == IconKind.Pause) DrawPause(spriteBatch, center, accent);

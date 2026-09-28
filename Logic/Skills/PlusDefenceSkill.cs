@@ -29,7 +29,7 @@ namespace Fida.Logic
 
         protected override void Execute(List<GameAction> actions)
         {
-            GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.DoubleDefence));
+            GameManager.SetGameMessage(GameText.SkillActivated(SourcePlayer.Name, SkillType.PlusDefence));
             int newDamage = _ctx.Damage - 1;
             if (newDamage == 0) newDamage = 1; // 最少造成1点伤害
             _ctx.Damage = newDamage;

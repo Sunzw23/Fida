@@ -21,6 +21,10 @@ namespace Fida
         private State _rulesReturnState = State.MainMenu;
         public State RulesReturnState => _rulesReturnState;
         public int RulesPage { get; private set; }
+        /// <summary>Outcome of the last finished battle, produced by the session manager for the result screen. Null until a battle ends.</summary>
+        public Logic.BattleOutcome? LastBattleOutcome { get; private set; }
+
+        public void SetLastBattleOutcome(Logic.BattleOutcome outcome) => LastBattleOutcome = outcome;
 
         /// <summary>
         /// 状态即将切换时触发（切换前调用旧状态的 OnExit）
@@ -85,10 +89,13 @@ namespace Fida
                     break;
                 case State.Paused:        _uiManager.BuildPauseMenu(); break;
                 case State.GameOver:
-                    if (GameSetup.LastBattleWasOnlineDuel)
-                        _uiManager.BuildDuelResult(GameSetup.LastBattleWon, GameSetup.LastBattleMessage);
-                    else
-                        _uiManager.BuildCampaignResult(GameSetup.LastBattleWon, GameSetup.LastBattleMessage);
+                    if (LastBattleOutcome is { } outcome)
+                    {
+                        if (outcome.WasOnlineDuel)
+                            _uiManager.BuildDuelResult(outcome.Won, outcome.Message);
+                        else
+                            _uiManager.BuildCampaignResult(outcome.Won, outcome.Message);
+                    }
                     break;
                 case State.OnlineMenu:    _uiManager.BuildOnlineMenu(_networkManager.IsConnected); break;
                 case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText, _networkManager.HostRoomCode); break;

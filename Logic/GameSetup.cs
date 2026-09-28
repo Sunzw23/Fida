@@ -19,10 +19,6 @@ namespace Fida.Logic
 
         public static IReadOnlyCollection<SkillType> SelectedLocalSkills => SelectedSkills;
 
-        public static bool LastBattleWon { get; set; }
-        public static string LastBattleMessage { get; set; } = "";
-        public static bool LastBattleWasOnlineDuel { get; set; }
-
         /// <summary>当前选择的场景名（默认 DefaultScene）。</summary>
         public static string SelectedSceneName { get; set; } = "DefaultScene";
 

@@ -76,10 +76,8 @@ namespace Fida
                 resultMessage = "Partner disconnected. This node was not cleared.";
             }
             if (won && (localBattle || onlineCampaign))
-                CampaignRuntime.Complete(GameSetup.SelectedNode, online: onlineCampaign);
-            GameSetup.LastBattleWon = won;
-            GameSetup.LastBattleMessage = resultMessage;
-            GameSetup.LastBattleWasOnlineDuel = onlineDuel;
+                CampaignRuntime.Complete(GameSetup.SelectedNode, onlineCampaign ? CampaignRuntime.Online : CampaignRuntime.Local);
+            _stateMachine.SetLastBattleOutcome(new Logic.BattleOutcome(won, resultMessage, onlineDuel));
             _disconnectForfeitPending = false;
             _campaignDisconnectPending = false;
             _playingSceneManager.IsInitialized = false;

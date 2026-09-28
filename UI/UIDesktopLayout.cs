@@ -14,6 +14,12 @@ namespace Fida.UI
         public static float Scale(int width, int height) => System.Math.Max(0.01f,
             System.Math.Min(width / (float)DesignWidth, height / (float)DesignHeight));
 
+#if FIDA_ANDROID
+        public static float LayoutScale(Viewport viewport) => 1f;
+#else
+        public static float LayoutScale(Viewport viewport) => Scale(viewport);
+#endif
+
         public static Vector2 MapPoint(Vector2 point, Viewport viewport)
             => MapPoint(point, viewport.Width, viewport.Height);
 

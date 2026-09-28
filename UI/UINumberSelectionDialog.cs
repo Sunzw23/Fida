@@ -115,19 +115,9 @@ namespace Fida.UI
         {
             if (!IsVisible) return;
             var viewport = _graphicsDevice.Viewport;
-            sb.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height),
-                UITheme.Vignette * 0.78f);
-
             Rectangle panel = GetPanelBounds();
- #if FIDA_ANDROID
-            const float uiScale = 1f;
-#else
-            float uiScale = UIDesktopLayout.Scale(viewport);
-#endif
-            sb.Draw(_pixel, panel, UITheme.PanelLight);
-            UIUtils.DrawEngravedFrame(sb, panel, _pixel, UITheme.GoldBright,
-                UITheme.Ink, UIConfig.ScaleDesktopMetric(4), UIConfig.ScaleDesktopMetric(10),
-                UIConfig.ScaleDesktopMetric(28));
+            UIUtils.DrawModalShell(sb, _pixel, panel, viewport);
+            float uiScale = UIDesktopLayout.LayoutScale(viewport);
 
             DrawCentered(sb, "CHOOSE A NUMBER", panel.Center.X,
                 panel.Y + UIConfig.ScaleDesktopMetric(50), UITheme.Ink, 0.76f * uiScale,
@@ -159,14 +149,8 @@ namespace Fida.UI
         private void DrawCentered(SpriteBatch sb, string text, float centerX, float centerY,
             Color color, float preferredScale, float maxWidth)
         {
-            string display = UIFontGuard.Sanitize(_font, text);
-            Vector2 size = _font.MeasureString(display);
-            float scale = size.X <= 0f ? preferredScale
-                : System.Math.Min(preferredScale, maxWidth / size.X);
-            sb.DrawString(_font, display,
-                new Vector2(centerX - size.X * scale / 2f,
-                    centerY - size.Y * scale / 2f),
-                color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            UIUtils.DrawCenteredFit(sb, _font, text, new Vector2(centerX, centerY),
+                maxWidth, preferredScale, color);
         }
     }
 }

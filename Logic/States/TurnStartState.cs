@@ -34,19 +34,7 @@ namespace Fida.Logic
             // 整条回合主流程倒序入栈。
             GameManager.StateStack.Push(new ChooseNumberIndexState(GameManager, SourcePlayerId));
 
-            var triggeredStates = new List<GameState>();
-            foreach (var skill in SourcePlayer.Skills)
-            {
-                if (skill.Trigger == SkillTrigger.TurnStart && skill.CanUse(GameManager, SourcePlayer))
-                {
-                    var playerId = SourcePlayer.PlayerId;
-                    var state = skill.CreateState(GameManager, new SkillContext(playerId));
-                    if (state != null)
-                    {
-                        triggeredStates.Add(state);
-                    }
-                }
-            }
+            var triggeredStates = SourcePlayer.CollectTriggeredStates(GameManager, new SkillContext(SourcePlayer.PlayerId), SkillTrigger.TurnStart).ToList();
 
             GameManager.PushStatesInOrder(triggeredStates);
 

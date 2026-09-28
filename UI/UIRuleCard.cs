@@ -37,11 +37,7 @@ namespace Fida.UI
         {
             if (!IsVisible) return;
 
-#if FIDA_ANDROID
-            float scale = 1f;
-#else
-            float scale = UIDesktopLayout.Scale(spriteBatch.GraphicsDevice.Viewport);
-#endif
+            float scale = UIDesktopLayout.LayoutScale(spriteBatch.GraphicsDevice.Viewport);
             spriteBatch.Draw(_pixel, _bounds, UITheme.PanelLight);
             spriteBatch.Draw(_pixel,
                 new Rectangle(_bounds.Left, _bounds.Top, Math.Max(4, (int)(5 * scale)), _bounds.Height),

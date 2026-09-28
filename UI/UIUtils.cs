@@ -46,6 +46,40 @@ namespace Fida.UI
                 System.Math.Max(3, outerWidth + 1)), innerColor);
         }
 
+        /// <summary>
+        /// Measures text and draws it centered on <paramref name="center"/>,
+        /// shrinking from <paramref name="preferredScale"/> until it fits
+        /// <paramref name="maxWidth"/>. When <paramref name="minScale"/> is
+        /// greater than zero the scale never drops below it.
+        /// </summary>
+        public static void DrawCenteredFit(SpriteBatch batch, SpriteFont font, string text, Vector2 center,
+            float maxWidth, float preferredScale, Color color, float minScale = 0f)
+        {
+            string safe = UIFontGuard.Sanitize(font, text);
+            Vector2 size = font.MeasureString(safe);
+            if (size.X <= 0f) return;
+            float scale = System.Math.Min(preferredScale, maxWidth / size.X);
+            if (minScale > 0f) scale = System.Math.Max(minScale, scale);
+            batch.DrawString(font, safe, center - size * scale / 2f, color,
+                0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+        }
+
+        /// <summary>
+        /// Draws the shared modal backdrop used by the decision dialogs: a
+        /// full-viewport vignette, the panel fill, the engraved frame, and
+        /// the gold header divider.
+        /// </summary>
+        public static void DrawModalShell(SpriteBatch sb, Texture2D pixel, Rectangle panel, Viewport viewport)
+        {
+            sb.Draw(pixel, new Rectangle(0, 0, viewport.Width, viewport.Height), UITheme.Vignette * 0.78f);
+            sb.Draw(pixel, panel, UITheme.PanelLight);
+            DrawEngravedFrame(sb, panel, pixel, UITheme.GoldBright, UITheme.Ink,
+                UIConfig.ScaleDesktopMetric(4), UIConfig.ScaleDesktopMetric(10), UIConfig.ScaleDesktopMetric(28));
+            sb.Draw(pixel, new Rectangle(panel.X + UIConfig.ScaleDesktopMetric(80),
+                panel.Y + UIConfig.ScaleDesktopMetric(86),
+                panel.Width - UIConfig.ScaleDesktopMetric(160), UIConfig.ScaleDesktopMetric(2)), UITheme.Gold);
+        }
+
         private static void DrawCorner(SpriteBatch sb, int x, int y, int dx, int dy,
             int length, int width, Color color, Texture2D pixel)
         {

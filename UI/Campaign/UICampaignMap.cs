@@ -958,19 +958,15 @@ namespace Fida.UI.Campaign
         private void DrawCentered(SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 center,
             float maximumWidth, float preferredScale, Color color)
         {
-            text = UIFontGuard.Sanitize(font, text);
-            Vector2 measured = font.MeasureString(text);
-            if (measured.X <= 0f) return;
-            float scale = Math.Min(preferredScale, maximumWidth / measured.X);
-#if FIDA_ANDROID
+            #if FIDA_ANDROID
             // Mobile copy is deliberately shortened or wrapped; never trade
             // legibility away just to squeeze an exceptional string onto one line.
-            scale = Math.Max(0.30f, scale);
-#else
-            scale = Math.Max(0.16f, scale);
-#endif
-            spriteBatch.DrawString(font, text, center - measured * scale / 2f, color, 0f,
-                Vector2.Zero, scale, SpriteEffects.None, 0f);
+            const float floor = 0.30f;
+            #else
+            const float floor = 0.16f;
+            #endif
+            UIUtils.DrawCenteredFit(spriteBatch, font, text, center, maximumWidth,
+                preferredScale, color, floor);
         }
 
         private void MoveSelection(Vector2 direction)
