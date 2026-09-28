@@ -20,6 +20,8 @@ namespace Fida.Campaign
                 [SkillType.Mo] = 3,
                 [SkillType.Xian] = 3,
                 [SkillType.Shen] = 3,
+                [SkillType.Seng] = 2,
+                [SkillType.Dao] = 2,
                 [SkillType.Di] = 3,
                 [SkillType.Bian] = 5,
                 [SkillType.Long] = 5,
@@ -45,8 +47,12 @@ namespace Fida.Campaign
             (candidate == SkillType.Bian && Contains(selected, SkillType.Long)) ||
             (candidate == SkillType.SuperGod && Contains(selected, SkillType.Shen)) ||
             (candidate == SkillType.Shen && Contains(selected, SkillType.SuperGod)) ||
+            (candidate == SkillType.Shen && Contains(selected, SkillType.Seng)) ||
+            (candidate == SkillType.Seng && Contains(selected, SkillType.Shen)) ||
             (candidate == SkillType.SuperImmortal && Contains(selected, SkillType.Xian)) ||
             (candidate == SkillType.Xian && Contains(selected, SkillType.SuperImmortal)) ||
+            (candidate == SkillType.Xian && Contains(selected, SkillType.Dao)) ||
+            (candidate == SkillType.Dao && Contains(selected, SkillType.Xian)) ||
             (candidate == SkillType.SuperEmperor && Contains(selected, SkillType.Di)) ||
             (candidate == SkillType.Di && Contains(selected, SkillType.SuperEmperor));
 

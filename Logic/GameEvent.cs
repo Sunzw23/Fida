@@ -11,6 +11,14 @@ namespace Fida.Logic
         DecideApply,
         ChooseNumber,
         None,
+        SkipTurn,
+    }
+
+    public enum GameActionOrigin
+    {
+        LocalInput,
+        Automated,
+        RemoteNetwork
     }
 
     // 动作结构

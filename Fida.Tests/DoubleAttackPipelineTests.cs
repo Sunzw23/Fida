@@ -21,9 +21,9 @@ public class DoubleAttackPipelineTests
     }
 
     [Fact]
-    public void TransformResolvesBeforeDoubleAttack_SoMultiplierIsNotOverwritten()
+    public void AttackModifiersResolveInLoadoutOrder()
     {
-        // Deliberately store Double Attack first: resolution must not depend on list order.
+        // Transform is selected second and therefore replaces the doubled damage.
         var source = new Player(0, "Source", 11,
             [new DoubleAttackSkill(), new BianSkill()]);
         var target = new Player(1, "Target", 11, []);
@@ -31,17 +31,17 @@ public class DoubleAttackPipelineTests
         var context = new SkillContext(source.PlayerId, damage: 2, numbers: [1, 6]);
 
         game.TransitionTo(new OrderingAttackState(game, context));
-        Assert.IsType<BianSkillState>(game.CurrentState);
-        game.UpdateGame(new GameAction(ActionType.ChooseNumber) { Number = 5 });
         Assert.IsType<DoubleAttackSkillState>(game.CurrentState);
         ApplyCurrentDecision(game, source.PlayerId);
+        Assert.IsType<BianSkillState>(game.CurrentState);
+        game.UpdateGame(new GameAction(ActionType.ChooseNumber) { Number = 5 });
 
         var selection = Assert.IsType<TargetSelectionState>(game.CurrentState);
-        Assert.Equal(10, selection.DamageValue);
+        Assert.Equal(5, selection.DamageValue);
     }
 
     [Fact]
-    public void AdditiveModifierResolvesBeforeDoubleAttack()
+    public void DoubleAttackThenAdditiveModifierFollowLoadoutOrder()
     {
         var source = new Player(0, "Source", 11,
             [new DoubleAttackSkill(), new PlusAttackSkill()]);
@@ -50,13 +50,13 @@ public class DoubleAttackPipelineTests
         var context = new SkillContext(source.PlayerId, damage: 2, numbers: [1, 6]);
 
         game.TransitionTo(new OrderingAttackState(game, context));
-        Assert.IsType<PlusAttackSkillState>(game.CurrentState);
-        ApplyCurrentDecision(game, source.PlayerId);
         Assert.IsType<DoubleAttackSkillState>(game.CurrentState);
+        ApplyCurrentDecision(game, source.PlayerId);
+        Assert.IsType<PlusAttackSkillState>(game.CurrentState);
         ApplyCurrentDecision(game, source.PlayerId);
 
         var selection = Assert.IsType<TargetSelectionState>(game.CurrentState);
-        Assert.Equal(6, selection.DamageValue);
+        Assert.Equal(5, selection.DamageValue);
     }
 
     private static GameManager CreateGame(Player source, Player target)

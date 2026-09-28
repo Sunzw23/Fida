@@ -26,13 +26,14 @@ public class BattleSnapshotTests
             new Group(1, "Enemies", [enemy])
         ]);
 
-        var captured = BattleSnapshot.Capture(game, "session-42", "node-a1");
+        var captured = BattleSnapshot.Capture(game, "session-42", "node-a1", campaignRound: 3);
         captured.JoiningPlayerId = 3;
         captured.BattleOwnerPlayerId = 0;
         var snapshot = BattleSnapshot.Deserialize(captured.Serialize());
 
         Assert.Equal("session-42", snapshot.SessionId);
         Assert.Equal("node-a1", snapshot.NodeId);
+        Assert.Equal(3, snapshot.CampaignRound);
         Assert.Equal(0, snapshot.CurrentPlayerId);
         Assert.Equal(3, snapshot.JoiningPlayerId);
         Assert.Equal(0, snapshot.BattleOwnerPlayerId);

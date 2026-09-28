@@ -168,4 +168,23 @@ public class PlayerTests
         Assert.Single(defending);
         Assert.Same(defence, defending[0]);
     }
+
+    [Fact]
+    public void GetSkillsByTrigger_PreservesLoadoutOrderForAttackModifiers()
+    {
+        var loadedSkills = new Skill[]
+        {
+            new DoubleAttackSkill(),
+            new LongSkill(),
+            new PlusAttackSkill()
+        };
+        var player = new Player(0, "alice");
+        player.Skills.AddRange(loadedSkills);
+
+        var actual = new List<Skill>();
+        var matching = player.GetSkillsByTrigger(SkillTrigger.OrderingAttack);
+        while (matching.MoveNext()) actual.Add(matching.Current);
+
+        Assert.Equal(loadedSkills, actual);
+    }
 }

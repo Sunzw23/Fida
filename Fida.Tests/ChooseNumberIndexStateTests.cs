@@ -22,6 +22,23 @@ public class ChooseNumberIndexStateTests
         typeof(ChooseNumberIndexState).GetMethod("Execute", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ChooseNumberIndexState.Execute 未找到");
 
+    [Fact]
+    public void ReissueCurrentAction_RebroadcastsPendingNumberChoice()
+    {
+        var game = new GameManager();
+        game.Initialize([MakePlayer(0, "Ally", 1, 2), MakePlayer(1, "Enemy", 3, 4)]);
+        game.TransitionTo(new ChooseNumberIndexState(game, 1));
+        PlayerActionRequiredEventArgs? latest = null;
+        game.PlayerActionRequired += (_, args) => latest = args;
+
+        game.ReissueCurrentAction();
+
+        Assert.NotNull(latest);
+        Assert.Equal(ActionType.ChooseNumberIndex, latest.RequiredActionType);
+        Assert.Equal(1, latest.SourcePlayerId);
+        Assert.Equal(new[] { 1 }, latest.ValidTargets);
+    }
+
     private static Player MakePlayer(int id, string name, int n0, int n1)
     {
         var p = new Player(id, name);

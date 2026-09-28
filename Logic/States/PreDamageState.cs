@@ -74,6 +74,7 @@ namespace Fida.Logic
             var attacker = GameManager.Players.FirstOrDefault(p => p.PlayerId == _attackerId);
 
             // Damaging 技能（攻击者）
+            var attackerStates = new List<GameState>();
             if (attacker != null)
             {
                 foreach (var skill in attacker.Skills)
@@ -82,23 +83,24 @@ namespace Fida.Logic
                     {
                         var state = skill.CreateState(GameManager, _ctx.Derive(attacker.PlayerId));
                         if (state != null)
-                            GameManager.StateStack.Push(state);
+                            attackerStates.Add(state);
                     }
                 }
             }
+            GameManager.PushStatesInOrder(attackerStates);
 
             // Damaged 技能（目标玩家）
+            var targetStates = new List<GameState>();
             foreach (var skill in targetPlayer.Skills)
             {
                 if (skill.Trigger == SkillTrigger.Damaged && skill.CanUse(GameManager, targetPlayer))
                 {
                     var state = skill.CreateState(GameManager, _ctx.Derive(targetPlayer.PlayerId));
                     if (state != null)
-                        GameManager.StateStack.Push(state);
+                        targetStates.Add(state);
                 }
             }
-
-
+            GameManager.PushStatesInOrder(targetStates);
 
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }

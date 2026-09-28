@@ -34,6 +34,7 @@ namespace Fida.Logic
             // 整条回合主流程倒序入栈。
             GameManager.StateStack.Push(new ChooseNumberIndexState(GameManager, SourcePlayerId));
 
+            var triggeredStates = new List<GameState>();
             foreach (var skill in SourcePlayer.Skills)
             {
                 if (skill.Trigger == SkillTrigger.TurnStart && skill.CanUse(GameManager, SourcePlayer))
@@ -42,10 +43,12 @@ namespace Fida.Logic
                     var state = skill.CreateState(GameManager, new SkillContext(playerId));
                     if (state != null)
                     {
-                        GameManager.StateStack.Push(state);
+                        triggeredStates.Add(state);
                     }
                 }
             }
+
+            GameManager.PushStatesInOrder(triggeredStates);
 
 
             // 所有回合开始技能检查完毕，进入选择数字阶段

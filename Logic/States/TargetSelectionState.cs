@@ -57,6 +57,8 @@ namespace Fida.Logic
 
             if (_ctx.Damage > 0)
             {
+                // Resolve post-attack skills only after damage, shields, and reactions finish.
+                GameManager.StateStack.Push(new AttackCompletedState(GameManager, SourcePlayerId));
                 GameManager.TransitionTo(new DamagingState(GameManager, _ctx));
             }
             else

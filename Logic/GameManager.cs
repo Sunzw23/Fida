@@ -20,6 +20,7 @@ namespace Fida.Logic
         public event EventHandler<NumberOperationEventArgs> NumberOperationResolved;
         public event EventHandler<EffectNumbersConsumedEventArgs> EffectNumbersConsumed;
         public event EventHandler<CardActionEventArgs> CardActionStarted;
+        public event Action<GameAction, GameActionOrigin> ActionSubmitted;
         /// <summary>
         /// 游戏状态变化事件 - 当 GameState 发生变化时触发，用于通知 UI 层刷新按钮状态
         /// </summary>
@@ -143,11 +144,20 @@ namespace Fida.Logic
         /// <summary>
         /// 主游戏循环，将逻辑委托给当前状态
         /// </summary>
-        public void UpdateGame(GameAction action)
+        public void UpdateGame(GameAction action, GameActionOrigin origin = GameActionOrigin.LocalInput)
         {
             if (IsGameEnded) return;
             if (CheckGameEnd()) return;
 
+            if (action.Type == ActionType.SkipTurn)
+            {
+                if (Players.Count == 0 || action.TargetPlayerId != GetCurrentPlayer().PlayerId) return;
+                ActionSubmitted?.Invoke(action, origin);
+                SkipCurrentTurn();
+                return;
+            }
+
+            ActionSubmitted?.Invoke(action, origin);
             _currentState?.Handle(action);
 
             if (CheckGameEnd()) return;
@@ -171,6 +181,19 @@ namespace Fida.Logic
         public void PushState(GameState state)
         {
             StateStack.Push(state);
+        }
+
+        /// <summary>
+        /// Push states so they are popped in the supplied order. StateStack is LIFO,
+        /// while simultaneous skills must resolve in the player's loadout order.
+        /// </summary>
+        public void PushStatesInOrder(IEnumerable<GameState> states)
+        {
+            var ordered = states.ToList();
+            for (int i = ordered.Count - 1; i >= 0; i--)
+            {
+                StateStack.Push(ordered[i]);
+            }
         }
 
         /// <summary>
@@ -221,6 +244,13 @@ namespace Fida.Logic
             if (IsGameEnded || Players.Count == 0) return;
             StateStack.Clear();
             TransitionTo(new PlayerTurnEndState(this, GetCurrentPlayer().PlayerId));
+        }
+
+        /// <summary>Rechecks victory and asks the active state to prompt its new controller.</summary>
+        public void ReissueCurrentAction()
+        {
+            if (IsGameEnded || CheckGameEnd()) return;
+            _currentState?.ReissueCurrentAction();
         }
 
         /// <summary>Delays terminal evaluation until an action presentation completes.</summary>

@@ -1,6 +1,6 @@
 {
   "rules": "Rules:\n 1. Several players take turns in order.\n 2. On your turn, first pick one of your two numbers,\n then pick another number of yours or of any player,\n and add it onto the first number.\n 3. After a number changes, the combination is checked for effects:\n 7 => -1 \n 8 => -1 \n 9 => +1 \n 1-6 => -2 \n 5-5 => -3 \n 6-6 => -5 \n 0 => gain a shield (blocks one attack)\n 0-0 => +5\n\nThe game ends when a player's health reaches exactly zero.\nGood luck.",
-    "skills": "       Skill list\n1. Double Attack: your attack damage is doubled.\n2. Double Defense: damage you take is halved.\n3. Triple Health: your max health triples.\n4. God: after taking damage, change one number.\n5. Immortal: after attacking, change one number.\n6. Demon: when attacked, return half the damage to any opponent.\n7. Blood: after your attack deals damage, heal for that much.\n8. Same: at the start of a turn, apply one result to both numbers.\n9. Emperor: at the start of your turn, change one number.\n10. Stone: only the first incoming attack each turn can deal damage.\n11. Transform: when attacking, choose damage from 1 to 5.\n12. Dragon: use the sum of your two numbers as damage.\n",
+    "skills": "       Skill list\n1. Double Attack: your attack damage is doubled.\n2. Double Defense: damage you take is halved.\n3. Triple Health: your max health triples.\n4. God: after taking damage, change one number.\n5. Immortal: after attacking, change one number.\n6. Seng: after being attacked, take one extra normal number-addition action per turn.\n7. Dao: after attacking, take one extra normal number-addition action per turn.\n8. Demon: when attacked, return half the damage to any opponent.\n9. Blood: after your attack deals damage, heal for that much.\n10. Same: at the start of a turn, apply one result to both numbers.\n11. Emperor: at the start of your turn, change one number.\n12. Stone: only the first incoming attack each turn can deal damage.\n13. Transform: when attacking, choose damage from 1 to 5.\n14. Dragon: use the sum of your numbers as damage.\n",
   "skillNames": {
     "PlusAttack": "Attack Up",
     "PlusDefence": "Defense Up",
@@ -10,6 +10,8 @@
     "TripleHealth": "Triple Health",
     "Shen": "God",
     "Xian": "Immortal",
+    "Seng": "Seng",
+    "Dao": "Dao",
     "Mo": "Demon",
     "Gui": "Ghost",
     "Xue": "Blood",

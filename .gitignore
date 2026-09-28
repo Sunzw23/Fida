@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Debug screenshots
+/Fida-original.png
+/screenshot-menu.png

@@ -102,6 +102,19 @@ namespace Fida.Logic
             BroadcastCurrentStep();
         }
 
+        /// <summary>Re-dispatches the current unresolved prompt after controller ownership changes.</summary>
+        internal void ReissueCurrentAction()
+        {
+            if (!CanActorAct())
+            {
+                GameManager.TransitionTo(new HandleStackState(GameManager));
+                return;
+            }
+
+            if (StepIndex < Steps.Count)
+                BroadcastCurrentStep();
+        }
+
         protected virtual void BuildSteps() { }
 
         protected virtual bool ValidateStep(ActionStep step, GameAction action) => true;

@@ -18,7 +18,6 @@ namespace Fida.Logic
         public int Healing { get; set; }
         public int[] Numbers { get; init; }
         public IEnumerator<Skill> SkillEnumerator { get; set; }
-        public bool OrderedAttackSkillsQueued { get; set; }
 
         public SkillContext(int sourcePlayerId)
         {
@@ -47,7 +46,6 @@ namespace Fida.Logic
                 Damage = this.Damage,
                 Healing = this.Healing,
                 SkillEnumerator = this.SkillEnumerator,
-                OrderedAttackSkillsQueued = this.OrderedAttackSkillsQueued,
             };
         }
 
@@ -66,7 +64,8 @@ namespace Fida.Logic
         OrderedAttack,
         Defending,
         Damaging,
-        Damaged
+        Damaged,
+        AttackCompleted
     }
 
     public enum SkillType
@@ -91,6 +90,8 @@ namespace Fida.Logic
         SuperGod,
         SuperImmortal,
         SuperEmperor,
+        Seng,
+        Dao,
 
     }
 

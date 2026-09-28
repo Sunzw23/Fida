@@ -23,6 +23,7 @@ namespace Fida.Logic
             var firstPlayer = GameManager.Players[GameManager.CurrentPlayerIndex];
             GameManager.StateStack.Push(new TurnStartState(GameManager, firstPlayer.PlayerId));
 
+            var triggeredStates = new List<GameState>();
             foreach (var player in GameManager.Players)
             {
                 foreach (var skill in player.Skills)
@@ -33,11 +34,13 @@ namespace Fida.Logic
                         var state = skill.CreateState(GameManager, new SkillContext(playerId));
                         if (state != null)
                         {
-                            GameManager.StateStack.Push(state);
+                            triggeredStates.Add(state);
                         }
                     }
                 }
             }
+
+            GameManager.PushStatesInOrder(triggeredStates);
 
 
             GameManager.TransitionTo(new HandleStackState(GameManager));

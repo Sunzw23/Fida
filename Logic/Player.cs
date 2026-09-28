@@ -25,23 +25,9 @@ namespace Fida.Logic
 
         public IEnumerator<Skill> GetSkillsByTrigger(SkillTrigger trigger)
         {
-            var matching = Skills.Where(skill => skill.Trigger == trigger);
-            if (trigger == SkillTrigger.OrderingAttack)
-                matching = matching.OrderBy(AttackModifierPriority);
-            return matching.GetEnumerator();
+            // Skills are evaluated in the order they appear in the player's loadout.
+            return Skills.Where(skill => skill.Trigger == trigger).GetEnumerator();
         }
-
-        /// <summary>
-        /// Damage replacement must resolve before additive and multiplicative modifiers;
-        /// otherwise Dragon/Transform overwrite Double Attack and make it appear broken.
-        /// </summary>
-        private static int AttackModifierPriority(Skill skill) => skill.Type switch
-        {
-            SkillType.Long or SkillType.Bian => 0,
-            SkillType.PlusAttack => 1,
-            SkillType.DoubleAttack => 2,
-            _ => 1
-        };
 
 
         public int MaxHealth { get; set; } = 11; // 生命值上限

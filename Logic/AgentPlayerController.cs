@@ -20,7 +20,7 @@ namespace Fida.Logic
         public void RequestAction(GameManager game, PlayerActionRequiredEventArgs args)
         {
             var agentAction = _agentManager.GetAgentAction(game, PlayerId);
-            game.UpdateGame(agentAction);
+            game.UpdateGame(agentAction, GameActionOrigin.Automated);
         }
     }
 }
