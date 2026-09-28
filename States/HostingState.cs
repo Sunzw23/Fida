@@ -35,20 +35,27 @@ namespace Fida.States
             if (code != _lastShownCode)
             {
                 _lastShownCode = code;
+#if FIDA_ANDROID
                 _uiManager.GetLabelByName("roomCodeLabel")?.Update(
-                    code.Length == 4 ? $"Room: {code}" : "Room: generating...");
+                    code.Length == 4 ? $"ROOM: {code}" : "ROOM: GENERATING...");
+#else
+                _uiManager.GetLabelByName("roomCodeLabel")?.Update(
+                    code.Length == 4 ? code : "····");
+#endif
             }
 
             if (_networkManager.StatusText != _lastShownStatus)
             {
                 _lastShownStatus = _networkManager.StatusText;
-                string status = string.IsNullOrWhiteSpace(_lastShownStatus)
-                    ? "Waiting for player"
-                    : _lastShownStatus;
+                string[] statusLines = (_lastShownStatus ?? string.Empty)
+                    .Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
+                string status = statusLines.Length > 0 ? statusLines[0] : "WAITING FOR OPPONENT";
+                string address = statusLines.Length > 1 ? statusLines[1].ToUpperInvariant() : string.Empty;
 #if FIDA_ANDROID
                 status = status.ToUpperInvariant();
 #endif
                 _uiManager.GetLabelByName("statusLabel")?.Update(status);
+                _uiManager.GetLabelByName("addressLabel")?.Update(address);
             }
 
             if (_networkManager.CheckHostConnection())

@@ -246,9 +246,10 @@ namespace Fida.UI.Campaign
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
             {
-                DrawConnections(spriteBatch);
-                foreach (int i in _visibleNodes) DrawNode(spriteBatch, i);
+            DrawConnections(spriteBatch);
+            foreach (int i in _visibleNodes) DrawNode(spriteBatch, i);
             }
+            DrawRemotePresence(spriteBatch, viewport);
             DrawFooter(spriteBatch);
             if (_desktopDetailsOpen && _selectedIndex >= 0)
                 DrawDesktopMissionModal(spriteBatch, _nodes[_selectedIndex]);
@@ -338,6 +339,7 @@ namespace Fida.UI.Campaign
                 new Vector2(safe.Center.X, safe.Top + 32f), safe.Width - 150f,
                 0.60f, UITheme.Ink);
             DrawBackIcon(spriteBatch, _mobileBackBounds);
+            DrawRemotePresence(spriteBatch, panel);
 
             spriteBatch.Draw(_pixel, panel, UITheme.Panel);
             UIUtils.DrawGlowFrame(spriteBatch, panel, _pixel, UITheme.Gold, 2, 0.72f);
@@ -442,15 +444,7 @@ namespace Fida.UI.Campaign
 
         private void DrawBackIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, UITheme.AccentBlue, 2, 0.48f);
-            Vector2 tip = new(bounds.Left + 15, bounds.Center.Y);
-            Vector2 tail = new(bounds.Right - 13, bounds.Center.Y);
-            DrawLine(spriteBatch, tip, tail, UITheme.Ink, 3);
-            DrawLine(spriteBatch, tip, new Vector2(bounds.Left + 27, bounds.Top + 14),
-                UITheme.Ink, 3);
-            DrawLine(spriteBatch, tip, new Vector2(bounds.Left + 27, bounds.Bottom - 14),
-                UITheme.Ink, 3);
+            UIIconButton.DrawBackButton(spriteBatch, _pixel, bounds);
         }
 
         private void DrawChevron(SpriteBatch spriteBatch, Vector2 center, Color color)
@@ -461,12 +455,7 @@ namespace Fida.UI.Campaign
 
         private void DrawCloseIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.AccentBlue, 1, _pixel);
-            DrawLine(spriteBatch, new Vector2(bounds.Left + 14, bounds.Top + 14),
-                new Vector2(bounds.Right - 14, bounds.Bottom - 14), UITheme.Ink, 3);
-            DrawLine(spriteBatch, new Vector2(bounds.Right - 14, bounds.Top + 14),
-                new Vector2(bounds.Left + 14, bounds.Bottom - 14), UITheme.Ink, 3);
+            UIIconButton.DrawCloseButton(spriteBatch, _pixel, bounds);
         }
 
         private void DrawMobileStructure(SpriteBatch spriteBatch, Rectangle panel)
@@ -750,16 +739,39 @@ namespace Fida.UI.Campaign
                 MathHelper.Clamp((selected ? 0.42f : 0.48f) * _camera.Zoom, 0.30f, 0.64f),
                 foreground);
 
-            if (string.Equals(RemoteNodeId, node.Id, StringComparison.OrdinalIgnoreCase))
-            {
-                int tagWidth = Math.Min(bounds.Width - 16, Math.Max(104, bounds.Width / 2));
-                int tagHeight = Math.Max(20, bounds.Height / 3);
-                var tag = new Rectangle(bounds.Right - tagWidth - 6, bounds.Top + 4, tagWidth, tagHeight);
-                spriteBatch.Draw(_pixel, tag, UITheme.PanelDark);
-                UIUtils.DrawRectangleOutlines(spriteBatch, tag, UITheme.AccentGreen, 1, _pixel);
-                DrawCentered(spriteBatch, _font, RemoteStatusLabel, tag.Center.ToVector2(),
-                    tag.Width - 8, 0.28f, UITheme.AccentGreen);
-            }
+        }
+
+        /// <summary>
+        /// Keep the remote player's presence anchored to the screen instead of attaching
+        /// it to a campaign node (which moves as the map is panned or zoomed).
+        /// </summary>
+        private void DrawRemotePresence(SpriteBatch spriteBatch, Rectangle anchorArea)
+        {
+            if (string.IsNullOrWhiteSpace(RemoteStatusLabel)) return;
+
+            bool mobile =
+#if FIDA_ANDROID
+                true;
+#else
+                false;
+#endif
+            int width = Math.Clamp(anchorArea.Width / (mobile ? 2 : 4), mobile ? 196 : 260,
+                mobile ? 300 : 380);
+            width = Math.Min(width, Math.Max(1, anchorArea.Width - 24));
+            int height = mobile ? 54 : 50;
+            int inset = mobile ? 12 : 18;
+            var badge = new Rectangle(anchorArea.Right - width - inset,
+                anchorArea.Top + (mobile ? 12 : 18), width, height);
+
+            spriteBatch.Draw(_pixel, badge, UITheme.PanelDark * 0.96f);
+            UIUtils.DrawRectangleOutlines(spriteBatch, badge, UITheme.AccentGreen, 1, _pixel);
+            spriteBatch.Draw(_pixel, new Rectangle(badge.Left, badge.Top, 4, badge.Height),
+                UITheme.AccentGreen);
+
+            string node = string.IsNullOrWhiteSpace(RemoteNodeId) ? "—" : RemoteNodeId;
+            string label = $"ALLY  ·  {RemoteStatusLabel.Replace("ALLY · ", "", StringComparison.OrdinalIgnoreCase)}  ·  {node}";
+            DrawCentered(spriteBatch, _font, label, badge.Center.ToVector2(), badge.Width - 18,
+                mobile ? 0.42f : 0.37f, UITheme.AccentGreen);
         }
 
         private void DrawNodeStateMark(SpriteBatch spriteBatch, Rectangle bounds,
@@ -816,15 +828,18 @@ namespace Fida.UI.Campaign
                     : _selectedIndex >= 0 && _visibleNodes.Contains(_selectedIndex)
                         ? $"{_nodes[_selectedIndex].Id}  {_nodes[_selectedIndex].Name}"
                         : _scope.LastOrDefault() ?? "Campaign";
-#if FIDA_ANDROID
                 DrawCentered(spriteBatch, _font, detail,
-                    new Vector2(viewport.Width / 2f, viewport.Height - 122f),
+                    new Vector2(viewport.Width / 2f,
+#if FIDA_ANDROID
+                        viewport.Height - 122f
+#else
+                        viewport.Height - ScaleDesktop(46, DesktopControlScale(viewport))
+#endif
+                    ),
+#if FIDA_ANDROID
                     viewport.Width - 56f, 0.46f, UITheme.PanelLight);
 #else
-                float centerX = (_visibleNodes.Count > 0 ? plus.Right + back.Left : viewport.Width / 2f * 2f) / 2f;
-                float width = _visibleNodes.Count > 0 ? Math.Max(120f, back.Left - plus.Right - 35f) : viewport.Width - 180f;
-                DrawCentered(spriteBatch, _font, detail,
-                    new Vector2(centerX, back.Center.Y), width, 0.40f, UITheme.Ink);
+                    viewport.Width - plus.Right - 80f, 0.40f, UITheme.Ink);
 #endif
             }
         }
@@ -887,12 +902,7 @@ namespace Fida.UI.Campaign
                 enter.Center.ToVector2(), enter.Width - 30, buttonScale,
                 unlocked ? UITheme.Ink : UITheme.InkMuted);
             Rectangle close = DesktopModalClose(modal);
-            spriteBatch.Draw(_pixel, close, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, close, UITheme.AccentBlue, 1, _pixel);
-            DrawLine(spriteBatch, new Vector2(close.Left + 12, close.Top + 12),
-                new Vector2(close.Right - 12, close.Bottom - 12), UITheme.Ink, 2);
-            DrawLine(spriteBatch, new Vector2(close.Right - 12, close.Top + 12),
-                new Vector2(close.Left + 12, close.Bottom - 12), UITheme.Ink, 2);
+            UIIconButton.DrawCloseButton(spriteBatch, _pixel, close);
         }
 
         private void DrawLeft(SpriteBatch spriteBatch, SpriteFont font, string value,
@@ -909,12 +919,7 @@ namespace Fida.UI.Campaign
 
         private void DrawBackIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.Gold, 2, _pixel);
-            Vector2 tip = new(bounds.Left + 13, bounds.Center.Y);
-            DrawLine(spriteBatch, tip, new Vector2(bounds.Right - 11, bounds.Center.Y), UITheme.Ink, 2);
-            DrawLine(spriteBatch, tip, new Vector2(bounds.Left + 25, bounds.Top + 12), UITheme.Ink, 2);
-            DrawLine(spriteBatch, tip, new Vector2(bounds.Left + 25, bounds.Bottom - 12), UITheme.Ink, 2);
+            UIIconButton.DrawBackButton(spriteBatch, _pixel, bounds);
         }
 #endif
 
@@ -1215,19 +1220,11 @@ namespace Fida.UI.Campaign
 #endif
         }
 
-        private static Rectangle BackButton(Viewport viewport)
+        private Rectangle BackButton(Viewport viewport)
         {
-#if FIDA_ANDROID
-            int left = Math.Min(340, Math.Max(28, viewport.Width / 3));
-            return new Rectangle(left, viewport.Height - 78,
-                Math.Max(180, viewport.Width - left - 28), 56);
-#else
-            int scale = DesktopControlScale(viewport);
-            int width = ScaleDesktop(68, scale);
-            int height = ScaleDesktop(60, scale);
-            return new Rectangle(viewport.Width - ScaleDesktop(104, scale),
-                viewport.Height - ScaleDesktop(84, scale), width, height);
-#endif
+            Rectangle frame = _camera.Viewport;
+            Rectangle icon = UIIconButton.StandardBounds(viewport);
+            return new Rectangle(frame.Left + 24, frame.Top + 24, icon.Width, icon.Height);
         }
 
 #if !FIDA_ANDROID

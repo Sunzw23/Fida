@@ -19,6 +19,8 @@ namespace Fida.UI.Campaign
             SkillType.Mo => ("COUNTER", "After damage, retaliate with true damage."),
             SkillType.Xian => ("CONTROL", "After attacking, set one number to 0-9."),
             SkillType.Shen => ("CONTROL", "After damage, set one number to 0-9."),
+            SkillType.Seng => ("CONTROL", "After being attacked, perform one number operation."),
+            SkillType.Dao => ("CONTROL", "After attacking, perform one number operation."),
             SkillType.Di => ("CONTROL", "At turn start, set one number to 0-9."),
             SkillType.Bian => ("OFFENSE", "Choose 1-5 damage when attacking."),
             SkillType.Long => ("OFFENSE", "Use the sum of your numbers as damage."),

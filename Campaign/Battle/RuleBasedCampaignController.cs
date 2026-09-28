@@ -25,7 +25,7 @@ namespace Fida.Campaign.Battle
                 ActionType.ChooseNumber => ChooseNumber(args),
                 _ => new GameAction(ActionType.None)
             };
-            if (action.Type != ActionType.None) game.UpdateGame(action);
+            if (action.Type != ActionType.None) game.UpdateGame(action, GameActionOrigin.Automated);
         }
 
         private GameAction ChooseNumberIndex(GameManager game, PlayerActionRequiredEventArgs args)

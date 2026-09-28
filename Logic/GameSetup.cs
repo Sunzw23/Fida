@@ -21,6 +21,7 @@ namespace Fida.Logic
 
         public static bool LastBattleWon { get; set; }
         public static string LastBattleMessage { get; set; } = "";
+        public static bool LastBattleWasOnlineDuel { get; set; }
 
         /// <summary>当前选择的场景名（默认 DefaultScene）。</summary>
         public static string SelectedSceneName { get; set; } = "DefaultScene";
@@ -76,19 +77,19 @@ namespace Fida.Logic
             SelectedLocalSkill = null;
         }
 
-        public static bool SelectCampaignNode(string nodeId)
+        public static bool SelectCampaignNode(string nodeId, bool online = false)
         {
             var node = CampaignCatalog.GetNode(nodeId);
-            if (node == null || !CampaignCatalog.IsUnlocked(CampaignRuntime.Progress, node)) return false;
+            if (node == null || !CampaignCatalog.IsUnlocked(CampaignRuntime.GetProgress(online), node)) return false;
             SelectedNodeId = node.Id;
             SelectedSkills.Clear();
             return true;
         }
 
-        public static bool ToggleCampaignSkill(SkillType skill)
+        public static bool ToggleCampaignSkill(SkillType skill, bool online = false)
         {
             if (SelectedSkills.Remove(skill)) return true;
-            if (!CampaignLoadout.CanSelect(CampaignRuntime.Progress, SelectedNode, SelectedSkills, skill)) return false;
+            if (!CampaignLoadout.CanSelect(CampaignRuntime.GetProgress(online), SelectedNode, SelectedSkills, skill)) return false;
             SelectedSkills.Add(skill);
             return true;
         }

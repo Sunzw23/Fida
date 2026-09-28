@@ -1,10 +1,9 @@
 {
   "controls": [
     { "type": "panel", "name": "panel", "id": 0 },
-    { "type": "title", "name": "title", "id": 1, "text": "Online // {role}", "position": { "x": 960, "y": 260 } },
-    { "type": "button", "name": "startPvP", "id": 2, "text": "Play vs Friend", "bounds": { "x": 780, "y": 400, "width": 360, "height": 80 } },
-    { "type": "button", "name": "startCampaign", "id": 7, "text": "Campaign Co-op", "bounds": { "x": 780, "y": 520, "width": 360, "height": 80 } },
-    { "type": "button", "name": "disconnect", "id": 4, "text": "Disconnect", "bounds": { "x": 780, "y": 760, "width": 360, "height": 80 } },
-    { "type": "button", "name": "backToMain", "id": 5, "text": "Main Menu", "bounds": { "x": 780, "y": 880, "width": 360, "height": 80 } }
+    { "type": "title", "name": "title", "id": 1, "text": "DUEL // READY CHECK", "position": { "x": 960, "y": 260 } },
+    { "type": "button", "name": "startPvP", "id": 2, "text": "Confirm Duel", "bounds": { "x": 780, "y": 500, "width": 360, "height": 80 } },
+    { "type": "button", "name": "disconnect", "id": 4, "text": "Disconnect", "bounds": { "x": 780, "y": 780, "width": 360, "height": 80 } },
+    { "type": "button", "name": "backToMain", "id": 5, "text": "Main Menu", "bounds": { "x": 32, "y": 28, "width": 68, "height": 60 } }
   ]
 }

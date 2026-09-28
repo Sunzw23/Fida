@@ -21,7 +21,10 @@ namespace Fida.Campaign.Battle
                 _turnIndex++;
                 if (_turnIndex >= _turns.Count)
                 {
-                    game.SkipCurrentTurn();
+                    game.UpdateGame(new GameAction(ActionType.SkipTurn)
+                    {
+                        TargetPlayerId = PlayerId
+                    }, GameActionOrigin.Automated);
                     return;
                 }
             }
@@ -53,7 +56,7 @@ namespace Fida.Campaign.Battle
                 ActionType.ChooseNumber => new GameAction(ActionType.ChooseNumber) { Number = args.ValidNumbers.Count > 0 ? args.ValidNumbers[0] : 8 },
                 _ => new GameAction(ActionType.None)
             };
-            if (action.Type != ActionType.None) game.UpdateGame(action);
+            if (action.Type != ActionType.None) game.UpdateGame(action, GameActionOrigin.Automated);
         }
     }
 }

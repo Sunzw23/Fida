@@ -13,10 +13,12 @@ namespace Fida.Campaign.Battle
         private readonly GameManager _game;
         private readonly List<Player> _observedPlayers = [];
         private CampaignBattleSetup _setup;
+        private Group _alliedGroup;
         private bool _deployed;
         private bool _deploymentDeferred;
         private bool _deploymentPending;
         private int _round;
+        public int RoundNumber => _round;
 
         public event Action<IReadOnlyList<Player>> ReinforcementsDeployed;
 
@@ -26,15 +28,17 @@ namespace Fida.Campaign.Battle
             _game.TurnStarted += OnTurnStarted;
         }
 
-        public void Configure(CampaignBattleSetup setup)
+        public void Configure(CampaignBattleSetup setup, int initialRound = 0)
         {
             foreach (var player in _observedPlayers) player.HealthChanged -= OnHealthChanged;
             _observedPlayers.Clear();
             _setup = setup;
+            _alliedGroup = setup.Groups.FirstOrDefault(group =>
+                group.Players.Any(player => player.PlayerId == 0)) ?? setup.Groups.FirstOrDefault();
             _deployed = false;
             _deploymentDeferred = false;
             _deploymentPending = false;
-            _round = 0;
+            _round = Math.Max(0, initialRound);
 
             foreach (var player in setup.Players.Where(p => !_game.AreAllies(p.PlayerId, _game.LocalPlayerId)))
             {
@@ -46,7 +50,12 @@ namespace Fida.Campaign.Battle
         private void OnTurnStarted(object sender, TurnStartEventArgs e)
         {
             if (_setup == null || _deployed) return;
-            if (e.SourcePlayerId == _game.LocalPlayerId) _round++;
+            // Count a round from shared game state, never from the local player's
+            // identity; the latter differs between host and client.
+            int roundAnchor = _alliedGroup?.Players.Where(player => player.IsAlive())
+                .OrderBy(player => player.PlayerId).Select(player => player.PlayerId)
+                .FirstOrDefault(-1) ?? -1;
+            if (e.SourcePlayerId == roundAnchor) _round++;
             TryDeploy();
         }
 

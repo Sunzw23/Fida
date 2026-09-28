@@ -18,12 +18,14 @@ namespace Fida.Network
         public int JoiningPlayerId { get; set; } = -1;
         public int BattleOwnerPlayerId { get; set; } = -1;
         public int TurnNumber { get; set; }
+        public int CampaignRound { get; set; }
         public bool IsGameEnded { get; set; }
         public bool AtFirstNumberChoice { get; set; }
         public List<BattlePlayerSnapshot> Players { get; set; } = [];
         public List<BattleGroupSnapshot> Groups { get; set; } = [];
 
-        public static BattleSnapshot Capture(GameManager game, string sessionId, string nodeId = "")
+        public static BattleSnapshot Capture(GameManager game, string sessionId, string nodeId = "",
+            int campaignRound = 0)
         {
             ArgumentNullException.ThrowIfNull(game);
             return new BattleSnapshot
@@ -32,9 +34,9 @@ namespace Fida.Network
                 NodeId = nodeId ?? string.Empty,
                 CurrentPlayerId = game.GetCurrentPlayer().PlayerId,
                 TurnNumber = game.TurnNumber,
+                CampaignRound = Math.Max(0, campaignRound),
                 IsGameEnded = game.IsGameEnded,
-                AtFirstNumberChoice = game.CurrentActionType == ActionType.ChooseNumberIndex &&
-                    game.Query.GetFirstChosenNumberIndex() < 0,
+                AtFirstNumberChoice = game.Query.IsChooseFirstNumberIndexState(),
                 Players = game.Players.Select(BattlePlayerSnapshot.FromPlayer).ToList(),
                 Groups = game.Groups.Select(group => new BattleGroupSnapshot
                 {
@@ -49,13 +51,14 @@ namespace Fida.Network
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
-            writer.Write(3); // format version
+            writer.Write(4); // format version
             writer.Write(SessionId ?? string.Empty);
             writer.Write(NodeId ?? string.Empty);
             writer.Write(CurrentPlayerId);
             writer.Write(JoiningPlayerId);
             writer.Write(BattleOwnerPlayerId);
             writer.Write(TurnNumber);
+            writer.Write(CampaignRound);
             writer.Write(IsGameEnded);
             writer.Write(AtFirstNumberChoice);
             writer.Write(Players.Count);
@@ -96,7 +99,7 @@ namespace Fida.Network
         {
             using var stream = new MemoryStream(payload ?? []);
             using var reader = new BinaryReader(stream);
-            if (reader.ReadInt32() != 3) throw new InvalidDataException("Unsupported battle snapshot version.");
+            if (reader.ReadInt32() != 4) throw new InvalidDataException("Unsupported battle snapshot version.");
 
             var snapshot = new BattleSnapshot
             {
@@ -106,6 +109,7 @@ namespace Fida.Network
                 JoiningPlayerId = reader.ReadInt32(),
                 BattleOwnerPlayerId = reader.ReadInt32(),
                 TurnNumber = reader.ReadInt32(),
+                CampaignRound = reader.ReadInt32(),
                 IsGameEnded = reader.ReadBoolean(),
                 AtFirstNumberChoice = reader.ReadBoolean()
             };
@@ -117,6 +121,7 @@ namespace Fida.Network
             if (stream.Position != stream.Length) throw new InvalidDataException("Unexpected trailing battle snapshot data.");
             if (!snapshot.Players.Any(player => player.PlayerId == snapshot.CurrentPlayerId))
                 throw new InvalidDataException("Snapshot current player is missing from its roster.");
+            if (snapshot.CampaignRound < 0) throw new InvalidDataException("Invalid campaign round in snapshot.");
             return snapshot;
         }
 

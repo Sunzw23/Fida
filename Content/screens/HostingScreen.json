@@ -1,9 +1,11 @@
 {
   "controls": [
     { "type": "panel", "name": "panel", "id": 0 },
-    { "type": "title", "name": "title", "id": 1, "text": "Hosting a Game", "position": { "x": 960, "y": 320 } },
-    { "type": "label", "name": "roomCodeLabel", "id": 2, "text": "Room: {roomCode}", "position": { "x": 960, "y": 450 } },
-    { "type": "label", "name": "statusLabel", "id": 3, "text": "{status}", "position": { "x": 960, "y": 520 } },
-    { "type": "button", "name": "cancelHost", "id": 4, "text": "Cancel", "bounds": { "x": 800, "y": 640, "width": 320, "height": 80 } }
+    { "type": "title", "name": "title", "id": 1, "text": "Host a Game", "position": { "x": 960, "y": 260 } },
+    { "type": "label", "name": "roomCodeCaption", "id": 5, "text": "ROOM CODE", "position": { "x": 960, "y": 405 } },
+    { "type": "label", "name": "roomCodeLabel", "id": 2, "text": "{roomCode}", "position": { "x": 960, "y": 470 } },
+    { "type": "label", "name": "statusLabel", "id": 3, "text": "WAITING FOR OPPONENT", "position": { "x": 960, "y": 570 } },
+    { "type": "label", "name": "addressLabel", "id": 6, "text": "{address}", "position": { "x": 960, "y": 635 } },
+    { "type": "button", "name": "cancelHost", "id": 4, "text": "Cancel", "bounds": { "x": 800, "y": 790, "width": 320, "height": 80 } }
   ]
 }

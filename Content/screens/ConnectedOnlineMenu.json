@@ -3,7 +3,7 @@
     { "type": "panel", "name": "panel", "id": 0 },
     { "type": "title", "name": "title", "id": 1, "text": "Connection", "position": { "x": 960, "y": 300 } },
     { "type": "label", "name": "status", "id": 2, "text": "Session connected. Game modes are available from the main menu.", "position": { "x": 960, "y": 430 } },
-    { "type": "button", "name": "backToMain", "id": 3, "text": "Back to Main Menu", "bounds": { "x": 760, "y": 560, "width": 400, "height": 76 } },
+    { "type": "button", "name": "backToMain", "id": 3, "text": "Back to Main Menu", "bounds": { "x": 32, "y": 28, "width": 68, "height": 60 } },
     { "type": "button", "name": "disconnect", "id": 4, "text": "Disconnect Session", "bounds": { "x": 760, "y": 670, "width": 400, "height": 76 } }
   ]
 }

@@ -46,6 +46,13 @@ namespace Fida.UI
         /// <summary>Enter 提交时触发（参数为当前值）</summary>
         public event Action<string> Submitted;
 
+        /// <summary>输入框屏幕矩形（加载时由设计坐标映射而来）</summary>
+        public Rectangle Bounds => _bounds;
+
+        public override Rectangle? GetScreenBounds(Viewport viewport) =>
+            IsVisible ? _bounds : null;
+
+
         public UIRoomCodeInput(int id, Rectangle bounds, string placeholder, Texture2D pixel, SpriteFont font)
             : base(id)
         {
@@ -161,43 +168,66 @@ namespace Fida.UI
         {
             if (!IsVisible) return;
 
-            // 深羊皮纸底
-            sb.Draw(_pixel, _bounds, UITheme.PanelDark);
+            Color accent = _focused ? UITheme.AccentGreen : UITheme.Gold;
+            sb.Draw(_pixel, _bounds, UITheme.PanelLight);
+            sb.Draw(_pixel, new Rectangle(_bounds.Left, _bounds.Top, 5, _bounds.Height), accent);
 
-            // 文字（左对齐，垂直居中）
-            string text = _value;
-            if (string.IsNullOrEmpty(text))
-                text = _placeholder;
-            text = UIFontGuard.Sanitize(_font, text);
+            // Compact prompt + four equally spaced cells make the expected code length
+            // immediately legible and avoid the appearance of a generic text field.
+            string prompt = UIFontGuard.Sanitize(_font,
+                string.IsNullOrWhiteSpace(_placeholder) ? "ROOM CODE" : _placeholder.ToUpperInvariant());
+            Vector2 promptSize = _font.MeasureString(prompt);
+            float promptScale = MathHelper.Min(0.52f,
+                MathHelper.Min((_bounds.Width - 28f) / Math.Max(1f, promptSize.X),
+                    (_bounds.Height * 0.28f) / Math.Max(1f, promptSize.Y)));
+            sb.DrawString(_font, prompt,
+                new Vector2(_bounds.Center.X - promptSize.X * promptScale / 2f, _bounds.Top + 3),
+                UITheme.InkMuted, 0f, Vector2.Zero, promptScale, SpriteEffects.None, 0f);
 
-            Color textColor = string.IsNullOrEmpty(_value) ? UITheme.InkMuted : UITheme.Ink;
-            var textSize = _font.MeasureString(text);
-            float textScale = MathHelper.Min(1f, MathHelper.Min(
-                MathHelper.Max(1, _bounds.Width - 24) / MathHelper.Max(1, textSize.X),
-                MathHelper.Max(1, _bounds.Height - 12) / MathHelper.Max(1, textSize.Y)));
-            var pos = new Vector2(
-                _bounds.X + 12,
-                _bounds.Center.Y - textSize.Y * textScale / 2
-            );
-            sb.DrawString(_font, text, pos, textColor, 0f, Vector2.Zero,
-                textScale, SpriteEffects.None, 0f);
+            const int slotCount = MaxLen;
+            int gap = Math.Max(5, _bounds.Width / 60);
+            int slotHeight = Math.Max(20, (int)(_bounds.Height * 0.48f));
+            int slotWidth = Math.Min((int)(_bounds.Width * 0.17f),
+                (_bounds.Width - 32 - gap * (slotCount - 1)) / slotCount);
+            int totalWidth = slotWidth * slotCount + gap * (slotCount - 1);
+            int startX = _bounds.Center.X - totalWidth / 2;
+            int slotY = _bounds.Bottom - slotHeight - Math.Max(5, _bounds.Height / 10);
+            bool showCursor = _focused && (gameTime.TotalGameTime.TotalMilliseconds / 400) % 2 == 0;
 
-            // 闪烁光标（聚焦时）
-            if (_focused && (gameTime.TotalGameTime.TotalMilliseconds / 400) % 2 == 0)
+            for (int i = 0; i < slotCount; i++)
             {
-                float cursorX = _bounds.X + 12 +
-                    _font.MeasureString(UIFontGuard.Sanitize(_font, _value)).X * textScale + 3;
-                var cursor = new Rectangle(
-                    (int)cursorX,
-                    _bounds.Top + 8,
-                    2,
-                    _bounds.Height - 16
-                );
-                sb.Draw(_pixel, cursor, UITheme.Ink);
+                Rectangle slot = new(startX + i * (slotWidth + gap), slotY, slotWidth, slotHeight);
+                bool activeSlot = _focused && i == Math.Min(_value.Length, slotCount - 1);
+                sb.Draw(_pixel, slot, activeSlot ? UITheme.PanelHover : UITheme.PanelDark);
+                UIUtils.DrawRectangleOutlines(sb, slot, activeSlot ? accent : UITheme.InkMuted, activeSlot ? 2 : 1, _pixel);
+
+                if (i < _value.Length)
+                {
+                    string character = _value[i].ToString();
+                    Vector2 charSize = _font.MeasureString(character);
+                    float charScale = MathHelper.Min(0.78f, MathHelper.Min(
+                        (slot.Width - 8f) / Math.Max(1f, charSize.X),
+                        (slot.Height - 4f) / Math.Max(1f, charSize.Y)));
+                    sb.DrawString(_font, character,
+                        new Vector2(slot.Center.X - charSize.X * charScale / 2f,
+                            slot.Center.Y - charSize.Y * charScale / 2f),
+                        UITheme.Ink, 0f, Vector2.Zero, charScale, SpriteEffects.None, 0f);
+                }
+                else if (activeSlot && showCursor)
+                {
+                    int cursorHeight = Math.Max(10, slot.Height / 2);
+                    sb.Draw(_pixel, new Rectangle(slot.Center.X - 1,
+                        slot.Center.Y - cursorHeight / 2, 2, cursorHeight), accent);
+                }
+                else
+                {
+                    int markWidth = Math.Max(8, slot.Width / 5);
+                    sb.Draw(_pixel, new Rectangle(slot.Center.X - markWidth / 2,
+                        slot.Center.Y, markWidth, 2), UITheme.InkMuted * 0.55f);
+                }
             }
 
-            // 描金边（聚焦时加粗亮金）
-            UIUtils.DrawRectangleOutlines(sb, _bounds, _focused ? UITheme.GoldBright : UITheme.Gold, _focused ? 3 : 1, _pixel);
+            UIUtils.DrawRectangleOutlines(sb, _bounds, _focused ? accent : UITheme.Ink, 1, _pixel);
         }
     }
 }

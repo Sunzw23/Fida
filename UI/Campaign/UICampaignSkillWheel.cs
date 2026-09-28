@@ -57,6 +57,8 @@ namespace Fida.UI.Campaign
         public string BackActionText { get => _backActionText; set => _backActionText = value ?? ""; }
         public string StartActionText { get => _startActionText; set => _startActionText = value ?? ""; }
         public bool StartActionEnabled { get; set; } = true;
+        public bool StartActionTogglesSelection { get; set; }
+        public bool UseUnifiedActionButton { get; set; }
         public Func<SkillType, CampaignSkillAvailability> AvailabilityOverride
         {
             get => _availabilityOverride;
@@ -256,7 +258,7 @@ namespace Fida.UI.Campaign
 #else
             DrawMobileDetails(spriteBatch, panel);
 #endif
-            DrawFooter(spriteBatch, viewport, panel);
+            DrawFooter(spriteBatch, viewport, panel, gameTime);
         }
 
         private void DrawHeader(SpriteBatch spriteBatch, Viewport viewport, Rectangle panel)
@@ -405,21 +407,23 @@ namespace Fida.UI.Campaign
                 availability == CampaignSkillAvailability.Available || selected ? UITheme.Ink : UITheme.InkMuted);
         }
 
-        private void DrawFooter(SpriteBatch spriteBatch, Viewport viewport, Rectangle panel)
+        private void DrawFooter(SpriteBatch spriteBatch, Viewport viewport, Rectangle panel, GameTime gameTime)
         {
 #if FIDA_ANDROID
-            CampaignSkillAvailability availability = Availability(_wheel.Focused);
-            string selectText = availability switch
+            if (!UseUnifiedActionButton)
             {
-                CampaignSkillAvailability.Selected => _selectedActionText,
-                CampaignSkillAvailability.Available => _availableActionText,
-                _ => AvailabilityLabel(_wheel.Focused, availability)
-            };
-            DrawSmallButton(spriteBatch, SelectButton(viewport, panel), selectText,
-                availability is CampaignSkillAvailability.Selected or CampaignSkillAvailability.Available);
+                CampaignSkillAvailability availability = Availability(_wheel.Focused);
+                string selectText = availability switch
+                {
+                    CampaignSkillAvailability.Selected => _selectedActionText,
+                    CampaignSkillAvailability.Available => _availableActionText,
+                    _ => AvailabilityLabel(_wheel.Focused, availability)
+                };
+                DrawSmallButton(spriteBatch, SelectButton(viewport, panel), selectText,
+                    availability is CampaignSkillAvailability.Selected or CampaignSkillAvailability.Available);
+            }
 #endif
-            DrawSmallButton(spriteBatch, BackButton(viewport, panel),
-                _backActionText);
+            UIIconButton.DrawBackButton(spriteBatch, _pixel, BackButton(viewport, panel));
             DrawSmallButton(spriteBatch, StartButton(viewport, panel),
                 _startActionText, StartActionEnabled);
         }
@@ -491,14 +495,18 @@ namespace Fida.UI.Campaign
                 new Vector2(card.Center.X, card.Top + 197), card.Width - 64, 0.36f, UITheme.InkMuted);
             DrawCentered(spriteBatch, _font,
                 $"{CampaignSkillBalance.Cost(skill)} SP  ·  {AvailabilityLabel(skill, availability)}",
-                new Vector2(card.Center.X, card.Bottom - 96), card.Width - 64, 0.39f,
+                new Vector2(card.Center.X, card.Bottom - (UseUnifiedActionButton ? 54 : 96)),
+                card.Width - 64, 0.39f,
                 availability == CampaignSkillAvailability.Selected ? UITheme.AccentGreen : accent);
-            Rectangle action = DesktopActionBounds(card);
-            spriteBatch.Draw(_pixel, action, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, action, accent, 1, _pixel);
-            DrawCentered(spriteBatch, _font, availability == CampaignSkillAvailability.Selected
-                ? _selectedActionText : availability == CampaignSkillAvailability.Available ? _availableActionText : "UNAVAILABLE",
-                action.Center.ToVector2(), action.Width - 20, 0.34f, UITheme.Ink);
+            if (!UseUnifiedActionButton)
+            {
+                Rectangle action = DesktopActionBounds(card);
+                string actionText = availability == CampaignSkillAvailability.Selected
+                    ? _selectedActionText
+                    : availability == CampaignSkillAvailability.Available ? _availableActionText : "UNAVAILABLE";
+                DrawSmallButton(spriteBatch, action, actionText,
+                    availability is CampaignSkillAvailability.Selected or CampaignSkillAvailability.Available);
+            }
         }
 
 #endif
@@ -551,7 +559,9 @@ namespace Fida.UI.Campaign
             Color accent = Availability(skill) == CampaignSkillAvailability.Locked
                 ? UITheme.InkMuted : CampaignSkillPresentation.Accent(skill);
             int top = MobileWheelCenterY(panel) + _options.NeighborSpacing + 78;
-            int bottom = SelectButton(_graphicsDevice.Viewport, panel).Top - 24;
+            int bottom = (UseUnifiedActionButton
+                ? StartButton(_graphicsDevice.Viewport, panel)
+                : SelectButton(_graphicsDevice.Viewport, panel)).Top - 24;
             if (bottom - top < 116) return;
             Rectangle card = new(panel.Left + 46, top, panel.Width - 92,
                 Math.Min(208, bottom - top));
@@ -602,15 +612,22 @@ namespace Fida.UI.Campaign
             Rectangle panel = PanelBounds(viewport);
             Rectangle focused = FocusedBounds(viewport, panel);
 #if FIDA_ANDROID
-            if (SelectButton(viewport, panel).Contains(point)) return "select";
+            if (!UseUnifiedActionButton && SelectButton(viewport, panel).Contains(point))
+                return "toggle";
+            if (StartButton(viewport, panel).Contains(point)) return "start";
+            if (UseUnifiedActionButton && !StartActionTogglesSelection && focused.Contains(point))
+                return "toggle";
 #else
-            if (DesktopActionBounds(DesktopDetailBounds(panel)).Contains(point)) return "toggle";
-            if (focused.Contains(point)) return "toggle";
+            if (!UseUnifiedActionButton &&
+                DesktopActionBounds(DesktopDetailBounds(panel)).Contains(point)) return "toggle";
+            if (!StartActionTogglesSelection && focused.Contains(point)) return "toggle";
             if (PreviousButton(focused).Contains(point)) return "previous";
             if (NextButton(focused).Contains(point)) return "next";
 #endif
             if (BackButton(viewport, panel).Contains(point)) return "back";
+#if !FIDA_ANDROID
             if (StartButton(viewport, panel).Contains(point)) return "start";
+#endif
 
             int centerY = focused.Center.Y;
             for (int offset = -_options.VisibleNeighborCount; offset <= _options.VisibleNeighborCount; offset++)
@@ -641,7 +658,11 @@ namespace Fida.UI.Campaign
             else if (target == "previous") Move(-1);
             else if (target == "next") Move(1);
             else if (target == "back") _backRequested = true;
-            else if (target == "start") _startRequested = true;
+            else if (target == "start")
+            {
+                if (StartActionTogglesSelection) ToggleFocused();
+                else _startRequested = true;
+            }
             else if (target.StartsWith("offset:", StringComparison.Ordinal) &&
                      int.TryParse(target.AsSpan(7), out int offset)) Move(offset);
         }
@@ -737,16 +758,17 @@ namespace Fida.UI.Campaign
             new(panel.Left + 48, panel.Bottom - 178, panel.Width - 96, 64);
 #endif
 
-        private static Rectangle BackButton(Viewport viewport, Rectangle panel) =>
-#if FIDA_ANDROID
-            new(panel.Left + 40, panel.Bottom - 106, 84, 72);
-#else
-            new(panel.Left + 42, panel.Bottom - 108, 280, 60);
-#endif
+        private static Rectangle BackButton(Viewport viewport, Rectangle panel)
+        {
+            Rectangle icon = UIIconButton.StandardBounds(viewport);
+            return new Rectangle(panel.Left + 12, panel.Top + 12, icon.Width, icon.Height);
+        }
 
-        private static Rectangle StartButton(Viewport viewport, Rectangle panel) =>
+        private Rectangle StartButton(Viewport viewport, Rectangle panel) =>
 #if FIDA_ANDROID
-            new(panel.Left + 140, panel.Bottom - 106, panel.Width - 188, 72);
+            UseUnifiedActionButton
+                ? new Rectangle(panel.Left + 48, panel.Bottom - 106, panel.Width - 96, 72)
+                : new Rectangle(panel.Left + 48, panel.Bottom - 106, panel.Width - 96, 72);
 #else
             new(panel.Right - 322, panel.Bottom - 108, 280, 60);
 #endif

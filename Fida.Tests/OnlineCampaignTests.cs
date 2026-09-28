@@ -21,6 +21,31 @@ public class OnlineCampaignTests
     }
 
     [Fact]
+    public void CooperativeCampaign_HostAndClientBuildIdenticalStableRoster()
+    {
+        var node = CampaignCatalog.GetNode("A1");
+        var host = CampaignBattleFactory.CreateCooperative(node,
+            [SkillType.PlusAttack], [SkillType.PlusDefence]);
+        var client = CampaignBattleFactory.CreateCooperative(node,
+            [SkillType.PlusAttack], [SkillType.PlusDefence]);
+
+        Assert.Equal(host.Players.Select(PlayerSignature), client.Players.Select(PlayerSignature));
+        Assert.Equal(host.Groups.SelectMany(group => group.Players.Select(player => player.PlayerId)),
+            client.Groups.SelectMany(group => group.Players.Select(player => player.PlayerId)));
+
+        var hostGame = new GameManager();
+        var clientGame = new GameManager();
+        hostGame.Initialize(host.Players, host.Groups);
+        clientGame.Initialize(client.Players, client.Groups);
+        Assert.Equal(0, hostGame.GetCurrentPlayer().PlayerId);
+        Assert.Equal(hostGame.GetCurrentPlayer().PlayerId, clientGame.GetCurrentPlayer().PlayerId);
+    }
+
+    private static string PlayerSignature(Player player) =>
+        $"{player.PlayerId}:{player.Name}:{player.Numbers[0]}:{player.Numbers[1]}:" +
+        string.Join(',', player.Skills.Select(skill => (int)skill.Type));
+
+    [Fact]
     public void OnlineSoloCampaign_UsesSameStableBattleRosterAsOffline()
     {
         var node = CampaignCatalog.GetNode("A1");
@@ -31,5 +56,6 @@ public class OnlineCampaignTests
             guestSolo.Players.Select(player => player.PlayerId));
         Assert.Equal(offline.Groups[1].Players.Select(player => player.PlayerId),
             guestSolo.Groups[1].Players.Select(player => player.PlayerId));
+        Assert.Equal(guestSolo.Players.Count, guestSolo.Players.Select(player => player.PlayerId).Distinct().Count());
     }
 }

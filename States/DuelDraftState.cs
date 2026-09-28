@@ -50,6 +50,7 @@ namespace Fida.States
                 _wheel.SelectedActionText = "BANNED";
                 _wheel.BackActionText = "EXIT";
                 _wheel.StartActionText = "LOCK";
+                _wheel.UseUnifiedActionButton = true;
             }
             RefreshView();
         }
@@ -154,20 +155,33 @@ namespace Fida.States
                 _wheel.HeaderText = Picking ? "PICK" : "BAN";
                 _wheel.AvailableActionText = "BAN";
                 _wheel.SelectedActionText = "BANNED";
-                _wheel.StartActionEnabled = CanLock();
-                _wheel.StartActionText = !Picking ? "PICK" : _localLocked ? "WAIT" : "LOCK";
+                _wheel.StartActionTogglesSelection = !Picking && !_localBan.HasValue;
+                _wheel.StartActionEnabled = !Picking
+                    ? !_localBan.HasValue
+                    : CanLock();
+                _wheel.StartActionText = !Picking
+                    ? _localBan.HasValue ? "WAIT" : "BAN"
+                    : _localLocked ? "WAIT" : "LOCK";
                 if (!Picking)
                     _wheel.StatusText = _localBan.HasValue
                         ? "BAN SENT · WAITING FOR OPPONENT"
                         : "CHOOSE ONE SKILL";
                 else
                 {
+#if !FIDA_ANDROID
                     string bans = _localBan == _remoteBan
                         ? GameText.SkillName(_localBan.Value)
                         : $"{GameText.SkillName(_localBan.Value)} / {GameText.SkillName(_remoteBan.Value)}";
+#endif
+#if FIDA_ANDROID
+                    _wheel.StatusText = _localLocked
+                        ? "LOCKED"
+                        : $"{spent} / {OnlineModeRules.DuelSkillBudget} SP  ·  TAP SKILL";
+#else
                     _wheel.StatusText = _localLocked
                         ? $"LOCKED · BANNED {bans}"
-                        : $"{spent} / {OnlineModeRules.DuelSkillBudget} SP · BANNED {bans}";
+                        : $"{spent} / {OnlineModeRules.DuelSkillBudget} SP · CLICK SKILL TO PICK";
+#endif
                     _wheel.AvailableActionText = "ADD";
                     _wheel.SelectedActionText = "REMOVE";
                 }

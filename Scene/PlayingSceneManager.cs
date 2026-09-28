@@ -24,6 +24,7 @@ namespace Fida.Scene
         private readonly CampaignEncounterCoordinator _campaignEncounter;
         private readonly AutomatedActionPresenter _actionPresenter = new();
         private CampaignBattleSetup _campaignSetup;
+        private bool _controlAgentsLocally = true;
         private int _deferredCuePlayerId = -1;
         private string _deferredCueMessage = "";
         private bool _deferredGameEndForCardAction;
@@ -34,6 +35,7 @@ namespace Fida.Scene
         private Dictionary<int, IPlayerController> _controllers = new();
 
         public bool IsInitialized { get; set; }
+        public int CampaignRound => _campaignEncounter.RoundNumber;
 
         public PlayingSceneManager(GameManager gameManager, UIManager uiManager, AgentManager agentManager)
         {
@@ -117,6 +119,7 @@ namespace Fida.Scene
         {
             ResetPresentation();
             _campaignSetup = setup;
+            _controlAgentsLocally = controlAgentsLocally;
             _controllers.Clear();
             foreach (var player in setup.Players)
                 _controllers[player.PlayerId] = player.PlayerId == remotePlayerId
@@ -132,9 +135,10 @@ namespace Fida.Scene
         }
 
         public void InitializeCampaignFromSnapshot(CampaignBattleSetup template, BattleSnapshot snapshot,
-            int localPlayerId, int remotePlayerId)
+            int localPlayerId, int remotePlayerId, bool controlAgentsLocally = false)
         {
             ResetPresentation();
+            _controlAgentsLocally = controlAgentsLocally;
             snapshot.RestoreInto(_gameManager, localPlayerId, resume: false);
             var activeIds = _gameManager.Players.Select(player => player.PlayerId).ToHashSet();
             _campaignSetup = new CampaignBattleSetup
@@ -149,11 +153,12 @@ namespace Fida.Scene
             foreach (var player in _campaignSetup.Players)
                 _controllers[player.PlayerId] = player.PlayerId == localPlayerId
                     ? new LocalPlayerController(player.PlayerId)
-                    : player.PlayerId == remotePlayerId
+                    : player.PlayerId == remotePlayerId ||
+                        (!controlAgentsLocally && _campaignSetup.AgentTypes.ContainsKey(player.PlayerId))
                         ? new RemotePlayerController(player.PlayerId)
                         : CreateCampaignController(player.PlayerId, _campaignSetup);
             IsInitialized = true;
-            _campaignEncounter.Configure(_campaignSetup);
+            _campaignEncounter.Configure(_campaignSetup, snapshot.CampaignRound);
             _uiManager.BuildPlayingUI(_gameManager);
             _gameManager.ResumeRestoredInputBoundary();
         }
@@ -189,7 +194,10 @@ namespace Fida.Scene
         {
             if (_campaignSetup == null) return;
             foreach (var player in players)
-                _controllers[player.PlayerId] = CreateCampaignController(player.PlayerId, _campaignSetup);
+                _controllers[player.PlayerId] = !_controlAgentsLocally &&
+                    _campaignSetup.AgentTypes.ContainsKey(player.PlayerId)
+                    ? new RemotePlayerController(player.PlayerId)
+                    : CreateCampaignController(player.PlayerId, _campaignSetup);
             _uiManager.RebuildPlayingUI(_gameManager);
             _uiManager.PlayReinforcementEntrance(players.Select(player => player.PlayerId));
         }
@@ -334,6 +342,29 @@ namespace Fida.Scene
         {
             int localPlayerId = _gameManager.LocalPlayerId;
             _gameManager.ForceEndGame(localPlayerId);
+        }
+
+        /// <summary>Continue a shared campaign locally when the peer leaves mid-battle.</summary>
+        public void ContinueCampaignAfterPartnerDisconnect()
+        {
+            if (_campaignSetup == null) return;
+
+            _actionPresenter.Reset();
+            _controlAgentsLocally = true;
+            foreach (var player in _gameManager.Players)
+            {
+                if (_campaignSetup.AgentTypes.TryGetValue(player.PlayerId, out var agentType))
+                {
+                    _controllers[player.PlayerId] = CampaignControllerFactory.Create(player.PlayerId, agentType);
+                    continue;
+                }
+
+                if (player.PlayerId != _gameManager.LocalPlayerId && player.IsAlive())
+                    player.TakeDamage(player.Health);
+            }
+
+            _gameManager.SetGameMessage("Partner left. Continuing solo.");
+            _gameManager.ReissueCurrentAction();
         }
 
         #endregion

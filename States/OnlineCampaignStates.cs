@@ -19,6 +19,7 @@ public sealed class OnlineCampaignMapState : StateBase
     {
         _lastNode = "";
         _networkManager.IsCampaignSharedBattle = false;
+        _networkManager.CampaignSessionId = string.Empty;
         Publish(CampaignOnlinePhase.Map, "", false);
     }
 
@@ -47,11 +48,11 @@ public sealed class OnlineCampaignMapState : StateBase
 
         if (map.ConsumeBackRequest())
         {
-            _stateMachine.SwitchToState(State.OnlineLobby);
+            _stateMachine.SwitchToState(State.MainMenu);
             return;
         }
 
-        if (map.TryConsumeSelectedNode(out string nodeId) && GameSetup.SelectCampaignNode(nodeId))
+        if (map.TryConsumeSelectedNode(out string nodeId) && GameSetup.SelectCampaignNode(nodeId, online: true))
         {
             Publish(CampaignOnlinePhase.Loadout, nodeId, false);
             _stateMachine.SwitchToState(State.OnlineCampaignSkills);
@@ -116,7 +117,9 @@ public sealed class OnlineCampaignSkillsState : StateBase
                 string.Equals(pendingSnapshot.SessionId, remote.SessionId, StringComparison.Ordinal))
             {
                 _networkManager.IsCampaignSharedBattle = true;
-                Publish(CampaignOnlinePhase.Battle, GameSetup.SelectedNodeId, false, GameSetup.SelectedLocalSkills);
+                _networkManager.CampaignSessionId = pendingSnapshot.SessionId;
+                Publish(CampaignOnlinePhase.Battle, GameSetup.SelectedNodeId, false, GameSetup.SelectedLocalSkills,
+                    pendingSnapshot.SessionId);
                 _stateMachine.SwitchToState(State.OnlinePlaying);
                 return;
             }
@@ -128,7 +131,7 @@ public sealed class OnlineCampaignSkillsState : StateBase
             _stateMachine.SwitchToState(State.OnlineCampaignMap);
             return;
         }
-        if (wheel.TryConsumeToggle(out SkillType skill) && !_ready) GameSetup.ToggleCampaignSkill(skill);
+        if (wheel.TryConsumeToggle(out SkillType skill) && !_ready) GameSetup.ToggleCampaignSkill(skill, online: true);
 
         if (!_ready && wheel.ConsumeStartRequest())
         {
@@ -168,7 +171,8 @@ public sealed class OnlineCampaignSkillsState : StateBase
         if (_coopStarted)
         {
             _networkManager.IsCampaignSharedBattle = true;
-            Publish(CampaignOnlinePhase.Battle, GameSetup.SelectedNodeId, false, GameSetup.SelectedLocalSkills);
+            Publish(CampaignOnlinePhase.Battle, GameSetup.SelectedNodeId, false, GameSetup.SelectedLocalSkills,
+                _networkManager.CampaignSessionId);
             _stateMachine.SwitchToState(State.OnlinePlaying);
         }
     }
@@ -178,19 +182,24 @@ public sealed class OnlineCampaignSkillsState : StateBase
         var remote = _networkManager.RemoteCampaignPresence;
         if (!_networkManager.IsHost || !remote.Ready || remote.Phase != CampaignOnlinePhase.Loadout ||
             !string.Equals(remote.NodeId, GameSetup.SelectedNodeId, StringComparison.OrdinalIgnoreCase)) return;
-        _networkManager.SendCampaignCoopStart(GameSetup.SelectedNodeId);
+        _networkManager.CampaignSessionId = Guid.NewGuid().ToString("N");
+        _networkManager.SendCampaignCoopStart(GameSetup.SelectedNodeId, _networkManager.CampaignSessionId);
         _networkManager.IsCampaignSharedBattle = true;
         _coopStarted = true;
     }
 
-    private void OnCoopStarting(string nodeId)
+    private void OnCoopStarting(string nodeId, string sessionId)
     {
-        if (string.Equals(nodeId, GameSetup.SelectedNodeId, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(nodeId, GameSetup.SelectedNodeId, StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(sessionId))
+        {
+            _networkManager.CampaignSessionId = sessionId;
             _coopStarted = true;
+        }
     }
 
     private void Publish(CampaignOnlinePhase phase, string nodeId, bool ready,
-        System.Collections.Generic.IReadOnlyCollection<SkillType> skills = null) =>
+        System.Collections.Generic.IReadOnlyCollection<SkillType> skills = null, string sessionId = "") =>
         _networkManager.SendCampaignPresence(new CampaignPresence(_networkManager.GetLocalPlayerId(), phase,
-            nodeId, ready, skills));
+            nodeId, ready, skills, sessionId));
 }

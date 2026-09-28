@@ -16,7 +16,7 @@
     { "type": "button", "name": "skill_Di", "id": 13, "text": "Emperor", "bounds": { "x": 1020, "y": 805, "width": 320, "height": 70 } },
     { "type": "button", "name": "skill_Long", "id": 14, "text": "Dragon", "bounds": { "x": 580, "y": 900, "width": 320, "height": 70 } },
     { "type": "button", "name": "skill_Bian", "id": 15, "text": "Transform", "bounds": { "x": 1020, "y": 900, "width": 320, "height": 70 } },
-    { "type": "button", "name": "back", "id": 16, "text": "Back", "bounds": { "x": 580, "y": 980, "width": 320, "height": 60 } },
+    { "type": "button", "name": "back", "id": 16, "text": "Back", "bounds": { "x": 32, "y": 28, "width": 68, "height": 60 } },
     { "type": "button", "name": "confirm", "id": 17, "text": "Start", "bounds": { "x": 1020, "y": 980, "width": 320, "height": 60 } }
   ]
 }

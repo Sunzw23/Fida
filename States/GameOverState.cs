@@ -1,18 +1,40 @@
+using Fida.Logic;
+using Microsoft.Xna.Framework;
+
 namespace Fida.States
 {
-    /// <summary>单机节点结算：保留当前配装重试，或返回树状地图。</summary>
+    /// <summary>战斗结算：可重试当前配装，或明确返回主菜单。</summary>
     public sealed class GameOverState : StateBase
     {
         public GameOverState(UI.UIManager uiManager, Network.NetworkManager networkManager,
             GameStateMachine stateMachine) : base(uiManager, networkManager, stateMachine) { }
 
-        public override void OnEnter()
+    public override void OnEnter()
         {
+            BindButton("mainMenu", () =>
+            {
+                if (GameSetup.LastBattleWasOnlineDuel || _networkManager.CurrentGameMode == 2)
+                {
+                    _networkManager.Cleanup();
+                }
+                _stateMachine.SwitchToState(State.MainMenu);
+            });
+
+            if (GameSetup.LastBattleWasOnlineDuel) return;
+
             bool onlineCampaign = _networkManager.CurrentGameMode == 2;
-            BindButton("retry", () => _stateMachine.SwitchToState(
+        BindButton("retry", () => _stateMachine.SwitchToState(
                 onlineCampaign ? State.OnlineCampaignSkills : State.Skills));
-            BindButton("map", () => _stateMachine.SwitchToState(
-                onlineCampaign ? State.OnlineCampaignMap : State.LevelSelect));
-        }
     }
+
+    public override void HandleInput(GameTime gameTime)
+    {
+        // Both peers publish their clear at battle end. Keep consuming campaign
+        // presence while the result screen is open so the online save converges
+        // before either player leaves the session.
+        if (_networkManager.CurrentGameMode == 2 && _networkManager.IsConnected)
+            _networkManager.ProcessCampaignMessages();
+        base.HandleInput(gameTime);
+    }
+}
 }

@@ -34,7 +34,10 @@ namespace Fida.Campaign
             catch { return false; }
         }
 
-        public static string DefaultPath() => System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Fida", "campaign-save.json");
-    }
+    public static string DefaultPath() => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Fida", "campaign-save.json");
+
+    public static string OnlinePath() => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Fida", "campaign-online-save.json");
+}
 }

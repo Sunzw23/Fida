@@ -255,6 +255,34 @@ public class CampaignTests
     }
 
     [Fact]
+    public void EncounterCoordinator_UsesSharedRoundAnchorInsteadOfLocalPlayerTurn()
+    {
+        var template = CampaignCatalog.GetNode("AG");
+        var node = new CampaignNode
+        {
+            Id = template.Id,
+            Name = template.Name,
+            Chapter = template.Chapter,
+            Enemies = template.Enemies,
+            Reinforcements = template.Reinforcements,
+            ReinforcementRound = 1
+        };
+        var setup = CampaignBattleFactory.CreateCooperative(node, [], []);
+        var game = new GameManager { LocalPlayerId = 1 };
+        game.Initialize(setup.Players, setup.Groups);
+        var coordinator = new CampaignEncounterCoordinator(game);
+        coordinator.Configure(setup);
+
+        game.OnTurnStarted(new TurnStartEventArgs { SourcePlayerId = 1 });
+        Assert.Equal(0, coordinator.RoundNumber);
+        Assert.Equal(4, game.Players.Count);
+
+        game.OnTurnStarted(new TurnStartEventArgs { SourcePlayerId = 0 });
+        Assert.Equal(1, coordinator.RoundNumber);
+        Assert.Equal(6, game.Players.Count);
+    }
+
+    [Fact]
     public void TargetSelection_UsesCampaignTeamsForAttackAndHealing()
     {
         var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("A1"), []);

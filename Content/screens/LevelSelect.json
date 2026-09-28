@@ -7,6 +7,6 @@
     { "type": "button", "name": "Scene2", "id": 4, "text": "Scene 2", "bounds": { "x": 780, "y": 600, "width": 360, "height": 80 } },
     { "type": "button", "name": "Scene3", "id": 5, "text": "Scene 3", "bounds": { "x": 780, "y": 700, "width": 360, "height": 80 } },
     { "type": "button", "name": "Scene4", "id": 6, "text": "Scene 4", "bounds": { "x": 780, "y": 800, "width": 360, "height": 80 } },
-    { "type": "button", "name": "back", "id": 7, "text": "Back", "bounds": { "x": 800, "y": 940, "width": 320, "height": 70 } }
+    { "type": "button", "name": "back", "id": 7, "text": "Back", "bounds": { "x": 32, "y": 28, "width": 68, "height": 60 } }
   ]
 }

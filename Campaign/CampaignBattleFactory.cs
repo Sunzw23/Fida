@@ -12,15 +12,15 @@ namespace Fida.Campaign
             => CreateInternal(node, selectedSkills, null, localPlayerId);
 
         public static CampaignBattleSetup CreateCooperative(CampaignNode node,
-            IEnumerable<SkillType> localSkills, IEnumerable<SkillType> partnerSkills) =>
-            CreateInternal(node, localSkills, partnerSkills ?? [], 0);
+            IEnumerable<SkillType> playerZeroSkills, IEnumerable<SkillType> playerOneSkills) =>
+            CreateInternal(node, playerZeroSkills, playerOneSkills ?? [], 0);
 
         private static CampaignBattleSetup CreateInternal(CampaignNode node,
             IEnumerable<SkillType> selectedSkills, IEnumerable<SkillType> partnerSkills, int localPlayerId)
         {
             var localSkills = (selectedSkills ?? []).OrderBy(s => (int)s).Select(SkillFactory.CreateSkill).ToList();
             localPlayerId = partnerSkills == null ? 0 : Math.Clamp(localPlayerId, 0, 1);
-            var local = new Player(localPlayerId, "The Arithmetist", 11, localSkills)
+            var local = new Player(localPlayerId, CampaignPlayerName(localPlayerId), 11, localSkills)
             {
                 PortraitKey = "arithmetist"
             };
@@ -28,7 +28,7 @@ namespace Fida.Campaign
             Player partner = null;
             if (partnerSkills != null)
             {
-                partner = new Player(1 - localPlayerId, "Player 2", 11,
+                partner = new Player(1 - localPlayerId, CampaignPlayerName(1 - localPlayerId), 11,
                     partnerSkills.Distinct().OrderBy(skill => (int)skill)
                         .Select(SkillFactory.CreateSkill).ToList()) { PortraitKey = "arithmetist" };
                 players.Add(partner);
@@ -51,9 +51,14 @@ namespace Fida.Campaign
                 agentTypes[enemy.PlayerId] = definition.AgentType;
             }
 
+            // Keep roster order identical on host and client. GameManager starts at
+            // index zero, so local-first ordering makes the two peers start different turns.
+            players.Sort((left, right) => left.PlayerId.CompareTo(right.PlayerId));
+
             var groups = new List<Group>
             {
-                new(0, "The Arithmetists", partner == null ? new[] { local } : new[] { local, partner }),
+                new(0, "The Arithmetists", (partner == null ? new[] { local } : new[] { local, partner })
+                    .OrderBy(player => player.PlayerId)),
                 new(1, "Echoes of Zero", players.Where(player => player.PlayerId >= enemyStartId))
             };
 
@@ -66,6 +71,10 @@ namespace Fida.Campaign
                 AgentTypes = agentTypes
             };
         }
+
+        private static string CampaignPlayerName(int playerId) => playerId == 0
+            ? "The Arithmetist"
+            : $"Player {playerId + 1}";
 
 
         private static Player CreateEnemy(int id, CampaignEnemyDefinition definition)

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
 using Fida.Logic;
+using Fida.Campaign;
 
 namespace Fida.Network
 {
@@ -20,6 +21,7 @@ namespace Fida.Network
         private bool _isHost;
         private bool _disposed;
         private readonly Queue<NetworkMessage> _pendingMessages = new();
+        private CampaignPresence _localCampaignPresence;
 
         /// <summary>当前是否为主机</summary>
         public bool IsHost => _isHost;
@@ -32,6 +34,7 @@ namespace Fida.Network
 
         /// <summary>当前状态文本（用于 UI 显示）</summary>
         public string StatusText { get; private set; } = string.Empty;
+        public void ReportStatus(string message) => StatusText = message ?? string.Empty;
 
         /// <summary>主机端：relay 分配的房间码（客机用此码加入）</summary>
         public string HostRoomCode => _relayHost?.RoomCode ?? string.Empty;
@@ -45,14 +48,8 @@ namespace Fida.Network
         /// <summary>连接断开时触发</summary>
         public event System.Action<string> Disconnected;
 
-        /// <summary>收到大厅游戏模式请求时触发（客机端）</summary>
-        public event System.Action<int> LobbyGameModeRequested;
-
-        /// <summary>收到大厅游戏模式响应时触发（主机端）</summary>
-        public event System.Action<int> LobbyGameModeAccepted;
-
-        /// <summary>收到大厅游戏开始结果时触发（客机端）</summary>
-        public event System.Action<int> LobbyGameStarting;
+        /// <summary>收到对方大厅投票时触发；双方拥有同等模式选择权。</summary>
+        public event System.Action<int> LobbyVoteReceived;
         public event System.Action<int, SkillType> DraftBanReceived;
         public event System.Action<int, IReadOnlyList<SkillType>> DraftLockReceived;
         public event System.Action<IReadOnlyList<SkillType>, IReadOnlyList<SkillType>> DraftStarting;
@@ -60,7 +57,7 @@ namespace Fida.Network
         public event Action<BattleSnapshot> BattleSnapshotReceived;
         public event Action<string> BattleSnapshotAcknowledged;
         public event Action<CampaignPresence> CampaignPresenceReceived;
-        public event Action<string> CampaignCoopStarting;
+        public event Action<string, string> CampaignCoopStarting;
         public BattleSnapshot PendingBattleSnapshot { get; private set; }
         public BattleSnapshot TakePendingBattleSnapshot()
         {
@@ -70,12 +67,47 @@ namespace Fida.Network
         }
         public CampaignPresence RemoteCampaignPresence { get; private set; } = new(1, CampaignOnlinePhase.Map, "", false);
         public bool IsCampaignSharedBattle { get; set; }
+        public bool IsCampaignBattleContinuingLocally { get; set; }
+        /// <summary>Host-issued shared session token for a simultaneous co-op campaign start.</summary>
+        public string CampaignSessionId { get; set; } = string.Empty;
 
-        /// <summary>当前游戏模式（0=PvP, 2=Campaign Co-op），在游戏开始时设置</summary>
+        /// <summary>当前模式：0=Duel，1=Co-op，2=Campaign Co-op。</summary>
         public int CurrentGameMode { get; set; } = 0;
+
+        /// <summary>本地大厅投票（-1=未选，0=Duel，1=Co-op，2=Campaign Co-op）。</summary>
+        public int LocalLobbyVote { get; set; } = -1;
+        /// <summary>对方大厅投票（-1=未选）</summary>
+        public int RemoteLobbyVote { get; private set; } = -1;
+
+        public void ResetLobbyVotes()
+        {
+            LocalLobbyVote = -1;
+            RemoteLobbyVote = -1;
+        }
+
+        /// <summary>双方投票状态文案（-1=未选）</summary>
+        public static string GetLobbyVoteStatusText(int local, int remote)
+        {
+            static string Name(int mode) => mode switch
+            {
+                0 => "DUEL", 1 => "CO-OP", 2 => "CAMPAIGN CO-OP", _ => "NONE"
+            };
+            if (local == -1 && remote == -1) return "CHOOSE A MODE";
+            if (local == -1) return $"ALLY CHOSE: {Name(remote)} - YOUR TURN";
+            if (remote == -1) return $"VOTED: {Name(local)} - WAITING FOR ALLY";
+            if (local == remote) return $"MATCH: {Name(local)} - STARTING...";
+            return $"VOTE MISMATCH - CHOOSE A MODE";
+        }
 
         public void SendCampaignPresence(CampaignPresence presence)
         {
+            if (CurrentGameMode == 2)
+                presence = presence with
+                {
+                    CompletedNodes = CampaignRuntime.OnlineProgress.CompletedNodes
+                        .OrderBy(id => id, StringComparer.OrdinalIgnoreCase).ToArray()
+                };
+            _localCampaignPresence = presence;
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
             writer.Write(presence.PlayerId);
@@ -86,14 +118,29 @@ namespace Fida.Network
             writer.Write(skills.Count);
             foreach (var skill in skills) writer.Write((int)skill);
             writer.Write(presence.SessionId ?? string.Empty);
+            var completedNodes = presence.CompletedNodes ?? Array.Empty<string>();
+            writer.Write(completedNodes.Count);
+            foreach (var nodeId in completedNodes) writer.Write(nodeId ?? string.Empty);
             SendMessage(new NetworkMessage(MessageType.CampaignPresence, stream.ToArray()));
+        }
+
+        /// <summary>Re-sends the current activity along with the now-merged online progress.</summary>
+        public void RepublishCampaignPresence()
+        {
+            if (_localCampaignPresence is { } presence) SendCampaignPresence(presence);
         }
 
         public void SendCampaignReady(string nodeId) => SendMessage(
             new NetworkMessage(MessageType.CampaignReady, WriteStringPayload(nodeId)));
 
-        public void SendCampaignCoopStart(string nodeId) => SendMessage(
-            new NetworkMessage(MessageType.CampaignCoopStart, WriteStringPayload(nodeId)));
+        public void SendCampaignCoopStart(string nodeId, string sessionId)
+        {
+            using var stream = new MemoryStream();
+            using var writer = new BinaryWriter(stream);
+            writer.Write(nodeId ?? string.Empty);
+            writer.Write(sessionId ?? string.Empty);
+            SendMessage(new NetworkMessage(MessageType.CampaignCoopStart, stream.ToArray()));
+        }
 
         /// <summary>Drains map/loadout protocol messages. Call only outside battle action processing.</summary>
         public void ProcessCampaignMessages()
@@ -109,9 +156,7 @@ namespace Fida.Network
                     {
                         using var stream = new MemoryStream(message.Payload);
                         using var reader = new BinaryReader(stream);
-                        var presence = new CampaignPresence(reader.ReadInt32(), (CampaignOnlinePhase)reader.ReadByte(),
-                            reader.ReadString(), reader.ReadBoolean(),
-                            ReadSkillList(reader, stream), reader.ReadString());
+                        var presence = ReadCampaignPresence(reader, stream);
                         RemoteCampaignPresence = presence;
                         CampaignPresenceReceived?.Invoke(presence);
                     }
@@ -124,7 +169,9 @@ namespace Fida.Network
                     }
                     else if (message.Type == MessageType.CampaignCoopStart)
                     {
-                        CampaignCoopStarting?.Invoke(ReadStringPayload(message.Payload));
+                        var start = ReadCampaignCoopStart(message.Payload);
+                        CampaignSessionId = start.SessionId;
+                        CampaignCoopStarting?.Invoke(start.NodeId, start.SessionId);
                     }
                     else if (message.Type == MessageType.GameAction && CurrentGameMode == 2)
                     {
@@ -210,7 +257,7 @@ namespace Fida.Network
 
 
         /// <summary>
-        /// 处理大厅消息（在 OnlineLobby 状态时每帧调用）
+        /// 处理大厅消息（双方对称：任一投票消息都视为对方的一次投票）
         /// </summary>
         public void ProcessLobbyMessages()
         {
@@ -219,32 +266,17 @@ namespace Fida.Network
 
             foreach (var msg in messages)
             {
+                // 三种投票消息（请求/响应/结果）语义相同：payload 为对方所选模式。
                 switch (msg.Type)
                 {
-                    case MessageType.LobbyStartGameResponse:
-                        // 客机接受了游戏模式请求
-                        if (_isHost && msg.Payload.Length >= 4)
-                        {
-                            int mode = BitConverter.ToInt32(msg.Payload, 0);
-                            LobbyGameModeAccepted?.Invoke(mode);
-                        }
-                        break;
-
                     case MessageType.LobbyStartGameRequest:
-                        // 主机发来了游戏模式请求
-                        if (!_isHost && msg.Payload.Length >= 4)
-                        {
-                            int mode = BitConverter.ToInt32(msg.Payload, 0);
-                            LobbyGameModeRequested?.Invoke(mode);
-                        }
-                        break;
-
+                    case MessageType.LobbyStartGameResponse:
                     case MessageType.LobbyStartGameResult:
-                        // 主机确认游戏开始
-                        if (!_isHost && msg.Payload.Length >= 4)
+                        if (msg.Payload.Length >= 4)
                         {
                             int mode = BitConverter.ToInt32(msg.Payload, 0);
-                            LobbyGameStarting?.Invoke(mode);
+                            RemoteLobbyVote = mode;
+                            LobbyVoteReceived?.Invoke(mode);
                         }
                         break;
                     default: unhandled.Add(msg); break;
@@ -360,10 +392,31 @@ namespace Fida.Network
             return result;
         }
 
+        private static CampaignPresence ReadCampaignPresence(BinaryReader reader, MemoryStream stream)
+        {
+            int playerId = reader.ReadInt32();
+            var phase = (CampaignOnlinePhase)reader.ReadByte();
+            string nodeId = reader.ReadString();
+            bool ready = reader.ReadBoolean();
+            var skills = ReadSkillList(reader, stream);
+            string sessionId = reader.ReadString();
+            var completedNodes = new List<string>();
+            if (stream.Position + sizeof(int) <= stream.Length)
+            {
+                int count = reader.ReadInt32();
+                if (count < 0 || count > 4096)
+                    throw new InvalidDataException("Invalid campaign progress count.");
+                for (int i = 0; i < count; i++) completedNodes.Add(reader.ReadString());
+            }
+            if (stream.Position != stream.Length)
+                throw new InvalidDataException("Unexpected campaign presence data.");
+            return new CampaignPresence(playerId, phase, nodeId, ready, skills, sessionId, completedNodes);
+        }
+
         /// <summary>
-        /// 主机发送游戏模式请求给客机
+        /// 发送大厅模式投票（双方对称：主机经 server/relay 下发，客机经 client 上行）
         /// </summary>
-        public void SendLobbyGameModeRequest(int mode)
+        public void SendLobbyVote(int mode)
         {
             var payload = BitConverter.GetBytes(mode);
             var message = new NetworkMessage(MessageType.LobbyStartGameRequest, payload);
@@ -372,34 +425,8 @@ namespace Fida.Network
                 _gameServer.SendToClient(message);
             else if (_isHost && _relayHost != null)
                 _relayHost.SendToClient(message);
-
-        }
-
-        /// <summary>
-        /// 客机发送游戏模式接受响应给主机
-        /// </summary>
-        public void SendLobbyGameModeAccept(int mode)
-        {
-            var payload = BitConverter.GetBytes(mode);
-            var message = new NetworkMessage(MessageType.LobbyStartGameResponse, payload);
-
-            if (!_isHost && _gameClient != null)
+            else if (!_isHost && _gameClient != null)
                 _gameClient.SendMessage(message);
-        }
-
-        /// <summary>
-        /// 主机发送游戏开始确认给客机
-        /// </summary>
-        public void SendLobbyGameStartResult(int mode)
-        {
-            var payload = BitConverter.GetBytes(mode);
-            var message = new NetworkMessage(MessageType.LobbyStartGameResult, payload);
-
-            if (_isHost && _gameServer != null)
-                _gameServer.SendToClient(message);
-            else if (_isHost && _relayHost != null)
-                _relayHost.SendToClient(message);
-
         }
 
         /// <summary>接收远程消息并应用到 GameManager</summary>
@@ -414,7 +441,7 @@ namespace Fida.Network
                 {
                     if (CurrentGameMode == 2 && !IsCampaignSharedBattle) continue;
                     var action = NetworkMessage.DeserializeAction(msg.Payload);
-                    gameManager.UpdateGame(action);
+                    gameManager.UpdateGame(action, GameActionOrigin.RemoteNetwork);
                 }
                 else if (msg.Type == MessageType.BattleJoinRequest)
                 {
@@ -433,8 +460,7 @@ namespace Fida.Network
                 {
                     using var stream = new MemoryStream(msg.Payload);
                     using var reader = new BinaryReader(stream);
-                    var presence = new CampaignPresence(reader.ReadInt32(), (CampaignOnlinePhase)reader.ReadByte(),
-                        reader.ReadString(), reader.ReadBoolean(), ReadSkillList(reader, stream), reader.ReadString());
+                    var presence = ReadCampaignPresence(reader, stream);
                     RemoteCampaignPresence = presence;
                     CampaignPresenceReceived?.Invoke(presence);
                 }
@@ -446,7 +472,11 @@ namespace Fida.Network
                     CampaignPresenceReceived?.Invoke(RemoteCampaignPresence);
                 }
                 else if (msg.Type == MessageType.CampaignCoopStart)
-                    CampaignCoopStarting?.Invoke(ReadStringPayload(msg.Payload));
+                {
+                    var start = ReadCampaignCoopStart(msg.Payload);
+                    CampaignSessionId = start.SessionId;
+                    CampaignCoopStarting?.Invoke(start.NodeId, start.SessionId);
+                }
                 else unhandled.Add(msg);
             }
             RetainMessages(unhandled);
@@ -481,6 +511,19 @@ namespace Fida.Network
             return reader.ReadString();
         }
 
+        private static (string NodeId, string SessionId) ReadCampaignCoopStart(byte[] payload)
+        {
+            using var stream = new MemoryStream(payload ?? []);
+            using var reader = new BinaryReader(stream);
+            string nodeId = reader.ReadString();
+            string sessionId = reader.ReadString();
+            if (stream.Position != stream.Length)
+                throw new InvalidDataException("Unexpected trailing co-op start data.");
+            if (string.IsNullOrWhiteSpace(sessionId))
+                throw new InvalidDataException("Co-op start is missing its shared session ID.");
+            return (nodeId, sessionId);
+        }
+
         /// <summary>将本地 GameAction 发送给远程玩家</summary>
         public void SendAction(Fida.Logic.GameAction action)
         {
@@ -512,6 +555,10 @@ namespace Fida.Network
             _relayHost = null;
 
             _isHost = false;
+            CampaignSessionId = string.Empty;
+            _localCampaignPresence = null;
+            IsCampaignSharedBattle = false;
+            IsCampaignBattleContinuingLocally = false;
             StatusText = string.Empty;
         }
 
