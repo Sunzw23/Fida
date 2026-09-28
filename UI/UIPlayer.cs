@@ -78,6 +78,9 @@ namespace Fida.UI
         /// </summary>
         public override bool CanFocus => IsEnabled;
 
+        public override Rectangle? GetScreenBounds(Viewport viewport) =>
+            IsVisible ? CardBounds : null;
+
         /// <summary>
         /// 获取焦点时触发确认事件（手柄 A 键按下时调用）
         /// </summary>
@@ -662,12 +665,14 @@ namespace Fida.UI
             for (int i = 0; i < visibleMobile; i++)
             {
                 Skill skill = Player.Skills[i];
+                Color accent = UISkillIconCatalog.Fill(skill);
                 var bounds = new Rectangle(startMobile + i * (sizeMobile + gapMobile),
                     strip.Center.Y - sizeMobile / 2, sizeMobile, sizeMobile);
-                sb.Draw(Pixel, bounds, UISkillIconCatalog.Fill(skill));
-                UIUtils.DrawRectangleOutlines(sb, bounds, UITheme.GoldBright, 1, Pixel);
+                sb.Draw(Pixel, bounds, UITheme.PanelLight);
+                sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Top, 5, bounds.Height), accent);
+                UIUtils.DrawRectangleOutlines(sb, bounds, accent, 2, Pixel);
                 DrawCompactText(sb, UISkillIconCatalog.Glyph(skill.Type), bounds.Center.ToVector2(),
-                    UITheme.PanelLight, 0.60f * scale, sizeMobile - 5f);
+                    UITheme.Ink, 0.60f * scale, sizeMobile - 5f);
             }
             return;
 #else
@@ -678,8 +683,8 @@ namespace Fida.UI
 
             const int maximumVisible = 5;
             int visible = System.Math.Min(maximumVisible, Player.Skills.Count);
-                int size = System.Math.Min(strip.Height, System.Math.Max(
-                    UIConfig.ScaleDesktopMetric(23), (int)(UIConfig.ScaleDesktopMetric(30) * scale)));
+            int size = System.Math.Min(strip.Height, System.Math.Max(
+                UIConfig.ScaleDesktopMetric(23), (int)(UIConfig.ScaleDesktopMetric(30) * scale)));
             int gap = System.Math.Max(UIConfig.ScaleDesktopMetric(3),
                 (int)(UIConfig.ScaleDesktopMetric(4) * scale));
             int totalWidth = visible * size + (visible - 1) * gap;
@@ -689,10 +694,12 @@ namespace Fida.UI
             for (int i = 0; i < visible; i++)
             {
                 Skill skill = Player.Skills[i];
+                Color accent = UISkillIconCatalog.Fill(skill);
                 var bounds = new Rectangle(startX + i * (size + gap), centerY - size / 2, size, size);
-                sb.Draw(Pixel, bounds, UISkillIconCatalog.Fill(skill));
-                UIUtils.DrawRectangleOutlines(sb, bounds, UITheme.GoldBright,
-                    System.Math.Max(1, (int)(2 * scale)), Pixel);
+                sb.Draw(Pixel, bounds, UITheme.PanelLight);
+                sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Top, Math.Max(4, (int)(5 * scale)), bounds.Height), accent);
+                UIUtils.DrawRectangleOutlines(sb, bounds, accent,
+                    System.Math.Max(2, (int)(2 * scale)), Pixel);
                 DrawCompactText(sb, UISkillIconCatalog.Glyph(skill.Type), bounds.Center.ToVector2(),
                     UITheme.Ink, 0.58f * scale, size - 4f);
             }

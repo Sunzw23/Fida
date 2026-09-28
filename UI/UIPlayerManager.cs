@@ -69,6 +69,10 @@ namespace Fida.UI
                 viewportWidth - messageMargin * 2 - pauseSize - pauseGap);
             var messageBounds = new Rectangle(messageMargin, safeArea.Top + 20, messageWidth, 88);
 #else
+            int pauseSize = 54;
+            int pauseGap = 12;
+            messageWidth = System.Math.Max(1,
+                viewportWidth - messageMargin * 2 - pauseSize - pauseGap);
             var messageBounds = new Rectangle(messageMargin, safeArea.Top + 18, messageWidth, 62);
 #endif
             _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
@@ -104,8 +108,16 @@ namespace Fida.UI
             _gameMessageLabel.Update(FormatMobileCommand(gameManager.GameMessage));
 #endif
             _uiControls.Add(_gameMessageLabel);
-
 #if FIDA_ANDROID
+            _uiControls.Add(new UIIconButton(-10,
+                new Rectangle(messageBounds.Right + pauseGap,
+                    messageBounds.Top + (messageBounds.Height - pauseSize) / 2,
+                    pauseSize, pauseSize), UIIconButton.IconKind.Pause,
+                _resourceManager.Pixel, _resourceManager.Font)
+            {
+                Name = "pauseBattle"
+            });
+#else
             _uiControls.Add(new UIIconButton(-10,
                 new Rectangle(messageBounds.Right + pauseGap,
                     messageBounds.Top + (messageBounds.Height - pauseSize) / 2,

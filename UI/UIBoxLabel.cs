@@ -50,6 +50,9 @@ namespace Fida.UI
             Font = font;
         }
 
+        public override Rectangle? GetScreenBounds(Viewport viewport) =>
+            IsVisible ? Bounds : null;
+
         public override void Update(GameTime gameTime) { }
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)

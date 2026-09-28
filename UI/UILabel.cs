@@ -50,6 +50,29 @@ namespace Fida.UI
             }
 
             string displayText = UIFontGuard.Sanitize(Font, Text);
+            var (rect, scale) = Measure(displayText, position, visualScale);
+            sb.DrawString(Font, displayText, new Vector2(rect.Left, rect.Top), Color, 0f, Vector2.Zero, scale,
+                SpriteEffects.None, 0f);
+        }
+
+        public override Rectangle? GetScreenBounds(Viewport viewport)
+        {
+            if (!IsVisible || string.IsNullOrEmpty(Text)) return null;
+#if FIDA_ANDROID
+            float visualScale = 1f;
+#else
+            float visualScale = UIDesktopLayout.Scale(viewport);
+#endif
+            string displayText = UIFontGuard.Sanitize(Font, Text);
+            return Measure(displayText, Position, visualScale).Rect;
+        }
+
+        /// <summary>
+        /// 标签实际绘制矩形与缩放因子。Draw 与 GetScreenBounds 共用同一份几何计算，
+        /// 保证布局检测器读到的就是渲染器画出的范围。
+        /// </summary>
+        private (Rectangle Rect, float Scale) Measure(string displayText, Vector2 position, float visualScale)
+        {
             var textSize = Font.MeasureString(displayText);
             float widthScale = MaximumWidth > 0
                 ? MaximumWidth / MathHelper.Max(1f, textSize.X)
@@ -67,8 +90,9 @@ namespace Fida.UI
                 position.X - textSize.X * scale / 2,
                 position.Y - textSize.Y * scale / 2
             );
-            sb.DrawString(Font, displayText, pos, Color, 0f, Vector2.Zero, scale,
-                SpriteEffects.None, 0f);
+            return (new Rectangle((int)pos.X, (int)pos.Y,
+                System.Math.Max(1, (int)System.Math.Round(textSize.X * scale)),
+                System.Math.Max(1, (int)System.Math.Round(textSize.Y * scale))), scale);
         }
 
 

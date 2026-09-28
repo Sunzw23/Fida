@@ -28,6 +28,8 @@ namespace Fida.UI
     /// </summary>
     public class UIManager
     {
+        public const int RulesPageCount = 5;
+
         private readonly GraphicsDevice _graphicsDevice;
         private readonly SpriteBatch _spriteBatch;
         private readonly ResourceManager _resourceManager;
@@ -80,6 +82,11 @@ namespace Fida.UI
             {
                 control.Draw(_spriteBatch, gameTime);
             }
+#if !FIDA_ANDROID
+            // 布局重叠调试叠加层（F8 开关，仅桌面构建）
+            UIOverlapDebugger.Draw(_spriteBatch, _uiControls, _graphicsDevice.Viewport,
+                _resourceManager.Pixel, _resourceManager.Font);
+#endif
             _spriteBatch.End();
         }
 
@@ -120,15 +127,16 @@ namespace Fida.UI
             _screenBuilder.BuildMainMenu(connected, isHost);
         public void BuildPauseMenu() => _screenBuilder.BuildPauseMenu();
         public void BuildSettingsScreen() => _screenBuilder.BuildSettingsScreen();
-        public void BuildRulesScreen() => _screenBuilder.BuildRulesScreen();
+        public void BuildRulesScreen(int page = 0) => _screenBuilder.BuildRulesScreen(page);
         public void BuildOnlineMenu(bool connected = false) => _screenBuilder.BuildOnlineMenu(connected);
         public void BuildHostingScreen(string statusText, string roomCode = "") => _screenBuilder.BuildHostingScreen(statusText, roomCode);
         public void BuildConnectingScreen(string statusText) => _screenBuilder.BuildConnectingScreen(statusText);
         public void BuildOnlineLobby(bool isHost) => _screenBuilder.BuildOnlineLobby(isHost);
         public void BuildDuelDraft() => _screenBuilder.BuildDuelDraft();
-        public void BuildLevelSelect() => _screenBuilder.BuildLevelSelect();
-        public void BuildSkillSelect() => _screenBuilder.BuildSkillSelect();
+        public void BuildLevelSelect(bool online = false) => _screenBuilder.BuildLevelSelect(online);
+        public void BuildSkillSelect(bool online = false) => _screenBuilder.BuildSkillSelect(online);
         public void BuildCampaignResult(bool won, string message) => _screenBuilder.BuildCampaignResult(won, message);
+        public void BuildDuelResult(bool won, string message) => _screenBuilder.BuildDuelResult(won, message);
 
         /// <summary>构建对局 UI（玩家面板 + 焦点初始化）</summary>
         public void BuildPlayingUI(GameManager gameManager)

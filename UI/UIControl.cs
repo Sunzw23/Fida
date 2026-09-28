@@ -81,6 +81,14 @@ namespace Fida.UI
             return Id;
         }
 
+        /// <summary>
+        /// 控件当前帧实际占用的屏幕矩形（与 Draw 使用同一套几何计算）。
+        /// 返回 null 表示该控件本帧不绘制任何屏幕区域（不可见 / 无文本）。
+        /// 供布局工具（如 <see cref="UIOverlapDebugger"/>）读取真实几何，
+        /// 保证检测器与渲染器永不失配。
+        /// </summary>
+        public virtual Rectangle? GetScreenBounds(Viewport viewport) => null;
+
         public virtual void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
             // 默认实现为空，子类可以重写此方法进行绘制

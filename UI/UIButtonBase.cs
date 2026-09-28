@@ -47,6 +47,9 @@ namespace Fida.UI
         /// </summary>
         public override bool CanFocus => IsEnabled && IsVisible;
 
+        public override Rectangle? GetScreenBounds(Viewport viewport) =>
+            IsVisible ? Bounds : null;
+
         // 配色统一取自 UITheme（深色科技主题）
 
         // ---- 鼠标交互状态机 ----
