@@ -2,6 +2,8 @@
 #nullable enable
 using System.Collections.Generic;
 using Fida.Logic;
+using Fida.Campaign;
+using Fida.UI.Campaign;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -135,6 +137,31 @@ namespace Fida.UI
         public void BuildDuelDraft() => _screenBuilder.BuildDuelDraft();
         public void BuildLevelSelect(bool online = false) => _screenBuilder.BuildLevelSelect(online);
         public void BuildSkillSelect(bool online = false) => _screenBuilder.BuildSkillSelect(online);
+        public UITutorialDialogue AddTutorialDialogue(CampaignNode node) =>
+            _screenBuilder.AddTutorialDialogue(node);
+        public UITutorialDialogue? TutorialDialogue
+        {
+            get
+            {
+                foreach (var control in _uiControls)
+                    if (control is UITutorialDialogue dialogue && dialogue.IsVisible)
+                        return dialogue;
+                return null;
+            }
+        }
+        public void ShowTutorialHint(CampaignNode node, string instruction)
+        {
+            UITutorialDialogue? dialogue = null;
+            foreach (var control in _uiControls)
+                if (control is UITutorialDialogue existing)
+                {
+                    dialogue = existing;
+                    break;
+                }
+            dialogue ??= _screenBuilder.AddTutorialDialogue(node);
+            dialogue.PresentInstruction(instruction);
+            if (CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
+        }
         public void BuildCampaignResult(bool won, string message) => _screenBuilder.BuildCampaignResult(won, message);
         public void BuildDuelResult(bool won, string message) => _screenBuilder.BuildDuelResult(won, message);
 

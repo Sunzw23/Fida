@@ -26,6 +26,7 @@ namespace Fida.Campaign
             };
             var players = new List<Player> { local };
             Player partner = null;
+            Player tutorialCompanion = null;
             if (partnerSkills != null)
             {
                 partner = new Player(1 - localPlayerId, CampaignPlayerName(1 - localPlayerId), 11,
@@ -36,7 +37,17 @@ namespace Fida.Campaign
             var reinforcements = new List<Player>();
             var agentTypes = new Dictionary<int, CampaignAgentType>();
 
-            int nextId = partner == null ? 1 : 2;
+            if (partner == null && !string.IsNullOrWhiteSpace(node.TutorialCompanion))
+            {
+                tutorialCompanion = new Player(1, node.TutorialCompanion, 8, [])
+                {
+                    PortraitKey = "tutorial_ally"
+                };
+                players.Add(tutorialCompanion);
+                agentTypes[tutorialCompanion.PlayerId] = CampaignAgentType.Rule;
+            }
+
+            int nextId = partner != null || tutorialCompanion != null ? 2 : 1;
             int enemyStartId = nextId;
             foreach (var definition in node.Enemies)
             {
@@ -57,7 +68,9 @@ namespace Fida.Campaign
 
             var groups = new List<Group>
             {
-                new(0, "The Arithmetists", (partner == null ? new[] { local } : new[] { local, partner })
+                new(0, "The Arithmetists", (partner != null ? new[] { local, partner }
+                        : tutorialCompanion != null ? new[] { local, tutorialCompanion }
+                        : new[] { local })
                     .OrderBy(player => player.PlayerId)),
                 new(1, "Echoes of Zero", players.Where(player => player.PlayerId >= enemyStartId))
             };

@@ -38,6 +38,11 @@ namespace Fida.Campaign
         public int ReinforcementAfterEnemyDeaths { get; init; }
         public bool IsBoss { get; init; }
         public bool IsTrueEndingRequired { get; init; }
+        public string TutorialBriefing { get; init; } = "";
+        public string TutorialRule { get; init; } = "";
+        public string TutorialCompanion { get; init; } = "";
+
+        public bool IsTutorial => !string.IsNullOrWhiteSpace(TutorialBriefing);
 
         public string RewardText => Rewards.Count == 0
             ? "Story Fragment"

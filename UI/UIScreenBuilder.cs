@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Fida.Logic;
+using Fida.Campaign;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Fida.UI.Campaign;
@@ -430,6 +431,16 @@ namespace Fida.UI
         {
             Clear();
             _campaignScreens.BuildLoadout(GameSetup.SelectedNode, online);
+        }
+
+        public UITutorialDialogue AddTutorialDialogue(CampaignNode node)
+        {
+            var dialogue = new UITutorialDialogue(-1000, _resourceManager.GraphicsDevice,
+                _resourceManager.Pixel, _resourceManager.Font, node);
+            _uiControls.Add(dialogue);
+            if (_focusManager.CurrentInputMode == InputMode.Controller)
+                _focusManager.FocusFirst();
+            return dialogue;
         }
 
         public void BuildCampaignResult(bool won, string message) =>

@@ -101,7 +101,7 @@ namespace Fida
                 if (_stateMachine.CurrentState == State.Rules)
                     _stateMachine.CloseRules();
                 else if (_stateMachine.CurrentState is State.MainMenu or State.Paused or
-                         State.Playing or State.OnlinePlaying)
+                         State.Playing or State.OnlinePlaying && _uiManager.TutorialDialogue == null)
                     _stateMachine.OpenRules();
             }
             _rulesShortcutWasDown = rulesShortcutDown;

@@ -112,7 +112,7 @@ public class CampaignTests
     public void Catalog_HasUniqueNodesAndValidParents()
     {
         Assert.True(CampaignGraphValidator.IsValid(CampaignCatalog.Nodes));
-        Assert.Equal(26, CampaignCatalog.Nodes.Count);
+        Assert.Equal(29, CampaignCatalog.Nodes.Count);
         Assert.Equal(CampaignCatalog.Nodes.Count, CampaignCatalog.Nodes.Select(n => n.Id).Distinct().Count());
         var ids = CampaignCatalog.Nodes.Select(n => n.Id).ToHashSet();
         Assert.All(CampaignCatalog.Nodes.SelectMany(n => n.Parents), parent => Assert.Contains(parent, ids));
@@ -173,6 +173,22 @@ public class CampaignTests
     }
 
     [Fact]
+    public void FieldLessons_TellAnOrderedStoryAndTeachRulesInEnglish()
+    {
+        var lessons = new[] { "T01", "T02", "T03" }
+            .Select(CampaignCatalog.GetNode).ToArray();
+
+        Assert.All(lessons, node => Assert.True(node.IsTutorial));
+        Assert.Equal("Mara Venn", lessons[0].TutorialCompanion);
+        Assert.Empty(lessons[0].Parents);
+        Assert.Contains("T01", lessons[1].Parents);
+        Assert.Contains("T02", lessons[2].Parents);
+        Assert.Contains("sum", lessons[0].TutorialBriefing, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("skill", lessons[1].TutorialBriefing, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("reinforcement", lessons[2].TutorialBriefing, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Loadout_EnforcesBudgetUnlockAndHealthConflict()
     {
         var progress = new CampaignProgress
@@ -218,6 +234,19 @@ public class CampaignTests
         Assert.Equal("withered_king", prologue.Players[1].PortraitKey);
         Assert.All(laterBattle.Players.Skip(1),
             enemy => Assert.Equal("enemy_fallback", enemy.PortraitKey));
+    }
+
+    [Fact]
+    public void BattleFactory_PlacesTutorialCompanionOnPlayerFaction()
+    {
+        var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("T01"), []);
+        var mara = setup.Players.Single(player => player.Name == "Mara Venn");
+
+        Assert.Equal(0, setup.Groups[0].GroupId);
+        Assert.Contains(mara, setup.Groups[0].Players);
+        Assert.DoesNotContain(mara, setup.Groups[1].Players);
+        Assert.Equal(CampaignAgentType.Rule, setup.AgentTypes[mara.PlayerId]);
+        Assert.Equal("Echo Scout", setup.Groups[1].Players.Single().Name);
     }
 
     [Fact]

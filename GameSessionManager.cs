@@ -9,6 +9,7 @@ using Fida.Network;
 using Fida.Scene;
 using Fida.UI;
 using Fida.Campaign;
+using Microsoft.Xna.Framework.Input;
 
 namespace Fida
 {
@@ -22,6 +23,10 @@ namespace Fida
         private readonly PlayingSceneManager _playingSceneManager;
         private readonly NetworkManager _networkManager;
         private readonly GameStateMachine _stateMachine;
+        private KeyboardState _tutorialPreviousKeyboard;
+        private readonly HashSet<string> _tutorialHintsShown = new();
+        private string _tutorialTrackedNodeId = string.Empty;
+        private int _tutorialTrackedRosterSize;
 
         private bool _networkGameStarted;
         private string _campaignSessionId = string.Empty;
@@ -47,6 +52,8 @@ namespace Fida
             _networkManager.CampaignPresenceReceived += OnCampaignPresenceReceived;
             _uiManager.GameManager.GameEnded += OnGameEnded;
             _uiManager.GameManager.ActionSubmitted += OnGameActionSubmitted;
+            _uiManager.GameManager.PlayerActionRequired += OnTutorialActionRequired;
+            _uiManager.GameManager.MessageUpdated += OnTutorialMessageUpdated;
         }
 
         private void OnGameEnded(object sender, GameEndEventArgs e)
@@ -256,6 +263,9 @@ namespace Fida
             if (_stateMachine.CurrentState != State.Playing) return;
             var gm = _uiManager.GameManager;
             _uiManager.UpdateUIButtons(gm);
+            TrackTutorialReinforcements(gm);
+
+            if (HandleTutorialDialogueInput(gameTime)) return;
 
             if (_uiManager.GetButtonByName("pauseBattle")?.IsClicked() == true)
             {
@@ -297,6 +307,8 @@ namespace Fida
             if (_awaitingBattleJoinAcknowledgement) return;
             _uiManager.UpdateUIButtons(gm);
 
+            if (HandleTutorialDialogueInput(gameTime)) return;
+
             if (_uiManager.GetButtonByName("pauseBattle")?.IsClicked() == true)
             {
                 _stateMachine.SwitchToState(State.Paused);
@@ -320,6 +332,92 @@ namespace Fida
 
             if (action.Type != ActionType.None) gm.UpdateGame(action);
         }
+
+        private bool HandleTutorialDialogueInput(GameTime gameTime)
+        {
+            var dialogue = _uiManager.TutorialDialogue;
+            if (dialogue == null) return false;
+
+            dialogue.IsClicked();
+            _uiManager.UpdateControllerInput(gameTime);
+            KeyboardState keyboard = Keyboard.GetState();
+            bool keyboardConfirm = (keyboard.IsKeyDown(Keys.Enter) && !_tutorialPreviousKeyboard.IsKeyDown(Keys.Enter)) ||
+                (keyboard.IsKeyDown(Keys.Space) && !_tutorialPreviousKeyboard.IsKeyDown(Keys.Space));
+            _tutorialPreviousKeyboard = keyboard;
+
+            if (keyboardConfirm || _uiManager.GetControllerInput()?.IsConfirmPressed() == true)
+                dialogue.Advance();
+            return true;
+        }
+
+        private void OnTutorialActionRequired(object sender, PlayerActionRequiredEventArgs e)
+        {
+            if (_stateMachine.CurrentState != State.Playing || !GameSetup.SelectedNode.IsTutorial ||
+                e.SourcePlayerId != _uiManager.GameManager.LocalPlayerId)
+                return;
+
+            var node = GameSetup.SelectedNode;
+            var game = _uiManager.GameManager;
+            if (node.Id == "T01" && game.CurrentState is ChooseNumberIndexState chooseNumbers)
+            {
+                if (chooseNumbers.Stage == 0 && MarkTutorialHint(node.Id + ":number-first"))
+                    _uiManager.ShowTutorialHint(node,
+                        "Step 1 of 2: tap either number on your card. This is the number you will replace.");
+                else if (chooseNumbers.Stage == 1 && MarkTutorialHint(node.Id + ":number-second"))
+                    _uiManager.ShowTutorialHint(node,
+                        "Step 2 of 2: tap a number on any living unit. Add the values; totals wrap at 10, and only your first number changes.");
+            }
+            else if (node.Id == "T01" && game.CurrentState is TargetSelectionState target &&
+                     target.DamageValue > 0 && MarkTutorialHint(node.Id + ":target"))
+            {
+                _uiManager.ShowTutorialHint(node,
+                    "Now attack: tap the hostile unit's card. Its health drops by your attack value.");
+            }
+            else if (node.Id == "T02" && game.CurrentState is PlusAttackSkillState &&
+                     MarkTutorialHint(node.Id + ":attack-skill"))
+            {
+                _uiManager.ShowTutorialHint(node,
+                    "Attack Up triggered automatically. Tap APPLY to add 1 damage, or PASS to decline it.");
+            }
+        }
+
+        private void OnTutorialMessageUpdated(object sender, GameEventArgs e)
+        {
+            if (_stateMachine.CurrentState != State.Playing || !GameSetup.SelectedNode.IsTutorial ||
+                GameSetup.SelectedNode.Id != "T02")
+                return;
+
+            var game = _uiManager.GameManager;
+            bool isDefenceTrigger = game.Players.Any(player =>
+                string.Equals(e.Message, GameText.SkillActivated(player.Name, SkillType.PlusDefence),
+                    StringComparison.Ordinal));
+            if (isDefenceTrigger && MarkTutorialHint("T02:defence-skill"))
+                _uiManager.ShowTutorialHint(GameSetup.SelectedNode,
+                    "Defense Up triggers automatically when this unit is attacked. It reduces the hit by 1 (minimum 1); no button is needed.");
+        }
+
+        private void TrackTutorialReinforcements(GameManager game)
+        {
+            var node = GameSetup.SelectedNode;
+            if (!node.IsTutorial) return;
+            if (!string.Equals(_tutorialTrackedNodeId, node.Id, StringComparison.Ordinal))
+            {
+                _tutorialTrackedNodeId = node.Id;
+                _tutorialTrackedRosterSize = game.Players.Count;
+                _tutorialHintsShown.Clear();
+                return;
+            }
+
+            if (node.Id == "T03" && game.Players.Count > _tutorialTrackedRosterSize &&
+                MarkTutorialHint(node.Id + ":reinforcement"))
+            {
+                _uiManager.ShowTutorialHint(node,
+                    "Reinforcement arrived! A new enemy card has joined the field. Defeat every hostile unit to clear the encounter.");
+            }
+            _tutorialTrackedRosterSize = game.Players.Count;
+        }
+
+        private bool MarkTutorialHint(string key) => _tutorialHintsShown.Add(key);
 
         private void OnGameActionSubmitted(GameAction action, GameActionOrigin origin)
         {

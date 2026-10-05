@@ -85,8 +85,9 @@ namespace Fida.UI.Campaign
             _controls.Add(new UIButton(4, new Rectangle(panel.Left + 56, panel.Top + 620, buttonWidth, 92),
                 "Adjust Loadout", _resources.Pixel, _resources.Font)
             { Name = "retry", FocusIndex = 0 });
+            string exitText = won && node.IsTutorial ? "Continue Training" : "Main Menu";
             _controls.Add(new UIButton(5, new Rectangle(panel.Left + 56, panel.Top + 748,
-                buttonWidth, 92), "Main Menu", _resources.Pixel, _resources.Font)
+                buttonWidth, 92), exitText, _resources.Pixel, _resources.Font)
             { Name = "mainMenu", FocusIndex = 1 });
             FocusIfNeeded();
             return;
@@ -123,7 +124,8 @@ namespace Fida.UI.Campaign
                     new Rectangle(520, 650, 380, 75), viewport), "Adjust Loadout",
                 _resources.Pixel, _resources.Font) { Name = "retry", FocusIndex = 0 });
             _controls.Add(new UIButton(5, UIDesktopLayout.MapRectangle(
-                    new Rectangle(1020, 650, 380, 75), viewport), "Main Menu",
+                    new Rectangle(1020, 650, 380, 75), viewport),
+                won && node.IsTutorial ? "Continue Training" : "Main Menu",
                 _resources.Pixel, _resources.Font) { Name = "mainMenu", FocusIndex = 1 });
             FocusIfNeeded();
 #endif

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "T01",
+    "chapter": "Field Lessons",
+    "mapPath": ["Field Lessons"],
+    "name": "First Signal",
+    "story": "A dormant relay wakes an Echo scout beneath the old transit arch.",
+    "skillBudget": 0,
+    "mapX": 280,
+    "mapY": 180,
+    "requiredCompletedParents": 0,
+    "parents": [],
+    "rewards": ["PlusAttack"],
+    "tutorialCompanion": "Mara Venn",
+    "tutorialBriefing": "Mara Venn, Arithmetist field unit. Same side as you.\nChoose one of your numbers, then a different number from any living unit. Their sum wraps at 10 and replaces your first number. Try it, then strike the scout.",
+    "tutorialRule": "TURN 01  /  Choose two numbers. Their sum becomes your first number.",
+    "enemies": [
+      { "name": "Echo Scout", "health": 3, "number0": 1, "number1": 2, "agentType": "Scripted" }
+    ]
+  },
+  {
+    "id": "T02",
+    "chapter": "Field Lessons",
+    "mapPath": ["Field Lessons"],
+    "name": "Hold the Crossing",
+    "story": "The relay route is blocked by a guard built to absorb every first blow.",
+    "skillBudget": 2,
+    "mapX": 680,
+    "mapY": 180,
+    "parents": ["T01"],
+    "requiredCompletedParents": 1,
+    "rewards": ["PlusDefence"],
+    "tutorialCompanion": "Mara Venn",
+    "tutorialBriefing": "Good work. I have opened the field loadout. Equip a skill within the SP budget; it triggers automatically when its condition is met. I will draw the guard's attention while you test your new attack skill.",
+    "tutorialRule": "LOADOUT  /  SP is your skill budget. Skills trigger automatically when their condition is met.",
+    "enemies": [
+      { "name": "Relay Guard", "health": 5, "number0": 2, "number1": 3, "skills": ["PlusDefence"] }
+    ]
+  },
+  {
+    "id": "T03",
+    "chapter": "Field Lessons",
+    "mapPath": ["Field Lessons"],
+    "name": "Silence the Echo",
+    "story": "An Echo captain is restarting the relay. Mara holds the line as its backup signal begins to answer.",
+    "skillBudget": 3,
+    "mapX": 1080,
+    "mapY": 180,
+    "parents": ["T02"],
+    "requiredCompletedParents": 1,
+    "rewards": ["DoubleHealth"],
+    "tutorialCompanion": "Mara Venn",
+    "tutorialBriefing": "The captain is protected by more than one Echo. Keep choosing targets and watch the field: reinforcements can arrive when an enemy falls. We end this together—the relay goes dark only when the whole hostile squad is cleared.",
+    "tutorialRule": "FIELD  /  Defeat every enemy. Reinforcements may join before the encounter ends.",
+    "isBoss": true,
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      { "name": "Echo Captain", "health": 7, "number0": 3, "number1": 4, "skills": ["PlusAttack"] },
+      { "name": "Echo Guard", "health": 4, "number0": 2, "number1": 2 }
+    ],
+    "reinforcements": [
+      { "name": "Echo Reserve", "health": 3, "number0": 1, "number1": 3 }
+    ]
+  }
+]

@@ -14,6 +14,13 @@ namespace Fida.States
             bool wasOnlineDuel = _stateMachine.LastBattleOutcome?.WasOnlineDuel == true;
             BindButton("mainMenu", () =>
             {
+                if (_stateMachine.LastBattleOutcome?.Won == true && GameSetup.SelectedNode.IsTutorial)
+                {
+                    _stateMachine.SwitchToState(_networkManager.CurrentGameMode == 2
+                        ? State.OnlineCampaignMap
+                        : State.LevelSelect);
+                    return;
+                }
                 if (wasOnlineDuel || _networkManager.CurrentGameMode == 2)
                 {
                     _networkManager.Cleanup();
