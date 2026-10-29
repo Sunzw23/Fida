@@ -88,8 +88,9 @@ public sealed class OnlineCampaignSkillsState : StateBase
 
     public override void HandleInput(GameTime gameTime)
     {
-        base.HandleInput(gameTime);
         _networkManager.ProcessCampaignMessages();
+        if (HandleStoryInput(gameTime)) return;
+        base.HandleInput(gameTime);
         var wheel = _uiManager.GetControlByName<UICampaignSkillWheel>("skill_wheel");
         if (wheel == null) return;
 
@@ -133,7 +134,8 @@ public sealed class OnlineCampaignSkillsState : StateBase
         }
         if (wheel.TryConsumeToggle(out SkillType skill) && !_ready) GameSetup.ToggleCampaignSkill(skill, online: true);
 
-        if (!_ready && wheel.ConsumeStartRequest())
+        if (!_ready && (wheel.ConsumeStartRequest() ||
+            !CampaignLoadout.HasSelectableSkills(CampaignRuntime.OnlineProgress, GameSetup.SelectedNode)))
         {
             _ready = true;
             Publish(CampaignOnlinePhase.Loadout, GameSetup.SelectedNodeId, true, GameSetup.SelectedLocalSkills);

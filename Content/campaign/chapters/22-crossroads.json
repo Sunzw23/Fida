@@ -1,48 +1,238 @@
 [
   {
-    "id": "B4", "chapter": "Chapter II - Bell Tower", "name": "Stone Watch",
-    "story": "The wardens can only be struck once each turn.",
-    "skillBudget": 4, "mapX": 100, "mapY": 610, "parents": ["B1", "B2"], "requiredCompletedParents": 1,
-    "rewards": ["Shi"],
+    "id": "B4",
+    "chapter": "Chapter II - Bell Tower",
+    "name": "Stone Watch",
+    "story": "Stone wardens stand between the steps of the tower.",
+    "skillBudget": 4,
+    "mapX": 100,
+    "mapY": 610,
+    "parents": [
+      "B1",
+      "B2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Shi"
+    ],
     "enemies": [
-      { "name": "Stone Warden", "health": 6, "skills": ["Shi", "PlusDefence"] },
-      { "name": "Bell Striker", "health": 4, "skills": ["PlusAttack"] }
+      {
+        "name": "Stone Warden",
+        "health": 6,
+        "skills": [
+          "Shi",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Bell Striker",
+        "health": 4,
+        "skills": [
+          "PlusAttack"
+        ]
+      }
     ],
     "reinforcementRound": 3,
-    "reinforcements": [{ "name": "Late Warden", "health": 4, "skills": ["Shi"] }]
-  },
-  {
-    "id": "B5", "chapter": "Chapter II - Bell Tower", "name": "Mirror Siege",
-    "story": "The bells answer an attack with its reflection.",
-    "skillBudget": 4, "mapX": 680, "mapY": 610, "parents": ["B2", "B3"], "requiredCompletedParents": 1,
-    "rewards": [],
-    "enemies": [
-      { "name": "Mirror Captain", "health": 6, "skills": ["Mo", "DoubleDefence"] },
-      { "name": "Bell Archer", "health": 4, "skills": ["PlusAttack"] },
-      { "name": "Mirror Guard", "health": 4, "skills": ["Shi"] }
-    ]
-  },
-  {
-    "id": "C4", "chapter": "Chapter II - Courtyard", "name": "Unwritten Act",
-    "story": "The court edits each witness before judgment.",
-    "skillBudget": 4, "mapX": 970, "mapY": 610, "parents": ["C1", "C2"], "requiredCompletedParents": 1,
-    "rewards": [], "reinforcementAfterEnemyDeaths": 1,
-    "enemies": [
-      { "name": "Ink Witness", "health": 5, "skills": ["Xian", "PlusDefence"] },
-      { "name": "Court Sentry", "health": 5, "skills": ["Shi"] }
+    "reinforcements": [
+      {
+        "name": "Late Warden",
+        "health": 4,
+        "skills": [
+          "Shi"
+        ]
+      }
     ],
-    "reinforcements": [{ "name": "Revised Witness", "health": 5, "skills": ["Shen"] }]
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A warden stands on every landing. Their stone shells close after the first strike of each turn."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "One step at a time. We do not have to reach the top in one breath."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith stops on the landing and points to Mara's loose shoelace. She laughs once and bends to tie it. He waits."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "C5", "chapter": "Chapter II - Courtyard", "name": "Emperor's Revision",
-    "story": "Every decree arrives with a second command.",
-    "skillBudget": 4, "mapX": 1550, "mapY": 610, "parents": ["C2", "C3"], "requiredCompletedParents": 1,
+    "id": "B5",
+    "chapter": "Chapter II - Bell Tower",
+    "name": "Mirror Siege",
+    "story": "In the glass, Mara is still standing where she has already left.",
+    "skillBudget": 4,
+    "mapX": 680,
+    "mapY": 610,
+    "parents": [
+      "B2",
+      "B3"
+    ],
+    "requiredCompletedParents": 1,
     "rewards": [],
     "enemies": [
-      { "name": "Revision Marshal", "health": 7, "skills": ["Di", "DoubleAttack"] },
-      { "name": "Seal Keeper", "health": 5, "skills": ["DoubleDefence", "Shi"] }
+      {
+        "name": "Mirror Captain",
+        "health": 6,
+        "skills": [
+          "Mo",
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Bell Archer",
+        "health": 4,
+        "skills": [
+          "PlusAttack"
+        ]
+      },
+      {
+        "name": "Mirror Guard",
+        "health": 4,
+        "skills": [
+          "Shi"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The corridor reflects their movements a moment late. Mara stops; her reflection takes another step."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "If I go back to the bench, will I forget this road too?"
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "For now I would rather keep walking."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "C4",
+    "chapter": "Chapter II - Courtyard",
+    "name": "Unwritten Act",
+    "story": "A witness asks Arith to sign an account of things he has never seen.",
+    "skillBudget": 4,
+    "mapX": 970,
+    "mapY": 610,
+    "parents": [
+      "C1",
+      "C2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      {
+        "name": "Ink Witness",
+        "health": 5,
+        "skills": [
+          "Xian",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Court Sentry",
+        "health": 5,
+        "skills": [
+          "Shi"
+        ]
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Revised Witness",
+        "health": 5,
+        "skills": [
+          "Shen"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Ink Witness",
+        "text": "Sign here. The account is already written."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith pushes the sheet back across the desk."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "On a blank sheet, Arith draws the west door, two figures, and the path they took out. He leaves it on the desk."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "C5",
+    "chapter": "Chapter II - Courtyard",
+    "name": "Emperor's Revision",
+    "story": "The Marshal writes Mara's refusal down as a command to remain.",
+    "skillBudget": 4,
+    "mapX": 1550,
+    "mapY": 610,
+    "parents": [
+      "C2",
+      "C3"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Revision Marshal",
+        "health": 7,
+        "skills": [
+          "Di",
+          "DoubleAttack"
+        ]
+      },
+      {
+        "name": "Seal Keeper",
+        "health": 5,
+        "skills": [
+          "DoubleDefence",
+          "Shi"
+        ]
+      }
     ],
     "reinforcementRound": 4,
-    "reinforcements": [{ "name": "New Decree", "health": 5, "skills": ["PlusAttack"] }]
+    "reinforcements": [
+      {
+        "name": "New Decree",
+        "health": 5,
+        "skills": [
+          "PlusAttack"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Revision Marshal",
+        "text": "You have declined departure. Remain in the court."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I declined your offer. I did not decline to leave."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "I do not need him to write it correctly before I can go."
+      }
+    ],
+    "isTrueEndingRequired": false
   }
 ]

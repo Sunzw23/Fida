@@ -20,6 +20,12 @@ namespace Fida.States
 
         public override void HandleInput(GameTime gameTime)
         {
+            if (HandleStoryInput(gameTime)) return;
+            if (!CampaignLoadout.HasSelectableSkills(CampaignRuntime.Progress, GameSetup.SelectedNode))
+            {
+                _stateMachine.SwitchToState(State.Playing);
+                return;
+            }
             base.HandleInput(gameTime);
             var wheel = _uiManager.GetControlByName<UICampaignSkillWheel>("skill_wheel");
             if (wheel == null) return;

@@ -1,14 +1,143 @@
 [
   {
-    "id": "F", "chapter": "Finale", "name": "The Crown of Zero",
-    "story": "Every path returns to the silent throne.",
-    "skillBudget": 5, "mapX": 820, "mapY": 1030, "parents": ["D2", "E2"], "requiredCompletedParents": 1,
-    "rewards": [], "isBoss": true, "reinforcementAfterEnemyDeaths": 2,
-    "enemies": [
-      { "name": "The Zero King", "health": 12, "skills": ["Di", "Shen"] },
-      { "name": "Echo of Assault", "health": 5, "skills": ["DoubleAttack"] },
-      { "name": "Echo of Defense", "health": 5, "skills": ["DoubleDefence"] }
+    "id": "F",
+    "chapter": "Finale",
+    "name": "The Crown of Zero",
+    "story": "Beyond the roofless shelter, another palace blocks the way to the water.",
+    "skillBudget": 5,
+    "mapX": 820,
+    "mapY": 1030,
+    "parents": [
+      "D2",
+      "E2"
     ],
-    "reinforcements": [{ "name": "Crown Core", "health": 9, "skills": ["Bian"] }]
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "isBoss": true,
+    "reinforcementAfterEnemyDeaths": 2,
+    "enemies": [
+      {
+        "name": "The Zero King",
+        "health": 12,
+        "skills": [
+          "Di",
+          "Shen"
+        ]
+      },
+      {
+        "name": "Echo of Assault",
+        "health": 5,
+        "skills": [
+          "DoubleAttack"
+        ]
+      },
+      {
+        "name": "Echo of Defense",
+        "health": 5,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Crown Core",
+        "health": 9,
+        "skills": [
+          "Bian"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "They meet at the roofless shelter. Beyond it, water sounds behind a familiar palace."
+      },
+      {
+        "speaker": "Zero King",
+        "text": "Stay. One more duel. She may pass without you."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith stays beside Mara. When she steps toward the door, he steps with her."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The echoes fall silent. The King lifts his hand toward himself, then pauses."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith lowers his own hand. For a moment, neither moves."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The King steps aside. Beyond the door is a small ferry, and a white bench with one end repaired."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I thought I would know when I arrived. But this place has not remembered everything for me."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "A boat comes alongside. Mara picks up her coat from the empty seat."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I can wait a little. But today I do not have to wait until someone comes. Are you coming?"
+      }
+    ],
+    "isTrueEndingRequired": false,
+    "endings": [
+      {
+        "id": "together",
+        "label": "Board with Mara",
+        "pages": [
+          {
+            "speaker": "The Long Road",
+            "text": "Arith steps into the boat. Mara makes room beside her."
+          },
+          {
+            "speaker": "Mara Venn",
+            "text": "Do you know where it goes?"
+          },
+          {
+            "speaker": "The Long Road",
+            "text": "Arith shakes his head."
+          },
+          {
+            "speaker": "Mara Venn",
+            "text": "Your turn, then."
+          },
+          {
+            "speaker": "The Long Road",
+            "text": "The waterskin rests between them. Along the shore, the white bench grows small."
+          }
+        ]
+      },
+      {
+        "id": "farewell",
+        "label": "See Mara off",
+        "pages": [
+          {
+            "speaker": "The Long Road",
+            "text": "Arith stays by the mooring post. He looks back along the road."
+          },
+          {
+            "speaker": "Mara Venn",
+            "text": "Come back when you want to. Not just because I asked."
+          },
+          {
+            "speaker": "The Long Road",
+            "text": "The boat leaves. Near the roofless shelter, Arith meets a traveller who has stopped walking."
+          },
+          {
+            "speaker": "The Long Road",
+            "text": "He makes room on the bench. After a while, the traveller sits beside him."
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -176,6 +176,10 @@ namespace Fida.Scene
         private IPlayerController CreateCampaignController(int playerId, CampaignBattleSetup setup)
         {
             if (playerId == _gameManager.LocalPlayerId) return new LocalPlayerController(playerId);
+            if (!string.IsNullOrEmpty(setup.Node.SelfTargetingEnemy) &&
+                setup.Players.Any(player => player.PlayerId == playerId &&
+                    player.Name == setup.Node.SelfTargetingEnemy))
+                return new NarrativeTargetController(playerId);
             var type = setup.AgentTypes.TryGetValue(playerId, out var configured)
                 ? configured
                 : CampaignAgentType.Rule;
@@ -355,7 +359,7 @@ namespace Fida.Scene
             {
                 if (_campaignSetup.AgentTypes.TryGetValue(player.PlayerId, out var agentType))
                 {
-                    _controllers[player.PlayerId] = CampaignControllerFactory.Create(player.PlayerId, agentType);
+                    _controllers[player.PlayerId] = CreateCampaignController(player.PlayerId, _campaignSetup);
                     continue;
                 }
 

@@ -1,5 +1,7 @@
+#nullable enable annotations
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Fida.Campaign;
@@ -12,7 +14,7 @@ namespace Fida.UI.Campaign
         private readonly GraphicsDevice _graphicsDevice;
         private readonly Texture2D _pixel;
         private readonly SpriteFont _font;
-        private string[] _lines;
+        private CampaignStoryPage[] _lines;
         private int _lineIndex;
 
         public event Action? Finished;
@@ -29,6 +31,7 @@ namespace Fida.UI.Campaign
             Name = "tutorial_dialogue";
             FocusIndex = -1000;
             Clicked += _ => Advance();
+            Confirmed += _ => Advance();
         }
 
         public override bool IsVisible { get; set; } = true;
@@ -48,9 +51,25 @@ namespace Fida.UI.Campaign
         public void PresentInstruction(string instruction)
         {
             if (string.IsNullOrWhiteSpace(instruction)) return;
-            _lines = [instruction];
+            _lines = [new CampaignStoryPage { Speaker = "Mara Venn", Text = instruction }];
             _lineIndex = 0;
             IsVisible = true;
+        }
+
+        public void PresentPages(IEnumerable<CampaignStoryPage> pages, CampaignProgress? progress = null)
+        {
+            _lines = pages.Where(page => !string.IsNullOrWhiteSpace(page.Text) &&
+                (string.IsNullOrEmpty(page.RequiredCompletedNode) ||
+                 progress?.IsCompleted(page.RequiredCompletedNode) == true)).ToArray();
+            _lineIndex = 0;
+            IsVisible = _lines.Length > 0;
+        }
+
+        public void Finish()
+        {
+            if (!IsVisible) return;
+            IsVisible = false;
+            Finished?.Invoke();
         }
 
         public override void Update(GameTime gameTime)
@@ -58,7 +77,7 @@ namespace Fida.UI.Campaign
             Viewport viewport = _graphicsDevice.Viewport;
             Rectangle safe = UIMobileSafeArea.Get(viewport);
             int margin = Math.Clamp(viewport.Width / 24, 18, 44);
-            int height = Math.Clamp(viewport.Height / 5, 142, 218);
+            int height = Math.Min(safe.Height - 36, Math.Clamp(viewport.Height / 3, 210, 340));
             int bottomMargin = Math.Max(18, viewport.Height - safe.Bottom + 18);
             Bounds = new Rectangle(margin, viewport.Height - bottomMargin - height,
                 Math.Max(1, viewport.Width - margin * 2), height);
@@ -83,17 +102,19 @@ namespace Fida.UI.Campaign
             int pad = Math.Clamp(Bounds.Width / 32, 18, 38);
             float scale = Math.Clamp(Bounds.Width / 720f, 0.52f, 0.86f);
             Vector2 speakerAt = new(Bounds.Left + pad, Bounds.Top + pad * 0.55f);
-            spriteBatch.DrawString(_font, "MARA VENN  /  FIELD UNIT", speakerAt,
+            UITextRenderer.DrawString(spriteBatch, _font, _lines[_lineIndex].Speaker.ToUpperInvariant(), speakerAt,
                 UITheme.AccentGreen, 0f, Vector2.Zero, scale * 0.82f,
                 SpriteEffects.None, 0f);
 
-            Rectangle textArea = new(Bounds.Left + pad, Bounds.Top + (int)(pad * 1.7f),
-                Bounds.Width - pad * 2, Bounds.Height - (int)(pad * 2.45f));
-            DrawWrapped(spriteBatch, _lines[_lineIndex], textArea, scale, UITheme.Ink);
+            int textTop = (int)(speakerAt.Y + _font.LineSpacing * scale * 0.82f + 12);
+            int textBottom = Bounds.Bottom - pad - (int)(_font.LineSpacing * scale * 0.62f) - 10;
+            Rectangle textArea = new(Bounds.Left + pad, textTop,
+                Bounds.Width - pad * 2 - 12, System.Math.Max(1, textBottom - textTop));
+            DrawWrapped(spriteBatch, _lines[_lineIndex].Text, textArea, scale, UITheme.Ink);
 
             string progress = $"{_lineIndex + 1:00} / {_lines.Length:00}";
             Vector2 progressSize = _font.MeasureString(progress) * scale * 0.62f;
-            spriteBatch.DrawString(_font, progress,
+            UITextRenderer.DrawString(spriteBatch, _font, progress,
                 new Vector2(Bounds.Right - pad - progressSize.X, Bounds.Bottom - pad - progressSize.Y),
                 UITheme.InkMuted, 0f, Vector2.Zero, scale * 0.62f, SpriteEffects.None, 0f);
             DrawChevron(spriteBatch, new Vector2(Bounds.Right - pad * 0.55f, Bounds.Center.Y),
@@ -102,29 +123,44 @@ namespace Fida.UI.Campaign
 
         private void DrawWrapped(SpriteBatch sb, string text, Rectangle area, float scale, Color color)
         {
-            string line = string.Empty;
-            float y = area.Top;
-            float lineHeight = _font.LineSpacing * scale * 1.12f;
-            foreach (string word in (text ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            List<string> Wrap(float s)
             {
-                string candidate = line.Length == 0 ? word : line + " " + word;
-                if (line.Length > 0 && _font.MeasureString(candidate).X * scale > area.Width)
+                var result = new List<string>();
+                foreach (string paragraph in (text ?? string.Empty).Split('\n'))
                 {
-                    sb.DrawString(_font, line, new Vector2(area.Left, y), color,
-                        0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
-                    y += lineHeight;
-                    line = word;
-                    if (y + lineHeight > area.Bottom) break;
+                    string line = string.Empty;
+                    foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        string candidate = line.Length == 0 ? word : line + " " + word;
+                        if (line.Length > 0 && _font.MeasureString(candidate).X * s > area.Width)
+                        {
+                            result.Add(line);
+                            line = word;
+                        }
+                        else line = candidate;
+                    }
+                    result.Add(line);
                 }
-                else line = candidate;
+                return result;
             }
-            if (line.Length > 0 && y + lineHeight <= area.Bottom)
-                sb.DrawString(_font, line, new Vector2(area.Left, y), color,
+            var lines = Wrap(scale);
+            while (lines.Count * _font.LineSpacing * scale * 1.12f > area.Height && scale > 0.3f)
+            {
+                scale *= 0.94f;
+                lines = Wrap(scale);
+            }
+            float y = area.Top;
+            foreach (string line in lines)
+            {
+                UITextRenderer.DrawString(sb, _font, line, new Vector2(area.Left, y), color,
                     0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                y += _font.LineSpacing * scale * 1.12f;
+            }
         }
 
-        private static string[] BuildLines(CampaignNode node) =>
-            [string.IsNullOrWhiteSpace(node.Story) ? node.Name : node.Story];
+        private static CampaignStoryPage[] BuildLines(CampaignNode node) => node.BeforeStory.Count > 0
+            ? node.BeforeStory.ToArray()
+            : [new CampaignStoryPage { Text = string.IsNullOrWhiteSpace(node.Story) ? node.Name : node.Story }];
 
         private void DrawChevron(SpriteBatch sb, Vector2 center, int size, Color color)
         {

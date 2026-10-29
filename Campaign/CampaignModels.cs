@@ -7,6 +7,20 @@ namespace Fida.Campaign
 {
     public enum CampaignAgentType { Rule, Scripted }
 
+    public sealed class CampaignStoryPage
+    {
+        public string Speaker { get; init; } = "The Long Road";
+        public string Text { get; init; } = "";
+        public string RequiredCompletedNode { get; init; } = "";
+    }
+
+    public sealed class CampaignEnding
+    {
+        public string Id { get; init; } = "";
+        public string Label { get; init; } = "";
+        public IReadOnlyList<CampaignStoryPage> Pages { get; init; } = Array.Empty<CampaignStoryPage>();
+    }
+
     public sealed class CampaignEnemyDefinition
     {
         public string Name { get; init; } = "Enemy";
@@ -26,6 +40,11 @@ namespace Fida.Campaign
         public IReadOnlyList<string> MapPath { get; init; } = Array.Empty<string>();
         public string Name { get; init; } = "";
         public string Story { get; init; } = "";
+        public IReadOnlyList<CampaignStoryPage> BeforeStory { get; init; } = Array.Empty<CampaignStoryPage>();
+        public IReadOnlyList<CampaignStoryPage> AfterStory { get; init; } = Array.Empty<CampaignStoryPage>();
+        public IReadOnlyList<CampaignEnding> Endings { get; init; } = Array.Empty<CampaignEnding>();
+        // A narrative action constraint, independent of the model's number/skill decisions.
+        public string SelfTargetingEnemy { get; init; } = "";
         public int SkillBudget { get; init; }
         public int MapX { get; init; }
         public int MapY { get; init; }
@@ -53,6 +72,7 @@ namespace Fida.Campaign
     {
         public HashSet<string> CompletedNodes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<SkillType> UnlockedSkills { get; set; } = new();
+        public HashSet<string> SeenEndings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         public bool IsCompleted(string nodeId) => CompletedNodes.Contains(nodeId);
 
@@ -67,7 +87,7 @@ namespace Fida.Campaign
     /// <summary>纯数据传输对象，由战役模块生成，由场景模块消费。</summary>
     public sealed class CampaignBattleSetup
     {
-        public CampaignNode Node { get; init; }
+        public required CampaignNode Node { get; init; }
         public List<Player> Players { get; init; } = [];
         public List<Group> Groups { get; init; } = [];
         public List<Player> Reinforcements { get; init; } = [];

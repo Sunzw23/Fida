@@ -16,7 +16,7 @@ namespace Fida.Campaign
             CreateInternal(node, playerZeroSkills, playerOneSkills ?? [], 0);
 
         private static CampaignBattleSetup CreateInternal(CampaignNode node,
-            IEnumerable<SkillType> selectedSkills, IEnumerable<SkillType> partnerSkills, int localPlayerId)
+            IEnumerable<SkillType> selectedSkills, IEnumerable<SkillType>? partnerSkills, int localPlayerId)
         {
             var localSkills = (selectedSkills ?? []).OrderBy(s => (int)s).Select(SkillFactory.CreateSkill).ToList();
             localPlayerId = partnerSkills == null ? 0 : Math.Clamp(localPlayerId, 0, 1);
@@ -25,8 +25,8 @@ namespace Fida.Campaign
                 PortraitKey = "arithmetist"
             };
             var players = new List<Player> { local };
-            Player partner = null;
-            Player tutorialCompanion = null;
+            Player? partner = null;
+            Player? tutorialCompanion = null;
             if (partnerSkills != null)
             {
                 partner = new Player(1 - localPlayerId, CampaignPlayerName(1 - localPlayerId), 11,
@@ -86,7 +86,7 @@ namespace Fida.Campaign
         }
 
         private static string CampaignPlayerName(int playerId) => playerId == 0
-            ? "The Arithmetist"
+            ? "Arith"
             : $"Player {playerId + 1}";
 
 

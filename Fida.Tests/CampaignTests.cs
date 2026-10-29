@@ -134,12 +134,12 @@ public class CampaignTests
     public void General_UnlocksAfterAnyTwoFirstChapterNodes()
     {
         var progress = new CampaignProgress();
-        progress.Complete(CampaignCatalog.GetNode("P"));
-        progress.Complete(CampaignCatalog.GetNode("A1"));
-        Assert.False(CampaignCatalog.IsUnlocked(progress, CampaignCatalog.GetNode("AG")));
+        progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("P")));
+        progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")));
+        Assert.False(CampaignCatalog.IsUnlocked(progress, Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG"))));
 
-        progress.Complete(CampaignCatalog.GetNode("A3"));
-        Assert.True(CampaignCatalog.IsUnlocked(progress, CampaignCatalog.GetNode("AG")));
+        progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A3")));
+        Assert.True(CampaignCatalog.IsUnlocked(progress, Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG"))));
     }
 
     [Fact]
@@ -180,12 +180,25 @@ public class CampaignTests
 
         Assert.All(lessons, node => Assert.True(node.IsTutorial));
         Assert.Equal("Mara Venn", lessons[0].TutorialCompanion);
-        Assert.Empty(lessons[0].Parents);
+        Assert.Equal(new[] { "P" }, lessons[0].Parents);
         Assert.Contains("T01", lessons[1].Parents);
         Assert.Contains("T02", lessons[2].Parents);
         Assert.Contains("sum", lessons[0].TutorialBriefing, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("skill", lessons[1].TutorialBriefing, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("reinforcement", lessons[2].TutorialBriefing, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Loadout_SkipsOnlyWhenNoUnlockedSkillFitsTheNode()
+    {
+        var progress = new CampaignProgress();
+        var node = new CampaignNode { SkillBudget = 3 };
+        Assert.False(CampaignLoadout.HasSelectableSkills(progress, node));
+        progress.UnlockedSkills.Add(SkillType.PlusAttack);
+        Assert.False(CampaignLoadout.HasSelectableSkills(progress, new CampaignNode { SkillBudget = 0 }));
+        Assert.False(CampaignLoadout.HasSelectableSkills(progress,
+            new CampaignNode { SkillBudget = CampaignSkillBalance.Cost(SkillType.PlusAttack) - 1 }));
+        Assert.True(CampaignLoadout.HasSelectableSkills(progress, node));
     }
 
     [Fact]
@@ -195,7 +208,7 @@ public class CampaignTests
         {
             UnlockedSkills = [SkillType.DoubleHealth, SkillType.TripleHealth, SkillType.Long]
         };
-        var node = CampaignCatalog.GetNode("A1"); // budget 3
+        var node = Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")); // budget 3
         var selected = new HashSet<SkillType> { SkillType.DoubleHealth };
 
         Assert.False(CampaignLoadout.CanSelect(progress, node, selected, SkillType.TripleHealth));
@@ -209,13 +222,13 @@ public class CampaignTests
         var progress = new CampaignProgress { UnlockedSkills = [SkillType.Long, SkillType.Bian] };
         var selected = new HashSet<SkillType> { SkillType.Long };
 
-        Assert.False(CampaignLoadout.CanSelect(progress, CampaignCatalog.GetNode("F"), selected, SkillType.Bian));
+        Assert.False(CampaignLoadout.CanSelect(progress, Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("F")), selected, SkillType.Bian));
     }
 
     [Fact]
     public void BattleFactory_GroupsInitialEnemiesAndKeepsReinforcementsInReserve()
     {
-        var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("AG"), []);
+        var setup = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG")), []);
 
         Assert.Equal(3, setup.Players.Count);
         Assert.Equal(2, setup.Reinforcements.Count);
@@ -227,8 +240,8 @@ public class CampaignTests
     [Fact]
     public void BattleFactory_AssignsDataDrivenPortraitKeysWithEnemyFallback()
     {
-        var prologue = CampaignBattleFactory.Create(CampaignCatalog.GetNode("P"), []);
-        var laterBattle = CampaignBattleFactory.Create(CampaignCatalog.GetNode("A1"), []);
+        var prologue = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("P")), []);
+        var laterBattle = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")), []);
 
         Assert.Equal("arithmetist", prologue.Players[0].PortraitKey);
         Assert.Equal("withered_king", prologue.Players[1].PortraitKey);
@@ -252,7 +265,7 @@ public class CampaignTests
     [Fact]
     public void EncounterCoordinator_DeploysReinforcementsBeforeVictoryCheck()
     {
-        var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("AG"), []);
+        var setup = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG")), []);
         var game = new GameManager();
         game.Initialize(setup.Players, setup.Groups);
         var coordinator = new CampaignEncounterCoordinator(game);
@@ -314,7 +327,7 @@ public class CampaignTests
     [Fact]
     public void TargetSelection_UsesCampaignTeamsForAttackAndHealing()
     {
-        var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("A1"), []);
+        var setup = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")), []);
         var game = new GameManager();
         game.Initialize(setup.Players, setup.Groups);
         PlayerActionRequiredEventArgs? requested = null;
@@ -338,7 +351,7 @@ public class CampaignTests
         {
             var store = new CampaignProgressStore(path);
             var progress = new CampaignProgress();
-            progress.Complete(CampaignCatalog.GetNode("P"));
+            progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("P")));
             Assert.True(store.Save(progress));
 
             var loaded = store.Load();

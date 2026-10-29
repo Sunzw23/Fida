@@ -12,15 +12,15 @@ namespace Fida.Campaign.Battle
     {
         private readonly GameManager _game;
         private readonly List<Player> _observedPlayers = [];
-        private CampaignBattleSetup _setup;
-        private Group _alliedGroup;
+        private CampaignBattleSetup? _setup;
+        private Group? _alliedGroup;
         private bool _deployed;
         private bool _deploymentDeferred;
         private bool _deploymentPending;
         private int _round;
         public int RoundNumber => _round;
 
-        public event Action<IReadOnlyList<Player>> ReinforcementsDeployed;
+        public event Action<IReadOnlyList<Player>>? ReinforcementsDeployed;
 
         public CampaignEncounterCoordinator(GameManager game)
         {
@@ -47,7 +47,7 @@ namespace Fida.Campaign.Battle
             }
         }
 
-        private void OnTurnStarted(object sender, TurnStartEventArgs e)
+        private void OnTurnStarted(object? sender, TurnStartEventArgs e)
         {
             if (_setup == null || _deployed) return;
             // Count a round from shared game state, never from the local player's

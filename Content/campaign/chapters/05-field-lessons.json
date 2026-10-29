@@ -1,65 +1,166 @@
 [
   {
     "id": "T01",
-    "chapter": "Field Lessons",
-    "mapPath": ["Field Lessons"],
+    "chapter": "The Long Road",
+    "mapPath": [
+      "The Long Road"
+    ],
     "name": "First Signal",
-    "story": "A dormant relay wakes an Echo scout beneath the old transit arch.",
+    "story": "Beyond the white bench, a scout blocks the road.",
     "skillBudget": 0,
     "mapX": 280,
     "mapY": 180,
-    "requiredCompletedParents": 0,
-    "parents": [],
-    "rewards": ["PlusAttack"],
+    "requiredCompletedParents": 1,
+    "parents": [
+      "P"
+    ],
+    "rewards": [
+      "PlusAttack"
+    ],
     "tutorialCompanion": "Mara Venn",
-    "tutorialBriefing": "Mara Venn, Arithmetist field unit. Same side as you.\nChoose one of your numbers, then a different number from any living unit. Their sum wraps at 10 and replaces your first number. Try it, then strike the scout.",
+    "tutorialBriefing": "Choose two different numbers. Their sum replaces your first number; keep only its last digit.",
     "tutorialRule": "TURN 01  /  Choose two numbers. Their sum becomes your first number.",
     "enemies": [
-      { "name": "Echo Scout", "health": 3, "number0": 1, "number1": 2, "agentType": "Scripted" }
-    ]
+      {
+        "name": "Echo Scout",
+        "health": 3,
+        "number0": 1,
+        "number1": 2,
+        "agentType": "Scripted"
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "They leave the bench together. Beneath a broken arch, a scout raises its hand and closes the way."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Choose your first number, then a different number on any living card. Add them. Keep the last digit of the sum."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith offers her his waterskin. She wipes the mouth of it before drinking. He notices, but says nothing."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
     "id": "T02",
-    "chapter": "Field Lessons",
-    "mapPath": ["Field Lessons"],
+    "chapter": "The Long Road",
+    "mapPath": [
+      "The Long Road"
+    ],
     "name": "Hold the Crossing",
-    "story": "The relay route is blocked by a guard built to absorb every first blow.",
+    "story": "A guard waits where the road crosses a shallow channel.",
     "skillBudget": 2,
     "mapX": 680,
     "mapY": 180,
-    "parents": ["T01"],
+    "parents": [
+      "T01"
+    ],
     "requiredCompletedParents": 1,
-    "rewards": ["PlusDefence"],
+    "rewards": [
+      "PlusDefence"
+    ],
     "tutorialCompanion": "Mara Venn",
-    "tutorialBriefing": "Good work. I have opened the field loadout. Equip a skill within the SP budget; it triggers automatically when its condition is met. I will draw the guard's attention while you test your new attack skill.",
+    "tutorialBriefing": "Equip a skill within the SP budget. Skills trigger automatically when their conditions are met.",
     "tutorialRule": "LOADOUT  /  SP is your skill budget. Skills trigger automatically when their condition is met.",
     "enemies": [
-      { "name": "Relay Guard", "health": 5, "number0": 2, "number1": 3, "skills": ["PlusDefence"] }
-    ]
+      {
+        "name": "Relay Guard",
+        "health": 5,
+        "number0": 2,
+        "number1": 3,
+        "skills": [
+          "PlusDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "We will have to go through. Equip a skill within the SP budget. Skills act when their conditions are met."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Take your time. We can choose differently next time."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "I think there was water where I was going. I cannot remember which side I was on."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
     "id": "T03",
-    "chapter": "Field Lessons",
-    "mapPath": ["Field Lessons"],
+    "chapter": "The Long Road",
+    "mapPath": [
+      "The Long Road"
+    ],
     "name": "Silence the Echo",
-    "story": "An Echo captain is restarting the relay. Mara holds the line as its backup signal begins to answer.",
+    "story": "A captain holds the narrow passage. More footsteps approach.",
     "skillBudget": 3,
     "mapX": 1080,
     "mapY": 180,
-    "parents": ["T02"],
+    "parents": [
+      "T02"
+    ],
     "requiredCompletedParents": 1,
-    "rewards": ["DoubleHealth"],
+    "rewards": [
+      "DoubleHealth"
+    ],
     "tutorialCompanion": "Mara Venn",
-    "tutorialBriefing": "The captain is protected by more than one Echo. Keep choosing targets and watch the field: reinforcements can arrive when an enemy falls. We end this together—the relay goes dark only when the whole hostile squad is cleared.",
+    "tutorialBriefing": "Watch for reinforcement arrivals. Defeat the entire hostile squad to open the road.",
     "tutorialRule": "FIELD  /  Defeat every enemy. Reinforcements may join before the encounter ends.",
     "isBoss": true,
     "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Echo Captain", "health": 7, "number0": 3, "number1": 4, "skills": ["PlusAttack"] },
-      { "name": "Echo Guard", "health": 4, "number0": 2, "number1": 2 }
+      {
+        "name": "Echo Captain",
+        "health": 7,
+        "number0": 3,
+        "number1": 4,
+        "skills": [
+          "PlusAttack"
+        ]
+      },
+      {
+        "name": "Echo Guard",
+        "health": 4,
+        "number0": 2,
+        "number1": 2
+      }
     ],
     "reinforcements": [
-      { "name": "Echo Reserve", "health": 3, "number0": 1, "number1": 3 }
-    ]
+      {
+        "name": "Echo Reserve",
+        "health": 3,
+        "number0": 1,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The road narrows between two walls. A captain waits with a guard; another pair of footsteps sounds beyond them."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Watch the whole field. A reinforcement can arrive when an enemy falls. Clear the whole hostile squad before we move on."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "None looks familiar. That does not mean none will take us there."
+      }
+    ],
+    "isTrueEndingRequired": false
   }
 ]

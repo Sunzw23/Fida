@@ -64,18 +64,20 @@ namespace Fida.UI.Campaign
 
         public void BuildResult(bool won, string message, CampaignNode node)
         {
+            string title = won && node.Endings.Count > 0 ? "At the Ferry" : won ? "Node Cleared" : "Defeat";
+            if (won && node.Endings.Count > 0) message = "The boat is ready.";
             _controls.Add(new UIPanel(0, _resources.Pixel) { Name = "panel" });
 #if FIDA_ANDROID
             Rectangle panel = UITheme.PanelRect(_resources.GraphicsDevice.Viewport);
             float centerX = panel.Center.X;
-            _controls.Add(new UITitle(1, won ? "Node Cleared" : "Defeat",
+            _controls.Add(new UITitle(1, title,
                 new Vector2(centerX, panel.Top + 120), _resources.Pixel, _resources.TitleFont)
             { Name = "title" });
             int textWidth = panel.Width - 96;
             string mobileMessage = WrapText(_resources.Font, message, textWidth);
             _controls.Add(new UILabel(2, mobileMessage, new Vector2(centerX, panel.Top + 330), _resources.Font)
             { Name = "result", MaximumWidth = textWidth, MaximumHeight = 180 });
-            if (won)
+            if (won && node.Rewards.Count > 0)
             {
                 string mobileReward = WrapText(_resources.Font, $"Reward: {node.RewardText}", textWidth);
                 _controls.Add(new UILabel(3, mobileReward, new Vector2(centerX, panel.Top + 430), _resources.Font)
@@ -85,10 +87,11 @@ namespace Fida.UI.Campaign
             _controls.Add(new UIButton(4, new Rectangle(panel.Left + 56, panel.Top + 620, buttonWidth, 92),
                 "Adjust Loadout", _resources.Pixel, _resources.Font)
             { Name = "retry", FocusIndex = 0 });
-            string exitText = won && node.IsTutorial ? "Continue Training" : "Main Menu";
+            string exitText = won ? "Continue Journey" : "Main Menu";
             _controls.Add(new UIButton(5, new Rectangle(panel.Left + 56, panel.Top + 748,
                 buttonWidth, 92), exitText, _resources.Pixel, _resources.Font)
             { Name = "mainMenu", FocusIndex = 1 });
+            AddEndingButtons(won, node);
             FocusIfNeeded();
             return;
 #else
@@ -96,7 +99,7 @@ namespace Fida.UI.Campaign
             float scale = UIDesktopLayout.Scale(viewport);
             Rectangle panel = UITheme.PanelRect(viewport);
             Vector2 center = UIDesktopLayout.MapPoint(new Vector2(960, 430), viewport);
-            _controls.Add(new UITitle(1, won ? "Node Cleared" : "Defeat",
+            _controls.Add(new UITitle(1, title,
                 UIDesktopLayout.MapPoint(new Vector2(960, 310), viewport),
                 _resources.Pixel, _resources.TitleFont) { Name = "title" });
             // UILabel applies the desktop scale after measuring in font units. Keep
@@ -109,7 +112,7 @@ namespace Fida.UI.Campaign
                 MaximumWidth = textWidth,
                 MaximumHeight = 150
             });
-            if (won)
+            if (won && node.Rewards.Count > 0)
             {
                 string reward = WrapText(_resources.Font, $"Reward: {node.RewardText}", textWidth);
                 _controls.Add(new UILabel(3, reward,
@@ -125,10 +128,36 @@ namespace Fida.UI.Campaign
                 _resources.Pixel, _resources.Font) { Name = "retry", FocusIndex = 0 });
             _controls.Add(new UIButton(5, UIDesktopLayout.MapRectangle(
                     new Rectangle(1020, 650, 380, 75), viewport),
-                won && node.IsTutorial ? "Continue Training" : "Main Menu",
+                won ? "Continue Journey" : "Main Menu",
                 _resources.Pixel, _resources.Font) { Name = "mainMenu", FocusIndex = 1 });
+            AddEndingButtons(won, node);
             FocusIfNeeded();
 #endif
+        }
+
+        private void AddEndingButtons(bool won, CampaignNode node)
+        {
+            if (!won || node.Endings.Count == 0) return;
+            var positions = new List<Rectangle>();
+            foreach (var control in _controls)
+                if (control is UIButton && (control.Name is "retry" or "mainMenu") &&
+                    control.GetScreenBounds(_resources.GraphicsDevice.Viewport) is Rectangle bounds)
+                    positions.Add(bounds);
+            for (int i = 0; i < node.Endings.Count; i++)
+            {
+                var viewport = _resources.GraphicsDevice.Viewport;
+                Rectangle bounds = positions[i % positions.Count];
+                if (viewport.Width < 700 || viewport.Height > viewport.Width)
+                {
+                    Rectangle panel = UITheme.PanelRect(viewport);
+                    int height = System.Math.Clamp(panel.Height / 8, 44, 76);
+                    int top = panel.Bottom - node.Endings.Count * (height + 12) - 12;
+                    bounds = new Rectangle(panel.Left + 16, top + i * (height + 12), panel.Width - 32, height);
+                }
+                _controls.Add(new UIButton(10 + i, bounds, node.Endings[i].Label,
+                    _resources.Pixel, _resources.Font)
+                { Name = "ending_" + node.Endings[i].Id, FocusIndex = i, IsVisible = false, MinimumTextScale = 0.62f });
+            }
         }
 
         public void BuildDuelResult(bool won, string message)

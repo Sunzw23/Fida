@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Fida.UI;
+using Microsoft.Xna.Framework.Input;
 
 namespace Fida.States
 {
@@ -14,6 +15,28 @@ namespace Fida.States
         protected readonly UIManager _uiManager;
         protected readonly Network.NetworkManager _networkManager;
         protected readonly GameStateMachine _stateMachine;
+        private KeyboardState _storyKeyboard;
+
+        protected bool HandleStoryInput(GameTime gameTime)
+        {
+            var dialogue = _uiManager.TutorialDialogue;
+            if (dialogue == null)
+            {
+                _storyKeyboard = Keyboard.GetState();
+                return false;
+            }
+            // Poll only the overlay: the underlying menu must not consume this click.
+            dialogue.Update(UIPointer.GetState());
+            dialogue.IsClicked();
+            _uiManager.UpdateControllerInput(gameTime);
+            var keyboard = Keyboard.GetState();
+            bool advance = (keyboard.IsKeyDown(Keys.Enter) && !_storyKeyboard.IsKeyDown(Keys.Enter)) ||
+                (keyboard.IsKeyDown(Keys.Space) && !_storyKeyboard.IsKeyDown(Keys.Space));
+            if (keyboard.IsKeyDown(Keys.Escape) && !_storyKeyboard.IsKeyDown(Keys.Escape)) dialogue.Finish();
+            else if (advance || _uiManager.GetControllerInput()?.IsConfirmPressed() == true) dialogue.Advance();
+            _storyKeyboard = keyboard;
+            return true;
+        }
 
         /// <summary>
         /// 已绑定的按钮及其事件处理委托，用于在 OnExit 时统一解绑

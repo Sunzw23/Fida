@@ -343,9 +343,11 @@ namespace Fida
             KeyboardState keyboard = Keyboard.GetState();
             bool keyboardConfirm = (keyboard.IsKeyDown(Keys.Enter) && !_tutorialPreviousKeyboard.IsKeyDown(Keys.Enter)) ||
                 (keyboard.IsKeyDown(Keys.Space) && !_tutorialPreviousKeyboard.IsKeyDown(Keys.Space));
+            bool skip = keyboard.IsKeyDown(Keys.Escape) && !_tutorialPreviousKeyboard.IsKeyDown(Keys.Escape);
             _tutorialPreviousKeyboard = keyboard;
 
-            if (keyboardConfirm || _uiManager.GetControllerInput()?.IsConfirmPressed() == true)
+            if (skip) dialogue.Finish();
+            else if (keyboardConfirm || _uiManager.GetControllerInput()?.IsConfirmPressed() == true)
                 dialogue.Advance();
             return true;
         }

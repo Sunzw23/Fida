@@ -1,46 +1,247 @@
 [
   {
-    "id": "D3", "chapter": "Chapter III - Dragon Tomb", "name": "Ashen Conduit",
-    "story": "The engine learns to change its own predictions.",
-    "skillBudget": 5, "mapX": 100, "mapY": 900, "parents": ["D1"], "requiredCompletedParents": 1,
-    "rewards": ["SuperEmperor"],
+    "id": "D3",
+    "chapter": "Chapter III - Dragon Tomb",
+    "name": "Ashen Conduit",
+    "story": "A flame must be carried out before the conduit closes.",
+    "skillBudget": 5,
+    "mapX": 100,
+    "mapY": 900,
+    "parents": [
+      "D1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "SuperEmperor"
+    ],
     "enemies": [
-      { "name": "Ash Regent", "health": 8, "skills": ["Di", "PlusDefence"] },
-      { "name": "Conduit Guard", "health": 5, "skills": ["Shi", "PlusAttack"] },
-      { "name": "Ash Vessel", "health": 4 }
-    ]
+      {
+        "name": "Ash Regent",
+        "health": 8,
+        "skills": [
+          "Di",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Conduit Guard",
+        "health": 5,
+        "skills": [
+          "Shi",
+          "PlusAttack"
+        ]
+      },
+      {
+        "name": "Ash Vessel",
+        "health": 4
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Ash Regent",
+        "text": "Take the flame. Keep it until the next bearer comes."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith lifts the stone cup and turns toward the shelter."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith leaves the flame in a sheltered stone cup. He tests that it will not tip, then lifts his hand away."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "D4", "chapter": "Chapter III - Dragon Tomb", "name": "Wyrm Reflection",
-    "story": "A reflected dragon guards the final calculation.",
-    "skillBudget": 6, "mapX": 390, "mapY": 1015, "parents": ["D2", "D3"], "requiredCompletedParents": 2,
-    "rewards": ["SuperGod"], "isBoss": true, "reinforcementAfterEnemyDeaths": 1,
-    "enemies": [
-      { "name": "Reflected Wyrm", "health": 11, "skills": ["Long", "Shi"] },
-      { "name": "Bone Mirror", "health": 6, "skills": ["Mo", "DoubleDefence"] }
+    "id": "D4",
+    "chapter": "Chapter III - Dragon Tomb",
+    "name": "Wyrm Reflection",
+    "story": "A reflection follows Arith's movements before he makes them.",
+    "skillBudget": 6,
+    "mapX": 390,
+    "mapY": 1015,
+    "parents": [
+      "D2",
+      "D3"
     ],
-    "reinforcements": [{ "name": "Ash Regent Echo", "health": 7, "skills": ["Di", "PlusAttack"] }]
+    "requiredCompletedParents": 2,
+    "rewards": [
+      "SuperGod"
+    ],
+    "isBoss": true,
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      {
+        "name": "Reflected Wyrm",
+        "health": 11,
+        "skills": [
+          "Long",
+          "Shi"
+        ]
+      },
+      {
+        "name": "Bone Mirror",
+        "health": 6,
+        "skills": [
+          "Mo",
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Ash Regent Echo",
+        "health": 7,
+        "skills": [
+          "Di",
+          "PlusAttack"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Across a sheet of dark glass, a reflected wyrm raises its head. Its movements seem to anticipate his hand."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith lowers his hand and waits. The reflection has already moved."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith picks up the waterskin and takes the road back to the shelter."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "E3", "chapter": "Chapter III - Blank Archive", "name": "Null Index",
-    "story": "The index remembers every erased page.",
-    "skillBudget": 5, "mapX": 1540, "mapY": 900, "parents": ["E1"], "requiredCompletedParents": 1,
-    "rewards": ["SuperImmortal"], "reinforcementRound": 4,
-    "enemies": [
-      { "name": "Index Keeper", "health": 8, "skills": ["Xian", "Shi"] },
-      { "name": "Blank Reader", "health": 5, "skills": ["DoubleDefence"] }
+    "id": "E3",
+    "chapter": "Chapter III - Blank Archive",
+    "name": "Null Index",
+    "story": "The index has a space where a recent name can be written.",
+    "skillBudget": 5,
+    "mapX": 1540,
+    "mapY": 900,
+    "parents": [
+      "E1"
     ],
-    "reinforcements": [{ "name": "Recovered Page", "health": 5, "skills": ["PlusAttack"] }]
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "SuperImmortal"
+    ],
+    "reinforcementRound": 4,
+    "enemies": [
+      {
+        "name": "Index Keeper",
+        "health": 8,
+        "skills": [
+          "Xian",
+          "Shi"
+        ]
+      },
+      {
+        "name": "Blank Reader",
+        "health": 5,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Recovered Page",
+        "health": 5,
+        "skills": [
+          "PlusAttack"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Index Keeper",
+        "text": "A name for the empty place?"
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I do not remember who I waited for."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I remember someone I met afterwards."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Mara writes Arith on the back of her card. She does not put it over the empty space."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "E4", "chapter": "Chapter III - Blank Archive", "name": "Palimpsest Engine",
-    "story": "The archive writes over every answer.",
-    "skillBudget": 6, "mapX": 1260, "mapY": 1015, "parents": ["E2", "E3"], "requiredCompletedParents": 2,
-    "rewards": [], "isBoss": true, "reinforcementAfterEnemyDeaths": 1,
-    "enemies": [
-      { "name": "Palimpsest Engine", "health": 11, "skills": ["Bian", "DoubleDefence"] },
-      { "name": "Margin Judge", "health": 6, "skills": ["Shen", "Shi"] }
+    "id": "E4",
+    "chapter": "Chapter III - Blank Archive",
+    "name": "Palimpsest Engine",
+    "story": "The Archive tries to remove the gaps from Mara's unfinished account.",
+    "skillBudget": 6,
+    "mapX": 1260,
+    "mapY": 1015,
+    "parents": [
+      "E2",
+      "E3"
     ],
-    "reinforcements": [{ "name": "Second Draft", "health": 7, "skills": ["DoubleAttack", "PlusDefence"] }]
+    "requiredCompletedParents": 2,
+    "rewards": [],
+    "isBoss": true,
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      {
+        "name": "Palimpsest Engine",
+        "health": 11,
+        "skills": [
+          "Bian",
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Margin Judge",
+        "health": 6,
+        "skills": [
+          "Shen",
+          "Shi"
+        ]
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Second Draft",
+        "health": 7,
+        "skills": [
+          "DoubleAttack",
+          "PlusDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Margin Judge",
+        "text": "Every blank invites a correction. Let us close them."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Some things have not happened yet. Some I do not know."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Mara folds the sheet along an empty margin. It fits inside her coat without losing a word."
+      }
+    ],
+    "isTrueEndingRequired": false
   }
 ]

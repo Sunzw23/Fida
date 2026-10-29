@@ -11,7 +11,7 @@ namespace Fida.Campaign
     {
         public static readonly IReadOnlyList<CampaignNode> Nodes = BuildNodes();
 
-        public static CampaignNode GetNode(string id) =>
+        public static CampaignNode? GetNode(string id) =>
             Nodes.FirstOrDefault(n => string.Equals(n.Id, id, StringComparison.OrdinalIgnoreCase));
 
         public static bool IsUnlocked(CampaignProgress progress, CampaignNode node)

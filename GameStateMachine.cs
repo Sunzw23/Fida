@@ -1,3 +1,4 @@
+#nullable enable annotations
 using System;
 using Microsoft.Xna.Framework;
 using Fida.Network;
@@ -83,18 +84,7 @@ namespace Fida
                     if (!_playingSceneManager.IsInitialized)
                     {
                         _playingSceneManager.InitializeCampaign(GameSetup.LoadCampaignBattle());
-                        if (GameSetup.SelectedNode.IsTutorial)
-                        {
-                            var dialogue = _uiManager.AddTutorialDialogue(GameSetup.SelectedNode);
-                            Action? startBattle = null;
-                            startBattle = () =>
-                            {
-                                dialogue.Finished -= startBattle;
-                                _playingSceneManager.StartGame();
-                            };
-                            dialogue.Finished += startBattle;
-                        }
-                        else _playingSceneManager.StartGame();
+                        _playingSceneManager.StartGame();
                     }
                     else _uiManager.BuildPlayingUI(_uiManager.GameManager);
                     break;

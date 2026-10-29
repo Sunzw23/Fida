@@ -26,7 +26,7 @@ namespace Fida.Campaign
         {
             try
             {
-                string directory = System.IO.Path.GetDirectoryName(Path);
+                string? directory = System.IO.Path.GetDirectoryName(Path);
                 if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
                 File.WriteAllText(Path, JsonSerializer.Serialize(progress, JsonOptions));
                 return true;

@@ -1,46 +1,250 @@
 [
   {
-    "id": "C1", "chapter": "Chapter II - Courtyard", "name": "Altar of the Broken God",
-    "story": "The priest believes only the wounded may change fate.",
-    "skillBudget": 4, "mapX": 970, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
-    "rewards": ["Shen"],
-    "enemies": [
-      { "name": "Broken God Priest", "health": 6, "skills": ["Shen"] },
-      { "name": "Acolyte A", "health": 3 },
-      { "name": "Acolyte B", "health": 3 }
-    ]
-  },
-  {
-    "id": "C2", "chapter": "Chapter II - Courtyard", "name": "Deathless Gallery",
-    "story": "The immortals rewrite every outcome, so their battle never ends.",
-    "skillBudget": 4, "mapX": 1260, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
-    "rewards": ["Xian"],
-    "enemies": [
-      { "name": "Immortal A", "health": 5, "skills": ["Xian"] },
-      { "name": "Immortal B", "health": 5 },
-      { "name": "Gallery Sentinel", "health": 6, "skills": ["PlusDefence"] }
-    ]
-  },
-  {
-    "id": "C3", "chapter": "Chapter II - Courtyard", "name": "Court of the False Emperor",
-    "story": "A ruler without subjects still decrees new laws of number.",
-    "skillBudget": 4, "mapX": 1550, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
-    "rewards": ["Di"],
-    "enemies": [
-      { "name": "False Emperor", "health": 7, "skills": ["Di"] },
-      { "name": "Civil Retainer", "health": 4 },
-      { "name": "War Retainer", "health": 5, "skills": ["PlusAttack"] }
-    ]
-  },
-  {
-    "id": "CG", "chapter": "Chapter II - Courtyard", "name": "The Threefold Oracle",
-    "story": "The Zero King is the will the old King chose to abandon.",
-    "skillBudget": 5, "mapX": 1260, "mapY": 760, "parents": ["C1", "C2", "C3", "C4", "C5"], "requiredCompletedParents": 3,
-    "rewards": [], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
-    "enemies": [
-      { "name": "Threefold Oracle", "health": 10, "skills": ["Shen", "PlusDefence"] },
-      { "name": "Oracle Attendant", "health": 4 }
+    "id": "C1",
+    "chapter": "Chapter II - Courtyard",
+    "name": "Altar of the Broken God",
+    "story": "A traveller wants his bag back from the altar.",
+    "skillBudget": 4,
+    "mapX": 970,
+    "mapY": 500,
+    "parents": [
+      "AG"
     ],
-    "reinforcements": [{ "name": "The Third Aspect", "health": 6, "skills": ["Xian"] }]
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Shen"
+    ],
+    "enemies": [
+      {
+        "name": "Broken God Priest",
+        "health": 6,
+        "skills": [
+          "Shen"
+        ]
+      },
+      {
+        "name": "Acolyte A",
+        "health": 3
+      },
+      {
+        "name": "Acolyte B",
+        "health": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A traveller stands below the altar. His food bag lies at the priest's feet."
+      },
+      {
+        "speaker": "Priest",
+        "text": "Only the wounded may ask for a different fate."
+      },
+      {
+        "speaker": "Traveller",
+        "text": "I only want my bag."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The traveller checks the bread inside. He offers them some before leaving."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "C2",
+    "chapter": "Chapter II - Courtyard",
+    "name": "Deathless Gallery",
+    "story": "In the gallery, every ending is followed by another challenge.",
+    "skillBudget": 4,
+    "mapX": 1260,
+    "mapY": 500,
+    "parents": [
+      "AG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Xian"
+    ],
+    "enemies": [
+      {
+        "name": "Immortal A",
+        "health": 5,
+        "skills": [
+          "Xian"
+        ]
+      },
+      {
+        "name": "Immortal B",
+        "health": 5
+      },
+      {
+        "name": "Gallery Sentinel",
+        "health": 6,
+        "skills": [
+          "PlusDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Two immortals face each other in the gallery. One yields, then changes his mind before the other can leave."
+      },
+      {
+        "speaker": "Immortal",
+        "text": "Again. That was not the ending."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith stays by the gallery door, watching the two immortals."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "We can go."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "He turns away and follows her."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "C3",
+    "chapter": "Chapter II - Courtyard",
+    "name": "Court of the False Emperor",
+    "story": "The Emperor offers Mara a destination, with a condition attached.",
+    "skillBudget": 4,
+    "mapX": 1550,
+    "mapY": 500,
+    "parents": [
+      "AG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Di"
+    ],
+    "enemies": [
+      {
+        "name": "False Emperor",
+        "health": 7,
+        "skills": [
+          "Di"
+        ]
+      },
+      {
+        "name": "Civil Retainer",
+        "health": 4
+      },
+      {
+        "name": "War Retainer",
+        "health": 5,
+        "skills": [
+          "PlusAttack"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "False Emperor",
+        "text": "You have lost your place. I can give you a new one."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "And Arith?"
+      },
+      {
+        "speaker": "False Emperor",
+        "text": "He may remain here in your service. A small arrangement."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "You have not asked either of us."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "For a moment I wanted him to know where I belonged."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "He knew where he wanted us to stand."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "CG",
+    "chapter": "Chapter II - Courtyard",
+    "name": "The Threefold Oracle",
+    "story": "Three voices offer Mara three incompatible memories.",
+    "skillBudget": 5,
+    "mapX": 1260,
+    "mapY": 760,
+    "parents": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5"
+    ],
+    "requiredCompletedParents": 3,
+    "rewards": [],
+    "isBoss": true,
+    "isTrueEndingRequired": false,
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      {
+        "name": "Threefold Oracle",
+        "health": 10,
+        "skills": [
+          "Shen",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Oracle Attendant",
+        "health": 4
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "The Third Aspect",
+        "health": 6,
+        "skills": [
+          "Xian"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "First Voice",
+        "text": "The person you waited for came."
+      },
+      {
+        "speaker": "Second Voice",
+        "text": "They have not come yet."
+      },
+      {
+        "speaker": "Third Voice",
+        "text": "There was never anyone to wait for."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Then why were my shoes wet?"
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "I will keep what I remember. They can keep their answers."
+      }
+    ]
   }
 ]

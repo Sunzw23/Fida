@@ -1,49 +1,236 @@
 [
   {
-    "id": "B1", "chapter": "Chapter II - Bell Tower", "name": "Blood Hunt",
-    "story": "The hunters forgot their prey, but remember how to survive.",
-    "skillBudget": 4, "mapX": 100, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
-    "rewards": ["Xue"],
-    "enemies": [
-      { "name": "Blood Hunter A", "health": 4, "skills": ["Xue"] },
-      { "name": "Blood Hunter B", "health": 4 },
-      { "name": "Blood Hunter C", "health": 4 }
-    ]
-  },
-  {
-    "id": "B2", "chapter": "Chapter II - Bell Tower", "name": "Twin Bell Chamber",
-    "story": "The twins share one memory that refuses to end.",
-    "skillBudget": 4, "mapX": 390, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
-    "rewards": ["Tong"], "reinforcementRound": 3,
-    "enemies": [
-      { "name": "First Bellkeeper", "health": 5, "number0": 2, "number1": 2, "skills": ["Tong"] },
-      { "name": "Second Bellkeeper", "health": 5 }
+    "id": "B1",
+    "chapter": "Chapter II - Bell Tower",
+    "name": "Blood Hunt",
+    "story": "Hunters wait at the only well on this stretch of road.",
+    "skillBudget": 4,
+    "mapX": 100,
+    "mapY": 500,
+    "parents": [
+      "AG"
     ],
-    "reinforcements": [{ "name": "Bell Wraith", "health": 4, "skills": ["PlusAttack"] }]
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Xue"
+    ],
+    "enemies": [
+      {
+        "name": "Blood Hunter A",
+        "health": 4,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Blood Hunter B",
+        "health": 4
+      },
+      {
+        "name": "Blood Hunter C",
+        "health": 4
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Three hunters sit around a well. Their vessels are full, but they will not move aside."
+      },
+      {
+        "speaker": "Hunter",
+        "text": "We keep what we have. Find your own water."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith fills the waterskin. This time he wipes its mouth before handing it to Mara."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "B3", "chapter": "Chapter II - Bell Tower", "name": "Retaliation Idols",
-    "story": "The idols return every wound to the other side.",
-    "skillBudget": 4, "mapX": 680, "mapY": 500, "parents": ["AG"], "requiredCompletedParents": 1,
-    "rewards": ["Mo"],
+    "id": "B2",
+    "chapter": "Chapter II - Bell Tower",
+    "name": "Twin Bell Chamber",
+    "story": "The bells sound almost like something Mara remembers.",
+    "skillBudget": 4,
+    "mapX": 390,
+    "mapY": 500,
+    "parents": [
+      "AG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Tong"
+    ],
+    "reinforcementRound": 3,
     "enemies": [
-      { "name": "Retaliation Golem", "health": 7, "skills": ["Mo"] },
-      { "name": "Idol A", "health": 3 },
-      { "name": "Idol B", "health": 3 }
-    ]
-  },
-  {
-    "id": "BG", "chapter": "Chapter II - Bell Tower", "name": "The Blood Bell",
-    "story": "Let the war's final day end for the first time.",
-    "skillBudget": 5, "mapX": 390, "mapY": 760, "parents": ["B1", "B2", "B3", "B4", "B5"], "requiredCompletedParents": 3,
-    "rewards": [], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
-    "enemies": [
-      { "name": "Bell Matriarch", "health": 9, "skills": ["Xue", "PlusDefence"] },
-      { "name": "Hunter Echo", "health": 4 }
+      {
+        "name": "First Bellkeeper",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Tong"
+        ]
+      },
+      {
+        "name": "Second Bellkeeper",
+        "health": 5
+      }
     ],
     "reinforcements": [
-      { "name": "Bell Echo A", "health": 4, "skills": ["Xue"] },
-      { "name": "Bell Echo B", "health": 4 }
+      {
+        "name": "Bell Wraith",
+        "health": 4,
+        "skills": [
+          "PlusAttack"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "That sound... I used to stand up when I heard it."
+      },
+      {
+        "speaker": "Bellkeeper",
+        "text": "Then stand. They may be coming."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "A boat. I think it was a boat arriving. I remember standing. That is all I have."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "B3",
+    "chapter": "Chapter II - Bell Tower",
+    "name": "Retaliation Idols",
+    "story": "The idols return every blow. Mara asks Arith to slow down.",
+    "skillBudget": 4,
+    "mapX": 680,
+    "mapY": 500,
+    "parents": [
+      "AG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Mo"
+    ],
+    "enemies": [
+      {
+        "name": "Retaliation Golem",
+        "health": 7,
+        "skills": [
+          "Mo"
+        ]
+      },
+      {
+        "name": "Idol A",
+        "health": 3
+      },
+      {
+        "name": "Idol B",
+        "health": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A blow against an idol comes back across the passage. Mara catches Arith by the sleeve."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Wait. Do not rush another attack."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith holds out the waterskin. Mara lets go of his sleeve."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Sorry. Let us stop before we try the next door."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "BG",
+    "chapter": "Chapter II - Bell Tower",
+    "name": "The Blood Bell",
+    "story": "The Matriarch checks every empty chair before ringing the bell.",
+    "skillBudget": 5,
+    "mapX": 390,
+    "mapY": 760,
+    "parents": [
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "B5"
+    ],
+    "requiredCompletedParents": 3,
+    "rewards": [],
+    "isBoss": true,
+    "isTrueEndingRequired": false,
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      {
+        "name": "Bell Matriarch",
+        "health": 9,
+        "skills": [
+          "Xue",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Hunter Echo",
+        "health": 4
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Bell Echo A",
+        "health": 4,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Bell Echo B",
+        "health": 4
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A long table stands beneath the bell. The Matriarch straightens a chair, checks its place, and reaches for the rope."
+      },
+      {
+        "speaker": "Bell Matriarch",
+        "text": "Are you going to wait for someone, or to take a boat?"
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I remember a seat beside me. I wiped it dry."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "I waited at a ferry. I do not remember whether anyone came."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The Matriarch reaches for another chair. They leave while she is still deciding where to put it."
+      }
     ]
   }
 ]

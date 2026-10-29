@@ -1,49 +1,234 @@
 [
   {
-    "id": "A1", "chapter": "Chapter I", "name": "Rustblade Arsenal",
-    "story": "The arsenal still arms a war that ended long ago.",
-    "skillBudget": 3, "mapX": 310, "mapY": 235, "parents": ["P"], "requiredCompletedParents": 1,
-    "rewards": ["DoubleAttack"],
+    "id": "A1",
+    "chapter": "Chapter I",
+    "name": "Rustblade Arsenal",
+    "story": "A smith sharpens a sword for someone who has not come.",
+    "skillBudget": 3,
+    "mapX": 310,
+    "mapY": 235,
+    "parents": [
+      "T03"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "DoubleAttack"
+    ],
     "enemies": [
-      { "name": "Forge Guard A", "health": 4, "number0": 6, "skills": ["PlusAttack"] },
-      { "name": "Forge Guard B", "health": 4 },
-      { "name": "Blade Inspector", "health": 3 }
-    ]
+      {
+        "name": "Forge Guard A",
+        "health": 4,
+        "number0": 6,
+        "skills": [
+          "PlusAttack"
+        ]
+      },
+      {
+        "name": "Forge Guard B",
+        "health": 4
+      },
+      {
+        "name": "Blade Inspector",
+        "health": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A smith works in the arsenal. A finished sword rests beside him. He lifts it, finds another fault, and begins again."
+      },
+      {
+        "speaker": "Smith",
+        "text": "Not yet. The edge has to be right when they arrive."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The smith lifts the sword to the light again."
+      },
+      {
+        "speaker": "Smith",
+        "text": "Not yet. I would know if the edge were wrong."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "A2", "chapter": "Chapter I", "name": "White Stone Gate",
-    "story": "The sentries guard no survivors, only an empty city.",
-    "skillBudget": 3, "mapX": 760, "mapY": 235, "parents": ["P"], "requiredCompletedParents": 1,
-    "rewards": ["DoubleDefence"],
+    "id": "A2",
+    "chapter": "Chapter I",
+    "name": "White Stone Gate",
+    "story": "The white gate admits only those who can name their destination.",
+    "skillBudget": 3,
+    "mapX": 760,
+    "mapY": 235,
+    "parents": [
+      "T03"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "DoubleDefence"
+    ],
     "enemies": [
-      { "name": "White Shield", "health": 6, "skills": ["DoubleDefence"] },
-      { "name": "Crossbow Statue A", "health": 4 },
-      { "name": "Crossbow Statue B", "health": 4 }
-    ]
+      {
+        "name": "White Shield",
+        "health": 6,
+        "skills": [
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Crossbow Statue A",
+        "health": 4
+      },
+      {
+        "name": "Crossbow Statue B",
+        "health": 4
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "I will recognise it when I see it."
+      },
+      {
+        "speaker": "Gatekeeper",
+        "text": "That is not a destination. Return when you have one."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "For a moment I almost gave him a name. Any name. It would have been easier."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "A3", "chapter": "Chapter I", "name": "Silent Hospice",
-    "story": "The physician erased pain, and every name with it.",
-    "skillBudget": 3, "mapX": 1210, "mapY": 235, "parents": ["P"], "requiredCompletedParents": 1,
-    "rewards": ["DoubleHealth"],
+    "id": "A3",
+    "chapter": "Chapter I",
+    "name": "Silent Hospice",
+    "story": "The hospice keeps its sleepers undisturbed, even when they want to wake.",
+    "skillBudget": 3,
+    "mapX": 1210,
+    "mapY": 235,
+    "parents": [
+      "T03"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "DoubleHealth"
+    ],
     "enemies": [
-      { "name": "Silent Physician", "health": 4 },
-      { "name": "Patient A", "health": 3 },
-      { "name": "Patient B", "health": 3 }
-    ]
+      {
+        "name": "Silent Physician",
+        "health": 4
+      },
+      {
+        "name": "Patient A",
+        "health": 3
+      },
+      {
+        "name": "Patient B",
+        "health": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The hospice is quiet. A patient reaches for a window latch; the physician gently closes the window first."
+      },
+      {
+        "speaker": "Physician",
+        "text": "There is no need to leave while you are tired."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I was tired on that bench. I still needed someone to wake me."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "Mara Venn",
+        "text": "What if I arrive and still remember nothing?"
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith sits beside her. After a while, Mara passes him the waterskin."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "AG", "chapter": "Chapter I", "name": "The Nameless General",
-    "story": "The General guards the first memory of the Zero Decree.",
-    "skillBudget": 4, "mapX": 760, "mapY": 355, "parents": ["A1", "A2", "A3"], "requiredCompletedParents": 2,
-    "rewards": ["TripleHealth"], "isBoss": true, "reinforcementAfterEnemyDeaths": 1,
+    "id": "AG",
+    "chapter": "Chapter I",
+    "name": "The Nameless General",
+    "story": "The General offers shelter, but will not open the road beyond it.",
+    "skillBudget": 4,
+    "mapX": 760,
+    "mapY": 355,
+    "parents": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "requiredCompletedParents": 2,
+    "rewards": [
+      "TripleHealth"
+    ],
+    "isBoss": true,
+    "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Nameless General", "health": 8, "skills": ["DoubleAttack", "PlusDefence"] },
-      { "name": "Broken Shieldguard", "health": 5, "skills": ["PlusDefence"] }
+      {
+        "name": "Nameless General",
+        "health": 8,
+        "skills": [
+          "DoubleAttack",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Broken Shieldguard",
+        "health": 5,
+        "skills": [
+          "PlusDefence"
+        ]
+      }
     ],
     "reinforcements": [
-      { "name": "Rustblade Reinforcement A", "health": 3 },
-      { "name": "Rustblade Reinforcement B", "health": 3 }
-    ]
+      {
+        "name": "Rustblade Reinforcement A",
+        "health": 3
+      },
+      {
+        "name": "Rustblade Reinforcement B",
+        "health": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Nameless General",
+        "text": "Behind the line. You will be safe there."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "We need to pass through."
+      },
+      {
+        "speaker": "Nameless General",
+        "text": "No one needs to go farther. I have space for both of you."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The General lowers his hand. No order follows. Arith and Mara step beyond the defence line."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith does not promise to take his place. Far ahead, a bell sounds; another road turns toward a courtyard."
+      }
+    ],
+    "isTrueEndingRequired": false
   }
 ]

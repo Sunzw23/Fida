@@ -16,6 +16,9 @@ namespace Fida.Campaign
     /// <summary>无 UI 的配装规则，菜单和未来其他界面共用。</summary>
     public static class CampaignLoadout
     {
+        public static bool HasSelectableSkills(CampaignProgress progress, CampaignNode node) =>
+            SkillFactory.SelectableSkills.Any(skill => CanSelect(progress, node, [], skill));
+
         public static bool CanSelect(CampaignProgress progress, CampaignNode node,
             IReadOnlyCollection<SkillType> selected, SkillType candidate) =>
             Evaluate(progress, node, selected, candidate) is

@@ -20,6 +20,28 @@ CampaignProgressStore -> CampaignRuntime -> Campaign map UI
 The UI reads campaign models and submits node/loadout choices. Unlock, budget, and
 reinforcement rules belong to the campaign layer.
 
+## The Long Road story
+
+Chapter JSON also owns short `beforeStory` and `afterStory` arrays of
+`{ "speaker": "Arith", "text": "..." }` pages. Introductions appear before
+the loadout becomes interactive; aftermath appears only after a clear. Click,
+Enter, Space or controller confirm advances; Escape skips the current sequence.
+Keep each page brief. The complete Chinese story remains in `Doc/Story.md`.
+Arith is a silent protagonist: use brief visible actions instead of spoken lines
+or internal monologues. Other characters should not explain his feelings for him.
+
+If no unlocked selectable skill fits the node's budget, the loadout is hidden:
+after its introduction, a local battle starts automatically. Online play readies
+automatically and retains the usual partner readiness/join handshake.
+
+The route begins P -> T01 -> T02 -> T03 -> Chapter I. Existing clears remain
+valid. Node F supplies two `endings` (id, label, pages), freely selectable after
+the ferry scene; their history is stored without requiring optional clears.
+Online players read introductions before readying and choose their own endings.
+
+`selfTargetingEnemy` constrains the Withered King's damaging target to himself.
+His number and skill choices still use the same value table as ordinary agents.
+
 ## Campaign map extension points
 
 - `CampaignMapOptions` controls card geometry, viewport margins, and zoom limits.

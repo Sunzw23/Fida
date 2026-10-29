@@ -3,13 +3,16 @@
     "id": "P",
     "chapter": "Prologue",
     "name": "The Withered King",
-    "story": "The King repeats the Crown's last commands, then falls silent.",
+    "story": "A voice reaches Arith in the Void. Beyond it, a ruined palace.",
     "skillBudget": 0,
     "mapX": 860,
     "mapY": 105,
     "requiredCompletedParents": 0,
     "parents": [],
-    "rewards": ["PlusAttack", "PlusDefence"],
+    "rewards": [
+      "PlusAttack",
+      "PlusDefence"
+    ],
     "enemies": [
       {
         "name": "The Withered King",
@@ -18,8 +21,45 @@
         "number0": 1,
         "number1": 6,
         "agentType": "Scripted",
-        "skills": ["PlusAttack", "PlusDefence"]
+        "skills": [
+          "PlusAttack",
+          "PlusDefence"
+        ]
       }
-    ]
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith wakes in the Void. A voice leads him to a ruined palace."
+      },
+      {
+        "speaker": "Withered King",
+        "text": "One last duel. Will you stay?"
+      },
+      {
+        "speaker": "Withered King",
+        "text": "Choose a number, then another. Add them. Stay until it is over."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The King turns his attacks toward himself. At last, he returns to the Void. Arith stands before the empty throne."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Outside, Mara Venn sleeps on a white bench. Arith wakes her."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Have we arrived? ... I do not know why I was here. I remember I have somewhere to go."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Will you walk with me? ... Sit for a moment first. I am not quite awake."
+      }
+    ],
+    "isTrueEndingRequired": false,
+    "selfTargetingEnemy": "The Withered King"
   }
 ]

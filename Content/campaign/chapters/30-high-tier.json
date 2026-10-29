@@ -1,49 +1,243 @@
 [
   {
-    "id": "D1", "chapter": "Chapter III - Dragon Tomb", "name": "Dragon Tomb Gate",
-    "story": "The dragon is an ancient engine that predicts death by addition.",
-    "skillBudget": 5, "mapX": 220, "mapY": 780, "parents": ["BG"], "requiredCompletedParents": 1,
-    "rewards": [],
-    "enemies": [
-      { "name": "Broken Dragon Head", "health": 7, "skills": ["Long"] },
-      { "name": "Left Dragonbone", "health": 5 },
-      { "name": "Right Dragonbone", "health": 5 }
-    ]
-  },
-  {
-    "id": "D2", "chapter": "Chapter III - Dragon Tomb", "name": "Dragonbone Array",
-    "story": "The array predicted defeat and drove the King to invoke Zero.",
-    "skillBudget": 5, "mapX": 390, "mapY": 900, "parents": ["D1"], "requiredCompletedParents": 1,
-    "rewards": ["Long"], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
-    "enemies": [
-      { "name": "Dragonbone Array", "health": 10, "skills": ["Long", "PlusDefence"] },
-      { "name": "Warding Dragonbone", "health": 5, "skills": ["DoubleDefence"] }
+    "id": "D1",
+    "chapter": "Chapter III - Dragon Tomb",
+    "name": "Dragon Tomb Gate",
+    "story": "The tomb keeper will open the gate if Arith takes his place.",
+    "skillBudget": 5,
+    "mapX": 220,
+    "mapY": 780,
+    "parents": [
+      "BG"
     ],
-    "reinforcements": [{ "name": "Heir Dragon Head", "health": 7, "skills": ["Long"] }]
-  },
-  {
-    "id": "E1", "chapter": "Chapter III - Blank Archive", "name": "The Blank Archive",
-    "story": "The histories survived, but every number was changed to zero.",
-    "skillBudget": 5, "mapX": 1300, "mapY": 780, "parents": ["CG"], "requiredCompletedParents": 1,
+    "requiredCompletedParents": 1,
     "rewards": [],
     "enemies": [
-      { "name": "Ink Clerk A", "health": 5, "skills": ["Bian"] },
-      { "name": "Ink Clerk B", "health": 5 },
-      { "name": "Paper Guard", "health": 6, "skills": ["DoubleDefence"] }
-    ]
+      {
+        "name": "Broken Dragon Head",
+        "health": 7,
+        "skills": [
+          "Long"
+        ]
+      },
+      {
+        "name": "Left Dragonbone",
+        "health": 5
+      },
+      {
+        "name": "Right Dragonbone",
+        "health": 5
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Mara turns toward the Archive. Arith takes the road to the Dragon Tomb. They will meet at the roofless shelter."
+      },
+      {
+        "speaker": "Tomb Keeper",
+        "text": "Someone must remain at the gate. Take my place and I will let you in."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith looks down the road behind him, then shakes his head."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith passes the broken gate. The keeper remains beside it, with no replacement appointed."
+      }
+    ],
+    "isTrueEndingRequired": false
   },
   {
-    "id": "E2", "chapter": "Chapter III - Blank Archive", "name": "The Thousand-Faced Scribe",
-    "story": "The Scribe can alter numbers, but not what truly happened.",
-    "skillBudget": 5, "mapX": 1260, "mapY": 900, "parents": ["E1"], "requiredCompletedParents": 1,
-    "rewards": ["Bian"], "isBoss": true, "isTrueEndingRequired": true, "reinforcementAfterEnemyDeaths": 1,
+    "id": "D2",
+    "chapter": "Chapter III - Dragon Tomb",
+    "name": "Dragonbone Array",
+    "story": "The Dragon asks for one more addition, then another.",
+    "skillBudget": 5,
+    "mapX": 390,
+    "mapY": 900,
+    "parents": [
+      "D1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Long"
+    ],
+    "isBoss": true,
+    "isTrueEndingRequired": false,
+    "reinforcementAfterEnemyDeaths": 1,
     "enemies": [
-      { "name": "Thousand-Faced Scribe", "health": 10, "skills": ["Bian", "DoubleDefence"] },
-      { "name": "Paper Guard", "health": 5 }
+      {
+        "name": "Dragonbone Array",
+        "health": 10,
+        "skills": [
+          "Long",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Warding Dragonbone",
+        "health": 5,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
     ],
     "reinforcements": [
-      { "name": "Ink Echo A", "health": 5, "skills": ["PlusAttack"] },
-      { "name": "Ink Echo B", "health": 5, "skills": ["PlusDefence"] }
+      {
+        "name": "Heir Dragon Head",
+        "health": 7,
+        "skills": [
+          "Long"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Dragon bones fill the passage. A voice from among them asks Arith to make an addition so they can move."
+      },
+      {
+        "speaker": "Dragon",
+        "text": "One more. The last one did not reach far enough."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The bones shift. Arith slips through the opening. Behind him, the Dragon asks for one more addition."
+      }
+    ]
+  },
+  {
+    "id": "E1",
+    "chapter": "Chapter III - Blank Archive",
+    "name": "The Blank Archive",
+    "story": "The Archive will search only for a place Mara can name exactly.",
+    "skillBudget": 5,
+    "mapX": 1300,
+    "mapY": 780,
+    "parents": [
+      "CG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Ink Clerk A",
+        "health": 5,
+        "skills": [
+          "Bian"
+        ]
+      },
+      {
+        "name": "Ink Clerk B",
+        "health": 5
+      },
+      {
+        "name": "Paper Guard",
+        "health": 6,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith takes the road to the Tomb. Mara enters the Blank Archive. They have agreed where to meet again."
+      },
+      {
+        "speaker": "Ink Clerk",
+        "text": "The exact name of the ferry, please."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "There was a white bench. One end had been repaired."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "It is what I remember. Give me my card back."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Mara takes the card from the desk. In her own hand she writes: white bench."
+      }
+    ],
+    "isTrueEndingRequired": false
+  },
+  {
+    "id": "E2",
+    "chapter": "Chapter III - Blank Archive",
+    "name": "The Thousand-Faced Scribe",
+    "story": "The Scribe offers several lives, each with a complete ending.",
+    "skillBudget": 5,
+    "mapX": 1260,
+    "mapY": 900,
+    "parents": [
+      "E1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Bian"
+    ],
+    "isBoss": true,
+    "isTrueEndingRequired": false,
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      {
+        "name": "Thousand-Faced Scribe",
+        "health": 10,
+        "skills": [
+          "Bian",
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Paper Guard",
+        "health": 5
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Ink Echo A",
+        "health": 5,
+        "skills": [
+          "PlusAttack"
+        ]
+      },
+      {
+        "name": "Ink Echo B",
+        "health": 5,
+        "skills": [
+          "PlusDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Thousand-Faced Scribe",
+        "text": "You can choose. In this one, they came. In this one, you left first. In this one, there is no ferry."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "Which one has the wet seat?"
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "I spread my coat on it. I remember doing that. I do not want you to finish the rest for me."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Mara takes an unfinished sheet. A few lines describe a bench beside water. The space beside them remains blank."
+      }
     ]
   }
 ]

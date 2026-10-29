@@ -85,7 +85,7 @@ namespace Fida.Campaign.Battle
             var candidates = game.Players
                 .Where(p => p.IsAlive() && args.ValidTargets.Contains(p.PlayerId))
                 .ToList();
-            Player target;
+            Player? target;
             if (game.Query.IsHealing())
             {
                 target = candidates.OrderBy(p => (double)p.Health / Math.Max(1, p.MaxHealth))
