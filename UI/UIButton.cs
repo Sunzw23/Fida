@@ -19,6 +19,7 @@ namespace Fida.UI
 
     public class UIButton : UIButtonBase<UIButtonState>
     {
+        public float MinimumTextScale { get; set; }
         // 按钮状态（优先级：Disabled > Selected > Pressed > Hovered > Normal）
         protected override UIButtonState GetState()
         {
@@ -59,32 +60,39 @@ namespace Fida.UI
             Color foreColor = GetForeColor();
             Color borderColor = GetBorderColor();
             int borderThickness = GetBorderThickness();
+            bool primary = Name is "startGame" or "retry";
+            if (primary && State != UIButtonState.Disabled)
+            {
+                backColor = Color.Lerp(UITheme.Ink, UITheme.GoldBright, HoverAmount) * EntranceAmount;
+                foreColor = UITheme.BgTop * EntranceAmount;
+                borderColor = backColor;
+            }
 
             // 绘制背景
             sb.Draw(Pixel, Bounds, backColor);
 
             bool emphasized = State is UIButtonState.Hovered or UIButtonState.Pressed or UIButtonState.Selected;
-            int accentWidth = Math.Max(18, Bounds.Width / 6);
-            sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Top, accentWidth, 5),
-                State == UIButtonState.Selected ? UITheme.AccentGreen : UITheme.Gold);
+            if (emphasized)
+                sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Bottom - 2, Bounds.Width, 2),
+                    UITheme.Gold * EntranceAmount);
 
             // 绘制文字（居中）
             string displayText = UIFontGuard.Sanitize(Font, Text);
             var size = Font.MeasureString(displayText);
             float availableWidth = MathHelper.Max(1, Bounds.Width - 32);
             float availableHeight = MathHelper.Max(1, Bounds.Height - 20);
-            float textScale = MathHelper.Min(1f, MathHelper.Min(
-                availableWidth / MathHelper.Max(1, size.X),
-                availableHeight / MathHelper.Max(1, size.Y)));
+            float preferredScale = 1f;
 #if !FIDA_ANDROID
-            textScale *= UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
+            preferredScale = UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
 #endif
-            float pressOffset = State == UIButtonState.Pressed ? 2f : 0f;
+            preferredScale = MathHelper.Max(preferredScale, MinimumTextScale);
+            float textScale = UITextRenderer.FitScale(size, availableWidth, availableHeight, preferredScale);
+            float pressOffset = PressAmount * 2f;
             var pos = new Vector2(
                 Bounds.Center.X - size.X * textScale / 2,
                 Bounds.Center.Y - size.Y * textScale / 2 + pressOffset
             );
-            sb.DrawString(Font, displayText, pos, foreColor, 0f, Vector2.Zero,
+            UITextRenderer.DrawString(sb, Font, displayText, pos, foreColor, 0f, Vector2.Zero,
                 textScale, SpriteEffects.None, 0f);
 
             // 绘制边框（禁用状态 borderThickness=0，不绘制）

@@ -31,6 +31,22 @@ namespace Fida.UI
         protected bool IsHovered { get; set; } = false;
         protected bool _isPressed { get; set; } = false;
         protected bool IsSelected { get; set; } = false;
+        protected float HoverAmount;
+        protected float PressAmount;
+        public float EntranceDelay { get; set; }
+        private double _motionAge;
+        protected float EntranceAmount => UIMotion.Reveal(_motionAge - EntranceDelay, 0.22f);
+
+        protected void UpdateMotion(GameTime time)
+        {
+            _motionAge += time.ElapsedGameTime.TotalSeconds;
+            HoverAmount = UIMotion.Approach(HoverAmount, IsEnabled && (IsHovered || IsFocused || IsSelected) ? 1f : 0f,
+                time.ElapsedGameTime.TotalSeconds);
+            PressAmount = UIMotion.Approach(PressAmount, _isPressed ? 1f : 0f,
+                time.ElapsedGameTime.TotalSeconds, 24f);
+        }
+
+        public override void Update(GameTime gameTime) => UpdateMotion(gameTime);
 
         // 支持切换模式 - 点击后切换选定状态
         public bool IsToggleMode { get; set; } = false;
@@ -117,9 +133,8 @@ namespace Fida.UI
         /// </summary>
         protected Color GetBackColor()
         {
-            if (IsPressedOrSelected()) return UITheme.PanelPressed;
-            if (IsHoveredState()) return UITheme.PanelHover;
-            return UITheme.PanelLight;
+            return Color.Lerp(Color.Lerp(UITheme.PanelLight, UITheme.PanelHover, HoverAmount),
+                UITheme.PanelPressed, IsSelected ? 1f : PressAmount) * EntranceAmount;
         }
 
         /// <summary>
@@ -127,8 +142,8 @@ namespace Fida.UI
         /// </summary>
         protected Color GetForeColor()
         {
-            if (IsDisabled()) return UITheme.InkMuted;
-            return UITheme.Ink;
+            if (IsDisabled()) return UITheme.InkMuted * EntranceAmount;
+            return UITheme.Ink * EntranceAmount;
         }
 
         /// <summary>
@@ -136,9 +151,9 @@ namespace Fida.UI
         /// </summary>
         protected Color GetBorderColor()
         {
-            if (IsDisabled()) return UITheme.Panel;            // Disabled: no signal
-            if (IsHoveredState()) return UITheme.GoldBright;   // Focused: bright signal
-            return UITheme.Gold;                               // Normal: cyan signal
+            if (IsDisabled()) return UITheme.Panel * EntranceAmount;
+            if (IsHoveredState() || IsPressedOrSelected()) return UITheme.GoldBright * EntranceAmount;
+            return UITheme.Line * EntranceAmount;
         }
 
         /// <summary>

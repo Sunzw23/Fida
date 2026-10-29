@@ -11,6 +11,7 @@ namespace Fida
     public sealed class DisplaySettingsData
     {
         public bool Fullscreen { get; set; }
+        public bool ReduceMotion { get; set; }
         public int Width { get; set; } = 1920;
         public int Height { get; set; } = 1200;
     }
@@ -40,7 +41,8 @@ namespace Fida
         public static void InitializeMobile(GraphicsDeviceManager graphics)
         {
             _graphics = graphics;
-            Current = new DisplaySettingsData { Fullscreen = true };
+            Current = Load();
+            Current.Fullscreen = true;
         }
 
         public static void SetFullscreen(bool fullscreen)
@@ -52,6 +54,12 @@ namespace Fida
             Current.Fullscreen = fullscreen;
             ApplyAndSave();
 #endif
+        }
+
+        public static void ToggleReducedMotion()
+        {
+            Current.ReduceMotion = !Current.ReduceMotion;
+            Save();
         }
 
         public static void CycleResolution()

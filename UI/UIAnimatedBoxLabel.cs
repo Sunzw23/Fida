@@ -22,6 +22,7 @@ namespace Fida.UI
 
         public override void Update(GameTime gameTime)
         {
+            if (UIMotion.Reduced) Refresh();
             if (!_isAnimating)
                 return;
 

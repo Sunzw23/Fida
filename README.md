@@ -8,7 +8,7 @@
 |---|---|
 | 运行时 | .NET 8.0（`net8.0`，可滚动到更高 SDK） |
 | 游戏框架 | MonoGame.Framework.DesktopGL 3.8.4 |
-| AI 推理 | Microsoft.ML.OnnxRuntime 1.22.1 |
+| AI 决策 | 统一 value table 评分 + 规则引擎模拟，可调实力，无推理库依赖 |
 | 测试 | xUnit 2.7 |
 | 联机 | TCP 直连 + 纯字节 relay 桥接 |
 
@@ -25,13 +25,16 @@ dotnet run
 dotnet test
 ```
 
-启动后应看到 5 个 ONNX AI 模型加载成功：
+启动后应看到轻量 Agent 加载成功：
 
 ```
-Loaded model: Content/agent_GamePhaseType.CHOOSE_NUMBER_INDEX_0.onnx
-...
-Loaded 5 models
+Lightweight agents ready, strength 65, table True
 ```
+
+修改 `Content/agent-settings.json` 的 `Strength`（0–100）并重启即可调整实力。
+0 随机选择合法动作，100 贪心选择最高评分；默认 65。双人无技能、双方生命上限 11 的局面
+直接读取当前 C# 规则训练的 Q 值；技能、目标选择和多人局通过规则引擎模拟动作后统一查 value table。
+不使用手动战术评分或缺表兜底。参见 [轻量 Agent 说明](Doc/LightweightAgent.md)。
 
 ## 玩法
 
@@ -190,8 +193,9 @@ Fida/
 ├── relay/                   Go 实现的公网 relay（房间码配对 + 字节桥接）
 ├── gametext.json            规则/技能/文案
 ├── Agent/
-│   ├── AgentManager.cs      AI 代理（事件驱动，ONNX 推理）
-│   └── OnnxInference.cs     ONNX 推理封装
+│   ├── AgentManager.cs      轻量 AI 接入、实力配置、事件兼容
+│   └── OnnxInference.cs     历史 ONNX 封装（不参与编译）
+├── Fida.Core/Agents/        通用决策、合法动作、评分表、实力采样
 ├── Campaign/
 │   ├── Data/                按章节拆分的18个内置节点
 │   ├── Battle/              规则/脚本Agent、控制器工厂、动态增援
@@ -220,7 +224,7 @@ Fida/
 ├── Content/screens/*.json    界面布局（主菜单/规则/关卡选择/技能选择/联机…）
 ├── Content/campaign/        可增补或覆盖的战役节点配置
 ├── Content/scenes/*.csv     旧版场景配置（保留兼容）
-├── Content/                 字体 + ONNX 模型
+├── Content/                 字体 + 轻量 Agent 评分表与实力配置
 └── Fida.Tests/              xUnit 测试
 ```
 
@@ -235,6 +239,6 @@ dotnet test
 ## 约定
 
 - 中文注释 / 中文提交信息
-- 每步门禁：`dotnet build` 0 错 0 警告 → `dotnet test` 全绿 → `Fida.dll` 启动加载 5 模型无异常
+- 每步门禁：`dotnet build` 0 错 0 警告 → `dotnet test` 全绿 → `Fida.dll` 启动加载轻量 Agent 无异常
 - 不改帧协议 / UI / 状态机；主机走 `GameServer` 语义、客机走 `GameClient` 语义
 - 绝不把备份 `.cs` 留在项目根（SDK glob 会扫进导致重复类型错误）

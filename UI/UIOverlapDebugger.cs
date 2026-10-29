@@ -141,7 +141,7 @@ namespace Fida.UI
             for (int i = 0; i < lines.Count; i++)
             {
                 var color = i == 0 ? Color.White : (i <= collisions.Count ? Color.Red : Color.Gray);
-                sb.DrawString(font, UIFontGuard.Sanitize(font, lines[i]), pos, color * scale);
+                UITextRenderer.DrawString(sb, font, UIFontGuard.Sanitize(font, lines[i]), pos, color * scale);
                 pos.Y += lineH;
             }
         }

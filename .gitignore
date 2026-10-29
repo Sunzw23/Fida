@@ -365,3 +365,6 @@ FodyWeavers.xsd
 # Debug screenshots
 /Fida-original.png
 /screenshot-menu.png
+
+# One-off local maintenance script (changes are already applied to source).
+/.warning-fix.ps1

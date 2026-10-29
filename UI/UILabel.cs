@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -51,7 +51,7 @@ namespace Fida.UI
 
             string displayText = UIFontGuard.Sanitize(Font, Text);
             var (rect, scale) = Measure(displayText, position, visualScale);
-            sb.DrawString(Font, displayText, new Vector2(rect.Left, rect.Top), Color, 0f, Vector2.Zero, scale,
+            UITextRenderer.DrawString(sb, Font, displayText, new Vector2(rect.Left, rect.Top), Color, 0f, Vector2.Zero, scale,
                 SpriteEffects.None, 0f);
         }
 
@@ -76,20 +76,18 @@ namespace Fida.UI
             var textSize = Font.MeasureString(displayText);
             float widthScale = MaximumWidth > 0
                 ? MaximumWidth / MathHelper.Max(1f, textSize.X)
-                : 1f;
+                : float.PositiveInfinity;
             float heightScale = MaximumHeight > 0
                 ? MaximumHeight / MathHelper.Max(1f, textSize.Y)
-                : 1f;
-            float scale = MathHelper.Min(1f, MathHelper.Min(widthScale, heightScale));
-            // The minimum is only a preference: a hard height constraint must
-            // always win so labels cannot collide with adjacent mobile regions.
-            if (MaximumHeight <= 0)
-                scale = MathHelper.Max(MinimumScale, scale);
-            scale *= visualScale;
+                : float.PositiveInfinity;
+            // MaximumWidth/Height are already physical layout bounds.
+            // Fit once; readability preferences must not override either hard bound.
+            float scale = MathHelper.Min(visualScale, MathHelper.Min(widthScale, heightScale));
             var pos = new Vector2(
                 position.X - textSize.X * scale / 2,
                 position.Y - textSize.Y * scale / 2
             );
+            pos = UITextRenderer.Snap(pos);
             return (new Rectangle((int)pos.X, (int)pos.Y,
                 System.Math.Max(1, (int)System.Math.Round(textSize.X * scale)),
                 System.Math.Max(1, (int)System.Math.Round(textSize.Y * scale))), scale);

@@ -80,6 +80,8 @@ namespace Fida.UI
         /// </summary>
         public override void Update(GameTime gameTime)
         {
+            UpdateMotion(gameTime);
+            if (UIMotion.Reduced) Refresh();
             if (!_isAnimating)
                 return;
 
@@ -122,6 +124,11 @@ namespace Fida.UI
         private void DrawInternal(SpriteBatch sb, GameTime gameTime)
         {
             if (!IsVisible) return; // 不可见时不绘制（数字面板非 ChooseNumber 步骤时隐藏）
+            if (DarkTileStyle || Text?.Length == 1 && char.IsDigit(Text[0]))
+            {
+                DrawNumberTile(sb);
+                return;
+            }
             // 更新文字尺寸缓存
             if (_textSizeDirty)
             {
@@ -166,17 +173,16 @@ namespace Fida.UI
             {
                 float availableWidth = MathHelper.Max(1, Bounds.Width - 24);
                 float availableHeight = MathHelper.Max(1, Bounds.Height - 16);
-                float textScale = MathHelper.Min(1f, MathHelper.Min(
-                    availableWidth / MathHelper.Max(1, _cachedTextSize.X),
-                    availableHeight / MathHelper.Max(1, _cachedTextSize.Y)));
+                float preferredScale = 1f;
 #if !FIDA_ANDROID
-                textScale *= UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
+                preferredScale = UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
 #endif
+                float textScale = UITextRenderer.FitScale(_cachedTextSize, availableWidth, availableHeight, preferredScale);
                 Vector2 textPos = new(
                     Bounds.Center.X - _cachedTextSize.X * textScale / 2,
                     Bounds.Center.Y - _cachedTextSize.Y * textScale / 2 +
                     (State == UIAnimatedButtonState.Pressed ? 2f : 0f));
-                sb.DrawString(Font, _cachedDisplayText, textPos, foreColor,
+                UITextRenderer.DrawString(sb, Font, _cachedDisplayText, textPos, foreColor,
                     0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
             }
 
@@ -192,8 +198,7 @@ namespace Fida.UI
             // considers the second number, making the two-beat action readable.
             if (State == UIAnimatedButtonState.Selected)
             {
-                float pulse = 0.5f + 0.5f * (float)Math.Sin(
-                    gameTime.TotalGameTime.TotalSeconds * 8.0);
+                float pulse = UIMotion.Pulse(gameTime.TotalGameTime.TotalSeconds, 3f);
                 int expansion = 3 + (int)(pulse * 3);
                 var pulseBounds = new Rectangle(
                     Bounds.X - expansion,
@@ -215,6 +220,34 @@ namespace Fida.UI
                     Bounds.Height
                 );
                 sb.Draw(Pixel, wipeRect, DarkTileStyle ? UITheme.InkMuted : UITheme.Panel);
+            }
+        }
+
+        private void DrawNumberTile(SpriteBatch sb)
+        {
+            bool selected = State == UIAnimatedButtonState.Selected;
+            bool hover = State == UIAnimatedButtonState.Hovered;
+            bool pressed = State == UIAnimatedButtonState.Pressed;
+            bool disabled = State == UIAnimatedButtonState.Disabled;
+            Color fill = selected ? UITheme.Gold : Color.Lerp(UITheme.PanelLight, UITheme.PanelHover, HoverAmount);
+            Color foreground = selected ? UITheme.BgTop : UITheme.Ink * (disabled ? 0.72f : 1f);
+            sb.Draw(Pixel, Bounds, fill);
+            UIUtils.DrawRectangleOutlines(sb, Bounds,
+                selected ? UITheme.Gold : hover ? UITheme.Ink : UITheme.Line * (disabled ? 0.5f : 1),
+                hover || selected ? 2 : 1, Pixel);
+            int horizontal = Math.Max(8, Bounds.Width / 5);
+            int vertical = Math.Max(7, Bounds.Height / 6);
+            var glyphBounds = new Rectangle(Bounds.Left + horizontal, Bounds.Top + vertical,
+                Math.Max(1, Bounds.Width - 2 * horizontal), Math.Max(1, Bounds.Height - 2 * vertical));
+            if (pressed) glyphBounds.Y += Math.Max(1, Bounds.Height / 50);
+            if (!UIAngularNumber.Draw(sb, Text, glyphBounds, foreground))
+                UIUtils.DrawCenteredFit(sb, Font, Text, Bounds.Center.ToVector2(), Bounds.Width - 16, 1, foreground);
+            // A local wipe signals a changed value without moving its input target.
+            if (_isAnimating)
+            {
+                int x = Bounds.Left + (int)(Bounds.Width * _wipeProgress);
+                sb.Draw(Pixel, new Rectangle(x, Bounds.Top, Math.Max(1, Bounds.Width / 40), Bounds.Height),
+                    selected ? UITheme.BgTop * 0.5f : UITheme.Gold * 0.65f);
             }
         }
 

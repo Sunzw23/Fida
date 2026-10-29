@@ -42,6 +42,8 @@ namespace Fida.UI
         private readonly UIInputHandler _inputHandler;
         private readonly UIFocusManager _focusManager;
         private readonly UIScreenBuilder _screenBuilder;
+        private UIControl? _entranceAnchor;
+        private double _entranceStart;
 
         public GameManager GameManager { get; private set; }
 
@@ -80,9 +82,23 @@ namespace Fida.UI
             // Shared editorial background for menus and battle screens.
             UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel,
                 _graphicsDevice.Viewport, gameTime);
+            UIControl? anchor = _uiControls.Count > 0 ? _uiControls[0] : null;
+            if (!ReferenceEquals(anchor, _entranceAnchor))
+            {
+                _entranceAnchor = anchor;
+                _entranceStart = gameTime.TotalGameTime.TotalSeconds;
+                int order = 0;
+                foreach (var control in _uiControls)
+                    if (control is UIButton button) button.EntranceDelay = System.Math.Min(order++, 5) * 0.04f;
+            }
+            float entrance = UIMotion.Reveal(gameTime.TotalGameTime.TotalSeconds - _entranceStart);
+            _spriteBatch.End();
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
+                SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState,
+                transformMatrix: Matrix.Identity);
             foreach (UIControl control in _uiControls)
             {
-                control.Draw(_spriteBatch, gameTime);
+                if (control.IsVisible) control.Draw(_spriteBatch, gameTime);
             }
 #if !FIDA_ANDROID
             // 布局重叠调试叠加层（F8 开关，仅桌面构建）
@@ -90,6 +106,14 @@ namespace Fida.UI
                 _resourceManager.Pixel, _resourceManager.Font);
 #endif
             _spriteBatch.End();
+            if (entrance < 1f)
+            {
+                _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+                _spriteBatch.Draw(_resourceManager.Pixel,
+                    new Rectangle(0, 0, _graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height),
+                    UITheme.BgTop * (1 - entrance));
+                _spriteBatch.End();
+            }
         }
 
         public void Clear() => _uiControls.Clear();
@@ -162,8 +186,16 @@ namespace Fida.UI
             dialogue.PresentInstruction(instruction);
             if (CurrentInputMode == InputMode.Controller) _focusManager.FocusFirst();
         }
-        public void BuildCampaignResult(bool won, string message) => _screenBuilder.BuildCampaignResult(won, message);
-        public void BuildDuelResult(bool won, string message) => _screenBuilder.BuildDuelResult(won, message);
+        public void BuildCampaignResult(bool won, string message)
+        {
+            _screenBuilder.BuildCampaignResult(won, message);
+            _uiControls.Add(new UIResultAccent(_resourceManager.Pixel, won));
+        }
+        public void BuildDuelResult(bool won, string message)
+        {
+            _screenBuilder.BuildDuelResult(won, message);
+            _uiControls.Add(new UIResultAccent(_resourceManager.Pixel, won));
+        }
 
         /// <summary>构建对局 UI（玩家面板 + 焦点初始化）</summary>
         public void BuildPlayingUI(GameManager gameManager)

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <XnaContent xmlns:Graphics="Microsoft.Xna.Framework.Content.Pipeline.Graphics">
   <Asset Type="Graphics:FontDescription">
 
@@ -8,7 +8,7 @@
 
     <Spacing>0</Spacing>
 
-    <!-- Keep enabled: disabling it collapsed word spacing with this font in MonoGame 3.8.4. -->
+    <!-- Preserve proportional glyph bearings and whitespace advance. Build with MGCB 3.8.5+. -->
     <UseKerning>true</UseKerning>
 
     <Style>Regular</Style>
@@ -22,6 +22,12 @@
         <Start>&#160;</Start>
         <End>&#255;</End>
       </CharacterRegion>
+      <CharacterRegion><Start>&#8211;</Start><End>&#8212;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8216;</Start><End>&#8217;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8220;</Start><End>&#8221;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8226;</Start><End>&#8226;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8230;</Start><End>&#8230;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8722;</Start><End>&#8722;</End></CharacterRegion>
     </CharacterRegions>
 
   </Asset>

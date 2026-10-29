@@ -180,7 +180,7 @@ namespace Fida.UI
             float promptScale = MathHelper.Min(0.52f,
                 MathHelper.Min((_bounds.Width - 28f) / Math.Max(1f, promptSize.X),
                     (_bounds.Height * 0.28f) / Math.Max(1f, promptSize.Y)));
-            sb.DrawString(_font, prompt,
+            UITextRenderer.DrawString(sb, _font, prompt,
                 new Vector2(_bounds.Center.X - promptSize.X * promptScale / 2f, _bounds.Top + 3),
                 UITheme.InkMuted, 0f, Vector2.Zero, promptScale, SpriteEffects.None, 0f);
 
@@ -208,7 +208,7 @@ namespace Fida.UI
                     float charScale = MathHelper.Min(0.78f, MathHelper.Min(
                         (slot.Width - 8f) / Math.Max(1f, charSize.X),
                         (slot.Height - 4f) / Math.Max(1f, charSize.Y)));
-                    sb.DrawString(_font, character,
+                    UITextRenderer.DrawString(sb, _font, character,
                         new Vector2(slot.Center.X - charSize.X * charScale / 2f,
                             slot.Center.Y - charSize.Y * charScale / 2f),
                         UITheme.Ink, 0f, Vector2.Zero, charScale, SpriteEffects.None, 0f);

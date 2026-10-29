@@ -1,4 +1,10 @@
-# Engraved Portrait Assets
+# Portrait Assets
+
+The cold numeric UI uses `cold_roster.png`, a transparent 3-column × 2-row atlas:
+Arith, Mara, Sentinel, Withered King, Warden, Echo. The full built-in image generation
+prompt is in `cold_roster.prompt.txt`. Runtime regions are selected in `UIPlayerManager`.
+See `Doc/ColdNumericUI.md` for integration and motion details. The older portraits below
+remain available as source assets.
 
 These portraits were generated as a visually consistent card set. Runtime text and UI frames are intentionally excluded from the images.
 
@@ -8,7 +14,8 @@ These portraits were generated as a visually consistent card set. Runtime text a
 2. Register it in `Content.mgcb` and `ResourceManager.LoadContent` as `portrait_<key>`.
 3. Set the campaign enemy's `portraitKey` to `<key>` in data or code.
 
-Missing enemy keys automatically use `enemy_fallback`; a missing local-player key uses `arithmetist`.
+Unregistered keys use the cold atlas with a team/name-based fallback. Custom registered
+`portrait_<key>` textures and explicit per-player overrides still take precedence.
 
 ## `arithmetist.png`
 

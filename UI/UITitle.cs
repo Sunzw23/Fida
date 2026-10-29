@@ -30,14 +30,14 @@ namespace Fida.UI
 
             string displayText = UIFontGuard.Sanitize(_font, _text);
             var (rect, size, scale) = ComputeBounds(displayText, sb.GraphicsDevice.Viewport);
-            sb.DrawString(_font, displayText, new Vector2(rect.Left, rect.Top), UITheme.Ink, 0f, Vector2.Zero,
+            UITextRenderer.DrawString(sb, _font, displayText, new Vector2(rect.Left, rect.Top), UITheme.Ink, 0f, Vector2.Zero,
                 scale, SpriteEffects.None, 0f);
 
             float ruleW = MathHelper.Max(90f, size.X * 0.42f);
             float ruleX = rect.Center.X - ruleW / 2f;
             float ruleY = rect.Bottom + 6f;
             sb.Draw(_pixel, new Rectangle((int)ruleX, (int)ruleY, (int)ruleW, 4),
-                UITheme.Gold);
+                UITheme.Line);
         }
 
         public override Rectangle? GetScreenBounds(Viewport viewport)

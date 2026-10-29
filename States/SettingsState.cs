@@ -15,6 +15,7 @@ namespace Fida.States
             BindButton("fullscreen", () => Apply(() => DisplaySettingsManager.SetFullscreen(true)));
             BindButton("windowed", () => Apply(() => DisplaySettingsManager.SetFullscreen(false)));
             BindButton("resolution", () => Apply(DisplaySettingsManager.CycleResolution));
+            BindButton("motion", () => Apply(DisplaySettingsManager.ToggleReducedMotion));
             BindButton("back", _stateMachine.ReturnFromSettings);
         }
 

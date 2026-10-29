@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -17,9 +17,12 @@ namespace Fida.UI
         public Texture2D Pixel { get; set; }
 
         public Texture2D PortraitTexture { get; set; }
+        public Rectangle? PortraitSource { get; set; }
+        public bool IsCurrentTurn { get; set; }
+        public Func<bool> CurrentTurnChecker { get; set; }
         public bool IsAlly { get; }
 
-        /// <summary>Displays a pulsing frame while an automated controller is deciding.</summary>
+        /// <summary>Marks the acting portrait while an automated controller is deciding.</summary>
         public bool IsPresentingAction { get; set; }
         public Vector2 VisualOffset { get; set; } = Vector2.Zero;
         public float VisualScale { get; set; } = 1f;
@@ -57,12 +60,14 @@ namespace Fida.UI
         private Rectangle _skillStripBounds;
         private int? _deferredHealth;
         private int _visibleHealth;
+        private float _displayHealth;
+        private int _healthDelta;
+        private float _healthChangeAge = 1f;
         private int[] _deferredNumbers;
         private float _deathReveal = 1f;
         private bool _visuallyDefeated;
         private float _arrivalProgress = 1f;
         public bool DeferNumberVisual { get; private set; }
-        private bool _pointerOverCard;
         private bool _pointerOverSkills;
 #if FIDA_ANDROID
         private bool _showSkillDetails;
@@ -89,20 +94,7 @@ namespace Fida.UI
             OnConfirmed();
         }
 
-        private UIButtonState CardState
-        {
-            get
-            {
-                if (!IsEnabled) return UIButtonState.Disabled;
-                if (_isPressed) return UIButtonState.Pressed;
-                if (IsHovered) return UIButtonState.Hovered;
-                return UIButtonState.Normal;
-            }
-        }
-
-        // 配色统一取自 UITheme（暖墨 + 羊皮纸主题）
-
-        public UIPlayer(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel, Texture2D portraitTexture = null, bool isAlly = false) : base(id)
+        public UIPlayer(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel, Texture2D portraitTexture = null, bool isAlly = false, Rectangle? layoutBounds = null) : base(id)
         {
             Position = position;
             Player = player;
@@ -112,10 +104,9 @@ namespace Fida.UI
             IsAlly = isAlly;
             _visuallyDefeated = player.Health <= 0;
             _visibleHealth = player.Health;
+            _displayHealth = player.Health;
 
-            float nameHeight = font.MeasureString(UIFontGuard.Sanitize(font, player.Name)).Y;
-
-            CardBounds = new Rectangle(
+            CardBounds = layoutBounds ?? new Rectangle(
                 (int)position.X,
                 (int)position.Y,
                 UIConfig.Int("cardWidth"),
@@ -128,8 +119,6 @@ namespace Fida.UI
                 CardBounds.Width - 2 * UIConfig.Int("innerBorderMargin"),
                 CardBounds.Height - 2 * UIConfig.Int("innerBorderMargin")
             );
-
-            int verticalSpacing = (InnerCardBounds.Height - UIConfig.Int("portraitSize") - UIConfig.Int("nameHeight") - UIConfig.Int("bottomElementHeight")) / 4;
 
 #if FIDA_ANDROID
             int padding = Math.Clamp(CardBounds.Height / 12, 12, 18);
@@ -178,93 +167,43 @@ namespace Fida.UI
                 player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
                 pixel, font) { ParentDrawOnly = true, DarkTileStyle = true };
 #else
-            int pad = UIConfig.ScaleDesktopMetric(18);
-            int badgeSize = UIConfig.Int("portraitSize");
-            PortraitBounds = new Rectangle(CardBounds.Left + pad,
-                CardBounds.Top + UIConfig.ScaleDesktopMetric(82),
-                badgeSize, badgeSize);
+            Number0Bounds = UIBattleLayout.Number(CardBounds, 0);
+            Number1Bounds = UIBattleLayout.Number(CardBounds, 1);
+            int portraitHeight = (int)(CardBounds.Height * 0.36f);
+            int portraitWidth = portraitHeight;
+            PortraitBounds = new Rectangle(CardBounds.Center.X - portraitWidth / 2,
+                CardBounds.Top, portraitWidth, portraitHeight);
             _nameCenter = new Vector2(CardBounds.Center.X,
-                CardBounds.Top + UIConfig.ScaleDesktopMetric(34));
+                CardBounds.Top + CardBounds.Height * 0.40f);
             NameLabel = new UILabel(0, player.Name, _nameCenter, font)
             {
-                MaximumWidth = CardBounds.Width - pad * 2,
-                MaximumHeight = UIConfig.ScaleDesktopMetric(34),
+                MaximumWidth = CardBounds.Width - 8,
+                MaximumHeight = CardBounds.Height * 0.075f,
                 MinimumScale = 0.5f
             };
-
-            int infoLeft = PortraitBounds.Right + UIConfig.ScaleDesktopMetric(16);
-            int infoWidth = CardBounds.Right - pad - infoLeft;
-            HealthBounds = new Rectangle(infoLeft, CardBounds.Top + UIConfig.ScaleDesktopMetric(105),
-                infoWidth, UIConfig.ScaleDesktopMetric(38));
-            _healthCenter = HealthBounds.Center.ToVector2();
-            HealthLabel = new UILabel(11, player.Health.ToString(), _healthCenter, font)
+            HealthBounds = new Rectangle(CardBounds.Left + CardBounds.Width / 5,
+                CardBounds.Top + (int)(CardBounds.Height * 0.48f), CardBounds.Width * 2 / 5,
+                Math.Max(3, CardBounds.Height / 50));
+            _healthCenter = new Vector2(HealthBounds.Right + CardBounds.Width * 0.12f, HealthBounds.Center.Y);
+            HealthLabel = new UILabel(11, $"{player.Health}/{player.MaxHealth}", _healthCenter, font)
             {
-                MaximumWidth = infoWidth - 16,
-                MaximumHeight = UIConfig.ScaleDesktopMetric(29),
+                MaximumWidth = CardBounds.Width * 0.23f,
+                MaximumHeight = CardBounds.Height * 0.065f,
                 MinimumScale = 0.5f
             };
-            _skillStripBounds = new Rectangle(infoLeft, CardBounds.Top + UIConfig.ScaleDesktopMetric(150),
-                infoWidth, UIConfig.ScaleDesktopMetric(34));
-
-            int numberWidth = UIConfig.ScaleDesktopMetric(56);
-            int numberHeight = UIConfig.ScaleDesktopMetric(54);
-            int bottomY = CardBounds.Bottom - numberHeight - UIConfig.ScaleDesktopMetric(16);
-            Number0Bounds = new Rectangle(CardBounds.Left + pad, bottomY,
-                numberWidth, numberHeight);
+            _skillStripBounds = new Rectangle(CardBounds.Left, CardBounds.Top,
+                CardBounds.Width, Math.Max(1, Number0Bounds.Top - CardBounds.Top));
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
-                pixel, font) { ParentDrawOnly = true };
-            Number1Bounds = new Rectangle(CardBounds.Right - pad - numberWidth,
-                bottomY, numberWidth, numberHeight);
+                pixel, font) { ParentDrawOnly = true, DarkTileStyle = true };
             Number1Button = new UIAnimatedButton(12, Number1Bounds,
                 player.Numbers.Length > 1 ? player.Numbers[1].ToString() : "1",
-               pixel, font) { ParentDrawOnly = true };
+               pixel, font) { ParentDrawOnly = true, DarkTileStyle = true };
 #endif
 
             // 直接监听 Player 的数字变化，UI 自动刷新
             player.NumberChanged += (p, idx, oldVal, newVal) => UpdateNumbers();
             player.HealthChanged += (p) => UpdateHealth();
-        }
-
-        // ---- 状态驱动渲染 ----
-
-        private Color GetCardBackColor()
-        {
-            return CardState switch
-            {
-                UIButtonState.Pressed => UITheme.PanelDark,
-                _ => UITheme.PanelLight
-            };
-        }
-
-        private Color GetCardForeColor()
-        {
-            // 文字/内框/头像用深墨，在浅底与按压深底上都清晰
-            return UITheme.Ink;
-        }
-
-        private Color GetCardBorderColor()
-        {
-            return CardState switch
-            {
-                UIButtonState.Hovered => UITheme.GoldBright,
-                _ => UITheme.Gold
-            };
-        }
-
-        private int GetOuterBorderThickness()
-        {
-            return CardState switch
-            {
-                UIButtonState.Hovered => 4,
-                UIButtonState.Pressed => 2,
-                _ => UIConfig.Int("cardBorderThickness")
-            };
-        }
-
-        private bool HasDoubleBorder()
-        {
-            return CardState == UIButtonState.Pressed;
         }
 
         // ---- 鼠标交互 ----
@@ -273,7 +212,6 @@ namespace Fida.UI
         {
             bool mouseDown = mouseState.LeftButton == ButtonState.Pressed;
             var mousePoint = new Point(mouseState.X, mouseState.Y);
-            _pointerOverCard = CardBounds.Contains(mousePoint);
             _pointerOverSkills = _skillStripBounds.Contains(mousePoint);
 #if FIDA_ANDROID
             if (mouseDown && !_mouseWasDown)
@@ -350,7 +288,11 @@ namespace Fida.UI
 
         public override void Update(GameTime gameTime)
         {
+            IsCurrentTurn = CurrentTurnChecker?.Invoke() ?? IsCurrentTurn;
             float seconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            _displayHealth = UIMotion.Approach(_displayHealth, _visibleHealth, seconds, 9f);
+            _healthChangeAge += seconds;
+            if (UIMotion.Reduced) { _arrivalProgress = 1; _deathReveal = 1; }
 #if FIDA_ANDROID
             if (_skillTouchStarted && _mouseWasDown && !_skillLongPressed)
             {
@@ -374,10 +316,15 @@ namespace Fida.UI
 
         private void SetVisibleHealth(int health)
         {
+            if (health != _visibleHealth)
+            {
+                _healthDelta = health - _visibleHealth;
+                _healthChangeAge = 0;
+            }
 #if FIDA_ANDROID
             HealthLabel.Update($"HP  {health} / {Player.MaxHealth}");
 #else
-            HealthLabel.Update(health.ToString());
+            HealthLabel.Update($"{health}/{Player.MaxHealth}");
 #endif
             _visibleHealth = health;
             bool defeated = health <= 0;
@@ -436,277 +383,88 @@ namespace Fida.UI
             Number1Button.RefreshState();
         }
 
-        public override void Draw(SpriteBatch sb, GameTime gameTime)
+        public override void Draw(SpriteBatch sb, GameTime gameTime) => DrawColdUnit(sb, gameTime);
+
+        private void DrawColdUnit(SpriteBatch sb, GameTime time)
         {
-            Color backColor = GetCardBackColor();
-            Color foreColor = GetCardForeColor();
-            int outerThickness = GetOuterBorderThickness();
-
-            float interactionScale = CardState switch
+            float scale = UIDesktopLayout.LayoutScale(sb.GraphicsDevice.Viewport);
+            double clock = time.TotalGameTime.TotalSeconds;
+            float phase = Player.PlayerId * 1.71f;
+            bool moving = !UIMotion.Reduced && !_visuallyDefeated;
+            float breath = moving ? MathF.Sin((float)clock * 1.5f + phase) : 0;
+            float sway = moving ? MathF.Sin((float)clock * 0.8f + phase) : 0;
+            // Only the artwork moves. Buttons, labels and their hit rectangles stay fixed.
+            Vector2 offset = UIMotion.Reduced ? Vector2.Zero : VisualOffset * scale;
+            float portraitScale = UIMotion.Reduced ? 1 : VisualScale;
+            var art = PortraitBounds;
+            float enter = UIMotion.Reduced ? 1 : MathHelper.SmoothStep(0, 1, _arrivalProgress);
+            Color tint = (_visuallyDefeated ? Color.Lerp(Color.White, UITheme.InkMuted * 0.35f, _deathReveal) : Color.White) * enter;
+            if (PortraitTexture != null)
             {
-                UIButtonState.Hovered => 1.035f,
-                UIButtonState.Pressed => 0.985f,
-                _ => 1f
-            };
-            float layoutScale = UIDesktopLayout.LayoutScale(Pixel.GraphicsDevice.Viewport);
-            Vector2 interactionOffset = CardState == UIButtonState.Hovered
-                ? new Vector2(0f, -9f * layoutScale)
-                : Vector2.Zero;
-            float drawScale = VisualScale * interactionScale;
-            Vector2 drawOffset = VisualOffset + interactionOffset;
-            if (_arrivalProgress < 1f)
-            {
-                float entrance = MathHelper.SmoothStep(0f, 1f, _arrivalProgress);
-                drawOffset += new Vector2(IsAlly ? -44f : 44f, 0f) * layoutScale * (1f - entrance);
-                drawScale *= 0.94f + 0.06f * entrance;
+                Rectangle source = PortraitSource ?? PortraitTexture.Bounds;
+                float fit = Math.Min(art.Width / (float)source.Width, art.Height / (float)source.Height);
+                sb.Draw(PortraitTexture, new Vector2(art.Center.X, art.Bottom) + offset +
+                    new Vector2(sway * 1.5f * scale, -breath * 1.5f * scale), source, tint,
+                    sway * 0.008f, new Vector2(source.Width / 2f, source.Height),
+                    new Vector2(fit * portraitScale, fit * portraitScale * (1 + breath * 0.009f)),
+                    SpriteEffects.None, 0);
             }
-            Vector2 pivot = CardBounds.Center.ToVector2();
-
-            Rectangle cardBounds = TransformRect(CardBounds, pivot, drawScale, drawOffset);
-            Rectangle portraitBounds = TransformRect(PortraitBounds, pivot, drawScale, drawOffset);
-            Rectangle number0Bounds = TransformRect(Number0Bounds, pivot, drawScale, drawOffset);
-            Rectangle number1Bounds = TransformRect(Number1Bounds, pivot, drawScale, drawOffset);
-            Rectangle healthBounds = TransformRect(HealthBounds, pivot, drawScale, drawOffset);
-            Vector2 nameCenter = TransformPoint(_nameCenter, pivot, drawScale, drawOffset);
-            Vector2 healthCenter = TransformPoint(_healthCenter, pivot, drawScale, drawOffset);
-
-            if (IsPresentingAction)
+            NameLabel.SetColor(IsCurrentTurn || IsPresentingAction ? UITheme.Gold : UITheme.Ink);
+            NameLabel.DrawAt(sb, time, _nameCenter, scale);
+            sb.Draw(Pixel, HealthBounds, UITheme.Line * 0.55f);
+            float ratio = Player.MaxHealth <= 0 ? 0 : MathHelper.Clamp(_displayHealth / Player.MaxHealth, 0, 1);
+            if (ratio > 0)
+                sb.Draw(Pixel, new Rectangle(HealthBounds.X, HealthBounds.Y,
+                    Math.Max(1, (int)(HealthBounds.Width * ratio)), HealthBounds.Height),
+                    IsAlly ? UITheme.Gold : UITheme.Ink);
+            HealthLabel.SetColor(UITheme.InkMuted);
+            HealthLabel.DrawAt(sb, time, _healthCenter, scale);
+            if (Player.Skills.Count > 0)
             {
-                float pulse = 0.5f + 0.5f * (float)Math.Sin(
-                    gameTime.TotalGameTime.TotalSeconds * 7.0);
-                int expansion = UIConfig.ScaleDesktopMetric(5) +
-                    (int)(pulse * UIConfig.ScaleDesktopMetric(5));
-                var cueBounds = new Rectangle(
-                    cardBounds.X - expansion,
-                    cardBounds.Y - expansion,
-                    cardBounds.Width + expansion * 2,
-                    cardBounds.Height + expansion * 2);
-                UIUtils.DrawRectangleOutlines(sb, cueBounds,
-                    Color.Lerp(UITheme.Gold, UITheme.GoldBright, pulse),
-                    UIConfig.ScaleDesktopMetric(2) + (int)(pulse * UIConfig.ScaleDesktopMetric(2)), Pixel);
-            }
-
-            if (SelectionStrength > 0f)
-            {
-                int expansion = UIConfig.ScaleDesktopMetric(8) +
-                    (int)(SelectionStrength * UIConfig.ScaleDesktopMetric(5));
-                var selectedBounds = new Rectangle(cardBounds.X - expansion, cardBounds.Y - expansion,
-                    cardBounds.Width + expansion * 2, cardBounds.Height + expansion * 2);
-                UIUtils.DrawGlowFrame(sb, selectedBounds, Pixel,
-                    UITheme.AccentGreen, 4, SelectionStrength);
-            }
-
-            // 绘制外框背景
-            sb.Draw(Pixel, cardBounds, backColor);
-
-            // 绘制外框边框
+                string skills = string.Join("  /  ", Player.Skills.ConvertAll(skill => UISkillIconCatalog.Glyph(skill.Type)));
 #if FIDA_ANDROID
-            Color identityAccent = IsAlly ? UITheme.AccentGreen : UITheme.Gold;
-            UIUtils.DrawRectangleOutlines(sb, cardBounds,
-                CardState == UIButtonState.Hovered ? identityAccent : UITheme.Ink,
-                CardState == UIButtonState.Hovered ? 2 : 1, Pixel);
-            sb.Draw(Pixel, portraitBounds, UITheme.PanelDark);
-            DrawCompactText(sb, Player.PlayerId.ToString("00"),
-                portraitBounds.Center.ToVector2(), identityAccent,
-                0.78f * drawScale, portraitBounds.Width - 8);
-            int dividerWidth = Math.Max(1, (int)(2 * drawScale));
-            sb.Draw(Pixel, new Rectangle(portraitBounds.Right + (int)(8 * drawScale),
-                cardBounds.Top + (int)(16 * drawScale), dividerWidth,
-                cardBounds.Height - (int)(32 * drawScale)), UITheme.Ink * 0.25f);
-            sb.Draw(Pixel, new Rectangle(number0Bounds.Left - (int)(10 * drawScale),
-                cardBounds.Top + (int)(16 * drawScale), dividerWidth,
-                cardBounds.Height - (int)(32 * drawScale)), UITheme.Ink * 0.25f);
-            DrawCompactHealthBar(sb, healthBounds);
+                DrawCompactText(sb, skills, _skillStripBounds.Center.ToVector2(), UITheme.InkMuted,
+                    0.50f, _skillStripBounds.Width);
 #else
-            Color border = CardState == UIButtonState.Hovered || IsPresentingAction
-                ? UITheme.Gold : UITheme.Ink;
-            UIUtils.DrawRectangleOutlines(sb, cardBounds, border,
-                CardState == UIButtonState.Hovered ? 2 : 1, Pixel);
-            Color identityAccent = IsAlly ? UITheme.AccentGreen : UITheme.Gold;
-            sb.Draw(Pixel, new Rectangle(cardBounds.Left, cardBounds.Top,
-                UIConfig.ScaleDesktopMetric(7), cardBounds.Height),
-                identityAccent);
-            sb.Draw(Pixel, new Rectangle(cardBounds.Left + UIConfig.ScaleDesktopMetric(18),
-                cardBounds.Top + UIConfig.ScaleDesktopMetric(66),
-                cardBounds.Width - UIConfig.ScaleDesktopMetric(36),
-                UIConfig.ScaleDesktopMetric(1)), UITheme.Ink * 0.24f);
-            sb.Draw(Pixel, portraitBounds, UITheme.PanelDark);
-            DrawCompactText(sb, Player.PlayerId.ToString("00"),
-                portraitBounds.Center.ToVector2(), identityAccent,
-                0.78f * drawScale, portraitBounds.Width - 10);
-            DrawCompactText(sb, "HP", new Vector2(healthBounds.Left + UIConfig.ScaleDesktopMetric(12),
-                healthBounds.Top - UIConfig.ScaleDesktopMetric(14)), UITheme.InkMuted, 0.36f * layoutScale * drawScale,
-                healthBounds.Width);
-            DrawCompactHealthBar(sb, healthBounds);
+                DrawCompactText(sb, skills, new Vector2(CardBounds.Center.X,
+                    (HealthBounds.Bottom + Number0Bounds.Top) / 2f), UITheme.InkMuted,
+                    0.23f * scale, CardBounds.Width - 12);
 #endif
-
-            DrawSkillMedallions(sb, cardBounds, portraitBounds, nameCenter, number0Bounds, drawScale);
-
+            }
+            if (IsCurrentTurn || IsPresentingAction)
+                sb.Draw(Pixel, new Rectangle(CardBounds.Center.X - Math.Max(4, (int)(8 * scale)),
+                    PortraitBounds.Top - Math.Max(5, (int)(10 * scale)), Math.Max(8, (int)(16 * scale)), Math.Max(2, (int)(2 * scale))), UITheme.Gold);
+            if (IsHovered || IsFocused || SelectionStrength > 0)
+                UIUtils.DrawRectangleOutlines(sb, CardBounds, UITheme.InkMuted, 1, Pixel);
+            Number0Button.DrawAt(sb, time, Number0Bounds);
+            Number1Button.DrawAt(sb, time, Number1Bounds);
+            if (ImpactStrength > 0 && !UIMotion.Reduced)
+                sb.Draw(Pixel, new Rectangle(HealthBounds.X, HealthBounds.Y - 2,
+                    HealthBounds.Width, Math.Max(2, HealthBounds.Height + 4)), UITheme.Ink * (ImpactStrength * 0.5f));
+            if (_visuallyDefeated)
+            {
+                sb.Draw(Pixel, Number0Bounds, UITheme.BgTop * (0.65f * _deathReveal));
+                sb.Draw(Pixel, Number1Bounds, UITheme.BgTop * (0.65f * _deathReveal));
+                DrawCompactText(sb, "DOWN", new Vector2(CardBounds.Center.X, Number0Bounds.Center.Y),
+                    UITheme.InkMuted, 0.35f * scale, CardBounds.Width);
+            }
+            if (!UIMotion.Reduced && _healthChangeAge < 0.7f && _healthDelta != 0)
+                DrawCompactText(sb, _healthDelta > 0 ? $"+{_healthDelta}" : _healthDelta.ToString(),
+                    new Vector2(PortraitBounds.Right + 10 * scale, PortraitBounds.Top - _healthChangeAge * 18 * scale),
+                    UITheme.Ink * (1 - _healthChangeAge / 0.7f), 0.5f * scale, CardBounds.Width / 3);
+            // Skill information is secondary and available over the portrait/name, away from number clicks.
 #if FIDA_ANDROID
             if (_showSkillDetails && Player.Skills.Count > 0)
-            {
-                int tooltipHeight = Math.Min(UIConfig.ScaleDesktopMetric(250),
-                    UIConfig.ScaleDesktopMetric(88 + Player.Skills.Count * 42));
-                int tooltipY = (sb.GraphicsDevice.Viewport.Height - tooltipHeight) / 2;
-                DrawSkillDetails(sb, new Rectangle(cardBounds.Left + 20,
-                    tooltipY, cardBounds.Width - 40, tooltipHeight), 1f);
-            }
 #else
             if (_pointerOverSkills && Player.Skills.Count > 0)
-            {
-                int tooltipY = cardBounds.Bottom + 8;
-                int tooltipNominalHeight = UIConfig.ScaleDesktopMetric(168);
-                if (tooltipY + tooltipNominalHeight > sb.GraphicsDevice.Viewport.Height - UIConfig.ScaleDesktopMetric(12))
-                    tooltipY = cardBounds.Top - UIConfig.ScaleDesktopMetric(176);
-                DrawSkillDetails(sb, new Rectangle(cardBounds.Left,
-                    Math.Max(UIConfig.ScaleDesktopMetric(8), tooltipY), cardBounds.Width,
-                    tooltipNominalHeight), drawScale * layoutScale);
-            }
 #endif
-
-            // 绘制底部元素
-            Number0Button.DrawAt(sb, gameTime, number0Bounds);
-            HealthLabel.SetColor(foreColor);
-            HealthLabel.DrawAt(sb, gameTime, healthCenter, drawScale * layoutScale);
-            Number1Button.DrawAt(sb, gameTime, number1Bounds);
-
-            // 绘制名字（Pressed 时反色）
-            NameLabel.SetColor(foreColor);
-            NameLabel.DrawAt(sb, gameTime, nameCenter, drawScale * layoutScale);
-
-            if (ImpactStrength > 0f)
             {
-                sb.Draw(Pixel, cardBounds, UITheme.GoldBright * (0.26f * ImpactStrength));
-                UIUtils.DrawRectangleOutlines(sb, cardBounds, UITheme.GoldBright,
-                    3 + (int)(ImpactStrength * 4f), Pixel);
+                int height = Math.Min(UIConfig.ScaleDesktopMetric(220),
+                    UIConfig.ScaleDesktopMetric(66 + Player.Skills.Count * 28));
+                int y = Math.Max(8, CardBounds.Top - height - 8);
+                if (y + height > CardBounds.Top) y = CardBounds.Bottom + 8;
+                DrawSkillDetails(sb, new Rectangle(CardBounds.Left, y, CardBounds.Width, height), scale);
             }
-
-            if (_visuallyDefeated)
-                DrawDefeatedState(sb, cardBounds, drawScale);
-            else if (_arrivalProgress < 1f)
-                DrawArrivalState(sb, cardBounds, drawScale);
-        }
-
-        private void DrawDefeatedState(SpriteBatch sb, Rectangle bounds, float scale)
-        {
-            float reveal = MathHelper.SmoothStep(0f, 1f, _deathReveal);
-            int height = Math.Max(1, (int)(bounds.Height * reveal));
-            sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Bottom - height,
-                bounds.Width, height), UITheme.PanelLight * 0.90f);
-            if (reveal < 0.3f) return;
-            Color accent = IsAlly ? UITheme.AccentGreen : UITheme.Gold;
-            sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Top,
-                Math.Max(5, (int)(7f * scale)), bounds.Height), accent);
-            int ruleY = bounds.Center.Y + Math.Max(18, (int)(22f * scale));
-            sb.Draw(Pixel, new Rectangle(bounds.Left + 16, ruleY,
-                Math.Max(1, bounds.Width - 32), Math.Max(2, (int)(3f * scale))), accent);
-            DrawCompactText(sb, IsAlly ? "DOWN" : "DEFEATED",
-                new Vector2(bounds.Center.X, bounds.Center.Y - 12f * scale),
-                UITheme.Ink, 0.70f * scale, bounds.Width - 30f);
-        }
-
-        private void DrawArrivalState(SpriteBatch sb, Rectangle bounds, float scale)
-        {
-            float reveal = MathHelper.SmoothStep(0f, 1f, _arrivalProgress);
-            int top = bounds.Top + Math.Max(5, (int)(8f * scale));
-            sb.Draw(Pixel, new Rectangle(bounds.Left, top,
-                Math.Max(1, (int)(bounds.Width * reveal)), Math.Max(3, (int)(4f * scale))),
-                IsAlly ? UITheme.AccentGreen : UITheme.Gold);
-            if (_arrivalProgress < 0.78f)
-                DrawCompactText(sb, "INCOMING",
-                    new Vector2(bounds.Center.X, bounds.Bottom - 22f * scale),
-                    UITheme.Ink, 0.46f * scale, bounds.Width - 24f);
-        }
-
-        private void DrawCompactHealthBar(SpriteBatch sb, Rectangle bounds)
-        {
-            sb.Draw(Pixel, bounds, UITheme.PanelDark);
-            float ratio = Player.MaxHealth <= 0 ? 0f :
-                MathHelper.Clamp(_visibleHealth / (float)Player.MaxHealth, 0f, 1f);
-            int fill = Math.Max(0, (int)(bounds.Width * ratio));
-            if (fill > 0)
-#if FIDA_ANDROID
-                sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Top, fill, bounds.Height),
-                    UITheme.AccentGreen);
-#else
-                sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Bottom - 6, fill, 6),
-                    UITheme.AccentGreen);
-#endif
-        }
-
-        private static Rectangle TransformRect(Rectangle source, Vector2 pivot, float scale, Vector2 offset)
-        {
-            Vector2 center = TransformPoint(source.Center.ToVector2(), pivot, scale, offset);
-            int width = System.Math.Max(1, (int)(source.Width * scale));
-            int height = System.Math.Max(1, (int)(source.Height * scale));
-            return new Rectangle((int)(center.X - width / 2f), (int)(center.Y - height / 2f), width, height);
-        }
-
-        private static Vector2 TransformPoint(Vector2 point, Vector2 pivot, float scale, Vector2 offset) =>
-            pivot + (point - pivot) * scale + offset;
-
-        private void DrawSkillMedallions(SpriteBatch sb, Rectangle cardBounds,
-            Rectangle portraitBounds, Vector2 nameCenter, Rectangle numberBounds, float scale)
-        {
-#if FIDA_ANDROID
-            Rectangle strip = TransformRect(_skillStripBounds, CardBounds.Center.ToVector2(), scale,
-                VisualOffset + (CardState == UIButtonState.Hovered ? new Vector2(0f, -9f) : Vector2.Zero));
-            if (Player.Skills.Count == 0) return;
-
-            const int maximumVisibleMobile = 5;
-            int visibleMobile = Math.Min(maximumVisibleMobile, Player.Skills.Count);
-            int sizeMobile = Math.Min(strip.Height, Math.Max(28, (int)(38 * scale)));
-            int gapMobile = Math.Max(6, (int)(8 * scale));
-            int startMobile = strip.Left;
-            for (int i = 0; i < visibleMobile; i++)
-            {
-                Skill skill = Player.Skills[i];
-                Color accent = UISkillIconCatalog.Fill(skill);
-                var bounds = new Rectangle(startMobile + i * (sizeMobile + gapMobile),
-                    strip.Center.Y - sizeMobile / 2, sizeMobile, sizeMobile);
-                sb.Draw(Pixel, bounds, UITheme.PanelLight);
-                sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Top, 5, bounds.Height), accent);
-                UIUtils.DrawRectangleOutlines(sb, bounds, accent, 2, Pixel);
-                DrawCompactText(sb, UISkillIconCatalog.Glyph(skill.Type), bounds.Center.ToVector2(),
-                    UITheme.Ink, 0.60f * scale, sizeMobile - 5f);
-            }
-            return;
-#else
-            if (Player.Skills.Count == 0) return;
-
-            Rectangle strip = TransformRect(_skillStripBounds, CardBounds.Center.ToVector2(), scale,
-                VisualOffset + (CardState == UIButtonState.Hovered ? new Vector2(0f, -9f) : Vector2.Zero));
-
-            const int maximumVisible = 5;
-            int visible = System.Math.Min(maximumVisible, Player.Skills.Count);
-            int size = System.Math.Min(strip.Height, System.Math.Max(
-                UIConfig.ScaleDesktopMetric(23), (int)(UIConfig.ScaleDesktopMetric(30) * scale)));
-            int gap = System.Math.Max(UIConfig.ScaleDesktopMetric(3),
-                (int)(UIConfig.ScaleDesktopMetric(4) * scale));
-            int totalWidth = visible * size + (visible - 1) * gap;
-            int startX = strip.Left + Math.Max(0, (strip.Width - totalWidth) / 2);
-            int centerY = strip.Center.Y;
-
-            for (int i = 0; i < visible; i++)
-            {
-                Skill skill = Player.Skills[i];
-                Color accent = UISkillIconCatalog.Fill(skill);
-                var bounds = new Rectangle(startX + i * (size + gap), centerY - size / 2, size, size);
-                sb.Draw(Pixel, bounds, UITheme.PanelLight);
-                sb.Draw(Pixel, new Rectangle(bounds.Left, bounds.Top, Math.Max(4, (int)(5 * scale)), bounds.Height), accent);
-                UIUtils.DrawRectangleOutlines(sb, bounds, accent,
-                    System.Math.Max(2, (int)(2 * scale)), Pixel);
-                DrawCompactText(sb, UISkillIconCatalog.Glyph(skill.Type), bounds.Center.ToVector2(),
-                    UITheme.Ink, 0.58f * scale, size - 4f);
-            }
-
-            if (Player.Skills.Count > maximumVisible)
-            {
-                var last = new Vector2(startX + (visible - 1) * (size + gap) + size / 2f, centerY);
-                DrawCompactText(sb, $"+{Player.Skills.Count - maximumVisible}", last,
-                    UITheme.Ink, 0.40f * scale, size - 3f);
-            }
-#endif
         }
 
         private void DrawSkillDetails(SpriteBatch sb, Rectangle portraitBounds, float scale)

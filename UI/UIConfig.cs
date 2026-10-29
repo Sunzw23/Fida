@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 #nullable enable
 using System;
 using System.Collections.Generic;
@@ -66,7 +66,7 @@ namespace Fida.UI
 
         public static float Float(string key, float def = 0f) => _settings.TryGetValue(key, out var e) ? e.GetSingle() : def;
 
-        public static string String(string key, string def = "") => _settings.TryGetValue(key, out var e) ? e.GetString() : def;
+        public static string String(string key, string def = "") => _settings.TryGetValue(key, out var e) ? e.GetString() ?? def : def;
 
         public static Color GetColor(string key)
         {

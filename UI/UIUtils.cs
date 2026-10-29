@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Resources;
 
@@ -40,10 +40,7 @@ namespace Fida.UI
         {
             if (rect.Width <= inset * 2 || rect.Height <= inset * 2) return;
 
-            DrawRectangleOutlines(sb, rect, outerColor, System.Math.Max(1, outerWidth), pixel);
-            int rule = System.Math.Min(cornerLength * 3, System.Math.Max(24, rect.Width / 4));
-            sb.Draw(pixel, new Rectangle(rect.Left, rect.Top, rule,
-                System.Math.Max(3, outerWidth + 1)), innerColor);
+            DrawRectangleOutlines(sb, rect, UITheme.Line, 1, pixel);
         }
 
         /// <summary>
@@ -59,8 +56,8 @@ namespace Fida.UI
             Vector2 size = font.MeasureString(safe);
             if (size.X <= 0f) return;
             float scale = System.Math.Min(preferredScale, maxWidth / size.X);
-            if (minScale > 0f) scale = System.Math.Max(minScale, scale);
-            batch.DrawString(font, safe, center - size * scale / 2f, color,
+            // maxWidth is a hard constraint; minScale cannot make text overflow it.
+            UITextRenderer.DrawString(batch, font, safe, center - size * scale / 2f, color,
                 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
         }
 
@@ -111,7 +108,7 @@ namespace Fida.UI
         /// <param name="message"></param>
         private static void DrawString(SpriteBatch sb, SpriteFont font, Vector2 position, string text, Color color)
         {
-            sb.DrawString(font, text, position, color);
+            UITextRenderer.DrawString(sb, font, text, position, color);
         }
 
 
@@ -127,7 +124,7 @@ namespace Fida.UI
         {
             var textSize = font.MeasureString(text);
             var position = new Vector2(rect.X + (rect.Width - textSize.X) / 2, rect.Y + (rect.Height - textSize.Y) / 2);
-            sb.DrawString(font, text, position, color);
+            UITextRenderer.DrawString(sb, font, text, position, color);
         }
     }
 }

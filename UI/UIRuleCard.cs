@@ -70,7 +70,7 @@ namespace Fida.UI
             float fitScale = MathHelper.Min(maxWidth / MathHelper.Max(1f, size.X),
                 maxHeight / MathHelper.Max(1f, size.Y));
             float drawScale = MathHelper.Min(preferredScale, fitScale);
-            spriteBatch.DrawString(font, displayText, position, color,
+            UITextRenderer.DrawString(spriteBatch, font, displayText, position, color,
                 0f, Vector2.Zero, drawScale, SpriteEffects.None, 0f);
         }
     }

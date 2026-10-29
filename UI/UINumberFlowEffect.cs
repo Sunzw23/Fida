@@ -5,12 +5,12 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Fida.UI
 {
     /// <summary>
-    /// A text-free directional effect that carries layered neon particles from the
+    /// A short, text-free directional trace from the
     /// selected addend into the base number being changed.
     /// </summary>
     public sealed class UINumberFlowEffect : UIControl
     {
-        private const float DurationSeconds = 1.05f;
+        private const float DurationSeconds = 0.42f;
         private readonly Texture2D _pixel;
         private Rectangle _originBounds;
         private Rectangle _targetBounds;
@@ -37,6 +37,7 @@ namespace Fida.UI
 
         public override void Update(GameTime gameTime)
         {
+            if (UIMotion.Reduced) { Stop(); return; }
             if (!IsPlaying) return;
             _elapsed += (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (_elapsed >= DurationSeconds) Stop();
@@ -53,65 +54,39 @@ namespace Fida.UI
             Vector2 control = (origin + target) * 0.5f;
             control.Y -= MathHelper.Clamp(distance * 0.22f, 48f, 150f);
 
-            DrawEndpointPulse(sb, _originBounds, progress, outward: true);
             DrawEndpointPulse(sb, _targetBounds, progress, outward: false);
-            DrawPath(sb, origin, control, target);
 
             // Several offset particles form one readable stream. The brightest
             // head moves toward the receiving number while its tail fades behind it.
             float head = MathHelper.Clamp(progress * 1.28f, 0f, 1.12f);
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 6; i++)
             {
                 float t = head - i * 0.055f;
                 if (t < 0f || t > 1f) continue;
                 Vector2 point = QuadraticBezier(origin, control, target,
                     MathHelper.SmoothStep(0f, 1f, t));
                 float strength = 1f - i / 16f;
-                int size = 5 + (int)(strength * 8f);
-                Color trail = i < 4 ? UITheme.AccentGreen :
-                    i < 10 ? UITheme.GoldBright : UITheme.AccentViolet;
-                Color color = Color.Lerp(UITheme.AccentBlue, trail, strength)
-                    * (0.28f + strength * 0.72f);
-                sb.Draw(_pixel, point, null, color, MathHelper.PiOver4,
-                    new Vector2(0.5f), new Vector2(size, size),
+                float scale = UIDesktopLayout.LayoutScale(sb.GraphicsDevice.Viewport);
+                Color color = UITheme.Gold * strength;
+                Vector2 tangent = QuadraticBezier(origin, control, target, Math.Min(1, t + 0.02f)) - point;
+                sb.Draw(_pixel, point, null, color, MathF.Atan2(tangent.Y, tangent.X),
+                    new Vector2(0.5f), new Vector2((8 + strength * 14) * scale, Math.Max(1, 2 * scale)),
                     SpriteEffects.None, 0f);
             }
         }
 
         private void DrawEndpointPulse(SpriteBatch sb, Rectangle bounds, float progress, bool outward)
         {
-            float wave = 0.5f + 0.5f * (float)Math.Sin(progress * MathHelper.TwoPi * 3f);
-            int expansion = 4 + (int)(wave * 6f);
-            if (!outward) expansion += (int)(progress * 4f);
+            float wave = MathHelper.Clamp((progress - 0.65f) / 0.35f, 0, 1);
+            int expansion = 2 + (int)(wave * 3);
             var pulseBounds = new Rectangle(
                 bounds.X - expansion,
                 bounds.Y - expansion,
                 bounds.Width + expansion * 2,
                 bounds.Height + expansion * 2);
-            Color endpoint = outward ? UITheme.AccentViolet : UITheme.AccentGreen;
+            Color endpoint = UITheme.Gold * (MathF.Sin(wave * MathHelper.Pi));
             UIUtils.DrawGlowFrame(sb, pulseBounds, _pixel,
-                Color.Lerp(UITheme.Gold, endpoint, wave), 3, 0.72f);
-        }
-
-        private void DrawPath(SpriteBatch sb, Vector2 origin, Vector2 control, Vector2 target)
-        {
-            Vector2 previous = origin;
-            for (int segment = 1; segment <= 24; segment++)
-            {
-                float t = segment / 24f;
-                Vector2 current = QuadraticBezier(origin, control, target, t);
-                DrawLine(sb, previous, current, UITheme.AccentViolet * 0.12f, 6f);
-                DrawLine(sb, previous, current, UITheme.Gold * 0.42f, 2f);
-                previous = current;
-            }
-        }
-
-        private void DrawLine(SpriteBatch sb, Vector2 start, Vector2 end, Color color, float thickness)
-        {
-            Vector2 delta = end - start;
-            if (delta.LengthSquared() <= 0.01f) return;
-            sb.Draw(_pixel, start, null, color, (float)Math.Atan2(delta.Y, delta.X),
-                Vector2.Zero, new Vector2(delta.Length(), thickness), SpriteEffects.None, 0f);
+                endpoint, 1, 0.72f);
         }
 
         private static Vector2 QuadraticBezier(Vector2 a, Vector2 control, Vector2 b, float t)

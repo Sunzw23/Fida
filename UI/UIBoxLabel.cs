@@ -30,6 +30,7 @@ namespace Fida.UI
         public float MinimumTextScale { get; set; } = 0.55f;
         public float MaximumTextScale { get; set; } = 1f;
         public int TextPadding { get; set; } = 12;
+        public int? VerticalTextPadding { get; set; }
         public bool AccentBar { get; set; }
         /// <summary>Draws bracket-like signal rails for the primary battle command HUD.</summary>
         public bool SignalRails { get; set; }
@@ -66,27 +67,31 @@ namespace Fida.UI
                 {
                     _cachedDisplayText = UIFontGuard.Sanitize(Font, Text);
                     _cachedTextSize = Font.MeasureString(_cachedDisplayText);
-                    float availableWidth = MathHelper.Max(1, Bounds.Width - TextPadding * 2);
-                    float availableHeight = MathHelper.Max(1, Bounds.Height - TextPadding * 2);
-                    _cachedTextScale = AutoFitText
-                        ? MathHelper.Clamp(MathHelper.Min(
-                            availableWidth / MathHelper.Max(1, _cachedTextSize.X),
-                            availableHeight / MathHelper.Max(1, _cachedTextSize.Y)),
-                            MinimumTextScale, MaximumTextScale)
-                        : 1f;
-#if !FIDA_ANDROID
-                    _cachedTextScale *= UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
-#endif
-                    Vector2 displaySize = _cachedTextSize * _cachedTextScale;
-                    float x = Alignment switch
-                    {
-                        UIBoxLabelAlignment.Left => Bounds.X + TextPadding,
-                        UIBoxLabelAlignment.Right => Bounds.Right - displaySize.X - TextPadding,
-                        _ => Bounds.Center.X - displaySize.X / 2
-                    };
-                    _cachedTextPos = new Vector2(x, Bounds.Center.Y - displaySize.Y / 2);
+
                 }
                 _textSizeDirty = false;
+            }
+
+            // 字符测量缓存与布局分离：窗口/对齐/边距变化后立即重新布局。
+            if (!string.IsNullOrEmpty(Text))
+            {
+                float preferredScale = MaximumTextScale;
+#if !FIDA_ANDROID
+                preferredScale *= UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
+#endif
+                float availableWidth = MathHelper.Max(1, Bounds.Width - TextPadding * 2);
+                float availableHeight = MathHelper.Max(1, Bounds.Height - (VerticalTextPadding ?? TextPadding) * 2);
+                _cachedTextScale = AutoFitText
+                    ? UITextRenderer.FitScale(_cachedTextSize, availableWidth, availableHeight, preferredScale)
+                    : preferredScale;
+                Vector2 displaySize = _cachedTextSize * _cachedTextScale;
+                float x = Alignment switch
+                {
+                    UIBoxLabelAlignment.Left => Bounds.X + TextPadding,
+                    UIBoxLabelAlignment.Right => Bounds.Right - displaySize.X - TextPadding,
+                    _ => Bounds.Center.X - displaySize.X / 2
+                };
+                _cachedTextPos = UITextRenderer.Snap(new Vector2(x, Bounds.Center.Y - displaySize.Y / 2));
             }
 
             // 绘制背景
@@ -98,7 +103,7 @@ namespace Fida.UI
             // 绘制文字（使用缓存坐标）
             if (!string.IsNullOrEmpty(Text))
             {
-                sb.DrawString(Font, _cachedDisplayText, _cachedTextPos, ForeColor,
+                UITextRenderer.DrawString(sb, Font, _cachedDisplayText, _cachedTextPos, ForeColor,
                     0f, Vector2.Zero, _cachedTextScale, SpriteEffects.None, 0f);
             }
 

@@ -14,6 +14,7 @@ namespace Fida.UI.Campaign
     /// </summary>
     public sealed class UICampaignMap : UIControl
     {
+        private double _routeAge;
         private readonly GraphicsDevice _graphicsDevice;
         private readonly Texture2D _pixel;
         private readonly Texture2D _antialiasedLine;
@@ -102,6 +103,7 @@ namespace Fida.UI.Campaign
 
         public override void Update(GameTime gameTime)
         {
+            _routeAge += gameTime.ElapsedGameTime.TotalSeconds;
 #if FIDA_ANDROID
             UpdateMobileKeyboard(gameTime);
             return;
@@ -241,7 +243,7 @@ namespace Fida.UI.Campaign
             Rectangle viewport = _camera.Viewport;
 
             spriteBatch.Draw(_pixel, viewport, UITheme.Panel);
-            UIUtils.DrawRectangleOutlines(spriteBatch, viewport, UITheme.Gold, 3, _pixel);
+            UIUtils.DrawRectangleOutlines(spriteBatch, viewport, UITheme.Line, 1, _pixel);
 
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
@@ -694,7 +696,8 @@ namespace Fida.UI.Campaign
                     Vector2 end = nodeEnd;
                     if (!ClipLine(_camera.Viewport, ref start, ref end)) continue;
                     bool active = _progress.IsCompleted(parentId) || _progress.IsCompleted(node.Id);
-                    DrawLine(spriteBatch, start, end,
+                    Vector2 animatedEnd = Vector2.Lerp(start, end, UIMotion.Reveal(_routeAge - Math.Min(index, 20) * 0.035, 0.6f));
+                    DrawLine(spriteBatch, start, animatedEnd,
                         active ? UITheme.Gold : UITheme.InkMuted * 0.58f,
                         active ? 3 : 2);
                 }
@@ -710,6 +713,13 @@ namespace Fida.UI.Campaign
             bool unlocked = CampaignCatalog.IsUnlocked(_progress, node);
             bool completed = _progress.IsCompleted(node.Id);
             bool selected = index == _selectedIndex;
+            if (selected && !UIMotion.Reduced)
+            {
+                Rectangle halo = bounds;
+                halo.Inflate(4, 4);
+                UIUtils.DrawRectangleOutlines(spriteBatch, halo,
+                    UITheme.AccentBlue * (0.25f + 0.3f * UIMotion.Pulse(_routeAge)), 2, _pixel);
+            }
             Color background = completed
                 ? Color.Lerp(UITheme.PanelLight, UITheme.AccentGreen, 0.30f)
                 : unlocked ? UITheme.PanelLight : UITheme.PanelDark;
@@ -912,7 +922,7 @@ namespace Fida.UI.Campaign
             Vector2 measured = font.MeasureString(safe);
             if (measured.X <= 0f) return;
             float scale = Math.Min(preferredScale, maximumWidth / measured.X);
-            spriteBatch.DrawString(font, safe,
+            UITextRenderer.DrawString(spriteBatch, font, safe,
                 new Vector2(leftCenter.X, leftCenter.Y - measured.Y * scale / 2f),
                 color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
         }
@@ -1072,6 +1082,7 @@ namespace Fida.UI.Campaign
 
         private void RefreshScope()
         {
+            _routeAge = 0;
             _folders = _hierarchy.Children(_scope);
             _visibleNodes = _hierarchy.Missions(_scope);
             _selectedFolder = Math.Clamp(_selectedFolder, 0, Math.Max(0, _folders.Count - 1));
@@ -1141,14 +1152,13 @@ namespace Fida.UI.Campaign
                 Color accent = UITheme.RouteAccent(i);
                 spriteBatch.Draw(_pixel, bounds, selected ? UITheme.PanelPressed : UITheme.PanelLight);
                 UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                    selected ? UITheme.GoldBright : accent, selected ? 3 : 2, _pixel);
-                spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 5, bounds.Height), accent);
+                    selected ? UITheme.GoldBright : UITheme.Line, selected ? 2 : 1, _pixel);
                 DrawCentered(spriteBatch, _titleFont, _folders[i],
                     new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.40f),
                     bounds.Width - 56, 0.54f, UITheme.Ink);
                 DrawCentered(spriteBatch, _font, $"{cleared} / {descendants.Count}",
                     new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.73f),
-                    bounds.Width - 56, 0.38f, UITheme.GoldBright);
+                    bounds.Width - 56, 0.38f, selected ? UITheme.GoldBright : UITheme.InkMuted);
             }
         }
 

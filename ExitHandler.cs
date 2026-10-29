@@ -25,9 +25,14 @@ namespace Fida
         /// <summary>
         /// 处理 ESC 退出输入
         /// </summary>
-        public void HandleExitInput()
+        public void HandleExitInput(bool dialogueActive = false)
         {
             bool escPressed = Keyboard.GetState().IsKeyDown(Keys.Escape);
+            if (dialogueActive)
+            {
+                _previousEscPressed = escPressed;
+                return;
+            }
 
             if (_stateMachine.CurrentState == State.Playing || _stateMachine.CurrentState == State.OnlinePlaying)
             {
@@ -39,7 +44,7 @@ namespace Fida
                 if (escPressed && !_previousEscPressed)
                     _stateMachine.SwitchToState(_networkManager.IsConnected ? State.OnlinePlaying : State.Playing);
             }
-            else if (escPressed || GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
+            else if ((escPressed && !_previousEscPressed) || GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
             {
                 _game.Exit();
             }

@@ -5,12 +5,12 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Fida.UI
 {
     /// <summary>
-    /// Drives whole-card anticipation, lunge, impact and recovery. It changes only
+    /// Drives portrait anticipation, lunge, hit stop and recovery. It changes only
     /// presentation transforms; gameplay remains authoritative in GameManager.
     /// </summary>
     public sealed class UICardCombatAnimator : UIControl
     {
-        private const float Duration = 0.95f;
+        private const float Duration = 0.48f;
         private UIPlayer _source;
         private UIPlayer _target;
         private float _elapsed;
@@ -34,6 +34,7 @@ namespace Fida.UI
 
         public override void Update(GameTime gameTime)
         {
+            if (UIMotion.Reduced) { Stop(); return; }
             if (!IsPlaying) return;
             _elapsed += (float)gameTime.ElapsedGameTime.TotalSeconds;
             float t = MathHelper.Clamp(_elapsed / Duration, 0f, 1f);
@@ -43,7 +44,7 @@ namespace Fida.UI
             Vector2 direction = targetCenter - sourceCenter;
             if (direction.LengthSquared() > 0.01f) direction.Normalize();
 
-            // Target lock: the whole selected card lifts and remains framed.
+            // Target lock affects the portrait; number input geometry stays fixed.
             _target.VisualScale = 1.025f;
             _target.SelectionStrength = 1f;
 
@@ -66,20 +67,30 @@ namespace Fida.UI
             {
                 // Lunge: never covers the full distance, retaining card readability.
                 float p = MathHelper.SmoothStep(0f, 1f, (t - 0.22f) / 0.34f);
-                float travel = Math.Min(Vector2.Distance(sourceCenter, targetCenter) * 0.24f, 165f);
+                float travel = Math.Min(Vector2.Distance(sourceCenter, targetCenter) * 0.06f, 32f);
                 _source.VisualOffset = Vector2.Lerp(-direction * 18f, direction * travel, p);
                 _source.VisualScale = MathHelper.Lerp(0.965f, 1.075f, p);
+            }
+            else if (t < 0.68f)
+            {
+                // A short hit stop gives the strike weight without screen shake.
+                float travel = Math.Min(Vector2.Distance(sourceCenter, targetCenter) * 0.06f, 32f);
+                _source.VisualOffset = direction * travel;
+                _source.VisualScale = 1.075f;
+                _target.VisualOffset = Vector2.Zero;
+                _target.ImpactStrength = 1f;
+                _target.CommitDeferredHealthVisual();
             }
             else
             {
                 // Impact and recovery: target shakes while the attacker snaps back.
-                float p = MathHelper.Clamp((t - 0.56f) / 0.44f, 0f, 1f);
+                float p = MathHelper.Clamp((t - 0.68f) / 0.32f, 0f, 1f);
                 float recovery = 1f - MathHelper.SmoothStep(0f, 1f, p);
-                float travel = Math.Min(Vector2.Distance(sourceCenter, targetCenter) * 0.24f, 165f);
+                float travel = Math.Min(Vector2.Distance(sourceCenter, targetCenter) * 0.06f, 32f);
                 _source.VisualOffset = direction * travel * recovery;
                 _source.VisualScale = 1f + 0.075f * recovery;
 
-                float shake = (float)Math.Sin(p * MathHelper.Pi * 9f) * 15f * recovery;
+                float shake = (float)Math.Sin(p * MathHelper.Pi * 5f) * 6f * recovery;
                 Vector2 perpendicular = new(-direction.Y, direction.X);
                 _target.VisualOffset = perpendicular * shake;
                 _target.ImpactStrength = recovery;

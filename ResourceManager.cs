@@ -87,11 +87,7 @@ namespace Fida
             Pixel.SetData(new[] { Color.White });
             AntialiasedLine = CreateAntialiasedLineTexture();
             _textures = new Dictionary<string, Texture2D>();
-            // Logical portrait keys stay stable while the presentation can evolve.
-            // The original engraved portraits remain in Content as optional legacy assets.
-            LoadTexture(contentManager, "portrait_arithmetist", "portraits/arithmetist_future");
-            LoadTexture(contentManager, "portrait_withered_king", "portraits/withered_king_future");
-            LoadTexture(contentManager, "portrait_enemy_fallback", "portraits/sentinel_future");
+            LoadTexture(contentManager, "cold_roster", "portraits/cold_roster");
 
         }
 
@@ -153,13 +149,9 @@ namespace Fida
         /// </summary>
         public Texture2D GetPortrait(string portraitKey, bool isLocalPlayer)
         {
-            string resourceKey = string.IsNullOrWhiteSpace(portraitKey)
-                ? null
-                : $"portrait_{portraitKey}";
-            Texture2D portrait = resourceKey == null ? null : GetTexture(resourceKey);
-            return portrait ?? GetTexture(isLocalPlayer
-                ? "portrait_arithmetist"
-                : "portrait_enemy_fallback");
+            if (!string.IsNullOrWhiteSpace(portraitKey) &&
+                _textures.TryGetValue($"portrait_{portraitKey}", out var portrait)) return portrait;
+            return GetTexture("cold_roster");
         }
 
         /// <summary>

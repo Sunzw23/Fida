@@ -1,7 +1,7 @@
 {
   "controls": [
     { "type": "panel", "name": "panel", "id": 0 },
-    { "type": "title", "name": "title", "id": 1, "text": "Fida", "position": { "x": 960, "y": 320 } },
+    { "type": "title", "name": "title", "id": 1, "text": "FIDA", "position": { "x": 960, "y": 320 } },
     { "type": "button", "name": "startGame", "id": 2, "text": "Start", "bounds": { "x": 800, "y": 450, "width": 320, "height": 80 } },
     { "type": "button", "name": "onlineMode", "id": 3, "text": "Online", "bounds": { "x": 800, "y": 555, "width": 320, "height": 80 } },
     { "type": "button", "name": "settings", "id": 4, "text": "Settings", "bounds": { "x": 800, "y": 660, "width": 320, "height": 80 } },

@@ -90,7 +90,7 @@ namespace Fida
                 return;
             }
 
-            _exitHandler.HandleExitInput();
+            _exitHandler.HandleExitInput(_uiManager.TutorialDialogue != null);
             _uiManager.Update(gameTime);
             _uiManager.UpdateInputMode();
             _gameSession.ProcessPendingNetworkEvents();

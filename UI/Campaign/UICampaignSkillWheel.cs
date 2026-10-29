@@ -37,6 +37,7 @@ namespace Fida.UI.Campaign
         private Func<SkillType, string> _availabilityLabelOverride;
         private string _headerText;
         private string _statusText = "";
+        private float _selectionReveal;
         private string _availableActionText = "EQUIP";
         private string _selectedActionText = "REMOVE";
         private string _backActionText = "<";
@@ -57,6 +58,7 @@ namespace Fida.UI.Campaign
         public string BackActionText { get => _backActionText; set => _backActionText = value ?? ""; }
         public string StartActionText { get => _startActionText; set => _startActionText = value ?? ""; }
         public bool StartActionEnabled { get; set; } = true;
+        public bool InputBlocked { get; set; }
         public bool StartActionTogglesSelection { get; set; }
         public bool UseUnifiedActionButton { get; set; }
         public Func<SkillType, CampaignSkillAvailability> AvailabilityOverride
@@ -126,6 +128,13 @@ namespace Fida.UI.Campaign
 
         public override void Update(GameTime gameTime)
         {
+            if (InputBlocked)
+            {
+                _previousKeyboard = Keyboard.GetState();
+                _previousGamePad = GamePad.GetState(PlayerIndex.One);
+                return;
+            }
+            _selectionReveal = UIMotion.Approach(_selectionReveal, Availability(_wheel.Focused) == CampaignSkillAvailability.Selected ? 1f : 0f, gameTime.ElapsedGameTime.TotalSeconds);
 #if FIDA_ANDROID
             if (!_touchingWheel && Math.Abs(_touchWheelOffset) > 0.1f)
             {
@@ -166,6 +175,11 @@ namespace Fida.UI.Campaign
 
         public override void Update(MouseState mouse)
         {
+            if (InputBlocked)
+            {
+                _previousMouse = mouse;
+                return;
+            }
             if (!_inputInitialized)
             {
                 _previousMouse = mouse;
@@ -249,7 +263,7 @@ namespace Fida.UI.Campaign
             Viewport viewport = _graphicsDevice.Viewport;
             Rectangle panel = PanelBounds(viewport);
             spriteBatch.Draw(_pixel, panel, UITheme.Panel);
-            UIUtils.DrawGlowFrame(spriteBatch, panel, _pixel, UITheme.Gold, 3, 0.72f);
+            UIUtils.DrawRectangleOutlines(spriteBatch, panel, UITheme.Line, 1, _pixel);
 
             DrawHeader(spriteBatch, viewport, panel);
             DrawWheel(spriteBatch, viewport, panel, gameTime);
@@ -338,10 +352,6 @@ namespace Fida.UI.Campaign
             const float wheelOffset = 0f;
 #endif
 
-            spriteBatch.Draw(_pixel, new Rectangle((int)centerX - 1, centerY - 250, 2, 500), UITheme.Gold);
-            spriteBatch.Draw(_pixel, new Rectangle((int)centerX + 3, centerY - 250, 1, 500),
-                UITheme.AccentViolet * 0.62f);
-
             for (int offset = -_options.VisibleNeighborCount; offset <= _options.VisibleNeighborCount; offset++)
             {
                 SkillType skill = _wheel.GetAtOffset(offset);
@@ -354,7 +364,7 @@ namespace Fida.UI.Campaign
                 float y = centerY + offset * _options.NeighborSpacing + wheelOffset;
                 bool near = Math.Abs(offset) == 1;
                 float scale = near ? _options.NearTextScale : _options.FarTextScale;
-                Color color = near ? UITheme.InkMuted : UITheme.AccentBlue * 0.72f;
+                Color color = UITheme.InkMuted * (near ? 1f : 0.72f);
                 string text =
 #if FIDA_ANDROID
                     $"{(_selected.Contains(skill) ? "+ " : "")}{GameText.SkillName(skill)}";
@@ -380,12 +390,10 @@ namespace Fida.UI.Campaign
             Color background = selected ? UITheme.PanelPressed :
                 availability == CampaignSkillAvailability.Available ? UITheme.PanelLight : UITheme.PanelDark;
             spriteBatch.Draw(_pixel, bounds, background);
-            float pulse = 0.70f + 0.24f * (float)Math.Sin(
-                gameTime.TotalGameTime.TotalSeconds * 5.2);
+            float pulse = .65f + .25f * UIMotion.Pulse(gameTime.TotalGameTime.TotalSeconds, 2.6f);
             Color accent = selected ? UITheme.AccentGreen : CampaignSkillPresentation.Accent(skill);
-            UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, accent, 4, pulse);
-            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 7, bounds.Height),
-                UITheme.AccentViolet);
+            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Bottom - 5, (int)(bounds.Width * _selectionReveal), 5), UITheme.AccentGreen);
+            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, selected ? UITheme.Gold : UITheme.InkMuted, 1, _pixel);
 
             DrawCentered(spriteBatch, _font,
                 $"{UISkillIconCatalog.Glyph(skill)}   {GameText.SkillName(skill)}",
@@ -398,9 +406,9 @@ namespace Fida.UI.Campaign
 #endif
             DrawCentered(spriteBatch, _font,
 #if FIDA_ANDROID
-                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {AvailabilityLabel(skill, availability)}",
+                CostLabel(skill, availability),
 #else
-                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {AvailabilityLabel(skill, availability)}",
+                CostLabel(skill, availability),
 #endif
                 new Vector2(bounds.Center.X, bounds.Center.Y + 31 + contentOffsetY), bounds.Width - 28,
                 statusScale,
@@ -428,12 +436,34 @@ namespace Fida.UI.Campaign
                 _startActionText, StartActionEnabled);
         }
 
+        private string CostLabel(SkillType skill, CampaignSkillAvailability availability)
+        {
+            string label = AvailabilityLabel(skill, availability);
+            return label is "LOCKED" or "AVAILABLE" or "EQUIPPED"
+                ? $"{CampaignSkillBalance.Cost(skill)} SP"
+                : $"{CampaignSkillBalance.Cost(skill)} SP  ·  {label}";
+        }
+
         private void DrawSmallButton(SpriteBatch spriteBatch, Rectangle bounds, string text,
             bool enabled = true)
         {
             spriteBatch.Draw(_pixel, bounds, enabled ? UITheme.PanelLight : UITheme.PanelDark);
             UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel,
                 enabled ? UITheme.Gold : UITheme.InkMuted, 2, enabled ? 0.48f : 0.25f);
+            if (text is "LOCKED" or "UNAVAILABLE")
+            {
+                UISkillSymbols.Status(spriteBatch, _pixel,
+                    new Rectangle(bounds.Center.X - 12, bounds.Center.Y - 13, 24, 26),
+                    CampaignSkillAvailability.Locked, UITheme.InkMuted);
+                return;
+            }
+            if (text is "START" or "START BATTLE  >" or "PLAY  >")
+            {
+                // Use the established navigation chevron, preserving the original button bounds.
+                Vector2 center = bounds.Center.ToVector2();
+                UISkillSymbols.Play(spriteBatch, _pixel, center, enabled ? UITheme.Ink : UITheme.InkMuted);
+                return;
+            }
             DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12,
 #if FIDA_ANDROID
                 0.66f,
@@ -490,12 +520,12 @@ namespace Fida.UI.Campaign
                 new Vector2(card.Left + card.Width * 0.64f, card.Top + 65), card.Width - 150,
                 0.42f, accent);
             DrawCentered(spriteBatch, _titleFont, GameText.SkillName(skill),
-                new Vector2(card.Center.X, card.Top + 133), card.Width - 64, 0.40f, UITheme.Ink);
+                new Vector2(card.Center.X, card.Top + Math.Min(133, card.Height * .35f)), card.Width - 64, 0.40f, UITheme.Ink);
             DrawCentered(spriteBatch, _font, detail,
-                new Vector2(card.Center.X, card.Top + 197), card.Width - 64, 0.36f, UITheme.InkMuted);
+                new Vector2(card.Center.X, card.Top + Math.Min(197, card.Height * .57f)), card.Width - 64, 0.36f, UITheme.InkMuted);
             DrawCentered(spriteBatch, _font,
-                $"{CampaignSkillBalance.Cost(skill)} SP  ·  {AvailabilityLabel(skill, availability)}",
-                new Vector2(card.Center.X, card.Bottom - (UseUnifiedActionButton ? 54 : 96)),
+                CostLabel(skill, availability),
+                new Vector2(card.Center.X, card.Bottom - (UseUnifiedActionButton ? 54 : 80)),
                 card.Width - 64, 0.39f,
                 availability == CampaignSkillAvailability.Selected ? UITheme.AccentGreen : accent);
             if (!UseUnifiedActionButton)

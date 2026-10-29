@@ -62,7 +62,8 @@ namespace Fida.UI
             BuildFromScreen("Settings", new Dictionary<string, string>
             {
                 { "mode", DisplaySettingsManager.Current.Fullscreen ? "Fullscreen" : "Windowed" },
-                { "resolution", DisplaySettingsManager.ResolutionLabel }
+                { "resolution", DisplaySettingsManager.ResolutionLabel },
+                { "motion", UIMotion.Reduced ? "Reduced" : "Full" }
             });
 #endif
         }
@@ -408,7 +409,7 @@ namespace Fida.UI
 #if FIDA_ANDROID
             var options = CampaignSkillWheelOptions.Mobile();
 #else
-            CampaignSkillWheelOptions options = null;
+            CampaignSkillWheelOptions? options = null;
 #endif
             _uiControls.Add(new UICampaignSkillWheel(0, _resourceManager.GraphicsDevice,
                 _resourceManager.Pixel, _resourceManager.Font, _resourceManager.TitleFont,
@@ -431,6 +432,21 @@ namespace Fida.UI
         {
             Clear();
             _campaignScreens.BuildLoadout(GameSetup.SelectedNode, online);
+            var wheel = _uiControls.OfType<UICampaignSkillWheel>().First();
+            bool canChoose = CampaignLoadout.HasSelectableSkills(CampaignRuntime.GetProgress(online), GameSetup.SelectedNode);
+            wheel.IsVisible = canChoose;
+            wheel.InputBlocked = !canChoose;
+            if (!canChoose && online)
+                _uiControls.Add(new UILabel(-1001, "Waiting for ally...",
+                    new Vector2(_resourceManager.GraphicsDevice.Viewport.Width / 2f,
+                        _resourceManager.GraphicsDevice.Viewport.Height / 2f), _resourceManager.Font));
+            if (GameSetup.SelectedNode.BeforeStory.Count > 0)
+            {
+                var dialogue = AddTutorialDialogue(GameSetup.SelectedNode);
+                dialogue.PresentPages(GameSetup.SelectedNode.BeforeStory, CampaignRuntime.GetProgress(online));
+                wheel.InputBlocked = !canChoose || dialogue.IsVisible;
+                dialogue.Finished += () => wheel.InputBlocked = !canChoose;
+            }
         }
 
         public UITutorialDialogue AddTutorialDialogue(CampaignNode node)
@@ -604,6 +620,11 @@ namespace Fida.UI
                 MaximumWidth = width,
                 MinimumScale = 0.62f
             });
+            _uiControls.Add(new UIButton(5,
+                new Rectangle(panel.Left + 56, panel.Top + 370, width, 68),
+                UIMotion.Reduced ? "Motion: Reduced" : "Motion: Full",
+                _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "motion", FocusIndex = 1 });
             _uiControls.Add(new UIIconButton(4,
                 MobileWaitingBackBounds(panel),
                 UIIconButton.IconKind.Back, _resourceManager.Pixel, _resourceManager.Font)

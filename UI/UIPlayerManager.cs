@@ -22,6 +22,7 @@ namespace Fida.UI
         private UIDecideApplyDialog _decideApplyDialog;
         private UINumberSelectionDialog _numberSelectionDialog;
         private GameManager _gameManager;
+        private readonly Dictionary<int, Rectangle> _unitBounds = new();
 
         // 玩家头像纹理字典，key 为 PlayerId，value 为头像纹理（可为 null）
         private Dictionary<int, Texture2D> _portraitTextures = new Dictionary<int, Texture2D>();
@@ -55,6 +56,7 @@ namespace Fida.UI
             }
             _gameManager = gameManager;
             _uiPlayers.Clear();
+            _unitBounds.Clear();
 
             Viewport viewport = _resourceManager.GraphicsDevice.Viewport;
             Rectangle safeArea = UIMobileSafeArea.Get(viewport);
@@ -73,12 +75,13 @@ namespace Fida.UI
             int pauseGap = 12;
             messageWidth = System.Math.Max(1,
                 viewportWidth - messageMargin * 2 - pauseSize - pauseGap);
-            var messageBounds = new Rectangle(messageMargin, safeArea.Top + 18, messageWidth, 62);
+            var messageBounds = UIDesktopLayout.MapRectangle(new Rectangle(280, 590, 1360, 60), viewport);
 #endif
             _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
             {
                 Alignment = UIBoxLabelAlignment.Center,
                 AutoFitText = true,
+                VerticalTextPadding = 8,
 #if FIDA_ANDROID
                 MinimumTextScale = 0.48f,
                 MaximumTextScale = 0.72f,
@@ -88,15 +91,15 @@ namespace Fida.UI
                 MaximumTextScale = 0.68f,
                 TextPadding = 28,
 #endif
-                BackColor = UITheme.PanelDark,
+                BackColor = UITheme.BgTop,
                 ForeColor = UITheme.Ink,
                 BorderColor = UITheme.Gold,
 #if FIDA_ANDROID
                 BorderThickness = 0,
-                AccentBar = true,
+                AccentBar = false,
 #else
                 BorderThickness = 0,
-                AccentBar = true,
+                AccentBar = false,
 #endif
 #if FIDA_ANDROID
                 SignalRails = false
@@ -119,9 +122,7 @@ namespace Fida.UI
             });
 #else
             _uiControls.Add(new UIIconButton(-10,
-                new Rectangle(messageBounds.Right + pauseGap,
-                    messageBounds.Top + (messageBounds.Height - pauseSize) / 2,
-                    pauseSize, pauseSize), UIIconButton.IconKind.Pause,
+                UIDesktopLayout.MapRectangle(new Rectangle(1790, 35, 54, 54), viewport), UIIconButton.IconKind.Pause,
                 _resourceManager.Pixel, _resourceManager.Font)
             {
                 Name = "pauseBattle"
@@ -142,7 +143,8 @@ namespace Fida.UI
                 MinimumTextScale = 0.42f,
                 MaximumTextScale = 0.68f,
                 TextPadding = 28,
-                BackColor = UITheme.PanelLight,
+                VerticalTextPadding = 8,
+                BackColor = UITheme.BgTop,
                 ForeColor = UITheme.Ink,
                 BorderColor = UITheme.GoldBright,
 #if FIDA_ANDROID
@@ -150,11 +152,14 @@ namespace Fida.UI
                 AccentBar = false,
 #else
                 BorderThickness = 0,
-                AccentBar = true,
+                AccentBar = false,
 #endif
                 IsVisible = false
             };
             _uiControls.Add(_actionCueLabel);
+#if !FIDA_ANDROID
+            _uiControls.Add(new UIBattleChrome(-11, _resourceManager.Pixel, _resourceManager.Font, gameManager));
+#endif
 
             // 订阅事件
             _gameManager.MessageUpdated += OnMessageUpdated;
@@ -181,8 +186,13 @@ namespace Fida.UI
                 bool isAlly = gameManager.Groups.Any(group =>
                     group.Players.Any(member => member.PlayerId == gameManager.LocalPlayerId) &&
                     group.Players.Any(member => member.PlayerId == player.PlayerId));
+                isAlly |= player.PlayerId == gameManager.LocalPlayerId;
                 var uiPlayer = new UIPlayer(player.PlayerId, player, positions[player.PlayerId],
-                    _resourceManager.Font, _resourceManager.Pixel, portraitTexture, isAlly);
+                    _resourceManager.Font, _resourceManager.Pixel, portraitTexture, isAlly,
+                    _unitBounds.TryGetValue(player.PlayerId, out var unitBounds) ? unitBounds : null);
+                if (portraitTexture == _resourceManager.GetTexture("cold_roster"))
+                    uiPlayer.PortraitSource = ColdPortraitRegion(player, portraitTexture, isAlly);
+                uiPlayer.CurrentTurnChecker = () => _gameManager.Query.CurrentPlayerId == player.PlayerId;
                 
                 // 卡片本身在 ChooseTarget 时可交互
                 int capturedPlayerId = player.PlayerId;
@@ -284,18 +294,16 @@ namespace Fida.UI
 #else
 
             Viewport desktopViewport = _resourceManager.GraphicsDevice.Viewport;
-            int cardWidth = UIConfig.Int("cardWidth");
-            int rowGap = UIConfig.ScaleDesktopMetric(20);
-            int screenWidth = desktopViewport.Width;
             void PlaceRow(IReadOnlyList<Player> row, int designY)
             {
                 if (row.Count == 0) return;
-                int totalWidth = row.Count * cardWidth + (row.Count - 1) * rowGap;
-                int startX = (screenWidth - totalWidth) / 2;
-                int y = (int)System.Math.Round(UIDesktopLayout.MapPoint(
-                    new Vector2(0, designY), desktopViewport).Y);
                 for (int i = 0; i < row.Count; i++)
-                    positions[row[i].PlayerId] = new Vector2(startX + i * (cardWidth + rowGap), y);
+                {
+                    Rectangle slot = UIBattleLayout.Unit(i, row.Count, designY == SceneConfig.RowBottomY,
+                        desktopViewport.Width, desktopViewport.Height);
+                    _unitBounds[row[i].PlayerId] = slot;
+                    positions[row[i].PlayerId] = slot.Location.ToVector2();
+                }
             }
 
             // 找到本地玩家所在的组
@@ -341,6 +349,20 @@ namespace Fida.UI
 
             return positions;
 #endif
+        }
+
+        private static Rectangle ColdPortraitRegion(Player player, Texture2D texture, bool ally)
+        {
+            string key = (player.PortraitKey ?? "").ToLowerInvariant();
+            string name = player.Name.ToLowerInvariant();
+            int index = key.Contains("withered") || name.Contains("king") ? 3 :
+                key.Contains("tutorial_ally") || key.Contains("mara") || name.Contains("mara") ? 1 :
+                key.Contains("arith") || ally && player.PlayerId == 0 ? 0 :
+                key.Contains("sentinel") || name.Contains("sentinel") ? 2 :
+                key.Contains("echo") || name.Contains("echo") ? 5 :
+                ally ? 2 : 4;
+            return new Rectangle(index % 3 * (texture.Width / 3), index / 3 * (texture.Height / 2),
+                texture.Width / 3, texture.Height / 2);
         }
 
         public void UpdateGameMessage(string message)
@@ -409,7 +431,7 @@ namespace Fida.UI
             IsNumberFlowActive || IsCardCombatAnimationActive;
 
         /// <summary>
-        /// Sends a golden stream from the selected addend to the base number.
+        /// Sends a brief ice-colored trace from the selected addend to the base number.
         /// Direction alone communicates the operation; no equation is rendered.
         /// </summary>
         public void PlayNumberFlow(int addendPlayerId, int addendNumberIndex,
