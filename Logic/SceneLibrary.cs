@@ -18,6 +18,7 @@ namespace Fida.Logic
         {
             var names = ContentSource.List(SceneDirectory(), ".csv")
                 .Select(Path.GetFileNameWithoutExtension)
+                .OfType<string>()
                 .Where(n => !string.IsNullOrWhiteSpace(n))
                 .Distinct()
                 .ToList();

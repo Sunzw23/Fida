@@ -1,0 +1,139 @@
+{
+  "iterations": 61,
+  "residual": 0.0,
+  "gamma": 0.99,
+  "max_health": 11,
+  "states": 366025,
+  "actions": 6,
+  "rules": "current-csharp-v1",
+  "evaluation_starts": "half standard, half fixed random decision states; alternating seats",
+  "draw_policy": "400-turn cap counts as evaluation draw; not a game rule",
+  "target_policy": "attack-other-heal-self",
+  "bytes": 1037117,
+  "memory_bytes": 1647241,
+  "score_symbols": 64,
+  "bits_per_score": 6,
+  "quantization_error": 1.488017105588657e-05,
+  "evaluation": [
+    {
+      "strength": 0,
+      "opponent": 0,
+      "games": 400,
+      "wins": 206,
+      "losses": 194,
+      "draws": 0,
+      "score": 0.515,
+      "mean_turns": 41.7375
+    },
+    {
+      "strength": 0,
+      "opponent": 100,
+      "games": 400,
+      "wins": 14,
+      "losses": 386,
+      "draws": 0,
+      "score": 0.035,
+      "mean_turns": 19.395
+    },
+    {
+      "strength": 25,
+      "opponent": 0,
+      "games": 400,
+      "wins": 293,
+      "losses": 107,
+      "draws": 0,
+      "score": 0.7325,
+      "mean_turns": 38.1075
+    },
+    {
+      "strength": 25,
+      "opponent": 100,
+      "games": 400,
+      "wins": 27,
+      "losses": 373,
+      "draws": 0,
+      "score": 0.0675,
+      "mean_turns": 20.705
+    },
+    {
+      "strength": 50,
+      "opponent": 0,
+      "games": 400,
+      "wins": 338,
+      "losses": 62,
+      "draws": 0,
+      "score": 0.845,
+      "mean_turns": 35.7375
+    },
+    {
+      "strength": 50,
+      "opponent": 100,
+      "games": 400,
+      "wins": 34,
+      "losses": 366,
+      "draws": 0,
+      "score": 0.085,
+      "mean_turns": 25.705
+    },
+    {
+      "strength": 65,
+      "opponent": 0,
+      "games": 400,
+      "wins": 363,
+      "losses": 37,
+      "draws": 0,
+      "score": 0.9075,
+      "mean_turns": 33.3175
+    },
+    {
+      "strength": 65,
+      "opponent": 100,
+      "games": 400,
+      "wins": 69,
+      "losses": 329,
+      "draws": 2,
+      "score": 0.175,
+      "mean_turns": 41.8625
+    },
+    {
+      "strength": 80,
+      "opponent": 0,
+      "games": 400,
+      "wins": 361,
+      "losses": 39,
+      "draws": 0,
+      "score": 0.9025,
+      "mean_turns": 28.6675
+    },
+    {
+      "strength": 80,
+      "opponent": 100,
+      "games": 400,
+      "wins": 94,
+      "losses": 102,
+      "draws": 204,
+      "score": 0.49,
+      "mean_turns": 220.4125
+    },
+    {
+      "strength": 100,
+      "opponent": 0,
+      "games": 400,
+      "wins": 384,
+      "losses": 16,
+      "draws": 0,
+      "score": 0.96,
+      "mean_turns": 20.655
+    },
+    {
+      "strength": 100,
+      "opponent": 100,
+      "games": 400,
+      "wins": 94,
+      "losses": 96,
+      "draws": 210,
+      "score": 0.4975,
+      "mean_turns": 218.0325
+    }
+  ]
+}

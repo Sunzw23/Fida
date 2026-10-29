@@ -45,7 +45,7 @@ namespace Fida.Logic
 
     public static class GameText
     {
-        private static GameTextData _textData;
+        private static GameTextData _textData = CreateDefaultData();
 
         // 初始化文本数据
         static GameText()
@@ -71,10 +71,10 @@ namespace Fida.Logic
                     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Content", "gametext.json")
                 };
 
-                string jsonString = null;
+                string? jsonString = null;
                 foreach (var path in possiblePaths)
                 {
-                    string candidate = ContentSource.ReadText(path);
+                    string? candidate = ContentSource.ReadText(path);
                     if (candidate != null)
                     {
                         jsonString = candidate;
@@ -86,7 +86,7 @@ namespace Fida.Logic
                 if (jsonString != null)
                 {
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    _textData = JsonSerializer.Deserialize<GameTextData>(jsonString, options);
+                    _textData = JsonSerializer.Deserialize<GameTextData>(jsonString, options) ?? CreateDefaultData();
                 }
                 else
                 {

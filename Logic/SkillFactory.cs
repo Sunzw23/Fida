@@ -26,7 +26,7 @@ namespace Fida.Logic
         /// <summary>
         /// 由技能名（中/英文）解析并创建技能实例；解析失败（空名/未知名）或无实现类时返回 null，不抛异常。
         /// </summary>
-        public static Skill CreateSkillFromChineseName(string name)
+        public static Skill? CreateSkillFromChineseName(string name)
         {
             var type = ParseSkillType(name);
             if (type == null)

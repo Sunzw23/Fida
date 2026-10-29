@@ -11,21 +11,21 @@ namespace Fida.Logic
     public partial class GameManager
     {
         // --- Events ---
-        public event EventHandler<GameStartEventArgs> GameStarted;
-        public event EventHandler<TurnStartEventArgs> TurnStarted;
-        public event EventHandler<SkillActivatedEventArgs> SkillActivated;
-        public event EventHandler<PlayerActionRequiredEventArgs> PlayerActionRequired;
-        public event EventHandler<GameEndEventArgs> GameEnded;
-        public event EventHandler<GameEventArgs> MessageUpdated;
-        public event EventHandler<NumberOperationEventArgs> NumberOperationResolved;
-        public event EventHandler<EffectNumbersConsumedEventArgs> EffectNumbersConsumed;
-        public event EventHandler<CardActionEventArgs> CardActionStarted;
-        public event Action<GameAction, GameActionOrigin> ActionSubmitted;
+        public event EventHandler<GameStartEventArgs>? GameStarted;
+        public event EventHandler<TurnStartEventArgs>? TurnStarted;
+        public event EventHandler<SkillActivatedEventArgs>? SkillActivated;
+        public event EventHandler<PlayerActionRequiredEventArgs>? PlayerActionRequired;
+        public event EventHandler<GameEndEventArgs>? GameEnded;
+        public event EventHandler<GameEventArgs>? MessageUpdated;
+        public event EventHandler<NumberOperationEventArgs>? NumberOperationResolved;
+        public event EventHandler<EffectNumbersConsumedEventArgs>? EffectNumbersConsumed;
+        public event EventHandler<CardActionEventArgs>? CardActionStarted;
+        public event Action<GameAction, GameActionOrigin>? ActionSubmitted;
         /// <summary>
         /// 游戏状态变化事件 - 当 GameState 发生变化时触发，用于通知 UI 层刷新按钮状态
         /// </summary>
-        public event EventHandler<GameStateEventArgs> GameStateChanged;
-        public event EventHandler RosterChanged;
+        public event EventHandler<GameStateEventArgs>? GameStateChanged;
+        public event EventHandler? RosterChanged;
 
         // --- Game Data ---
         public List<Player> Players { get; private set; } = [];
@@ -33,7 +33,7 @@ namespace Fida.Logic
         public int CurrentPlayerIndex { get; private set; }
         /// <summary>Number of player turns begun in this battle (used by online checkpoints).</summary>
         public int TurnNumber { get; private set; }
-        public string GameMessage { get; private set; }
+        public string GameMessage { get; private set; } = string.Empty;
         public ActionType CurrentActionType { get; private set; } = ActionType.None;
         /// <summary>
         /// 当前步骤允许的目标玩家 ID 列表（空 = 无限制）。
@@ -55,8 +55,8 @@ namespace Fida.Logic
         private int _gameEndDeferralDepth;
 
         // --- State Management ---
-        private GameState _currentState;
-        public GameState CurrentState => _currentState;
+        private GameState? _currentState;
+        public GameState? CurrentState => _currentState;
 
         /// <summary>
         /// 状态信息查询对象 — 集中封装对当前状态/当前回合玩家的只读查询
@@ -215,7 +215,7 @@ namespace Fida.Logic
 
         public Player GetCurrentPlayer() => Players[CurrentPlayerIndex];
 
-        public Group GetGroupForPlayer(int playerId) =>
+        public Group? GetGroupForPlayer(int playerId) =>
             Groups.FirstOrDefault(g => g.Players.Any(p => p.PlayerId == playerId));
 
         public bool AreAllies(int firstPlayerId, int secondPlayerId)

@@ -20,7 +20,8 @@ namespace Fida.Logic
     {
         protected readonly GameManager GameManager;
         protected readonly int SourcePlayerId;
-        protected readonly Player SourcePlayer;
+        private readonly Player? _sourcePlayer;
+        protected Player SourcePlayer => _sourcePlayer ?? throw new InvalidOperationException("This state has no source player.");
         protected readonly List<ActionStep> Steps = [];
         protected int StepIndex;
 
@@ -30,7 +31,7 @@ namespace Fida.Logic
             SourcePlayerId = sourcePlayerId;
             if (sourcePlayerId != -1)
             {
-                SourcePlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == sourcePlayerId);
+                _sourcePlayer = GameManager.Players.FirstOrDefault(p => p.PlayerId == sourcePlayerId);
             }
         }
         /// <summary>
@@ -122,7 +123,7 @@ namespace Fida.Logic
         protected virtual void Execute(List<GameAction> actions) { }
 
         private bool CanActorAct() =>
-            SourcePlayerId == -1 || (SourcePlayer != null && SourcePlayer.IsAlive());
+            SourcePlayerId == -1 || (_sourcePlayer != null && _sourcePlayer.IsAlive());
 
         protected void BroadcastCurrentStep()
         {

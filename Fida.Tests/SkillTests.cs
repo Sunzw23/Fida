@@ -62,7 +62,7 @@ public class SkillTests
         skill.Usage = new SkillUsageState(SkillUsageLimit.PerTurn);
         skill.Usage.MarkUsed(); // 用完
         var p = new Player(0, "a");
-        Assert.False(skill.CanUse(null, p));
+        Assert.False(skill.CanUse(new GameManager(), p));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class SkillTests
     {
         var skill = new PlusAttackSkill(); // 默认 Unlimited
         var p = new Player(0, "a");
-        Assert.True(skill.CanUse(null, p));
+        Assert.True(skill.CanUse(new GameManager(), p));
     }
 
     [Fact]

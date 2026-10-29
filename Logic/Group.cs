@@ -12,7 +12,7 @@ namespace Fida.Logic
 		public string Name { get; private set; }
 		public List<Player> Players { get; } = [];
 
-		public Group(int groupId, string name, IEnumerable<Player> players = null)
+		public Group(int groupId, string name, IEnumerable<Player>? players = null)
 		{
 			GroupId = groupId;
 			Name = name;

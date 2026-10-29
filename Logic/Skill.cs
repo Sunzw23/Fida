@@ -16,8 +16,9 @@ namespace Fida.Logic
         public int TargetPlayerId { get; set; }
         public int Damage { get; set; }
         public int Healing { get; set; }
-        public int[] Numbers { get; init; }
-        public IEnumerator<Skill> SkillEnumerator { get; set; }
+        public int[]? Numbers { get; init; }
+        public IEnumerator<Skill>? SkillEnumerator { get; set; }
+        public bool OrderedAttackSkillsQueued { get; set; }
 
         public SkillContext(int sourcePlayerId)
         {
@@ -25,7 +26,7 @@ namespace Fida.Logic
             PipelineOriginId = sourcePlayerId;
         }
 
-        public SkillContext(int sourcePlayerId, int damage, int healing = 0, int[] numbers = null)
+        public SkillContext(int sourcePlayerId, int damage, int healing = 0, int[]? numbers = null)
         {
             SourcePlayerId = sourcePlayerId;
             PipelineOriginId = sourcePlayerId;
@@ -149,7 +150,7 @@ namespace Fida.Logic
         public int Value { get; set; } = 1;
 
         public SkillTrigger Trigger { get; set; }
-        public SkillUsageState Usage { get; set; }
+        public SkillUsageState Usage { get; set; } = new();
 
         public bool CanUse(GameManager gameManager, Player player)
         {

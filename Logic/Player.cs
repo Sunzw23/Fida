@@ -1,4 +1,4 @@
-﻿// Player.cs 文件
+// Player.cs 文件
 
 using System;
 using System.Collections.Generic;
@@ -102,8 +102,8 @@ namespace Fida.Logic
         /// </summary>
         /// <param name="index"></param>
         /// <param name="value"></param>
-        public event Action<Player, int, int, int> NumberChanged; // player, index, oldValue, newValue
-        public event Action<Player> HealthChanged;
+        public event Action<Player, int, int, int>? NumberChanged; // player, index, oldValue, newValue
+        public event Action<Player>? HealthChanged;
 
         public void SetNumber(int index, int value)
         {

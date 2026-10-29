@@ -61,6 +61,7 @@
   <ItemGroup>
     <AndroidResource Include="Resources\drawable\fida_icon.png" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\campaign\**\*.json" Link="Content\campaign\%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\agent-settings.json" Link="Content\agent-settings.json" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\gametext.json" Link="Content\gametext.json" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\screens\**\*.json" Link="Content\screens\%(RecursiveDir)%(Filename)%(Extension)" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\uiconfig.json" Link="Content\uiconfig.json" />

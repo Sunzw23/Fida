@@ -20,7 +20,8 @@ namespace Fida.Logic
 
         public override void Enter()
         {
-            if (_ctx.SkillEnumerator.MoveNext())
+            // Swiss 分支由 AttackCompletedState 统一按配装顺序结算攻击后技能。
+            if (_ctx.SkillEnumerator != null && _ctx.SkillEnumerator.MoveNext())
             {
                 var currentSkill = _ctx.SkillEnumerator.Current;
                 if (currentSkill.CanUse(GameManager, SourcePlayer))

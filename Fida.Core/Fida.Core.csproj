@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\Content\agents\base.q.gz" Condition="Exists('..\Content\agents\base.q.gz')" LogicalName="Fida.Agent.base.q.gz" />
     <Compile Include="..\Logic\**\*.cs" Exclude="..\Logic\AgentPlayerController.cs" LinkBase="Logic" />
     <Compile Include="..\Campaign\**\*.cs" LinkBase="Campaign" />
   </ItemGroup>

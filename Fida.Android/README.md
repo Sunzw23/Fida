@@ -8,8 +8,9 @@ Only platform adapters live here:
 
 - `MainActivity` owns the Android lifecycle and locks the game to a portrait host view.
 - `AndroidAssetContent` exposes APK assets through the shared `ContentSource` API.
-- `AndroidOnnxInference` provides the deterministic AI fallback; scripted campaign AI is
-  shared in full, while the optional desktop ONNX policy is not shipped on mobile.
+- Lightweight AI and its embedded compressed Q table are shared through `Fida.Core`.
+  `Content/agent-settings.json` controls strength on both platforms. ONNX is no longer
+  required; `AndroidOnnxInference` is an unused legacy adapter.
 - `UIPointer` (in the shared UI folder) maps a single Android touch to the same pointer
   contract used by desktop controls and card interactions.
 - Android screens use a responsive, single-column layout derived from the existing JSON

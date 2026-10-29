@@ -41,7 +41,7 @@ namespace Fida.Logic
     {
         public int SourcePlayerId { get; init; }
         public int TargetPlayerId { get; set; }
-        public string Message { get; init; }
+        public string Message { get; init; } = string.Empty;
     }
 
     // 具体事件参数类
@@ -111,6 +111,6 @@ namespace Fida.Logic
     /// </summary>
     public class GameStateEventArgs : GameEventArgs
     {
-        public GameState NewState { get; init; }
+        public required GameState NewState { get; init; }
     }
 }
