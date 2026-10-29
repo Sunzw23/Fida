@@ -27,6 +27,7 @@ namespace Fida.UI
         public int BorderThickness { get; set; } = 1;
         public UIBoxLabelAlignment Alignment { get; set; } = UIBoxLabelAlignment.Center;
         public bool AutoFitText { get; set; }
+        public UITextRole? TypographyRole { get; set; }
         public float MinimumTextScale { get; set; } = 0.55f;
         public float MaximumTextScale { get; set; } = 1f;
         public int TextPadding { get; set; } = 12;
@@ -79,6 +80,8 @@ namespace Fida.UI
 #if !FIDA_ANDROID
                 preferredScale *= UIDesktopLayout.Scale(sb.GraphicsDevice.Viewport);
 #endif
+                if (TypographyRole.HasValue)
+                    preferredScale = UITypography.Scale(Font, TypographyRole.Value, sb.GraphicsDevice.Viewport);
                 float availableWidth = MathHelper.Max(1, Bounds.Width - TextPadding * 2);
                 float availableHeight = MathHelper.Max(1, Bounds.Height - (VerticalTextPadding ?? TextPadding) * 2);
                 _cachedTextScale = AutoFitText

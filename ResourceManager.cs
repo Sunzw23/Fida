@@ -18,6 +18,8 @@ namespace Fida
 
         // 游戏字体，用于UI文本
         public SpriteFont Font { get; private set; }
+        public SpriteFont CaptionFont { get; private set; }
+        public SpriteFont LabelFont { get; private set; }
 
         // IBM Plex Sans SemiBold for editorial headings; fall back to body font.
         public SpriteFont TitleFont { get; private set; }
@@ -55,6 +57,9 @@ namespace Fida
             {
                 throw new ContentLoadException("Failed to load font.");
             }
+
+            CaptionFont = contentManager.Load<SpriteFont>("ui_caption");
+            LabelFont = contentManager.Load<SpriteFont>("ui_label");
 
             // Load the matching sans-serif title face; fall back safely if unavailable.
             try

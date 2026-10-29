@@ -58,12 +58,28 @@ sealed class PreviewGame : Game
             case 2: _ui.BuildRulesScreen(1); break;
             case 3: _ui.BuildLevelSelect(); break;
             case 4: _ui.BuildDuelDraft(); break;
+            case 8:
+                _ui.GetControls().Add(new UIPanel(0, _resources.Pixel));
+                int row = 0;
+                foreach (UITextRole role in Enum.GetValues<UITextRole>())
+                {
+                    SpriteFont font = role == UITextRole.Name ? _resources.LabelFont :
+                        role == UITextRole.Heading ? _resources.TitleFont :
+                        role == UITextRole.Body ? _resources.Font : _resources.CaptionFont;
+                    _ui.GetControls().Add(new UILabel(row + 1, $"{role}: Il1 / O0 / 8B / 5S — 0123456789",
+                        UIDesktopLayout.MapPoint(new Vector2(960, 310 + row * 130), _width, _height), font)
+                    { TypographyRole = role, MaximumWidth = _width * 0.65f });
+                    row++;
+                }
+                break;
             default:
                 int count = _screen == 6 ? 4 : 3;
                 string[] names = { "ARITH", "MARA", "SENTINEL", "ALLY", "WITHERED KING", "WARDEN", "ECHO", "GUARD" };
                 string[] keys = { "arithmetist", "mara", "sentinel", "sentinel", "withered_king", "warden", "echo", "warden" };
                 var allies = Enumerable.Range(0, count).Select(i => new Player(i, names[i], 11, []) { PortraitKey = keys[i] }).ToList();
                 var enemies = Enumerable.Range(0, count).Select(i => new Player(i + count, names[i + 4], 11, []) { PortraitKey = keys[i + 4] }).ToList();
+                allies[0].Skills.AddRange(new[] { SkillType.DoubleAttack, SkillType.Shi, SkillType.Xue }.Select(SkillFactory.CreateSkill));
+                enemies[0].Skills.Add(SkillFactory.CreateSkill(SkillType.PlusDefence));
                 for (int i = 0; i < count; i++)
                 {
                     allies[i].Numbers[0] = i == 0 ? 6 : i * 2;
@@ -79,6 +95,14 @@ sealed class PreviewGame : Game
                 var player = _ui.GetUIPlayer(0);
                 player.Number0Button.SetSelected(true);
                 VerifyNumberInput(player);
+                if (_screen == 7)
+                    _ui.AddTutorialDialogue(new CampaignNode
+                    {
+                        BeforeStory = [new CampaignStoryPage { Speaker = "Mara Venn", Text =
+                            "The road is quiet now. Take a moment to look at the numbers before you move. " +
+                            "Choose one of your own numbers, then choose another number to add to it. " +
+                            "You can use an ally's number as well as an enemy's. We have time to decide." }]
+                    });
                 break;
         }
     }
@@ -95,6 +119,14 @@ sealed class PreviewGame : Game
         player.VisualOffset = new Vector2(20, -12);
         player.VisualScale = 1.06f;
         if (player.Number0Button.LayoutBounds != original) throw new Exception("Animation moved the number hitbox.");
+        foreach (var unit in _ui.GetControls().OfType<UIPlayer>())
+        {
+            var name = unit.NameLabel.GetScreenBounds(GraphicsDevice.Viewport)!.Value;
+            var health = unit.HealthLabel.GetScreenBounds(GraphicsDevice.Viewport)!.Value;
+            if (name.Height < 22 || health.Height < 20) throw new Exception("Combat metadata fell below readable line-box sizes.");
+            if (name.Intersects(health) || health.Intersects(unit.Number0Bounds) || health.Intersects(unit.Number1Bounds))
+                throw new Exception("Readable text overlaps another combat control.");
+        }
     }
 
     protected override void Update(GameTime time)
@@ -115,11 +147,11 @@ sealed class PreviewGame : Game
         _ui.Draw(time);
         if (_frame >= 30 && time.TotalGameTime.TotalSeconds - _firstDraw >= 0.7)
         {
-            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4" }[_screen];
+            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen" }[_screen];
             Save(name);
-            if (_screen >= 5) VerifyRenderedMotion(time, name);
+            if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
             _screen++;
-            if (_screen > 6) Exit(); else Build();
+            if (_screen > 8) Exit(); else Build();
         }
         base.Draw(time);
     }

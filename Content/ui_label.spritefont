@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<XnaContent xmlns:Graphics="Microsoft.Xna.Framework.Content.Pipeline.Graphics">
+  <Asset Type="Graphics:FontDescription">
+
+    <FontName>fonts/IBMPlexSans-SemiBold.ttf</FontName>
+
+    <Size>22</Size>
+
+    <Spacing>0</Spacing>
+
+    <!-- Preserve proportional glyph bearings and whitespace advance. Build with MGCB 3.8.5+. -->
+    <UseKerning>true</UseKerning>
+
+    <Style>Regular</Style>
+
+    <CharacterRegions>
+      <CharacterRegion>
+        <Start>&#32;</Start>
+        <End>&#126;</End>
+      </CharacterRegion>
+      <CharacterRegion>
+        <Start>&#160;</Start>
+        <End>&#255;</End>
+      </CharacterRegion>
+      <CharacterRegion><Start>&#8211;</Start><End>&#8212;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8216;</Start><End>&#8217;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8220;</Start><End>&#8221;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8226;</Start><End>&#8226;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8230;</Start><End>&#8230;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8722;</Start><End>&#8722;</End></CharacterRegion>
+    </CharacterRegions>
+
+  </Asset>
+</XnaContent>

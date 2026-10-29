@@ -501,8 +501,8 @@ namespace Fida.UI.Campaign
         private void DrawDesktopDetails(SpriteBatch spriteBatch, Rectangle panel)
         {
             int left = panel.Left + panel.Width * 56 / 100;
-            Rectangle card = new(left, panel.Top + 220,
-                panel.Right - left - 55, Math.Max(260, Math.Min(500, panel.Height - 360)));
+            Rectangle card = new(left, panel.Top + panel.Height * 24 / 100,
+                panel.Right - left - 55, panel.Height * 58 / 100);
             SkillType skill = _wheel.Focused;
             CampaignSkillAvailability availability = Availability(skill);
             Color accent = availability == CampaignSkillAvailability.Locked
@@ -521,8 +521,10 @@ namespace Fida.UI.Campaign
                 0.42f, accent);
             DrawCentered(spriteBatch, _titleFont, GameText.SkillName(skill),
                 new Vector2(card.Center.X, card.Top + Math.Min(133, card.Height * .35f)), card.Width - 64, 0.40f, UITheme.Ink);
-            DrawCentered(spriteBatch, _font, detail,
-                new Vector2(card.Center.X, card.Top + Math.Min(197, card.Height * .57f)), card.Width - 64, 0.36f, UITheme.InkMuted);
+            int descriptionTop = card.Top + (int)Math.Min(173, card.Height * 0.43f);
+            UITextRenderer.DrawParagraph(spriteBatch, _font, detail,
+                new Rectangle(card.Left + 32, descriptionTop, card.Width - 64,
+                    Math.Max(1, card.Bottom - 112 - descriptionTop)), UITheme.Ink);
             DrawCentered(spriteBatch, _font,
                 CostLabel(skill, availability),
                 new Vector2(card.Center.X, card.Bottom - (UseUnifiedActionButton ? 54 : 80)),

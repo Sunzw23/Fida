@@ -15,7 +15,7 @@ public static class UIBattleLayout
         int inRow = Math.Min(columns, count - row * columns);
         int slotWidth = 1600 / columns;
         int unitWidth = Math.Min(380, slotWidth - 32);
-        int unitHeight = Math.Min(370, 410 / rows);
+        int unitHeight = Math.Min(390, 410 / rows);
         int x = 160 + (1600 - inRow * slotWidth) / 2 + (index % columns) * slotWidth + (slotWidth - unitWidth) / 2;
         int y = (ally ? 680 : 160) + row * (410 / rows);
         return UIDesktopLayout.MapRectangle(new Rectangle(x, y, unitWidth, unitHeight), width, height);

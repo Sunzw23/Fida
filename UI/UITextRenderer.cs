@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -7,6 +8,52 @@ namespace Fida.UI;
 /// <summary>统一文字缩放与像素对齐，避免在已缩放的控件内二次缩小文字。</summary>
 public static class UITextRenderer
 {
+    /// <summary>Wrap at words, preserving paragraphs and splitting unusually long identifiers.</summary>
+    public static IReadOnlyList<string> WrapLines(string text, float width, Func<string, float> measure)
+    {
+        var lines = new List<string>();
+        if (width <= 0) return lines;
+        foreach (string paragraph in (text ?? "").Replace("\r", "").Split('\n'))
+        {
+            string line = "";
+            foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string candidate = line.Length == 0 ? word : line + " " + word;
+                if (measure(candidate) <= width) { line = candidate; continue; }
+                if (line.Length > 0) { lines.Add(line); line = ""; }
+                foreach (char letter in word)
+                {
+                    if (line.Length > 0 && measure(line + letter) > width)
+                    { lines.Add(line); line = ""; }
+                    line += letter;
+                }
+            }
+            lines.Add(line);
+        }
+        return lines;
+    }
+
+    public static void DrawParagraph(SpriteBatch batch, SpriteFont font, string text, Rectangle area, Color color)
+    {
+        if (area.Width <= 0 || area.Height <= 0) return;
+        float scale = UITypography.Scale(font, UITextRole.Body, batch.GraphicsDevice.Viewport);
+        IReadOnlyList<string> lines;
+        float lineHeight;
+        for (int attempt = 0; ; attempt++)
+        {
+            lines = WrapLines(UIFontGuard.Sanitize(font, text), area.Width, value => font.MeasureString(value).X * scale);
+            lineHeight = font.LineSpacing * scale * 1.2f;
+            if (lines.Count * lineHeight <= area.Height || attempt >= 40) break;
+            scale *= 0.95f;
+        }
+        float y = area.Top;
+        foreach (string line in lines)
+        {
+            DrawString(batch, font, line, new Vector2(area.Left, y), color, scale: scale);
+            y += lineHeight;
+        }
+    }
+
     public static float FitScale(Vector2 measured, float width, float height, float preferredScale = 1f)
     {
         if (width <= 0 || height <= 0 || preferredScale <= 0) return 0;

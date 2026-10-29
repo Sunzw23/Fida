@@ -100,23 +100,25 @@ namespace Fida.UI.Campaign
                 UITheme.AccentGreen);
 
             int pad = Math.Clamp(Bounds.Width / 32, 18, 38);
-            float scale = Math.Clamp(Bounds.Width / 720f, 0.52f, 0.86f);
+            float scale = UITypography.Scale(_font, UITextRole.Body, viewport);
+            float speakerScale = UITypography.Scale(_font, UITextRole.Name, viewport);
+            float captionScale = UITypography.Scale(_font, UITextRole.Small, viewport);
             Vector2 speakerAt = new(Bounds.Left + pad, Bounds.Top + pad * 0.55f);
             UITextRenderer.DrawString(spriteBatch, _font, _lines[_lineIndex].Speaker.ToUpperInvariant(), speakerAt,
-                UITheme.AccentGreen, 0f, Vector2.Zero, scale * 0.82f,
+                UITheme.AccentGreen, 0f, Vector2.Zero, speakerScale,
                 SpriteEffects.None, 0f);
 
-            int textTop = (int)(speakerAt.Y + _font.LineSpacing * scale * 0.82f + 12);
-            int textBottom = Bounds.Bottom - pad - (int)(_font.LineSpacing * scale * 0.62f) - 10;
+            int textTop = (int)(speakerAt.Y + _font.LineSpacing * speakerScale + 12);
+            int textBottom = Bounds.Bottom - pad - (int)(_font.LineSpacing * captionScale) - 10;
             Rectangle textArea = new(Bounds.Left + pad, textTop,
                 Bounds.Width - pad * 2 - 12, System.Math.Max(1, textBottom - textTop));
             DrawWrapped(spriteBatch, _lines[_lineIndex].Text, textArea, scale, UITheme.Ink);
 
             string progress = $"{_lineIndex + 1:00} / {_lines.Length:00}";
-            Vector2 progressSize = _font.MeasureString(progress) * scale * 0.62f;
+            Vector2 progressSize = _font.MeasureString(progress) * captionScale;
             UITextRenderer.DrawString(spriteBatch, _font, progress,
                 new Vector2(Bounds.Right - pad - progressSize.X, Bounds.Bottom - pad - progressSize.Y),
-                UITheme.InkMuted, 0f, Vector2.Zero, scale * 0.62f, SpriteEffects.None, 0f);
+                UITheme.InkMuted, 0f, Vector2.Zero, captionScale, SpriteEffects.None, 0f);
             DrawChevron(spriteBatch, new Vector2(Bounds.Right - pad * 0.55f, Bounds.Center.Y),
                 Math.Max(6, (int)(10 * scale)), UITheme.Gold);
         }

@@ -14,6 +14,8 @@ namespace Fida.UI
         public Vector2 Position { get; set; }
 
         public SpriteFont Font { get; private set; }
+        private readonly SpriteFont _captionFont;
+        private Vector2 _skillsCenter;
         public Texture2D Pixel { get; set; }
 
         public Texture2D PortraitTexture { get; set; }
@@ -94,11 +96,13 @@ namespace Fida.UI
             OnConfirmed();
         }
 
-        public UIPlayer(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel, Texture2D portraitTexture = null, bool isAlly = false, Rectangle? layoutBounds = null) : base(id)
+        public UIPlayer(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel, Texture2D portraitTexture = null, bool isAlly = false, Rectangle? layoutBounds = null, SpriteFont labelFont = null, SpriteFont captionFont = null) : base(id)
         {
             Position = position;
             Player = player;
             Font = font;
+            _captionFont = captionFont ?? font;
+            SpriteFont nameFont = labelFont ?? font;
             Pixel = pixel;
             PortraitTexture = portraitTexture;
             IsAlly = isAlly;
@@ -140,7 +144,7 @@ namespace Fida.UI
             int nameAreaHeight = Math.Clamp(CardBounds.Height / 3, 44, 66);
             _nameCenter = new Vector2(infoLeft + infoWidth / 2f,
                 CardBounds.Top + padding + nameAreaHeight / 2f);
-            NameLabel = new UILabel(0, player.Name, _nameCenter, font)
+            NameLabel = new UILabel(0, player.Name, _nameCenter, nameFont)
             {
                 MaximumWidth = infoWidth,
                 MaximumHeight = nameAreaHeight,
@@ -157,7 +161,7 @@ namespace Fida.UI
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
                 pixel, font) { ParentDrawOnly = true, DarkTileStyle = true };
-            HealthLabel = new UILabel(11, $"HP  {player.Health} / {player.MaxHealth}", _healthCenter, font)
+            HealthLabel = new UILabel(11, $"HP  {player.Health} / {player.MaxHealth}", _healthCenter, _captionFont)
             {
                 MaximumWidth = infoWidth,
                 MaximumHeight = 34,
@@ -169,27 +173,33 @@ namespace Fida.UI
 #else
             Number0Bounds = UIBattleLayout.Number(CardBounds, 0);
             Number1Bounds = UIBattleLayout.Number(CardBounds, 1);
-            int portraitHeight = (int)(CardBounds.Height * 0.36f);
-            int portraitWidth = portraitHeight;
+            var viewport = pixel.GraphicsDevice.Viewport;
+            float nameLine = UITypography.LineHeight(UITextRole.Name, viewport.Width, viewport.Height);
+            float healthLine = UITypography.LineHeight(UITextRole.Caption, viewport.Width, viewport.Height);
+            float skillLine = UITypography.LineHeight(UITextRole.Small, viewport.Width, viewport.Height);
+            int gap = Math.Max(3, UIConfig.ScaleDesktopMetric(5));
+            _skillsCenter = new Vector2(CardBounds.Center.X, Number0Bounds.Top - gap - skillLine / 2);
+            float healthY = Number0Bounds.Top - gap - skillLine - (skillLine > 0 ? gap : 0) - healthLine / 2;
+            _nameCenter = new Vector2(CardBounds.Center.X, healthY - healthLine / 2 - gap - nameLine / 2);
+            int portraitHeight = Math.Max(1, (int)(_nameCenter.Y - nameLine / 2 - gap - CardBounds.Top));
+            int portraitWidth = Math.Min(CardBounds.Width / 2, portraitHeight);
             PortraitBounds = new Rectangle(CardBounds.Center.X - portraitWidth / 2,
                 CardBounds.Top, portraitWidth, portraitHeight);
-            _nameCenter = new Vector2(CardBounds.Center.X,
-                CardBounds.Top + CardBounds.Height * 0.40f);
-            NameLabel = new UILabel(0, player.Name, _nameCenter, font)
+            NameLabel = new UILabel(0, player.Name, _nameCenter, nameFont)
             {
                 MaximumWidth = CardBounds.Width - 8,
-                MaximumHeight = CardBounds.Height * 0.075f,
-                MinimumScale = 0.5f
+                MaximumHeight = nameLine,
+                TypographyRole = UITextRole.Name
             };
             HealthBounds = new Rectangle(CardBounds.Left + CardBounds.Width / 5,
-                CardBounds.Top + (int)(CardBounds.Height * 0.48f), CardBounds.Width * 2 / 5,
-                Math.Max(3, CardBounds.Height / 50));
-            _healthCenter = new Vector2(HealthBounds.Right + CardBounds.Width * 0.12f, HealthBounds.Center.Y);
-            HealthLabel = new UILabel(11, $"{player.Health}/{player.MaxHealth}", _healthCenter, font)
+                (int)healthY - 2, CardBounds.Width * 2 / 5,
+                Math.Max(3, UIConfig.ScaleDesktopMetric(5)));
+            _healthCenter = new Vector2(HealthBounds.Right + gap * 2 + CardBounds.Width * 0.115f, HealthBounds.Center.Y);
+            HealthLabel = new UILabel(11, $"{player.Health}/{player.MaxHealth}", _healthCenter, _captionFont)
             {
                 MaximumWidth = CardBounds.Width * 0.23f,
-                MaximumHeight = CardBounds.Height * 0.065f,
-                MinimumScale = 0.5f
+                MaximumHeight = healthLine,
+                TypographyRole = UITextRole.Caption
             };
             _skillStripBounds = new Rectangle(CardBounds.Left, CardBounds.Top,
                 CardBounds.Width, Math.Max(1, Number0Bounds.Top - CardBounds.Top));
@@ -426,8 +436,7 @@ namespace Fida.UI
                 DrawCompactText(sb, skills, _skillStripBounds.Center.ToVector2(), UITheme.InkMuted,
                     0.50f, _skillStripBounds.Width);
 #else
-                DrawCompactText(sb, skills, new Vector2(CardBounds.Center.X,
-                    (HealthBounds.Bottom + Number0Bounds.Top) / 2f), UITheme.InkMuted,
+                DrawCompactText(sb, skills, _skillsCenter, UITheme.InkMuted,
                     0.23f * scale, CardBounds.Width - 12);
 #endif
             }
@@ -459,11 +468,14 @@ namespace Fida.UI
             if (_pointerOverSkills && Player.Skills.Count > 0)
 #endif
             {
-                int height = Math.Min(UIConfig.ScaleDesktopMetric(220),
-                    UIConfig.ScaleDesktopMetric(66 + Player.Skills.Count * 28));
+                int line = (int)UITypography.LineHeight(UITextRole.Small, sb.GraphicsDevice.Viewport.Width, sb.GraphicsDevice.Viewport.Height) + 6;
+                int height = Math.Min(sb.GraphicsDevice.Viewport.Height / 2, 48 + Player.Skills.Count * line);
                 int y = Math.Max(8, CardBounds.Top - height - 8);
                 if (y + height > CardBounds.Top) y = CardBounds.Bottom + 8;
-                DrawSkillDetails(sb, new Rectangle(CardBounds.Left, y, CardBounds.Width, height), scale);
+                int width = Math.Min(sb.GraphicsDevice.Viewport.Width - 24, Math.Max(CardBounds.Width, 320));
+                int x = Math.Clamp(CardBounds.Center.X - width / 2, 12, sb.GraphicsDevice.Viewport.Width - width - 12);
+                y = Math.Clamp(y, 8, sb.GraphicsDevice.Viewport.Height - height - 8);
+                DrawSkillDetails(sb, new Rectangle(x, y, width, height), scale);
             }
         }
 
@@ -488,14 +500,8 @@ namespace Fida.UI
 #endif
                 portraitBounds.Width - 20f);
 
-            float rowHeight = System.Math.Max(
-#if FIDA_ANDROID
-                36f, 42f * scale);
-            float y = portraitBounds.Top + 60f * scale;
-#else
-                20f, 27f * scale);
-            float y = portraitBounds.Top + 54f * scale;
-#endif
+            float rowHeight = UITypography.LineHeight(UITextRole.Small, sb.GraphicsDevice.Viewport.Width, sb.GraphicsDevice.Viewport.Height) + 6;
+            float y = portraitBounds.Top + 38;
             int maximumRows = System.Math.Max(1,
                 (int)((portraitBounds.Bottom - y - 8f) / rowHeight));
             int shown = System.Math.Min(maximumRows, Player.Skills.Count);
@@ -523,8 +529,8 @@ namespace Fida.UI
         private void DrawCompactText(SpriteBatch sb, string text, Vector2 center,
             Color color, float preferredScale, float maximumWidth)
         {
-            UIUtils.DrawCenteredFit(sb, Font, text, center, maximumWidth,
-                preferredScale, color);
+            UIUtils.DrawCenteredFit(sb, _captionFont, text, center, maximumWidth,
+                Math.Max(preferredScale, UITypography.Scale(_captionFont, UITextRole.Small, sb.GraphicsDevice.Viewport)), color);
         }
     }
 }

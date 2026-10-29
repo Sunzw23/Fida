@@ -55,7 +55,7 @@ namespace Fida.UI
             string safe = UIFontGuard.Sanitize(font, text);
             Vector2 size = font.MeasureString(safe);
             if (size.X <= 0f) return;
-            float scale = System.Math.Min(preferredScale, maxWidth / size.X);
+            float scale = System.Math.Min(System.Math.Max(preferredScale, minScale), maxWidth / size.X);
             // maxWidth is a hard constraint; minScale cannot make text overflow it.
             UITextRenderer.DrawString(batch, font, safe, center - size * scale / 2f, color,
                 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);

@@ -77,11 +77,12 @@ namespace Fida.UI
                 viewportWidth - messageMargin * 2 - pauseSize - pauseGap);
             var messageBounds = UIDesktopLayout.MapRectangle(new Rectangle(280, 590, 1360, 60), viewport);
 #endif
-            _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.Font)
+            _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.CaptionFont)
             {
+                TypographyRole = UITextRole.Body,
                 Alignment = UIBoxLabelAlignment.Center,
                 AutoFitText = true,
-                VerticalTextPadding = 8,
+                VerticalTextPadding = UIConfig.ScaleDesktopMetric(4),
 #if FIDA_ANDROID
                 MinimumTextScale = 0.48f,
                 MaximumTextScale = 0.72f,
@@ -136,14 +137,15 @@ namespace Fida.UI
 #else
             var cueBounds = messageBounds;
 #endif
-            _actionCueLabel = new UIBoxLabel(-1, cueBounds, "", _resourceManager.Pixel, _resourceManager.Font)
+            _actionCueLabel = new UIBoxLabel(-1, cueBounds, "", _resourceManager.Pixel, _resourceManager.CaptionFont)
             {
+                TypographyRole = UITextRole.Body,
                 Alignment = UIBoxLabelAlignment.Center,
                 AutoFitText = true,
                 MinimumTextScale = 0.42f,
                 MaximumTextScale = 0.68f,
                 TextPadding = 28,
-                VerticalTextPadding = 8,
+                VerticalTextPadding = UIConfig.ScaleDesktopMetric(4),
                 BackColor = UITheme.BgTop,
                 ForeColor = UITheme.Ink,
                 BorderColor = UITheme.GoldBright,
@@ -158,7 +160,7 @@ namespace Fida.UI
             };
             _uiControls.Add(_actionCueLabel);
 #if !FIDA_ANDROID
-            _uiControls.Add(new UIBattleChrome(-11, _resourceManager.Pixel, _resourceManager.Font, gameManager));
+            _uiControls.Add(new UIBattleChrome(-11, _resourceManager.Pixel, _resourceManager.CaptionFont, gameManager));
 #endif
 
             // 订阅事件
@@ -189,7 +191,8 @@ namespace Fida.UI
                 isAlly |= player.PlayerId == gameManager.LocalPlayerId;
                 var uiPlayer = new UIPlayer(player.PlayerId, player, positions[player.PlayerId],
                     _resourceManager.Font, _resourceManager.Pixel, portraitTexture, isAlly,
-                    _unitBounds.TryGetValue(player.PlayerId, out var unitBounds) ? unitBounds : null);
+                    _unitBounds.TryGetValue(player.PlayerId, out var unitBounds) ? unitBounds : null,
+                    _resourceManager.LabelFont, _resourceManager.CaptionFont);
                 if (portraitTexture == _resourceManager.GetTexture("cold_roster"))
                     uiPlayer.PortraitSource = ColdPortraitRegion(player, portraitTexture, isAlly);
                 uiPlayer.CurrentTurnChecker = () => _gameManager.Query.CurrentPlayerId == player.PlayerId;

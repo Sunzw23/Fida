@@ -16,6 +16,7 @@ namespace Fida.UI
         /// <summary>Optional text height constraint. Zero means unconstrained.</summary>
         public float MaximumHeight { get; set; }
         public float MinimumScale { get; set; } = 0.58f;
+        public UITextRole? TypographyRole { get; set; }
 
         public UILabel(int id, string text, Vector2 position, SpriteFont font) : base(id)
         {
@@ -50,7 +51,7 @@ namespace Fida.UI
             }
 
             string displayText = UIFontGuard.Sanitize(Font, Text);
-            var (rect, scale) = Measure(displayText, position, visualScale);
+            var (rect, scale) = Measure(displayText, position, visualScale, sb.GraphicsDevice.Viewport);
             UITextRenderer.DrawString(sb, Font, displayText, new Vector2(rect.Left, rect.Top), Color, 0f, Vector2.Zero, scale,
                 SpriteEffects.None, 0f);
         }
@@ -64,14 +65,14 @@ namespace Fida.UI
             float visualScale = UIDesktopLayout.Scale(viewport);
 #endif
             string displayText = UIFontGuard.Sanitize(Font, Text);
-            return Measure(displayText, Position, visualScale).Rect;
+            return Measure(displayText, Position, visualScale, viewport).Rect;
         }
 
         /// <summary>
         /// 标签实际绘制矩形与缩放因子。Draw 与 GetScreenBounds 共用同一份几何计算，
         /// 保证布局检测器读到的就是渲染器画出的范围。
         /// </summary>
-        private (Rectangle Rect, float Scale) Measure(string displayText, Vector2 position, float visualScale)
+        private (Rectangle Rect, float Scale) Measure(string displayText, Vector2 position, float visualScale, Viewport viewport)
         {
             var textSize = Font.MeasureString(displayText);
             float widthScale = MaximumWidth > 0
@@ -82,7 +83,8 @@ namespace Fida.UI
                 : float.PositiveInfinity;
             // MaximumWidth/Height are already physical layout bounds.
             // Fit once; readability preferences must not override either hard bound.
-            float scale = MathHelper.Min(visualScale, MathHelper.Min(widthScale, heightScale));
+            float preferred = TypographyRole.HasValue ? UITypography.Scale(Font, TypographyRole.Value, viewport) : visualScale;
+            float scale = MathHelper.Min(preferred, MathHelper.Min(widthScale, heightScale));
             var pos = new Vector2(
                 position.X - textSize.X * scale / 2,
                 position.Y - textSize.Y * scale / 2
