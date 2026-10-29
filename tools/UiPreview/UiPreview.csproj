@@ -7,6 +7,13 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Fida.csproj" />
-    <Content Include="../../bin/Debug/net8.0/Content/**/*" Link="Content/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="CopyGameContentForPreview" AfterTargets="Build">
+    <ItemGroup>
+      <FidaPreviewContent Include="../../bin/$(Configuration)/net8.0/Content/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FidaPreviewContent)"
+          DestinationFiles="@(FidaPreviewContent->'$(TargetDir)Content/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

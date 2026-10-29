@@ -413,7 +413,7 @@ namespace Fida.UI
 #endif
             _uiControls.Add(new UICampaignSkillWheel(0, _resourceManager.GraphicsDevice,
                 _resourceManager.Pixel, _resourceManager.Font, _resourceManager.TitleFont,
-                node, progress, new HashSet<SkillType>(), SkillFactory.SelectableSkills, options)
+                node, progress, new HashSet<SkillType>(), SkillFactory.SelectableSkills, options, _resourceManager.CaptionFont, _resourceManager.LabelFont)
             {
                 Name = "duel_draft_wheel",
                 HeaderText = "BAN"

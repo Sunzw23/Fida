@@ -10,11 +10,32 @@ using Microsoft.Xna.Framework.Input;
 namespace Fida.UI.Campaign
 {
     /// <summary>
-    /// A single-focus, circular skill browser. It reports user intent but never mutates
-    /// campaign state, keeping loadout rules and state transitions outside the UI control.
+    /// Compatibility facade for campaign, cooperative loadout and duel draft states.
+    /// The grid handles presentation and intent; the existing rules remain authoritative.
     /// </summary>
     public sealed class UICampaignSkillWheel : UIControl
     {
+        /// <summary>New grid presentation behind the established state-machine API.</summary>
+        public UICampaignSkillGrid GridBrowser { get; private set; }
+        public bool SelectionEnabled { get; set; } = true;
+        private void SyncGrid()
+        {
+            GridBrowser.HeaderText = HeaderText;
+            GridBrowser.StatusText = StatusText;
+            GridBrowser.AvailableActionText = AvailableActionText;
+            GridBrowser.SelectedActionText = SelectedActionText;
+            GridBrowser.StartActionText = StartActionText;
+            GridBrowser.StartActionEnabled = StartActionEnabled;
+            GridBrowser.StartActionTogglesSelection = StartActionTogglesSelection;
+            GridBrowser.UseUnifiedActionButton = UseUnifiedActionButton;
+            GridBrowser.ShowSkillPoints = ShowSkillPoints;
+            GridBrowser.AvailabilityOverride = AvailabilityOverride;
+            GridBrowser.AvailabilityLabelOverride = AvailabilityLabelOverride;
+            GridBrowser.InputBlocked = InputBlocked;
+            GridBrowser.SelectionEnabled = SelectionEnabled;
+            GridBrowser.IsVisible = IsVisible;
+            GridBrowser.SetSelection(_selected);
+        }
         private readonly GraphicsDevice _graphicsDevice;
         private readonly Texture2D _pixel;
         private readonly SpriteFont _font;
@@ -38,8 +59,8 @@ namespace Fida.UI.Campaign
         private string _headerText;
         private string _statusText = "";
         private float _selectionReveal;
-        private string _availableActionText = "EQUIP";
-        private string _selectedActionText = "REMOVE";
+        private string _availableActionText = "EQUIP SKILL";
+        private string _selectedActionText = "REMOVE SKILL";
         private string _backActionText = "<";
         private string _startActionText;
 #if FIDA_ANDROID
@@ -49,8 +70,8 @@ namespace Fida.UI.Campaign
         private float _touchWheelOffset;
 #endif
 
-        public SkillType FocusedSkill => _wheel.Focused;
-        public int FocusedIndex => _wheel.FocusedIndex;
+        public SkillType FocusedSkill => GridBrowser?.FocusedSkill ?? _wheel.Focused;
+        public int FocusedIndex => GridBrowser?.FocusedIndex ?? _wheel.FocusedIndex;
         public string HeaderText { get => _headerText; set => _headerText = value ?? ""; }
         public string StatusText { get => _statusText; set => _statusText = value ?? ""; }
         public string AvailableActionText { get => _availableActionText; set => _availableActionText = value ?? ""; }
@@ -73,12 +94,16 @@ namespace Fida.UI.Campaign
         }
         public bool ShowSkillPoints { get; set; } = true;
 
-        public void SetSelection(IReadOnlyCollection<SkillType> selected) => _selected = selected;
+        public void SetSelection(IReadOnlyCollection<SkillType> selected)
+        {
+            _selected = selected;
+            GridBrowser?.SetSelection(selected);
+        }
 
         public UICampaignSkillWheel(int id, GraphicsDevice graphicsDevice, Texture2D pixel,
             SpriteFont font, SpriteFont titleFont, CampaignNode node, CampaignProgress progress,
             IReadOnlyCollection<SkillType> selected, IReadOnlyList<SkillType> skills,
-            CampaignSkillWheelOptions options = null) : base(id)
+            CampaignSkillWheelOptions options = null, SpriteFont captionFont = null, SpriteFont labelFont = null) : base(id)
         {
             _graphicsDevice = graphicsDevice;
             _pixel = pixel;
@@ -96,10 +121,13 @@ namespace Fida.UI.Campaign
             _options = options ?? new CampaignSkillWheelOptions();
             SkillType? initial = selected.Count > 0 ? selected.First() : FindFirstAvailable(skills);
             _wheel = new SkillWheelModel(skills, initial);
+            GridBrowser = new UICampaignSkillGrid(id, graphicsDevice, pixel, font, titleFont, node, progress,
+                selected, skills, captionFont, labelFont);
         }
 
         public bool TryConsumeToggle(out SkillType skill)
         {
+            if (GridBrowser != null) return GridBrowser.TryConsumeToggle(out skill);
             if (_pendingToggle.HasValue)
             {
                 skill = _pendingToggle.Value;
@@ -112,6 +140,7 @@ namespace Fida.UI.Campaign
 
         public bool ConsumeBackRequest()
         {
+            if (GridBrowser != null) return GridBrowser.ConsumeBackRequest();
             bool result = _backRequested;
             _backRequested = false;
             return result;
@@ -119,15 +148,20 @@ namespace Fida.UI.Campaign
 
         public bool ConsumeStartRequest()
         {
+            if (GridBrowser != null) return GridBrowser.ConsumeStartRequest();
             bool result = _startRequested;
             _startRequested = false;
             return result;
         }
 
-        public void Move(int steps) => _wheel.Move(steps);
+        public void Move(int steps)
+        {
+            if (GridBrowser != null) GridBrowser.Move(steps); else _wheel.Move(steps);
+        }
 
         public override void Update(GameTime gameTime)
         {
+            if (GridBrowser != null) { SyncGrid(); GridBrowser.Update(gameTime); return; }
             if (InputBlocked)
             {
                 _previousKeyboard = Keyboard.GetState();
@@ -175,6 +209,7 @@ namespace Fida.UI.Campaign
 
         public override void Update(MouseState mouse)
         {
+            if (GridBrowser != null) { SyncGrid(); GridBrowser.Update(mouse); return; }
             if (InputBlocked)
             {
                 _previousMouse = mouse;
@@ -260,6 +295,7 @@ namespace Fida.UI.Campaign
 
         public override void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
+            if (GridBrowser != null) { SyncGrid(); GridBrowser.Draw(spriteBatch, gameTime); return; }
             Viewport viewport = _graphicsDevice.Viewport;
             Rectangle panel = PanelBounds(viewport);
             spriteBatch.Draw(_pixel, panel, UITheme.Panel);

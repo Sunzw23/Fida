@@ -152,6 +152,7 @@ namespace Fida.States
             if (_wheel != null)
             {
                 _wheel.ShowSkillPoints = Picking;
+                _wheel.SelectionEnabled = !_localLocked && (Picking || !_localBan.HasValue);
                 _wheel.HeaderText = Picking ? "PICK" : "BAN";
                 _wheel.AvailableActionText = "BAN";
                 _wheel.SelectedActionText = "BANNED";

@@ -106,6 +106,7 @@ public sealed class OnlineCampaignSkillsState : StateBase
                 ? "ALLY IN BATTLE · REINFORCEMENT AVAILABLE"
                 : "SOLO ROUTE";
         wheel.StartActionEnabled = !_ready;
+        wheel.SelectionEnabled = !_ready;
         wheel.StartActionText = matchingDraft
             ? (_ready ? "WAITING FOR ALLY" : "READY")
             : joiningBattle

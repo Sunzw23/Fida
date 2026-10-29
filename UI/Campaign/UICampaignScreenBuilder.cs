@@ -56,7 +56,7 @@ namespace Fida.UI.Campaign
 #endif
             _controls.Add(new UICampaignSkillWheel(0, _resources.GraphicsDevice, _resources.Pixel,
                 _resources.Font, _resources.TitleFont, node, CampaignRuntime.GetProgress(online),
-                GameSetup.SelectedLocalSkills, SkillFactory.SelectableSkills, options)
+                GameSetup.SelectedLocalSkills, SkillFactory.SelectableSkills, options, _resources.CaptionFont, _resources.LabelFont)
             {
                 Name = "skill_wheel"
             });

@@ -2,6 +2,7 @@ using Fida;
 using Fida.Campaign;
 using Fida.Logic;
 using Fida.UI;
+using Fida.UI.Campaign;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -10,7 +11,7 @@ int width = args.Length > 0 ? int.Parse(args[0]) : 1600;
 int height = args.Length > 1 ? int.Parse(args[1]) : 1000;
 string destination = Path.GetFullPath(args.Length > 2 ? args[2] : "artifacts/cold-ui");
 Directory.CreateDirectory(destination);
-using var preview = new PreviewGame(width, height, destination);
+using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"));
 preview.Run();
 
 sealed class PreviewGame : Game
@@ -23,10 +24,15 @@ sealed class PreviewGame : Game
     private int _screen, _frame;
     private double _firstDraw = double.NaN;
     private GameManager _battle;
+    private readonly bool _skillsOnly;
+    private UICampaignSkillWheel _loadout;
+    private HashSet<SkillType> _loadoutSelected;
 
-    public PreviewGame(int width, int height, string destination)
+    public PreviewGame(int width, int height, string destination, bool skillsOnly)
     {
         _width = width; _height = height; _destination = destination;
+        _skillsOnly = skillsOnly;
+        if (skillsOnly) _screen = 4;
         _graphics = new GraphicsDeviceManager(this)
         { PreferredBackBufferWidth = width, PreferredBackBufferHeight = height, GraphicsProfile = GraphicsProfile.HiDef };
         Content.RootDirectory = Path.Combine(AppContext.BaseDirectory, "Content");
@@ -57,7 +63,18 @@ sealed class PreviewGame : Game
             case 1: _ui.BuildSettingsScreen(); break;
             case 2: _ui.BuildRulesScreen(1); break;
             case 3: _ui.BuildLevelSelect(); break;
-            case 4: _ui.BuildDuelDraft(); break;
+            case 4:
+                var selected = new HashSet<SkillType> { SkillType.Xue,SkillType.Shi };
+                var progress = new CampaignProgress { UnlockedSkills = SkillFactory.SelectableSkills.Where(skill => skill!=SkillType.Shen).ToHashSet() };
+                var node = new CampaignNode { Name="PALACE / 01",SkillBudget=8 };
+                var loadout = new UICampaignSkillWheel(0,GraphicsDevice,_resources.Pixel,_resources.Font,
+                    _resources.TitleFont,node,progress,selected,SkillFactory.SelectableSkills,null,_resources.CaptionFont,_resources.LabelFont);
+                _ui.GetControls().Add(loadout);
+                _loadout = loadout;
+                _loadoutSelected = selected;
+                loadout.GridBrowser.FocusSkill(SkillType.DoubleAttack);
+                VerifySkillGrid(loadout,selected);
+                break;
             case 8:
                 _ui.GetControls().Add(new UIPanel(0, _resources.Pixel));
                 int row = 0;
@@ -107,6 +124,59 @@ sealed class PreviewGame : Game
         }
     }
 
+    private void VerifySkillGrid(UICampaignSkillWheel wrapper,HashSet<SkillType> selected)
+    {
+        var grid = wrapper.GridBrowser;
+        MouseState State(Point p,ButtonState button) => new(p.X,p.Y,0,button,ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
+        void Click(Rectangle bounds)
+        {
+            wrapper.Update(State(bounds.Center,ButtonState.Released));
+            wrapper.Update(State(bounds.Center,ButtonState.Pressed));
+            wrapper.Update(State(bounds.Center,ButtonState.Released));
+        }
+        void NoToggle(string message) { if (wrapper.TryConsumeToggle(out _)) throw new Exception(message); }
+        wrapper.Update(State(new Point(0,0),ButtonState.Released));
+        Click(grid.Layout.Tile(1));
+        if (wrapper.FocusedSkill!=SkillType.DoubleAttack) throw new Exception("Skill tile did not focus.");
+        NoToggle("Browsing equipped a skill without confirmation.");
+        Click(grid.Layout.Action);
+        if (!wrapper.TryConsumeToggle(out var skill) || skill!=SkillType.DoubleAttack) throw new Exception("Equip action failed.");
+        selected.Add(skill);
+        NoToggle("Equip action was delivered twice.");
+        Click(grid.Layout.Action);
+        if (!wrapper.TryConsumeToggle(out skill) || skill!=SkillType.DoubleAttack) throw new Exception("Selected skill could not be removed.");
+        selected.Remove(skill);
+        grid.FocusSkill(SkillType.Long); Click(grid.Layout.Action); NoToggle("Over-budget skill was equipped.");
+        grid.FocusSkill(SkillType.Shen); Click(grid.Layout.Action); NoToggle("Locked skill was equipped.");
+        selected.Clear(); selected.Add(SkillType.DoubleHealth);
+        grid.FocusSkill(SkillType.TripleHealth); Click(grid.Layout.Action); NoToggle("Conflicting skill was equipped.");
+        selected.Clear(); selected.Add(SkillType.Xue); selected.Add(SkillType.Shi);
+        var chip = grid.EquippedBounds.First(); Click(chip.Bounds);
+        if (!wrapper.TryConsumeToggle(out skill) || skill!=chip.Skill) throw new Exception("Equipped chip removal failed.");
+        wrapper.StartActionEnabled=false; Click(grid.Layout.Start);
+        if (wrapper.ConsumeStartRequest()) throw new Exception("Disabled start fired.");
+        wrapper.StartActionEnabled=true; Click(grid.Layout.Start);
+        if (!wrapper.ConsumeStartRequest() || wrapper.ConsumeStartRequest()) throw new Exception("Start should fire once.");
+        Click(grid.Layout.Tab(1));
+        if (grid.Category!=SkillCategory.Offense) throw new Exception("Category click failed.");
+        Click(grid.Layout.Tab(0)); Click(grid.Layout.Next);
+        if (grid.CurrentPage!=1) throw new Exception("Second skill page is unreachable.");
+        grid.ChangePage(-1); grid.FocusSkill(SkillType.DoubleAttack);
+        wrapper.SelectionEnabled=false; Click(grid.Layout.Action); NoToggle("Locked selection accepted input.");
+        wrapper.SelectionEnabled=true;
+        wrapper.InputBlocked=true; Click(grid.Layout.Action); NoToggle("Blocked overlay accepted input.");
+        wrapper.InputBlocked=false;
+        wrapper.StartActionTogglesSelection=true; Click(grid.Layout.Start);
+        if (!wrapper.TryConsumeToggle(out skill) || skill!=SkillType.DoubleAttack || wrapper.ConsumeStartRequest())
+            throw new Exception("Duel ban action lost its selection semantics.");
+        wrapper.StartActionTogglesSelection=false;
+        // Cancel a drag between different tiles.
+        wrapper.Update(State(grid.Layout.Tile(0).Center,ButtonState.Pressed));
+        wrapper.Update(State(grid.Layout.Tile(2).Center,ButtonState.Released));
+        if (grid.FocusedSkill!=SkillType.DoubleAttack) throw new Exception("Dragging activated another tile.");
+        Console.WriteLine("Verified grid browsing, equip/remove, restrictions, paging and draft compatibility.");
+    }
+
     private void VerifyNumberInput(UIPlayer player)
     {
         Rectangle original = player.Number0Bounds;
@@ -149,11 +219,40 @@ sealed class PreviewGame : Game
         {
             string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen" }[_screen];
             Save(name);
+            if (_screen==4) SaveSkillVariants(time);
             if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
             _screen++;
-            if (_screen > 8) Exit(); else Build();
+            if (_skillsOnly || _screen > 8) Exit(); else Build();
         }
         base.Draw(time);
+    }
+
+    private void SaveSkillVariants(GameTime time)
+    {
+        var grid = _loadout.GridBrowser;
+        void Render(string name) { _ui.Draw(time); Save(name); }
+        grid.ChangePage(1); Render("loadout-page-2");
+        grid.SetCategory(SkillCategory.Offense); Render("loadout-offense");
+        grid.SetCategory(SkillCategory.All); grid.FocusSkill(SkillType.DoubleAttack);
+        _loadoutSelected.Add(SkillType.DoubleAttack); Render("loadout-equipped");
+        _loadoutSelected.Remove(SkillType.DoubleAttack);
+        _loadout.SelectionEnabled=false; _loadout.StartActionEnabled=false; _loadout.StartActionText="WAIT";
+        Render("loadout-ready");
+        _loadout.SelectionEnabled=true; _loadout.StartActionEnabled=true; _loadout.StartActionText="START BATTLE";
+        _loadoutSelected.Clear();
+        _loadout.UseUnifiedActionButton=true; _loadout.StartActionTogglesSelection=true;
+        _loadout.ShowSkillPoints=false; _loadout.HeaderText="BAN"; _loadout.StartActionText="BAN";
+        _loadout.AvailabilityOverride=_=>CampaignSkillAvailability.Available;
+        Render("loadout-ban");
+        _loadout.AvailabilityOverride=skill=>skill==SkillType.DoubleAttack ? CampaignSkillAvailability.Selected : CampaignSkillAvailability.Locked;
+        _loadout.SelectionEnabled=false; _loadout.StartActionEnabled=false; _loadout.StartActionText="WAIT";
+        _loadout.SelectedActionText="BANNED"; _loadout.StartActionTogglesSelection=false;
+        Render("loadout-ban-wait");
+        _loadout.SelectionEnabled=true; _loadout.StartActionEnabled=true; _loadout.SelectedActionText="REMOVE SKILL";
+        _loadout.UseUnifiedActionButton=false; _loadout.StartActionTogglesSelection=false;
+        _loadout.ShowSkillPoints=true; _loadout.HeaderText="PALACE / 01"; _loadout.StartActionText="START BATTLE";
+        _loadout.AvailabilityOverride=null;
+        _loadoutSelected.Add(SkillType.Xue); _loadoutSelected.Add(SkillType.Shi);
     }
 
     private void VerifyRenderedMotion(GameTime time, string name)
