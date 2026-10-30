@@ -16,12 +16,20 @@ namespace Fida.States
             BindButton("back", _stateMachine.CloseRules);
             BindButton("prevPage", () => ChangePage(-1));
             BindButton("nextPage", () => ChangePage(1));
+            for (int i = 0; i < UIReferenceSurface.Chapters.Length; i++)
+            {
+                int page = i;
+                BindButton($"rulesPage{i}", () => SelectPage(page));
+            }
         }
 
         private void ChangePage(int offset)
+            => SelectPage(_stateMachine.RulesPage + offset);
+
+        private void SelectPage(int page)
         {
             UnbindAll();
-            _stateMachine.SetRulesPage(_stateMachine.RulesPage + offset);
+            _stateMachine.SetRulesPage(page);
             BindControls();
         }
     }

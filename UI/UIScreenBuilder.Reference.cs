@@ -1,0 +1,76 @@
+using System;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace Fida.UI;
+
+public partial class UIScreenBuilder
+{
+    private void BuildReferenceRules(int page)
+    {
+        var layout = new UIReferenceLayout(_resourceManager.GraphicsDevice.Viewport);
+        _uiControls.Add(new UIReferenceSurface(_resourceManager, UIReferenceScreen.Rules, page) { Name = "rules_content" });
+        EditorialBack("back");
+        for (int i = 0; i < UIReferenceSurface.Chapters.Length; i++)
+        {
+            var button = EditorialButton($"rulesPage{i}", UIReferenceSurface.Chapters[i], layout.Chapter(i), active: i == page, left: true);
+            button.Navigation = true;
+            button.TextLineHeight = 38;
+        }
+        _uiControls.Add(new UIIconButton(91, layout.Previous, UIIconButton.IconKind.PreviousPage, _resourceManager.Pixel, _resourceManager.Font)
+        { Name = "prevPage", FocusIndex = 7 });
+        _uiControls.Add(new UIIconButton(92, layout.Next, UIIconButton.IconKind.NextPage, _resourceManager.Pixel, _resourceManager.Font)
+        { Name = "nextPage", FocusIndex = 8 });
+        EditorialFocus();
+    }
+
+    private void BuildReferenceOnline(bool connected)
+    {
+        var layout = new UIReferenceLayout(_resourceManager.GraphicsDevice.Viewport);
+        _uiControls.Add(new UIReferenceSurface(_resourceManager, connected ? UIReferenceScreen.Connection : UIReferenceScreen.Online) { Name = "online_art" });
+        EditorialBack("backToMain");
+        if (connected)
+            EditorialButton("disconnect", "Disconnect", layout.SessionAction);
+        else
+        {
+            EditorialButton("hostGame", "Create room", layout.HostAction, primary: true);
+            var input = new UIRoomCodeInput(95, layout.Code, "Room code", _resourceManager.Pixel, _resourceManager.Font)
+            { Name = "roomCodeInput", MinimalStyle = true };
+            _uiControls.Add(input);
+            var join = EditorialButton("joinGame", "Join room", layout.JoinAction, primary: true);
+            join.Outlined = true;
+            join.Disable();
+            join.EnabledChecker = () => input.Value.Length == UIRoomCodeInput.MaxLen;
+        }
+        EditorialFocus();
+    }
+
+    private void BuildReferenceWaiting(bool hosting, string statusText, string roomCode = "")
+    {
+        var layout = new UIReferenceLayout(_resourceManager.GraphicsDevice.Viewport);
+        var l = layout.Canvas;
+        bool p = layout.Portrait;
+        _uiControls.Add(new UIReferenceSurface(_resourceManager, hosting ? UIReferenceScreen.Hosting : UIReferenceScreen.Connecting) { Name = "connection_art" });
+        string[] lines = (statusText ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        if (hosting)
+            ReferenceLabel("roomCodeLabel", string.IsNullOrEmpty(roomCode) ? "----" : roomCode,
+                p ? l.Rect(80, 430, 740, 150) : l.Rect(600, 400, 720, 150), _resourceManager.TitleFont);
+        ReferenceLabel("statusLabel", lines.Length > 0 ? hosting ? lines[0] : statusText : hosting ? "Waiting for opponent" : "Connecting...",
+            p ? l.Rect(80, 690, 740, 160) : l.Rect(400, 620, 1120, 140), _resourceManager.Font, UITextRole.Body, wrap: true);
+        ReferenceLabel("addressLabel", lines.Length > 1 ? string.Join("  ", lines[1..]) : "",
+            p ? l.Rect(80, 900, 740, 150) : l.Rect(400, 790, 1120, 70), _resourceManager.CaptionFont, UITextRole.Caption);
+        EditorialButton(hosting ? "cancelHost" : "cancelConnect", "Cancel", layout.SessionAction);
+        EditorialFocus();
+    }
+
+    private void ReferenceLabel(string name, string text, Rectangle bounds, SpriteFont font, UITextRole? role = null, bool wrap = false)
+    {
+        UILabel label = wrap ? new UIParagraphLabel(_uiControls.Count + 100, text, bounds, font)
+            : new UILabel(_uiControls.Count + 100, text, bounds.Center.ToVector2(), font);
+        label.Name = name;
+        label.MaximumWidth = bounds.Width;
+        label.MaximumHeight = bounds.Height;
+        label.TypographyRole = role;
+        _uiControls.Add(label);
+    }
+}

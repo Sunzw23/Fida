@@ -8,11 +8,13 @@ namespace Fida.States
     /// </summary>
     public class OnlineMenuState : StateBase
     {
+        private bool _submitRequested;
         public OnlineMenuState(UI.UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
             : base(uiManager, networkManager, stateMachine) { }
 
         public override void OnEnter()
         {
+            _submitRequested = false;
             if (_networkManager.IsConnected)
             {
                 BindButton("backToMain", () => _stateMachine.SwitchToState(State.MainMenu));
@@ -30,25 +32,46 @@ namespace Fida.States
                 _stateMachine.SwitchToState(State.Hosting);
             });
 
-            BindButton("joinGame", () =>
-            {
-                bool isRelay = _networkManager.GetServerIsRelay();
-                string roomCode = null;
-
-                if (isRelay)
-                {
-                    roomCode = _uiManager.GetTextBoxByName("roomCodeInput")?.Value
-                        ?.Trim().ToUpperInvariant();
-                    if (string.IsNullOrEmpty(roomCode) || roomCode.Length != 4)
-                        return; // 房间码未输入/不全，停留原地
-                }
-
-                _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), isRelay, roomCode);
-                _stateMachine.SwitchToState(State.Connecting);
-            });
+            bool isRelay = _networkManager.GetServerIsRelay();
+            var input = _uiManager.GetTextBoxByName("roomCodeInput");
+            if (input != null) input.IsVisible = isRelay;
+            var art = _uiManager.GetControlByName<UI.UIReferenceSurface>("online_art");
+            if (art != null) art.RoomCodeRequired = isRelay;
+            var join = _uiManager.GetButtonByName("joinGame");
+            if (join != null) join.EnabledChecker = () => !isRelay || input?.Value.Length == 4;
+            BindButton("joinGame", JoinGame);
+            // Defer keyboard submission until state input handling, so the UI control
+            // list is not rebuilt while its Update loop is enumerating it.
+            BindTextBox("roomCodeInput", _ => _submitRequested = true);
 
             BindButton("backToMain", () =>
                 _stateMachine.SwitchToState(State.MainMenu));
+        }
+
+        private void JoinGame()
+        {
+            bool isRelay = _networkManager.GetServerIsRelay();
+            string roomCode = null;
+
+            if (isRelay)
+            {
+                roomCode = _uiManager.GetTextBoxByName("roomCodeInput")?.Value
+                    ?.Trim().ToUpperInvariant();
+                if (string.IsNullOrEmpty(roomCode) || roomCode.Length != 4)
+                    return; // 房间码未输入/不全，停留原地
+            }
+
+            _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), isRelay, roomCode);
+            _stateMachine.SwitchToState(State.Connecting);
+        }
+
+        public override void HandleInput(GameTime gameTime)
+        {
+            base.HandleInput(gameTime);
+            if (!_submitRequested) return;
+            _submitRequested = false;
+            if (_stateMachine.CurrentState != State.OnlineMenu) return;
+            JoinGame();
         }
     }
 }

@@ -51,3 +51,24 @@ Screenshots include the normal and connected menus, settings, campaign chapters,
 a real chapter route, and lobby before/after local readiness. This checks actual
 MonoGame rendering rather than reproducing the concept art. Android packaging
 and shared code compile checks do not replace physical touch/device testing.
+
+## Rules and online reference screens
+
+Rules uses the same header/back geometry as Settings, with five directly
+selectable chapters. Instructions and ordinary-size numeric examples are text
+rows; there is no display-size numeric artwork. Skill pages use the canonical
+skill names and the same descriptions as the loadout details. Portrait windows
+place navigation above the reference and show skills in a single column.
+
+Online separates Create room and Join room. A four-cell code field retains the
+existing letters/digits keyboard handling, length limit and Android keyboard.
+Join is unavailable until a complete relay code is entered. Enter queues a join
+intent for state input handling, avoiding a screen rebuild inside control Update.
+Direct-server sessions hide the relay-code input and can join without a code.
+Connected, hosting and connecting screens share the header and actions; status
+updates preserve the existing named-label interfaces. Connection messages wrap.
+
+Use `--reference-only` in UiPreview to render every Rules page plus online,
+connected, hosting and connecting screens. It exercises incomplete/complete code
+entry, length limiting, deletion, Enter submission and Join activation using the
+actual controls, without opening network connections or changing user saves.

@@ -35,13 +35,8 @@ namespace Fida.States
             if (code != _lastShownCode)
             {
                 _lastShownCode = code;
-#if FIDA_ANDROID
                 _uiManager.GetLabelByName("roomCodeLabel")?.Update(
-                    code.Length == 4 ? $"ROOM: {code}" : "ROOM: GENERATING...");
-#else
-                _uiManager.GetLabelByName("roomCodeLabel")?.Update(
-                    code.Length == 4 ? code : "····");
-#endif
+                    code.Length == 4 ? code : "----");
             }
 
             if (_networkManager.StatusText != _lastShownStatus)

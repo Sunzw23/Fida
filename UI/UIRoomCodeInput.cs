@@ -42,6 +42,7 @@ namespace Fida.UI
 
         /// <summary>是否聚焦（点击框内）</summary>
         public bool IsInputActive => _focused;
+        public bool MinimalStyle { get; set; }
 
         /// <summary>Enter 提交时触发（参数为当前值）</summary>
         public event Action<string> Submitted;
@@ -65,6 +66,7 @@ namespace Fida.UI
         /// <summary>点击框内聚焦，点击框外失焦</summary>
         public override void Update(MouseState mouseState)
         {
+            if (!IsVisible) return;
             if (mouseState.LeftButton == ButtonState.Pressed)
             {
                 var pos = new Point(mouseState.X, mouseState.Y);
@@ -84,6 +86,7 @@ namespace Fida.UI
         /// <summary>聚焦时读取键盘：字母/数字输入、Backspace、Enter 提交、Esc 失焦</summary>
         public override void Update(GameTime gameTime)
         {
+            if (!IsVisible) return;
 #if FIDA_ANDROID
             if (_pendingMobileValue != null)
             {
@@ -96,7 +99,15 @@ namespace Fida.UI
             }
             return;
 #else
-            var pressed = Keyboard.GetState().GetPressedKeys();
+            UpdateKeyboard(Keyboard.GetState());
+#endif
+        }
+
+        /// <summary>Processes keyboard edges separately from polling, also used by the local UI verifier.</summary>
+        public void UpdateKeyboard(KeyboardState keyboard)
+        {
+            if (!IsVisible) return;
+            var pressed = keyboard.GetPressedKeys();
 
             if (!_focused)
             {
@@ -140,7 +151,6 @@ namespace Fida.UI
                 }
             }
             _lastKeys = new HashSet<Keys>(pressed);
-#endif
         }
 
 #if FIDA_ANDROID
@@ -167,6 +177,7 @@ namespace Fida.UI
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
             if (!IsVisible) return;
+            if (MinimalStyle) { DrawMinimal(sb, gameTime); return; }
 
             Color accent = _focused ? UITheme.AccentGreen : UITheme.Gold;
             sb.Draw(_pixel, _bounds, UITheme.PanelLight);
@@ -228,6 +239,25 @@ namespace Fida.UI
             }
 
             UIUtils.DrawRectangleOutlines(sb, _bounds, _focused ? accent : UITheme.Ink, 1, _pixel);
+        }
+
+        private void DrawMinimal(SpriteBatch sb, GameTime time)
+        {
+            int gap = Math.Max(10, _bounds.Width / 30), width = (_bounds.Width - gap * 3) / MaxLen;
+            for (int i = 0; i < MaxLen; i++)
+            {
+                var cell = new Rectangle(_bounds.Left + i * (width + gap), _bounds.Top, width, _bounds.Height);
+                bool active = _focused && i == Math.Min(_value.Length, MaxLen - 1);
+                sb.Draw(_pixel, cell, UITheme.Panel);
+                UIUtils.DrawRectangleOutlines(sb, cell, active ? UITheme.AccentBlue : UITheme.Line, active ? 2 : 1, _pixel);
+                string text = i < _value.Length ? _value[i].ToString() : "-";
+                Vector2 size = _font.MeasureString(text);
+                float scale = UITextRenderer.FitScale(size, cell.Width - 18, cell.Height - 20,
+                    new UIEditorialLayout(sb.GraphicsDevice.Viewport).Scale * 70 / _font.LineSpacing);
+                UITextRenderer.DrawString(sb, _font, text,
+                    cell.Center.ToVector2() - size * scale / 2, i < _value.Length ? UITheme.Ink : UITheme.InkMuted,
+                    0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            }
         }
     }
 }

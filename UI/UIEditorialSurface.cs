@@ -36,7 +36,7 @@ public sealed class UIEditorialSurface : UIControl
             return;
         }
         Text(batch, l, _screen == UIEditorialScreen.Settings ? "Settings" : "Lobby",
-            l.Rect(p ? 150 : 175, 60, 600, 80), 65);
+            l.Header, 65);
         if (_screen == UIEditorialScreen.Settings)
         {
             if (!p)

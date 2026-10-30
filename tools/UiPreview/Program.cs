@@ -11,7 +11,7 @@ int width = args.Length > 0 ? int.Parse(args[0]) : 1600;
 int height = args.Length > 1 ? int.Parse(args[1]) : 1000;
 string destination = Path.GetFullPath(args.Length > 2 ? args[2] : "artifacts/cold-ui");
 Directory.CreateDirectory(destination);
-using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"));
+using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"), args.Contains("--reference-only"));
 preview.Run();
 
 sealed class PreviewGame : Game
@@ -26,15 +26,18 @@ sealed class PreviewGame : Game
     private GameManager _battle;
     private readonly bool _skillsOnly;
     private readonly bool _menusOnly;
+    private readonly bool _referenceOnly;
     private UICampaignSkillWheel _loadout;
     private HashSet<SkillType> _loadoutSelected;
 
-    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly)
+    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly, bool referenceOnly)
     {
         _width = width; _height = height; _destination = destination;
         _skillsOnly = skillsOnly;
         _menusOnly = menusOnly;
+        _referenceOnly = referenceOnly;
         if (skillsOnly) _screen = 4;
+        if (referenceOnly) _screen = 2;
         _graphics = new GraphicsDeviceManager(this)
         { PreferredBackBufferWidth = width, PreferredBackBufferHeight = height, GraphicsProfile = GraphicsProfile.HiDef };
         Content.RootDirectory = Path.Combine(AppContext.BaseDirectory, "Content");
@@ -79,6 +82,10 @@ sealed class PreviewGame : Game
                 break;
             case 9: _ui.BuildOnlineLobby(true); break;
             case 10: _ui.BuildMainMenu(true); break;
+            case 11: _ui.BuildOnlineMenu(); VerifyRoomCodeInput(); break;
+            case 12: _ui.BuildOnlineMenu(true); break;
+            case 13: _ui.BuildHostingScreen("Waiting for opponent", "A7K2"); break;
+            case 14: _ui.BuildConnectingScreen("Connecting to session..."); break;
             case 8:
                 _ui.GetControls().Add(new UIPanel(0, _resources.Pixel));
                 int row = 0;
@@ -221,8 +228,19 @@ sealed class PreviewGame : Game
         _ui.Draw(time);
         if (_frame >= 30 && time.TotalGameTime.TotalSeconds - _firstDraw >= 0.7)
         {
-            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected" }[_screen];
+            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting" }[_screen];
             Save(name);
+            if (_screen == 2)
+            {
+                for (int page = 0; page < UIManager.RulesPageCount; page++)
+                {
+                    _ui.BuildRulesScreen(page);
+                    _ui.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
+                    _ui.Draw(time);
+                    _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero));
+                    Save($"rules-{page + 1}");
+                }
+            }
             if (_screen == 3)
             {
                 var map = (UICampaignMap)_ui.GetControls().Single(c => c.Name == "campaign_map");
@@ -241,14 +259,52 @@ sealed class PreviewGame : Game
             }
             if (_screen==4) SaveSkillVariants(time);
             if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
-            _screen = _menusOnly ? _screen switch { 0 => 1, 1 => 3, 3 => 9, 9 => 10, _ => 11 } : _screen + 1;
-            if (_skillsOnly || _screen > 10) Exit(); else Build();
+            _screen = _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 15 }
+                : _menusOnly ? _screen switch { 0 => 1, 1 => 2, 2 => 3, 3 => 9, _ => _screen + 1 } : _screen + 1;
+            if (_skillsOnly || _screen > 14) Exit(); else Build();
         }
         base.Draw(time);
     }
 
     private static MouseState MapMouse(Point p, ButtonState button) => new(p.X,p.Y,0,button,
         ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
+    private void VerifyRoomCodeInput()
+    {
+        var input = _ui.GetTextBoxByName("roomCodeInput");
+        var join = _ui.GetButtonByName("joinGame");
+        var layout = new UIReferenceLayout(_width,_height);
+        int clicked = 0, submitted = 0;
+        void Clicked(UIButton _) => clicked++;
+        void Submitted(string value) { if (value != "AB34") throw new Exception("Wrong submitted room code."); submitted++; }
+        join.Clicked += Clicked; input.Submitted += Submitted;
+        void ClickJoin()
+        {
+            join.Update(MapMouse(layout.JoinAction.Center,ButtonState.Released));
+            join.Update(MapMouse(layout.JoinAction.Center,ButtonState.Pressed)); join.IsClicked();
+            join.Update(MapMouse(layout.JoinAction.Center,ButtonState.Released)); join.IsClicked();
+        }
+        void Key(Keys key) { input.UpdateKeyboard(new KeyboardState(key)); input.UpdateKeyboard(new KeyboardState()); }
+        ClickJoin();
+        if (clicked != 0) throw new Exception("Incomplete code joined a room.");
+        input.Update(MapMouse(layout.Code.Center,ButtonState.Pressed));
+        Key(Keys.A); Key(Keys.B); Key(Keys.D3); Key(Keys.Enter);
+        if (submitted != 0) throw new Exception("Partial code was submitted.");
+        ClickJoin();
+        if (clicked != 0) throw new Exception("Partial code enabled Join.");
+        input.Update(MapMouse(layout.Code.Center,ButtonState.Pressed));
+        Key(Keys.D4); Key(Keys.D5);
+        if(input.Value != "AB34") throw new Exception("Code length or normalization failed.");
+        Key(Keys.Enter);
+        ClickJoin();
+        if(clicked != 1 || submitted != 1) throw new Exception("Valid code did not dispatch exactly once.");
+        input.Update(MapMouse(layout.Code.Center,ButtonState.Pressed));
+        Key(Keys.Back); ClickJoin();
+        if(clicked != 1) throw new Exception("Deleting a code character did not disable Join.");
+        input.Clear(); input.UpdateKeyboard(new KeyboardState());
+        join.Update(MapMouse(Point.Zero,ButtonState.Released));
+        join.Clicked -= Clicked; input.Submitted -= Submitted;
+        Console.WriteLine("Verified room-code entry, length limit, Enter submission and Join gating.");
+    }
     private static void ClickMap(UICampaignMap map, Point p)
     {
         map.Update(MapMouse(p,ButtonState.Released));
