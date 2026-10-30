@@ -12,7 +12,7 @@ namespace Fida.UI.Campaign
     /// Interactive campaign browser. It owns rendering, hit testing and camera navigation,
     /// while campaign rules and node data remain in the Campaign module.
     /// </summary>
-    public sealed class UICampaignMap : UIControl
+    public sealed partial class UICampaignMap : UIControl
     {
         private double _routeAge;
         private readonly GraphicsDevice _graphicsDevice;
@@ -40,7 +40,6 @@ namespace Fida.UI.Campaign
         private int _selectedIndex;
         private string _pendingNodeId = "";
         private bool _backRequested;
-        private bool _desktopDetailsOpen;
 #if FIDA_ANDROID
         private readonly List<int> _mobileChoices = new();
         private readonly List<Rectangle> _mobileChoiceBounds = new();
@@ -135,8 +134,7 @@ namespace Fida.UI.Campaign
             if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space)) ConfirmSelection();
             if (Pressed(keyboard, Keys.Escape))
             {
-                if (_desktopDetailsOpen) _desktopDetailsOpen = false;
-                else GoBack();
+                GoBack();
             }
             if (Pressed(keyboard, Keys.Home) || Pressed(keyboard, Keys.R)) FitAll();
             if (Pressed(keyboard, Keys.OemPlus) || Pressed(keyboard, Keys.Add) || Pressed(keyboard, Keys.E)) ZoomIn();
@@ -151,8 +149,7 @@ namespace Fida.UI.Campaign
                 if (Pressed(gamePad, Buttons.A)) ConfirmSelection();
                 if (Pressed(gamePad, Buttons.B) || Pressed(gamePad, Buttons.Back))
                 {
-                    if (_desktopDetailsOpen) _desktopDetailsOpen = false;
-                    else GoBack();
+                    GoBack();
                 }
                 if (Pressed(gamePad, Buttons.Y)) FitAll();
                 if (Pressed(gamePad, Buttons.RightShoulder)) ZoomIn();
@@ -189,14 +186,12 @@ namespace Fida.UI.Campaign
             }
 
             Point position = new(mouse.X, mouse.Y);
-            if (!_desktopDetailsOpen && _camera.Viewport.Contains(position))
+            if (_camera.Viewport.Contains(position))
             {
                 int wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
                 if (wheelDelta != 0)
                     _camera.ZoomAt((float)Math.Pow(1.15, wheelDelta / 120f), position.ToVector2());
 
-                int hoveredNode = HitNode(position);
-                if (hoveredNode >= 0) _selectedIndex = hoveredNode;
                 int hoveredFolder = HitFolder(position);
                 if (hoveredFolder >= 0) _selectedFolder = hoveredFolder;
             }
@@ -242,8 +237,7 @@ namespace Fida.UI.Campaign
             EnsureViewport();
             Rectangle viewport = _camera.Viewport;
 
-            spriteBatch.Draw(_pixel, viewport, UITheme.Panel);
-            UIUtils.DrawRectangleOutlines(spriteBatch, viewport, UITheme.Line, 1, _pixel);
+            spriteBatch.Draw(_pixel, viewport, UITheme.BgTop);
 
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
@@ -253,8 +247,7 @@ namespace Fida.UI.Campaign
             }
             DrawRemotePresence(spriteBatch, viewport);
             DrawFooter(spriteBatch);
-            if (_desktopDetailsOpen && _selectedIndex >= 0)
-                DrawDesktopMissionModal(spriteBatch, _nodes[_selectedIndex]);
+            DrawEditorialDetails(spriteBatch);
 #endif
         }
 
@@ -344,11 +337,7 @@ namespace Fida.UI.Campaign
             DrawRemotePresence(spriteBatch, panel);
 
             spriteBatch.Draw(_pixel, panel, UITheme.Panel);
-            UIUtils.DrawGlowFrame(spriteBatch, panel, _pixel, UITheme.Gold, 2, 0.72f);
-            UIUtils.DrawRectangleOutlines(spriteBatch,
-                new Rectangle(panel.X + 8, panel.Y + 8, panel.Width - 16, panel.Height - 16),
-                UITheme.AccentBlue * 0.52f, 1, _pixel);
-            DrawMobileStructure(spriteBatch, panel);
+            UIUtils.DrawRectangleOutlines(spriteBatch, panel, UITheme.Line, 1, _pixel);
 
             int completed = _progress.CompletedNodes.Count;
             DrawCentered(spriteBatch, _font, "ROUTES",
@@ -384,19 +373,10 @@ namespace Fida.UI.Campaign
                 Color foreground = completedNode ? UITheme.InkMuted : UITheme.Ink;
 
                 spriteBatch.Draw(_pixel, bounds, background);
-                if (selected)
-                {
-                    float pulse = 0.72f + 0.22f * (float)Math.Sin(
-                        gameTime.TotalGameTime.TotalSeconds * 5.5);
-                    UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, accent, 3, pulse);
-                }
                 UIUtils.DrawRectangleOutlines(spriteBatch, bounds, border,
                     selected ? 3 : 1, _pixel);
                 spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 6,
                     bounds.Height), accent);
-                int chipWidth = Math.Max(24, bounds.Width / 9);
-                spriteBatch.Draw(_pixel, new Rectangle(bounds.Right - chipWidth,
-                    bounds.Top, chipWidth, 3), UITheme.AccentGreen * 0.85f);
                 DrawCentered(spriteBatch, _font,
                     $"{node.Id}  {node.Name}",
                     new Vector2(bounds.Center.X - 8, bounds.Center.Y),
@@ -486,16 +466,7 @@ namespace Fida.UI.Campaign
                 Color.Black * 0.72f);
             Rectangle modal = _mobileModalBounds;
             spriteBatch.Draw(_pixel, modal, UITheme.PanelDark);
-            UIUtils.DrawGlowFrame(spriteBatch, modal, _pixel,
-                UITheme.Gold, 3, 0.78f);
-            UIUtils.DrawRectangleOutlines(spriteBatch,
-                new Rectangle(modal.Left + 8, modal.Top + 8, modal.Width - 16, modal.Height - 16),
-                UITheme.AccentBlue * 0.62f, 1, _pixel);
-            spriteBatch.Draw(_pixel, new Rectangle(modal.Left, modal.Top,
-                Math.Max(48, modal.Width / 3), 4), UITheme.AccentViolet);
-            spriteBatch.Draw(_pixel, new Rectangle(modal.Right - Math.Max(48, modal.Width / 3),
-                modal.Bottom - 4, Math.Max(48, modal.Width / 3), 4),
-                UITheme.AccentGreen);
+            UIUtils.DrawRectangleOutlines(spriteBatch, modal, UITheme.Line, 1, _pixel);
             DrawCloseIcon(spriteBatch, _mobileModalCloseBounds);
 
             DrawCentered(spriteBatch, _titleFont, $"{node.Id}  {node.Name}",
@@ -511,7 +482,7 @@ namespace Fida.UI.Campaign
 
             bool enabled = CampaignCatalog.IsUnlocked(_progress, node);
             DrawMobileButton(spriteBatch, _mobileModalEnterBounds,
-                enabled ? "Enter Mission" : "Unavailable", enabled, UITheme.AccentGreen);
+                enabled ? "Configure skills" : "Locked", enabled, UITheme.AccentGreen);
             if (enabled)
                 DrawChevron(spriteBatch,
                     new Vector2(_mobileModalEnterBounds.Right - 28,
@@ -698,8 +669,8 @@ namespace Fida.UI.Campaign
                     bool active = _progress.IsCompleted(parentId) || _progress.IsCompleted(node.Id);
                     Vector2 animatedEnd = Vector2.Lerp(start, end, UIMotion.Reveal(_routeAge - Math.Min(index, 20) * 0.035, 0.6f));
                     DrawLine(spriteBatch, start, animatedEnd,
-                        active ? UITheme.Gold : UITheme.InkMuted * 0.58f,
-                        active ? 3 : 2);
+                        active ? UITheme.Ink : UITheme.Line,
+                        1);
                 }
             }
         }
@@ -713,40 +684,20 @@ namespace Fida.UI.Campaign
             bool unlocked = CampaignCatalog.IsUnlocked(_progress, node);
             bool completed = _progress.IsCompleted(node.Id);
             bool selected = index == _selectedIndex;
-            if (selected && !UIMotion.Reduced)
-            {
-                Rectangle halo = bounds;
-                halo.Inflate(4, 4);
-                UIUtils.DrawRectangleOutlines(spriteBatch, halo,
-                    UITheme.AccentBlue * (0.25f + 0.3f * UIMotion.Pulse(_routeAge)), 2, _pixel);
-            }
-            Color background = completed
-                ? Color.Lerp(UITheme.PanelLight, UITheme.AccentGreen, 0.30f)
-                : unlocked ? UITheme.PanelLight : UITheme.PanelDark;
+            Color background = selected ? UITheme.PanelLight : UITheme.BgTop;
             Color foreground = unlocked ? UITheme.Ink : UITheme.InkMuted;
-
+            Color accent = selected ? UITheme.AccentBlue : UITheme.InkMuted;
             spriteBatch.Draw(_pixel, bounds, background);
-            Color accent = completed ? UITheme.AccentGreen :
-                unlocked ? UITheme.Gold : UITheme.AccentViolet;
-            if (selected)
-                UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, UITheme.GoldBright, 3, 0.72f);
             UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                selected ? UITheme.GoldBright : accent * (unlocked ? 0.82f : 0.52f),
-                selected ? 3 : 2, _pixel);
-
-            int signalWidth = Math.Max(18, bounds.Width / 5);
-            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top,
-                signalWidth, Math.Max(2, bounds.Height / 18)), accent);
-            spriteBatch.Draw(_pixel, new Rectangle(bounds.Right - signalWidth,
-                bounds.Bottom - Math.Max(2, bounds.Height / 18), signalWidth,
-                Math.Max(2, bounds.Height / 18)), accent * 0.72f);
+                selected ? UITheme.AccentBlue : UITheme.Line * (unlocked ? 1f : .55f),
+                selected ? 2 : 1, _pixel);
             DrawNodeStateMark(spriteBatch, bounds, completed, unlocked, accent);
 
-            string label = selected ? $"{node.Id}  {node.Name}" : node.Id;
+            string label = node.Id;
             DrawCentered(spriteBatch, _font, label,
                 new Vector2(bounds.Center.X - (selected ? 0f : 2f), bounds.Center.Y),
                 bounds.Width - (selected ? 44f : 70f),
-                MathHelper.Clamp((selected ? 0.42f : 0.48f) * _camera.Zoom, 0.30f, 0.64f),
+                MathHelper.Clamp(0.48f * _camera.Zoom, 0.40f, 0.64f),
                 foreground);
 
         }
@@ -831,6 +782,7 @@ namespace Fida.UI.Campaign
             }
             DrawBackIcon(spriteBatch, back);
 
+#if FIDA_ANDROID
             if (_folders.Count > 0 || _scope.Count > 0 || _selectedIndex >= 0)
             {
                 string detail = _folders.Count > 0
@@ -852,69 +804,10 @@ namespace Fida.UI.Campaign
                     viewport.Width - plus.Right - 80f, 0.40f, UITheme.Ink);
 #endif
             }
+#endif
         }
 
 #if !FIDA_ANDROID
-        private static Rectangle DesktopModalBounds(Viewport viewport)
-        {
-            int width = Math.Min(760, viewport.Width - 100);
-            int height = Math.Min(610, viewport.Height - 100);
-            return new Rectangle((viewport.Width - width) / 2, (viewport.Height - height) / 2,
-                width, height);
-        }
-
-        private static Rectangle DesktopModalClose(Rectangle modal) =>
-            new(modal.Right - 80, modal.Top + 16, 60, 60);
-
-        private static Rectangle DesktopModalEnter(Rectangle modal) =>
-            new(modal.Left + 44, modal.Bottom - 104, modal.Width - 88, 64);
-
-        private void DrawDesktopMissionModal(SpriteBatch spriteBatch, CampaignNode node)
-        {
-            const float titleScale = 0.54f;
-            const float metricScale = 0.66f;
-            const float captionScale = 0.42f;
-            const float buttonScale = 0.54f;
-            Viewport viewport = _graphicsDevice.Viewport;
-            spriteBatch.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black * 0.78f);
-            Rectangle modal = DesktopModalBounds(viewport);
-            spriteBatch.Draw(_pixel, modal, UITheme.PanelDark);
-            UIUtils.DrawRectangleOutlines(spriteBatch, modal, UITheme.Gold, 2, _pixel);
-            int left = modal.Left + Math.Clamp(modal.Width / 14, 32, 54);
-            int right = modal.Right - Math.Clamp(modal.Width / 14, 32, 54);
-            int width = Math.Max(1, right - left);
-            DrawLeft(spriteBatch, _titleFont, $"{node.Id}  {node.Name}",
-                new Vector2(left, modal.Top + modal.Height * 0.20f), width - 56,
-                titleScale, UITheme.Ink);
-
-            int ruleY = modal.Top + (int)(modal.Height * 0.34f);
-            spriteBatch.Draw(_pixel, new Rectangle(left, ruleY, width, 2), UITheme.Ink * 0.28f);
-            int secondColumn = left + width / 2;
-            DrawLeft(spriteBatch, _font, $"{node.SkillBudget} SP",
-                new Vector2(left, modal.Top + modal.Height * 0.47f), width / 2 - 20,
-                metricScale, UITheme.GoldBright);
-            DrawLeft(spriteBatch, _font, node.Enemies.Count.ToString(),
-                new Vector2(secondColumn, modal.Top + modal.Height * 0.47f), width / 2 - 20,
-                metricScale, UITheme.Ink);
-            DrawLeft(spriteBatch, _font, "ENEMIES",
-                new Vector2(secondColumn, modal.Top + modal.Height * 0.57f), width / 2 - 20,
-                captionScale, UITheme.InkMuted);
-
-            DrawLeft(spriteBatch, _font, $"REWARD  /  {node.RewardText}",
-                new Vector2(left, modal.Top + modal.Height * 0.69f), width,
-                0.53f, UITheme.AccentGreen);
-            Rectangle enter = DesktopModalEnter(modal);
-            bool unlocked = CampaignCatalog.IsUnlocked(_progress, node);
-            spriteBatch.Draw(_pixel, enter, unlocked ? UITheme.PanelLight : UITheme.Panel);
-            UIUtils.DrawRectangleOutlines(spriteBatch, enter,
-                unlocked ? UITheme.AccentGreen : UITheme.InkMuted, 2, _pixel);
-            DrawCentered(spriteBatch, _font, unlocked ? "SELECT SKILLS" : "LOCKED",
-                enter.Center.ToVector2(), enter.Width - 30, buttonScale,
-                unlocked ? UITheme.Ink : UITheme.InkMuted);
-            Rectangle close = DesktopModalClose(modal);
-            UIIconButton.DrawCloseButton(spriteBatch, _pixel, close);
-        }
-
         private void DrawLeft(SpriteBatch spriteBatch, SpriteFont font, string value,
             Vector2 leftCenter, float maximumWidth, float preferredScale, Color color)
         {
@@ -1011,8 +904,7 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
             if (CampaignCatalog.IsUnlocked(_progress, node)) _pendingNodeId = node.Id;
 #else
-            if (!_desktopDetailsOpen) _desktopDetailsOpen = true;
-            else if (CampaignCatalog.IsUnlocked(_progress, node)) _pendingNodeId = node.Id;
+            if (CampaignCatalog.IsUnlocked(_progress, node)) _pendingNodeId = node.Id;
 #endif
         }
 
@@ -1031,13 +923,7 @@ namespace Fida.UI.Campaign
         {
             var viewport = _graphicsDevice.Viewport;
 #if !FIDA_ANDROID
-            if (_desktopDetailsOpen)
-            {
-                Rectangle modal = DesktopModalBounds(viewport);
-                if (DesktopModalEnter(modal).Contains(point)) return "modal_enter";
-                if (DesktopModalClose(modal).Contains(point)) return "modal_close";
-                return "";
-            }
+            if (new CampaignMapLayout(viewport).Action.Contains(point)) return "enter";
 #endif
             if (_visibleNodes.Count > 0 && MinusButton(viewport).Contains(point)) return "zoom_out";
             if (_visibleNodes.Count > 0 && FitButton(viewport).Contains(point)) return "fit";
@@ -1052,8 +938,7 @@ namespace Fida.UI.Campaign
 
         private void ActivateTarget(string target)
         {
-            if (target == "modal_close") _desktopDetailsOpen = false;
-            else if (target == "modal_enter") ConfirmSelection();
+            if (target == "enter") ConfirmSelection();
             else if (target == "zoom_out") ZoomOut();
             else if (target == "fit") FitAll();
             else if (target == "zoom_in") ZoomIn();
@@ -1064,7 +949,6 @@ namespace Fida.UI.Campaign
                      int.TryParse(target.AsSpan(5), out int nodeIndex))
             {
                 _selectedIndex = nodeIndex;
-                ConfirmSelection();
             }
         }
 
@@ -1150,9 +1034,9 @@ namespace Fida.UI.Campaign
                 int cleared = descendants.Count(index => _progress.IsCompleted(_nodes[index].Id));
                 bool selected = i == _selectedFolder;
                 Color accent = UITheme.RouteAccent(i);
-                spriteBatch.Draw(_pixel, bounds, selected ? UITheme.PanelPressed : UITheme.PanelLight);
+                spriteBatch.Draw(_pixel, bounds, selected ? UITheme.PanelLight : UITheme.BgTop);
                 UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                    selected ? UITheme.GoldBright : UITheme.Line, selected ? 2 : 1, _pixel);
+                    selected ? UITheme.AccentBlue : UITheme.Line, selected ? 2 : 1, _pixel);
                 DrawCentered(spriteBatch, _titleFont, _folders[i],
                     new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.40f),
                     bounds.Width - 56, 0.54f, UITheme.Ink);
@@ -1228,9 +1112,13 @@ namespace Fida.UI.Campaign
 
         private Rectangle BackButton(Viewport viewport)
         {
+#if !FIDA_ANDROID
+            return new CampaignMapLayout(viewport).Back;
+#else
             Rectangle frame = _camera.Viewport;
             Rectangle icon = UIIconButton.StandardBounds(viewport);
             return new Rectangle(frame.Left + 24, frame.Top + 24, icon.Width, icon.Height);
+#endif
         }
 
 #if !FIDA_ANDROID

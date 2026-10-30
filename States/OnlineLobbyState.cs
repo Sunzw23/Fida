@@ -77,6 +77,18 @@ namespace Fida.States
 
         private void UpdateStatus()
         {
+            var art = _uiManager.GetControlByName<UIEditorialSurface>("lobby_art");
+            if (art != null)
+            {
+                art.LocalReady = _networkManager.LocalLobbyVote == 0;
+                art.RemoteReady = _networkManager.RemoteLobbyVote == 0;
+            }
+            var ready = _uiManager.GetControlByName<UIButton>("startPvP");
+            if (ready != null)
+            {
+                ready.Update(_networkManager.LocalLobbyVote == 0 ? "Waiting for opponent" : "Ready");
+                ready.EnabledChecker = () => _networkManager.LocalLobbyVote != 0;
+            }
             _uiManager.GetControlByName<UILabel>("lobbyStatus")?.Update(
                 Network.NetworkManager.GetLobbyVoteStatusText(
                     _networkManager.LocalLobbyVote, _networkManager.RemoteLobbyVote));

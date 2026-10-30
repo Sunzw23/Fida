@@ -10,6 +10,7 @@ public static class UIAngularNumber
 {
     private const int W = 64, H = 100, Samples = 3;
     private static readonly ConditionalWeakTable<GraphicsDevice, Texture2D> Atlases = new();
+    private static readonly ConditionalWeakTable<GraphicsDevice, Texture2D> DisplayAtlases = new();
     // The first polygon is the silhouette; further polygons cut out its counters.
     private static readonly int[][][] Glyphs =
     {
@@ -25,42 +26,46 @@ public static class UIAngularNumber
         new[] { new[] { 8,14,32,0,58,15,58,86,33,100,8,86,22,74,33,82,41,76,41,58,24,66,8,55 }, new[] { 25,24,33,19,41,24,41,44,32,49,25,44 } }
     };
 
-    public static bool Draw(SpriteBatch batch, string text, Rectangle bounds, Color color)
+    public static bool Draw(SpriteBatch batch, string text, Rectangle bounds, Color color, bool displaySize = false)
     {
         if (string.IsNullOrEmpty(text)) return false;
         foreach (char c in text) if (c < '0' || c > '9') return false;
-        Texture2D atlas = Atlases.GetValue(batch.GraphicsDevice, CreateAtlas);
+        int resolution = displaySize ? 6 : 1;
+        Texture2D atlas = displaySize
+            ? DisplayAtlases.GetValue(batch.GraphicsDevice, device => CreateAtlas(device, 6))
+            : Atlases.GetValue(batch.GraphicsDevice, device => CreateAtlas(device, 1));
         float scale = Math.Min(bounds.Height / (float)H, bounds.Width / (text.Length * 72f - 8));
         float x = bounds.Center.X - (text.Length * 72 - 8) * scale / 2;
         float y = bounds.Center.Y - H * scale / 2;
         foreach (char c in text)
         {
-            batch.Draw(atlas, new Vector2(x, y), new Rectangle((c - '0') * W, 0, W, H),
-                color, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            batch.Draw(atlas, new Vector2(x, y), new Rectangle((c - '0') * W * resolution, 0, W * resolution, H * resolution),
+                color, 0, Vector2.Zero, scale / resolution, SpriteEffects.None, 0);
             x += 72 * scale;
         }
         return true;
     }
 
-    private static Texture2D CreateAtlas(GraphicsDevice device)
+    private static Texture2D CreateAtlas(GraphicsDevice device, int resolution)
     {
-        var pixels = new Color[W * 10 * H];
+        int width = W * resolution, height = H * resolution, samples = resolution > 1 ? 2 : Samples;
+        var pixels = new Color[width * 10 * height];
         for (int digit = 0; digit < 10; digit++)
-        for (int y = 0; y < H; y++)
-        for (int x = 0; x < W; x++)
+        for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
         {
             int covered = 0;
-            for (int sy = 0; sy < Samples; sy++)
-            for (int sx = 0; sx < Samples; sx++)
+            for (int sy = 0; sy < samples; sy++)
+            for (int sx = 0; sx < samples; sx++)
             {
                 bool inside = false;
                 foreach (int[] polygon in Glyphs[digit])
-                    if (Contains(polygon, x + (sx + 0.5f) / Samples, y + (sy + 0.5f) / Samples)) inside = !inside;
+                    if (Contains(polygon, (x + (sx + 0.5f) / samples) / resolution, (y + (sy + 0.5f) / samples) / resolution)) inside = !inside;
                 if (inside) covered++;
             }
-            pixels[y * W * 10 + digit * W + x] = Color.White * (covered / (float)(Samples * Samples));
+            pixels[y * width * 10 + digit * width + x] = Color.White * (covered / (float)(samples * samples));
         }
-        var atlas = new Texture2D(device, W * 10, H);
+        var atlas = new Texture2D(device, width * 10, height);
         atlas.SetData(pixels);
         device.Disposing += (_, _) => atlas.Dispose();
         return atlas;

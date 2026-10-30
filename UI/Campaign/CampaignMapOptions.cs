@@ -32,9 +32,13 @@ namespace Fida.UI.Campaign
 
         public Rectangle GetMapViewport(Viewport viewport)
         {
+#if !FIDA_ANDROID
+            return new CampaignMapLayout(viewport).Map;
+#else
             int width = System.Math.Max(1, viewport.Width - ScreenMargin * 2);
             int height = System.Math.Max(1, viewport.Height - HeaderHeight - FooterHeight);
             return new Rectangle(ScreenMargin, HeaderHeight, width, height);
+#endif
         }
     }
 }

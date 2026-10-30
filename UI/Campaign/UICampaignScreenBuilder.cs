@@ -29,9 +29,10 @@ namespace Fida.UI.Campaign
             float scale = UIDesktopLayout.Scale(_resources.GraphicsDevice.Viewport);
             CampaignMapOptions options = new()
             {
-                NodeWidth = 270f * scale,
-                NodeHeight = 64f * scale,
-                ContentPadding = 70f * scale,
+                // These are world units. The camera already scales them into the viewport.
+                NodeWidth = 270f,
+                NodeHeight = 96f,
+                ContentPadding = 70f,
                 MinimumZoom = 0.55f,
                 MaximumZoom = 2.2f,
                 ScreenMargin = System.Math.Max(1, (int)System.Math.Round(36 * scale)),

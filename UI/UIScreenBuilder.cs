@@ -16,7 +16,7 @@ namespace Fida.UI
     /// 各 BuildXxx 方法对应一个屏幕（主菜单 / 暂停 / 设置 / 规则 / 在线菜单 / 房主 / 连接 / 大厅）。
     /// 从 UIManager 中提取，便于独立维护。
     /// </summary>
-    public class UIScreenBuilder
+    public partial class UIScreenBuilder
     {
         private readonly ResourceManager _resourceManager;
         private readonly List<UIControl> _uiControls;
@@ -38,11 +38,7 @@ namespace Fida.UI
         public void BuildMainMenu(bool connected = false, bool isHost = false)
         {
             Clear();
-            if (connected)
-            {
-                BuildFromScreen("ConnectedMainMenu");
-            }
-            else BuildFromScreen("MainMenu");
+            BuildEditorialMainMenu(connected);
         }
 
         /// <summary>构建暂停菜单</summary>
@@ -56,16 +52,7 @@ namespace Fida.UI
         public void BuildSettingsScreen()
         {
             Clear();
-#if FIDA_ANDROID
-            BuildMobileSettingsScreen();
-#else
-            BuildFromScreen("Settings", new Dictionary<string, string>
-            {
-                { "mode", DisplaySettingsManager.Current.Fullscreen ? "Fullscreen" : "Windowed" },
-                { "resolution", DisplaySettingsManager.ResolutionLabel },
-                { "motion", UIMotion.Reduced ? "Reduced" : "Full" }
-            });
-#endif
+            BuildEditorialSettings();
         }
 
         /// <summary>Build a compact, page-based field guide that scales to phone and desktop.</summary>
@@ -380,17 +367,7 @@ namespace Fida.UI
         public void BuildOnlineLobby(bool isHost)
         {
             Clear();
-            BuildFromScreen("OnlineLobby");
-            Rectangle panel = UITheme.PanelRect(_resourceManager.GraphicsDevice.Viewport);
-            _uiControls.Add(new UILabel(8, "BOTH PLAYERS CONFIRM DUEL",
-                new Vector2(960, 330), _resourceManager.Font)
-            {
-                Name = "lobbyStatus",
-                MaximumWidth = panel.Width - 96,
-                MinimumScale = 0.72f
-            });
-            if (_focusManager.CurrentInputMode == InputMode.Controller)
-                _focusManager.FocusFirst();
+            BuildEditorialLobby(isHost);
         }
 
         /// <summary>Builds the shared ban/pick board from the canonical skill catalog.</summary>

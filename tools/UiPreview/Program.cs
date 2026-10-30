@@ -11,7 +11,7 @@ int width = args.Length > 0 ? int.Parse(args[0]) : 1600;
 int height = args.Length > 1 ? int.Parse(args[1]) : 1000;
 string destination = Path.GetFullPath(args.Length > 2 ? args[2] : "artifacts/cold-ui");
 Directory.CreateDirectory(destination);
-using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"));
+using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"));
 preview.Run();
 
 sealed class PreviewGame : Game
@@ -25,13 +25,15 @@ sealed class PreviewGame : Game
     private double _firstDraw = double.NaN;
     private GameManager _battle;
     private readonly bool _skillsOnly;
+    private readonly bool _menusOnly;
     private UICampaignSkillWheel _loadout;
     private HashSet<SkillType> _loadoutSelected;
 
-    public PreviewGame(int width, int height, string destination, bool skillsOnly)
+    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly)
     {
         _width = width; _height = height; _destination = destination;
         _skillsOnly = skillsOnly;
+        _menusOnly = menusOnly;
         if (skillsOnly) _screen = 4;
         _graphics = new GraphicsDeviceManager(this)
         { PreferredBackBufferWidth = width, PreferredBackBufferHeight = height, GraphicsProfile = GraphicsProfile.HiDef };
@@ -62,7 +64,7 @@ sealed class PreviewGame : Game
             case 0: _ui.BuildMainMenu(); break;
             case 1: _ui.BuildSettingsScreen(); break;
             case 2: _ui.BuildRulesScreen(1); break;
-            case 3: _ui.BuildLevelSelect(); break;
+            case 3: _ui.BuildLevelSelect(); VerifyCampaignActions(); break;
             case 4:
                 var selected = new HashSet<SkillType> { SkillType.Xue,SkillType.Shi };
                 var progress = new CampaignProgress { UnlockedSkills = SkillFactory.SelectableSkills.Where(skill => skill!=SkillType.Shen).ToHashSet() };
@@ -75,6 +77,8 @@ sealed class PreviewGame : Game
                 loadout.GridBrowser.FocusSkill(SkillType.DoubleAttack);
                 VerifySkillGrid(loadout,selected);
                 break;
+            case 9: _ui.BuildOnlineLobby(true); break;
+            case 10: _ui.BuildMainMenu(true); break;
             case 8:
                 _ui.GetControls().Add(new UIPanel(0, _resources.Pixel));
                 int row = 0;
@@ -203,7 +207,7 @@ sealed class PreviewGame : Game
     {
         _ui.Update(time);
         _frame++;
-        if (_screen >= 5 && _frame == 20)
+        if (_screen is >= 5 and <= 7 && _frame == 20)
         {
             _ui.GetUIPlayer(0).VisualOffset = Vector2.Zero;
             _ui.GetUIPlayer(0).VisualScale = 1;
@@ -217,14 +221,63 @@ sealed class PreviewGame : Game
         _ui.Draw(time);
         if (_frame >= 30 && time.TotalGameTime.TotalSeconds - _firstDraw >= 0.7)
         {
-            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen" }[_screen];
+            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected" }[_screen];
             Save(name);
+            if (_screen == 3)
+            {
+                var map = (UICampaignMap)_ui.GetControls().Single(c => c.Name == "campaign_map");
+                var bounds = new CampaignMapLayout(_width, _height).Map;
+                ClickMap(map, new Point(bounds.Left + bounds.Width / 4, bounds.Center.Y));
+                map.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
+                _ui.Draw(time); Save("campaign-route");
+            }
+            if (_screen == 9)
+            {
+                var art = _ui.GetControlByName<UIEditorialSurface>("lobby_art");
+                art.LocalReady = true;
+                _ui.GetControlByName<UIButton>("startPvP").Update("Waiting for opponent");
+                _ui.GetControlByName<UIButton>("startPvP").Disable();
+                _ui.Draw(time); Save("lobby-ready");
+            }
             if (_screen==4) SaveSkillVariants(time);
             if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
-            _screen++;
-            if (_skillsOnly || _screen > 8) Exit(); else Build();
+            _screen = _menusOnly ? _screen switch { 0 => 1, 1 => 3, 3 => 9, 9 => 10, _ => 11 } : _screen + 1;
+            if (_skillsOnly || _screen > 10) Exit(); else Build();
         }
         base.Draw(time);
+    }
+
+    private static MouseState MapMouse(Point p, ButtonState button) => new(p.X,p.Y,0,button,
+        ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
+    private static void ClickMap(UICampaignMap map, Point p)
+    {
+        map.Update(MapMouse(p,ButtonState.Released));
+        map.Update(MapMouse(p,ButtonState.Pressed));
+        map.Update(MapMouse(p,ButtonState.Released));
+    }
+    private void VerifyCampaignActions()
+    {
+        foreach (bool locked in new[] { false, true })
+        {
+            var node = new CampaignNode { Id="fixture", Name="Fixture", MapX=0, MapY=0,
+                Parents = locked ? new[] { "missing" } : Array.Empty<string>() };
+            var map = new UICampaignMap(0,GraphicsDevice,_resources.Pixel,_resources.AntialiasedLine,
+                _resources.MapFont,_resources.TitleFont,new[] { node },new CampaignProgress());
+            var l = new CampaignMapLayout(_width,_height);
+            ClickMap(map,l.Map.Center);
+            if(map.TryConsumeSelectedNode(out _)) throw new Exception("Inspecting a node started the mission.");
+            // Releasing on the action after a press in the map must not confirm.
+            map.Update(MapMouse(l.Map.Center,ButtonState.Pressed));
+            map.Update(MapMouse(l.Action.Center,ButtonState.Released));
+            if(map.TryConsumeSelectedNode(out _)) throw new Exception("Cross-target drag confirmed a mission.");
+            ClickMap(map,l.Action.Center);
+            bool entered = map.TryConsumeSelectedNode(out string id);
+            if (entered == locked || (entered && id != node.Id)) throw new Exception("Mission availability was not enforced.");
+            if(map.TryConsumeSelectedNode(out _)) throw new Exception("Mission intent was consumed twice.");
+            ClickMap(map,l.Back.Center);
+            if(!map.ConsumeBackRequest() || map.ConsumeBackRequest()) throw new Exception("Map back action did not dispatch once.");
+        }
+        Console.WriteLine("Verified map inspect/confirm, locked missions, cross-target release and back.");
     }
 
     private void SaveSkillVariants(GameTime time)
