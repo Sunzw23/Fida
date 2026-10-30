@@ -396,18 +396,7 @@ namespace Fida.UI.Campaign
             var path = _scope.Concat(new[] { _folders[index] }).ToArray();
             IReadOnlyList<int> descendants = _hierarchy.Descendants(path);
             int cleared = descendants.Count(i => _progress.IsCompleted(_nodes[i].Id));
-            Color accent = UITheme.RouteAccent(index);
-            spriteBatch.Draw(_pixel, bounds, index == _selectedFolder ? UITheme.PanelPressed : UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                index == _selectedFolder ? UITheme.GoldBright : accent, 2, _pixel);
-            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 5, bounds.Height), accent);
-            DrawCentered(spriteBatch, _font, _folders[index],
-                new Vector2(bounds.Center.X - 8, bounds.Top + bounds.Height * 0.39f),
-                bounds.Width - 90, 0.68f, UITheme.Ink);
-            DrawCentered(spriteBatch, _font, $"{cleared} / {descendants.Count}",
-                new Vector2(bounds.Center.X - 8, bounds.Top + bounds.Height * 0.73f),
-                bounds.Width - 90, 0.48f, UITheme.GoldBright);
-            DrawChevron(spriteBatch, new Vector2(bounds.Right - 34, bounds.Center.Y), accent);
+            DrawChapterCard(spriteBatch, bounds, index, descendants, cleared, index == _selectedFolder);
         }
 
         private void DrawMobileButton(SpriteBatch spriteBatch, Rectangle bounds,
@@ -667,10 +656,12 @@ namespace Fida.UI.Campaign
                     Vector2 end = nodeEnd;
                     if (!ClipLine(_camera.Viewport, ref start, ref end)) continue;
                     bool active = _progress.IsCompleted(parentId) || _progress.IsCompleted(node.Id);
+                    bool selectedRoute = _selectedIndex >= 0 &&
+                        (index == _selectedIndex || parentId == _nodes[_selectedIndex].Id);
                     Vector2 animatedEnd = Vector2.Lerp(start, end, UIMotion.Reveal(_routeAge - Math.Min(index, 20) * 0.035, 0.6f));
                     DrawLine(spriteBatch, start, animatedEnd,
-                        active ? UITheme.Ink : UITheme.Line,
-                        1);
+                        selectedRoute ? UITheme.AccentBlue * .8f : active ? UITheme.Ink * .65f : UITheme.Line,
+                        selectedRoute ? 2 : 1);
                 }
             }
         }
@@ -692,13 +683,15 @@ namespace Fida.UI.Campaign
                 selected ? UITheme.AccentBlue : UITheme.Line * (unlocked ? 1f : .55f),
                 selected ? 2 : 1, _pixel);
             DrawNodeStateMark(spriteBatch, bounds, completed, unlocked, accent);
-
-            string label = node.Id;
-            DrawCentered(spriteBatch, _font, label,
-                new Vector2(bounds.Center.X - (selected ? 0f : 2f), bounds.Center.Y),
-                bounds.Width - (selected ? 44f : 70f),
-                MathHelper.Clamp(0.48f * _camera.Zoom, 0.40f, 0.64f),
-                foreground);
+            if (selected)
+                spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 3, bounds.Height), UITheme.AccentBlue);
+            bool showName = bounds.Height >= 66 && bounds.Width >= 170;
+            DrawMapText(spriteBatch, node.Id, new Rectangle(bounds.Left + 12, bounds.Top + 8,
+                bounds.Width - 44, showName ? bounds.Height / 2 - 8 : bounds.Height - 16),
+                Math.Clamp(bounds.Height * .45f, 20, 36), foreground, true);
+            if (showName)
+                DrawMapText(spriteBatch, node.Name, new Rectangle(bounds.Left + 12, bounds.Center.Y,
+                    bounds.Width - 24, bounds.Height / 2 - 6), 20, UITheme.InkMuted);
 
         }
 
@@ -1033,16 +1026,7 @@ namespace Fida.UI.Campaign
                 IReadOnlyList<int> descendants = _hierarchy.Descendants(path);
                 int cleared = descendants.Count(index => _progress.IsCompleted(_nodes[index].Id));
                 bool selected = i == _selectedFolder;
-                Color accent = UITheme.RouteAccent(i);
-                spriteBatch.Draw(_pixel, bounds, selected ? UITheme.PanelLight : UITheme.BgTop);
-                UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                    selected ? UITheme.AccentBlue : UITheme.Line, selected ? 2 : 1, _pixel);
-                DrawCentered(spriteBatch, _titleFont, _folders[i],
-                    new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.40f),
-                    bounds.Width - 56, 0.54f, UITheme.Ink);
-                DrawCentered(spriteBatch, _font, $"{cleared} / {descendants.Count}",
-                    new Vector2(bounds.Center.X, bounds.Top + bounds.Height * 0.73f),
-                    bounds.Width - 56, 0.38f, selected ? UITheme.GoldBright : UITheme.InkMuted);
+                DrawChapterCard(spriteBatch, bounds, i, descendants, cleared, selected);
             }
         }
 

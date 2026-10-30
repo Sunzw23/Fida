@@ -19,8 +19,9 @@ public sealed class CampaignMapLayout
         Portrait = height > width;
         int margin = Math.Max(18, width / 40), header = Math.Clamp(height / 8, 92, 140);
         int bottom = Math.Clamp(height / 10, 75, 100), gap = Math.Max(20, width / 60);
-        Header = new Rectangle(margin + 80, 24, width - margin * 2 - 80, header - 32);
-        Back = new Rectangle(margin, 30, 64, 64);
+        var shared = new UIEditorialLayout(width, height);
+        Header = shared.Header;
+        Back = shared.Back;
         if (Portrait)
         {
             int mapHeight = Math.Max(120, (height - header - bottom) * 48 / 100);

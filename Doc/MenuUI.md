@@ -72,3 +72,12 @@ Use `--reference-only` in UiPreview to render every Rules page plus online,
 connected, hosting and connecting screens. It exercises incomplete/complete code
 entry, length limiting, deletion, Enter submission and Join activation using the
 actual controls, without opening network connections or changing user saves.
+
+Campaign chapter cards now include their order, real completion progress and a
+miniature of their actual mission graph. The selected chapter pane previews that
+graph, an available mission's story (falling back to the first mission), and the
+number of available missions. Single-mission chapters show their mission ID.
+Route nodes show names when space permits, and selected incident routes use the
+ice accent. Header/back geometry matches Settings and Rules. All graph positions,
+unlock checks, hit regions and confirmation behavior remain driven by the same
+campaign data and layout; miniature graphs are noninteractive previews.
