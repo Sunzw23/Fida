@@ -92,7 +92,13 @@ namespace Fida
             Pixel.SetData(new[] { Color.White });
             AntialiasedLine = CreateAntialiasedLineTexture();
             _textures = new Dictionary<string, Texture2D>();
-            LoadTexture(contentManager, "cold_roster", "portraits/cold_roster");
+            LoadTexture(contentManager, "cold_roster", "portraits/paper_roster");
+            LoadTexture(contentManager, "paper_chapters", "paper/chapters");
+            UI.UIPaper.RegisterScenes(_graphicsDevice, GetTexture("paper_chapters"));
+            LoadTexture(contentManager, "paper_skins", "paper/skins");
+            LoadTexture(contentManager, "paper_background", "paper/background");
+            LoadTexture(contentManager, "paper_main_art", "paper/main_art");
+            UI.UIPaper.RegisterMaterials(_graphicsDevice, GetTexture("paper_skins"), GetTexture("paper_background"));
 
         }
 

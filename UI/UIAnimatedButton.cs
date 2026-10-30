@@ -159,7 +159,7 @@ namespace Fida.UI
             }
 
             // 绘制背景
-            sb.Draw(Pixel, Bounds, backColor);
+            UIPaper.Sheet(sb, Bounds, backColor, _isPressed ? 0 : 3, 7);
 
             bool emphasized = State is UIAnimatedButtonState.Hovered or
                 UIAnimatedButtonState.Pressed or UIAnimatedButtonState.Selected;
@@ -229,12 +229,12 @@ namespace Fida.UI
             bool hover = State == UIAnimatedButtonState.Hovered;
             bool pressed = State == UIAnimatedButtonState.Pressed;
             bool disabled = State == UIAnimatedButtonState.Disabled;
-            Color fill = selected ? UITheme.Gold : Color.Lerp(UITheme.PanelLight, UITheme.PanelHover, HoverAmount);
-            Color foreground = selected ? UITheme.BgTop : UITheme.Ink * (disabled ? 0.72f : 1f);
-            sb.Draw(Pixel, Bounds, fill);
-            UIUtils.DrawRectangleOutlines(sb, Bounds,
-                selected ? UITheme.Gold : hover ? UITheme.Ink : UITheme.Line * (disabled ? 0.5f : 1),
-                hover || selected ? 2 : 1, Pixel);
+            Color fill = selected ? UITheme.Gold : Color.Lerp(UIPaper.Face, UITheme.Gold, HoverAmount * .13f);
+            if (disabled) fill = Color.Lerp(UIPaper.Face, UITheme.PanelLight, .22f);
+            Color foreground = disabled ? UIPaper.MutedInk : UIPaper.Ink;
+            var backing = Bounds; backing.Offset(-3, 3);
+            UIPaper.Sheet(sb, backing, UITheme.PanelHover, 1, 8);
+            UIPaper.Sheet(sb, Bounds, fill, pressed ? 0 : 3, Math.Max(5, Bounds.Width / 18));
             int horizontal = Math.Max(8, Bounds.Width / 5);
             int vertical = Math.Max(7, Bounds.Height / 6);
             var glyphBounds = new Rectangle(Bounds.Left + horizontal, Bounds.Top + vertical,

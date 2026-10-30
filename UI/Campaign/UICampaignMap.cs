@@ -100,6 +100,14 @@ namespace Fida.UI.Campaign
         public void ZoomOut() => _camera.ZoomAt(1f / 1.2f, ViewportCenter());
         public void FitAll() => _camera.FitAll();
 
+        public void SynchronizeInput()
+        {
+            _previousMouse = UIPointer.GetState();
+            _previousKeyboard = Keyboard.GetState();
+            _previousGamePad = GamePad.GetState(PlayerIndex.One);
+            _inputInitialized = true; _pressedTarget = ""; _dragging = false;
+        }
+
         public override void Update(GameTime gameTime)
         {
             _routeAge += gameTime.ElapsedGameTime.TotalSeconds;
@@ -237,7 +245,9 @@ namespace Fida.UI.Campaign
             EnsureViewport();
             Rectangle viewport = _camera.Viewport;
 
-            spriteBatch.Draw(_pixel, viewport, UITheme.BgTop);
+            UIPaper.Sheet(spriteBatch, viewport, UITheme.PanelDark, 2, 10);
+            if (_visibleNodes.Count > 0)
+                UIPaper.Scene(spriteBatch, viewport, UIPaper.ChapterIndex(string.Join(" ", _scope)), .20f);
 
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
@@ -246,8 +256,8 @@ namespace Fida.UI.Campaign
             foreach (int i in _visibleNodes) DrawNode(spriteBatch, i);
             }
             DrawRemotePresence(spriteBatch, viewport);
-            DrawFooter(spriteBatch);
             DrawEditorialDetails(spriteBatch);
+            DrawFooter(spriteBatch);
 #endif
         }
 
@@ -675,13 +685,10 @@ namespace Fida.UI.Campaign
             bool unlocked = CampaignCatalog.IsUnlocked(_progress, node);
             bool completed = _progress.IsCompleted(node.Id);
             bool selected = index == _selectedIndex;
-            Color background = selected ? UITheme.PanelLight : UITheme.BgTop;
-            Color foreground = unlocked ? UITheme.Ink : UITheme.InkMuted;
-            Color accent = selected ? UITheme.AccentBlue : UITheme.InkMuted;
-            spriteBatch.Draw(_pixel, bounds, background);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds,
-                selected ? UITheme.AccentBlue : UITheme.Line * (unlocked ? 1f : .55f),
-                selected ? 2 : 1, _pixel);
+            Color background = selected ? UITheme.Gold : UIPaper.Face;
+            Color foreground = unlocked ? UIPaper.Ink : UIPaper.MutedInk;
+            Color accent = selected ? UITheme.AccentBlue : UIPaper.MutedInk;
+            UIPaper.Sheet(spriteBatch, bounds, background, selected ? 4 : 2, 6);
             DrawNodeStateMark(spriteBatch, bounds, completed, unlocked, accent);
             if (selected)
                 spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 3, bounds.Height), UITheme.AccentBlue);
@@ -691,7 +698,7 @@ namespace Fida.UI.Campaign
                 Math.Clamp(bounds.Height * .45f, 20, 36), foreground, true);
             if (showName)
                 DrawMapText(spriteBatch, node.Name, new Rectangle(bounds.Left + 12, bounds.Center.Y,
-                    bounds.Width - 24, bounds.Height / 2 - 6), 20, UITheme.InkMuted);
+                    bounds.Width - 24, bounds.Height / 2 - 6), 20, UIPaper.MutedInk);
 
         }
 

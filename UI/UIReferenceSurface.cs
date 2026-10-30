@@ -25,12 +25,15 @@ public sealed class UIReferenceSurface : UIControl
         var layout = new UIReferenceLayout(batch.GraphicsDevice.Viewport);
         var l = layout.Canvas;
         bool p = l.Portrait;
-        batch.Draw(_resources.Pixel, batch.GraphicsDevice.Viewport.Bounds, UITheme.BgTop);
+        UIPaper.Background(batch, batch.GraphicsDevice.Viewport);
+        UIPaper.Sheet(batch, p ? l.Rect(30, 30, 840, 135) : l.Rect(45, 30, 1830, 135), UITheme.Panel, 3, 9);
         string title = _screen switch { UIReferenceScreen.Rules => "Rules", UIReferenceScreen.Hosting => "Create room", UIReferenceScreen.Connecting => "Connecting", UIReferenceScreen.Connection => "Connection", _ => "Online" };
         Text(batch, title, l.Header, 65);
         if (_screen == UIReferenceScreen.Rules) { DrawRules(batch, layout); return; }
         if (_screen == UIReferenceScreen.Online)
         {
+            UIPaper.Sheet(batch, p ? l.Rect(50, 245, 800, 420) : l.Rect(110, 265, 780, 790), UITheme.Panel, 4, 10);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 755, 800, 650) : l.Rect(1030, 265, 780, 790), UITheme.Panel, 4, 10);
             Rule(batch, p ? l.Rect(80, 720, 740, 1) : l.Rect(960, 290, 1, 710));
             Text(batch, "Create room", p ? l.Rect(80, 280, 740, 80) : l.Rect(150, 300, 700, 90), 52);
             Paragraph(batch, "Start a session and share its code.", p ? l.Rect(80, 390, 740, 90) : l.Rect(150, 425, 700, 110));
@@ -49,14 +52,21 @@ public sealed class UIReferenceSurface : UIControl
         }
         if (_screen == UIReferenceScreen.Connection)
         {
+            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 780) : l.Rect(540, 280, 1250, 570), UITheme.Panel, 4, 12);
             Text(batch, "Connected", p ? l.Rect(80, 400, 740, 90) : l.Rect(600, 350, 1150, 90), 52, color: UITheme.AccentBlue);
             Paragraph(batch, "Campaign and Duel are available from the main menu.",
                 p ? l.Rect(80, 550, 740, 200) : l.Rect(600, 500, 1150, 170));
         }
         else if (_screen == UIReferenceScreen.Hosting)
+        {
+            UIPaper.Sheet(batch, p ? l.Rect(50, 260, 800, 870) : l.Rect(450, 240, 1020, 620), UITheme.Panel, 4, 12);
             Text(batch, "Room code", p ? l.Rect(80, 300, 740, 80) : l.Rect(600, 270, 720, 80), 38, true, muted: true);
+        }
         else
+        {
+            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 800) : l.Rect(350, 270, 1220, 590), UITheme.Panel, 4, 12);
             Text(batch, "Joining session", p ? l.Rect(80, 400, 740, 80) : l.Rect(600, 350, 720, 80), 44, true);
+        }
     }
 
     private void DrawRules(SpriteBatch batch, UIReferenceLayout layout)
@@ -64,6 +74,8 @@ public sealed class UIReferenceSurface : UIControl
         var l = layout.Canvas;
         if (!layout.Portrait) Rule(batch, l.Rect(500, 290, 1, 690));
         Rectangle area = layout.Content;
+        var paper = area; paper.Inflate(24, 20);
+        UIPaper.Sheet(batch, paper, UIPaper.Face, 4, 10);
         Text(batch, $"{_page + 1} / {Chapters.Length}", layout.Page, 30, true, muted: true);
         if (_page >= 3)
         {
@@ -122,7 +134,9 @@ public sealed class UIReferenceSurface : UIControl
         Vector2 size = font.MeasureString(safe);
         float scale = UITextRenderer.FitScale(size, area.Width, area.Height, lineHeight * l.Scale / font.LineSpacing);
         Vector2 position = new(center ? area.Center.X - size.X * scale / 2 : area.Left, area.Center.Y - size.Y * scale / 2);
-        UITextRenderer.DrawString(batch, font, safe, position, color ?? (muted ? UITheme.InkMuted : UITheme.Ink), 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+        bool reading = _screen == UIReferenceScreen.Rules && new UIReferenceLayout(batch.GraphicsDevice.Viewport).Content.Contains(area.Center);
+        Color ink = reading ? muted ? UIPaper.MutedInk : UIPaper.Ink : muted ? UITheme.InkMuted : UITheme.Ink;
+        UITextRenderer.DrawString(batch, font, safe, position, color ?? ink, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
     }
     private void Paragraph(SpriteBatch batch, string text, Rectangle area, float lineHeight = 36)
     {
@@ -141,7 +155,7 @@ public sealed class UIReferenceSurface : UIControl
         float y = area.Top;
         foreach (string line in lines)
         {
-            UITextRenderer.DrawString(batch, font, line, new Vector2(area.Left, y), UITheme.InkMuted, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            UITextRenderer.DrawString(batch, font, line, new Vector2(area.Left, y), _screen == UIReferenceScreen.Rules ? UIPaper.MutedInk : UITheme.InkMuted, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
             y += row;
         }
     }

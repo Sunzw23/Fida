@@ -25,6 +25,11 @@ namespace Fida.States
                 _storyKeyboard = Keyboard.GetState();
                 return false;
             }
+            if (_uiManager.IsPageTransitionActive)
+            {
+                _storyKeyboard = Keyboard.GetState();
+                return true;
+            }
             // Poll only the overlay: the underlying menu must not consume this click.
             dialogue.Update(UIPointer.GetState());
             dialogue.IsClicked();
@@ -124,6 +129,7 @@ namespace Fida.States
         /// </summary>
         public virtual void HandleInput(GameTime gameTime)
         {
+            if (_uiManager.IsPageTransitionActive) return;
             _uiManager.UpdateUIButtons(_uiManager.GameManager);
             _uiManager.UpdateControllerInput(gameTime);
 

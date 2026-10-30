@@ -23,7 +23,7 @@ public sealed class UIEditorialLayout
         Math.Max(1, (int)Math.Round(w * Scale)), Math.Max(1, (int)Math.Round(h * Scale)));
     public Rectangle MenuButton(int row, bool connected) => Portrait
         ? Rect(80, connected ? 590 + row * 115 : 710 + row * 115, 740, 94)
-        : Rect(150, connected ? 390 + row * 92 : 450 + row * 110, 620, connected ? 78 : 88);
+        : Rect(150, connected ? 280 + row * 105 : 280 + row * 125, 620, connected ? 86 : 100);
     public Rectangle Back => Rect(Portrait ? 45 : 70, 60, 72, 72);
     public Rectangle Header => Rect(Portrait ? 150 : 175, 60, 600, 80);
     public Rectangle Ready => Portrait ? Rect(100, 1200, 700, 100) : Rect(600, 920, 720, 100);

@@ -14,17 +14,17 @@ public static class UIBattleLayout
         int row = index / columns;
         int inRow = Math.Min(columns, count - row * columns);
         int slotWidth = 1600 / columns;
-        int unitWidth = Math.Min(380, slotWidth - 32);
-        int unitHeight = Math.Min(390, 410 / rows);
+        int unitWidth = Math.Min(520, slotWidth - 28);
+        int unitHeight = Math.Min(420, 420 / rows);
         int x = 160 + (1600 - inRow * slotWidth) / 2 + (index % columns) * slotWidth + (slotWidth - unitWidth) / 2;
-        int y = (ally ? 680 : 160) + row * (410 / rows);
+        int y = (ally ? 660 : 140) + row * (420 / rows);
         return UIDesktopLayout.MapRectangle(new Rectangle(x, y, unitWidth, unitHeight), width, height);
     }
 
     public static Rectangle Number(Rectangle unit, int index)
     {
         int gap = Math.Max(6, unit.Width / 24);
-        int size = Math.Min((unit.Width - gap) / 2, unit.Height * 43 / 100);
+        int size = Math.Min((unit.Width - gap) / 2, unit.Height / 2);
         int left = unit.Center.X - (size * 2 + gap) / 2;
         return new Rectangle(left + index * (size + gap), unit.Bottom - size, size, size);
     }

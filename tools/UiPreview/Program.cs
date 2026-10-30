@@ -54,6 +54,7 @@ sealed class PreviewGame : Game
         _resources = new ResourceManager(GraphicsDevice);
         _resources.LoadContent(Content);
         _ui = new UIManager(GraphicsDevice, _resources);
+        VerifyPageTransitions();
         Build();
     }
 
@@ -86,6 +87,23 @@ sealed class PreviewGame : Game
             case 12: _ui.BuildOnlineMenu(true); break;
             case 13: _ui.BuildHostingScreen("Waiting for opponent", "A7K2"); break;
             case 14: _ui.BuildConnectingScreen("Connecting to session..."); break;
+            case 15: _ui.BuildPauseMenu(); break;
+            case 16:
+            case 17:
+                var resultControls = _ui.GetControls();
+                new UICampaignScreenBuilder(_resources, resultControls, new UIFocusManager(resultControls, new UIInputHandler(resultControls)))
+                    .BuildResult(_screen == 16, _screen == 16 ? "The road ahead is open." : "Adjust your loadout and try again.", CampaignCatalog.Nodes.First(n => n.Id == "A1"));
+                break;
+            case 18:
+                _ui.BuildDuelDraft();
+                var draft = _ui.GetControls().OfType<UICampaignSkillWheel>().First();
+                draft.UseUnifiedActionButton = true; draft.ShowSkillPoints = false;
+                draft.HeaderText = "BAN"; draft.StatusText = "CHOOSE ONE SKILL";
+                draft.AvailableActionText = "BAN"; draft.SelectedActionText = "BANNED";
+                draft.StartActionText = "BAN"; draft.StartActionTogglesSelection = true;
+                draft.AvailabilityOverride = _ => CampaignSkillAvailability.Available;
+                break;
+            case 19: _ui.BuildDuelResult(true, "Your opponent has been defeated."); break;
             case 8:
                 _ui.GetControls().Add(new UIPanel(0, _resources.Pixel));
                 int row = 0;
@@ -228,7 +246,7 @@ sealed class PreviewGame : Game
         _ui.Draw(time);
         if (_frame >= 30 && time.TotalGameTime.TotalSeconds - _firstDraw >= 0.7)
         {
-            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting" }[_screen];
+            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting", "paused", "victory", "defeat", "duel-draft", "duel-result" }[_screen];
             Save(name);
             if (_screen == 2)
             {
@@ -259,15 +277,39 @@ sealed class PreviewGame : Game
             }
             if (_screen==4) SaveSkillVariants(time);
             if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
-            _screen = _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 15 }
+            _screen = _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 20 }
                 : _menusOnly ? _screen switch { 0 => 1, 1 => 2, 2 => 3, 3 => 9, _ => _screen + 1 } : _screen + 1;
-            if (_skillsOnly || _screen > 14) Exit(); else Build();
+            if (_skillsOnly || _screen > 19) Exit(); else Build();
         }
         base.Draw(time);
     }
 
     private static MouseState MapMouse(Point p, ButtonState button) => new(p.X,p.Y,0,button,
         ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
+
+    private void VerifyPageTransitions()
+    {
+        using var ui = new UIManager(GraphicsDevice, _resources);
+        GameTime At(double seconds, double step = .1) => new(TimeSpan.FromSeconds(seconds), TimeSpan.FromSeconds(step));
+        Color[] Pixels() { var pixels = new Color[_width * _height]; GraphicsDevice.GetBackBufferData(pixels); return pixels; }
+        ui.BuildMainMenu(); ui.Update(At(0)); ui.Draw(At(0)); ui.Update(At(1,1)); ui.Draw(At(1));
+        var old = Pixels();
+        ui.BuildRulesScreen();
+        if (!ui.IsPageTransitionActive) throw new Exception("New page did not guard pending input.");
+        ui.Update(At(2)); ui.Draw(At(2));
+        var start = Pixels();
+        if (!old.SequenceEqual(start)) throw new Exception("Page transition did not preserve the previous frame.");
+        ui.Update(At(2.1)); ui.Draw(At(2.1)); var middle = Pixels();
+        ui.Update(At(2.4,.3)); ui.Draw(At(2.4)); var end = Pixels();
+        if (middle.SequenceEqual(old) || middle.SequenceEqual(end) || ui.IsPageTransitionActive)
+            throw new Exception("Crossfade did not progress and settle.");
+        DisplaySettingsManager.Current.ReduceMotion = true;
+        ui.BuildSettingsScreen(); ui.Update(At(3)); ui.Draw(At(3)); var reduced = Pixels();
+        ui.Update(At(4,1)); ui.Draw(At(4));
+        if(ui.IsPageTransitionActive || !reduced.SequenceEqual(Pixels())) throw new Exception("Reduced motion did not settle immediately.");
+        DisplaySettingsManager.Current.ReduceMotion = false;
+        Console.WriteLine("Verified page crossfade, previous-frame retention, input guard and reduced motion.");
+    }
     private void VerifyRoomCodeInput()
     {
         var input = _ui.GetTextBoxByName("roomCodeInput");

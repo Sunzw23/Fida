@@ -43,6 +43,7 @@ namespace Fida.UI
         /// <summary>是否聚焦（点击框内）</summary>
         public bool IsInputActive => _focused;
         public bool MinimalStyle { get; set; }
+        public void SynchronizeInput() => _lastKeys = new HashSet<Keys>(Keyboard.GetState().GetPressedKeys());
 
         /// <summary>Enter 提交时触发（参数为当前值）</summary>
         public event Action<string> Submitted;
@@ -248,14 +249,13 @@ namespace Fida.UI
             {
                 var cell = new Rectangle(_bounds.Left + i * (width + gap), _bounds.Top, width, _bounds.Height);
                 bool active = _focused && i == Math.Min(_value.Length, MaxLen - 1);
-                sb.Draw(_pixel, cell, UITheme.Panel);
-                UIUtils.DrawRectangleOutlines(sb, cell, active ? UITheme.AccentBlue : UITheme.Line, active ? 2 : 1, _pixel);
+                UIPaper.Sheet(sb, cell, active ? UITheme.AccentBlue : UIPaper.Face, active ? 4 : 2, 6);
                 string text = i < _value.Length ? _value[i].ToString() : "-";
                 Vector2 size = _font.MeasureString(text);
                 float scale = UITextRenderer.FitScale(size, cell.Width - 18, cell.Height - 20,
                     new UIEditorialLayout(sb.GraphicsDevice.Viewport).Scale * 70 / _font.LineSpacing);
                 UITextRenderer.DrawString(sb, _font, text,
-                    cell.Center.ToVector2() - size * scale / 2, i < _value.Length ? UITheme.Ink : UITheme.InkMuted,
+                    cell.Center.ToVector2() - size * scale / 2, i < _value.Length ? UIPaper.Ink : UIPaper.MutedInk,
                     0, Vector2.Zero, scale, SpriteEffects.None, 0);
             }
         }

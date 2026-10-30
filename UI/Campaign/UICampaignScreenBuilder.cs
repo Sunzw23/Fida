@@ -1,3 +1,4 @@
+#nullable enable annotations
 using System.Collections.Generic;
 using System.Text;
 using Fida.Campaign;
@@ -65,75 +66,21 @@ namespace Fida.UI.Campaign
 
         public void BuildResult(bool won, string message, CampaignNode node)
         {
-            string title = won && node.Endings.Count > 0 ? "At the Ferry" : won ? "Node Cleared" : "Defeat";
-            if (won && node.Endings.Count > 0) message = "The boat is ready.";
-            _controls.Add(new UIPanel(0, _resources.Pixel) { Name = "panel" });
-#if FIDA_ANDROID
-            Rectangle panel = UITheme.PanelRect(_resources.GraphicsDevice.Viewport);
-            float centerX = panel.Center.X;
-            _controls.Add(new UITitle(1, title,
-                new Vector2(centerX, panel.Top + 120), _resources.Pixel, _resources.TitleFont)
-            { Name = "title" });
-            int textWidth = panel.Width - 96;
-            string mobileMessage = WrapText(_resources.Font, message, textWidth);
-            _controls.Add(new UILabel(2, mobileMessage, new Vector2(centerX, panel.Top + 330), _resources.Font)
-            { Name = "result", MaximumWidth = textWidth, MaximumHeight = 180 });
-            if (won && node.Rewards.Count > 0)
-            {
-                string mobileReward = WrapText(_resources.Font, $"Reward: {node.RewardText}", textWidth);
-                _controls.Add(new UILabel(3, mobileReward, new Vector2(centerX, panel.Top + 430), _resources.Font)
-                { Name = "reward", MaximumWidth = textWidth, MaximumHeight = 120 });
-            }
-            int buttonWidth = panel.Width - 112;
-            _controls.Add(new UIButton(4, new Rectangle(panel.Left + 56, panel.Top + 620, buttonWidth, 92),
-                "Adjust Loadout", _resources.Pixel, _resources.Font)
-            { Name = "retry", FocusIndex = 0 });
-            string exitText = won ? "Continue Journey" : "Main Menu";
-            _controls.Add(new UIButton(5, new Rectangle(panel.Left + 56, panel.Top + 748,
-                buttonWidth, 92), exitText, _resources.Pixel, _resources.Font)
-            { Name = "mainMenu", FocusIndex = 1 });
+            BuildPaperOutcome(won, message, node, false);
             AddEndingButtons(won, node);
             FocusIfNeeded();
-            return;
-#else
-            Viewport viewport = _resources.GraphicsDevice.Viewport;
-            float scale = UIDesktopLayout.Scale(viewport);
-            Rectangle panel = UITheme.PanelRect(viewport);
-            Vector2 center = UIDesktopLayout.MapPoint(new Vector2(960, 430), viewport);
-            _controls.Add(new UITitle(1, title,
-                UIDesktopLayout.MapPoint(new Vector2(960, 310), viewport),
-                _resources.Pixel, _resources.TitleFont) { Name = "title" });
-            // UILabel applies the desktop scale after measuring in font units. Keep
-            // the measure width inside the panel's unscaled design width as well.
-            int textWidth = System.Math.Max(1, (int)System.Math.Round(panel.Width / scale) - 96);
-            string desktopMessage = WrapText(_resources.Font, message, textWidth);
-            _controls.Add(new UILabel(2, desktopMessage, center, _resources.Font)
-            {
-                Name = "result",
-                MaximumWidth = textWidth,
-                MaximumHeight = 150
-            });
-            if (won && node.Rewards.Count > 0)
-            {
-                string reward = WrapText(_resources.Font, $"Reward: {node.RewardText}", textWidth);
-                _controls.Add(new UILabel(3, reward,
-                    UIDesktopLayout.MapPoint(new Vector2(960, 500), viewport), _resources.Font)
-                {
-                    Name = "reward",
-                    MaximumWidth = textWidth,
-                    MaximumHeight = 120
-                });
-            }
-            _controls.Add(new UIButton(4, UIDesktopLayout.MapRectangle(
-                    new Rectangle(520, 650, 380, 75), viewport), "Adjust Loadout",
-                _resources.Pixel, _resources.Font) { Name = "retry", FocusIndex = 0 });
-            _controls.Add(new UIButton(5, UIDesktopLayout.MapRectangle(
-                    new Rectangle(1020, 650, 380, 75), viewport),
-                won ? "Continue Journey" : "Main Menu",
-                _resources.Pixel, _resources.Font) { Name = "mainMenu", FocusIndex = 1 });
-            AddEndingButtons(won, node);
-            FocusIfNeeded();
-#endif
+        }
+
+        private void BuildPaperOutcome(bool won, string message, CampaignNode? node, bool duel)
+        {
+            _controls.Add(new UIPaperOutcome(_resources, node, won, message, duel) { Name = "paper_outcome" });
+            var layout = new UIEditorialLayout(_resources.GraphicsDevice.Viewport);
+            if (!duel)
+                _controls.Add(new UIEditorialButton(4, UIPaperOutcome.Action(layout, false, false), "Adjust loadout", _resources.Pixel, _resources.LabelFont)
+                { Name = "retry", FocusIndex = 0, Primary = !won });
+            _controls.Add(new UIEditorialButton(5, UIPaperOutcome.Action(layout, true, duel),
+                won && !duel ? "Continue journey" : "Main menu", _resources.Pixel, _resources.LabelFont)
+                { Name = "mainMenu", FocusIndex = 1, Primary = won || duel });
         }
 
         private void AddEndingButtons(bool won, CampaignNode node)
@@ -163,37 +110,7 @@ namespace Fida.UI.Campaign
 
         public void BuildDuelResult(bool won, string message)
         {
-            _controls.Add(new UIPanel(0, _resources.Pixel) { Name = "panel" });
-#if FIDA_ANDROID
-            Rectangle panel = UITheme.PanelRect(_resources.GraphicsDevice.Viewport);
-            float centerX = panel.Center.X;
-            _controls.Add(new UITitle(1, won ? "VICTORY" : "DEFEAT",
-                new Vector2(centerX, panel.Top + 150), _resources.Pixel, _resources.TitleFont)
-            { Name = "title" });
-            _controls.Add(new UILabel(2, message, new Vector2(centerX, panel.Top + 360), _resources.Font)
-            { Name = "result", MaximumWidth = panel.Width - 96, MaximumHeight = 100 });
-            _controls.Add(new UIButton(3, new Rectangle(panel.Left + 56, panel.Bottom - 152,
-                panel.Width - 112, 92), "Main Menu", _resources.Pixel, _resources.Font)
-            { Name = "mainMenu", FocusIndex = 0 });
-#else
-            Viewport viewport = _resources.GraphicsDevice.Viewport;
-            float scale = UIDesktopLayout.Scale(viewport);
-            int textWidth = (int)System.Math.Round(1100 * scale);
-            _controls.Add(new UITitle(1, won ? "VICTORY" : "DEFEAT",
-                UIDesktopLayout.MapPoint(new Vector2(960, 340), viewport),
-                _resources.Pixel, _resources.TitleFont) { Name = "title" });
-            _controls.Add(new UILabel(2, message,
-                UIDesktopLayout.MapPoint(new Vector2(960, 520), viewport), _resources.Font)
-            {
-                Name = "result",
-                MaximumWidth = textWidth,
-                MaximumHeight = 100,
-                MinimumScale = 0.45f
-            });
-            _controls.Add(new UIButton(3, UIDesktopLayout.MapRectangle(
-                    new Rectangle(770, 650, 380, 75), viewport), "Main Menu",
-                _resources.Pixel, _resources.Font) { Name = "mainMenu", FocusIndex = 0 });
-#endif
+            BuildPaperOutcome(won, message, null, true);
             FocusIfNeeded();
         }
 

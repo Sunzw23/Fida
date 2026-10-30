@@ -17,9 +17,10 @@ public sealed partial class UICampaignMap
         int inset = Math.Clamp(area.Width / 14, 18, 40), left = area.Left + inset, width = area.Width - inset * 2;
         bool folder = _folders.Count > 0;
         DrawMapText(batch, "Campaign", layout.Header, 65 * new UIEditorialLayout(_graphicsDevice.Viewport).Scale, UITheme.Ink, true);
-        if (!layout.Portrait)
-            batch.Draw(_pixel, new Rectangle(area.Left, area.Top, 1, area.Height), UITheme.Line);
-        else batch.Draw(_pixel, new Rectangle(area.Left, area.Top, area.Width, 1), UITheme.Line);
+        UIPaper.Sheet(batch, area, UITheme.Panel, 4, 10);
+        var shared = new UIEditorialLayout(_graphicsDevice.Viewport);
+        UIPaper.Sheet(batch, shared.Portrait ? shared.Rect(30, 30, 840, 135) : shared.Rect(45, 30, 1830, 135), UITheme.Panel, 3, 9);
+        DrawMapText(batch, "Campaign", layout.Header, 65 * shared.Scale, UITheme.Ink, true);
         CampaignNode node = _selectedIndex >= 0 && _selectedIndex < _nodes.Count ? _nodes[_selectedIndex] : null;
         string title, description, metric, reward;
         bool unlocked;
@@ -61,9 +62,9 @@ public sealed partial class UICampaignMap
         {
             var descendants = _hierarchy.Descendants(_scope.Concat(new[] { title }).ToArray());
             var preview = Slot(.24f, .48f);
-            batch.Draw(_pixel, preview, UITheme.Panel);
-            preview.Inflate(-Math.Max(16, preview.Width / 16), -Math.Max(10, preview.Height / 8));
-            DrawChapterPreview(batch, descendants, preview, UITheme.AccentBlue * .8f);
+            UIPaper.Sheet(batch, preview, UIPaper.Face, 3, 6);
+            preview.Inflate(-5, -5);
+            UIPaper.Scene(batch, preview, UIPaper.ChapterIndex(title));
             DrawMapParagraph(batch, _font, description, Slot(.52f, .72f), 27, UITheme.InkMuted);
             DrawMapParagraph(batch, _font, metric, Slot(.75f, .86f), 25, UITheme.Ink);
             DrawMapParagraph(batch, _font, reward, Slot(.89f, 1), 23, UITheme.AccentBlue);
@@ -74,10 +75,10 @@ public sealed partial class UICampaignMap
             DrawMapParagraph(batch, _font, metric, Slot(.60f, .73f), 29, UITheme.Ink);
             DrawMapParagraph(batch, _font, reward, Slot(.78f, 1), 27, UITheme.AccentBlue);
         }
-        batch.Draw(_pixel, layout.Action, unlocked ? UITheme.Ink : UITheme.PanelLight);
+        UIPaper.Sheet(batch, layout.Action, unlocked ? UIPaper.Face : UITheme.PanelLight, 3, 8);
         string action = folder ? "Open chapter" : unlocked ? "Configure skills" : "Locked";
         DrawCentered(batch, _font, action, layout.Action.Center.ToVector2(), layout.Action.Width - 24,
-            Math.Min(.6f, layout.Action.Height / (float)_font.LineSpacing * .65f), unlocked ? UITheme.BgTop : UITheme.InkMuted);
+            Math.Min(.6f, layout.Action.Height / (float)_font.LineSpacing * .65f), unlocked ? UIPaper.Ink : UITheme.InkMuted);
     }
 #endif
 
@@ -85,23 +86,23 @@ public sealed partial class UICampaignMap
     private void DrawChapterCard(SpriteBatch batch, Rectangle bounds, int index,
         IReadOnlyList<int> descendants, int cleared, bool selected)
     {
-        Color accent = selected ? UITheme.AccentBlue : UITheme.InkMuted;
-        batch.Draw(_pixel, bounds, selected ? UITheme.PanelLight : UITheme.PanelDark);
-        UIUtils.DrawRectangleOutlines(batch, bounds, selected ? UITheme.AccentBlue : UITheme.Line * .6f, selected ? 2 : 1, _pixel);
-        int pad = Math.Clamp(bounds.Width / 20, 12, 22);
-        bool compact = bounds.Height < 130, tiny = bounds.Height < 90;
-        if (selected) batch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 4, bounds.Height), UITheme.AccentBlue);
-        if (!tiny) DrawMapText(batch, $"{index + 1:00}", new Rectangle(bounds.Left + pad, bounds.Top + 8, 60, compact ? 18 : 28), 22, accent, true);
-        DrawMapText(batch, _folders[index], new Rectangle(bounds.Left + pad, bounds.Top + (tiny ? 8 : compact ? 28 : 38),
-            bounds.Width - pad * 2, compact ? 26 : Math.Max(20, bounds.Height - 92)), Math.Clamp(bounds.Width * .095f, 24, 40), UITheme.Ink, true);
+        Color accent = selected ? UITheme.AccentBlue : UITheme.Line;
+        UIPaper.Sheet(batch, bounds, selected ? UITheme.AccentBlue : UIPaper.Face, selected ? 5 : 3, 7);
+        int pad = Math.Clamp(bounds.Width / 25, 10, 18);
+        bool compact = bounds.Height < 120;
+        int header = compact ? 34 : 43;
+        DrawMapText(batch, $"{index + 1:00}", new Rectangle(bounds.Left + pad, bounds.Top + 7, 26, 24), 19, UIPaper.MutedInk, true);
+        DrawMapText(batch, _folders[index], new Rectangle(bounds.Left + pad + 36, bounds.Top + 5,
+            bounds.Width - pad * 2 - 36, header - 7), Math.Clamp(bounds.Width * .07f, 22, 31), UIPaper.Ink, true);
+        if (!compact)
+            UIPaper.Scene(batch, new Rectangle(bounds.Left + pad, bounds.Top + header,
+                bounds.Width - pad * 2, bounds.Height - header - 36), UIPaper.ChapterIndex(_folders[index]));
         DrawMapText(batch, $"{cleared} / {descendants.Count} cleared", new Rectangle(bounds.Left + pad,
-            bounds.Bottom - (compact ? 34 : 49), bounds.Width - pad * 2 - 80, compact ? 22 : 28), 21, UITheme.InkMuted);
-        if (bounds.Width > 240)
-            DrawChapterPreview(batch, descendants, new Rectangle(bounds.Right - 83, bounds.Bottom - (compact ? 38 : 54), 62, compact ? 22 : 30), accent * .65f);
-        Rectangle track = new(bounds.Left + pad, bounds.Bottom - 12, bounds.Width - pad * 2, 3);
-        batch.Draw(_pixel, track, UITheme.Line * .55f);
+            bounds.Bottom - 31, bounds.Width - pad * 2, 22), 19, UIPaper.MutedInk);
+        Rectangle track = new(bounds.Left + pad, bounds.Bottom - 7, bounds.Width - pad * 2, 3);
+        batch.Draw(_pixel, track, UIPaper.MutedInk * .35f);
         if (descendants.Count > 0 && cleared > 0)
-            batch.Draw(_pixel, new Rectangle(track.Left, track.Top, Math.Max(1, track.Width * cleared / descendants.Count), track.Height), accent);
+            batch.Draw(_pixel, new Rectangle(track.Left, track.Top, Math.Max(1, track.Width * cleared / descendants.Count), track.Height), UITheme.PanelHover);
     }
 
     private void DrawChapterPreview(SpriteBatch batch, IReadOnlyList<int> indices, Rectangle area, Color color)

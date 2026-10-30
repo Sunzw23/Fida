@@ -50,36 +50,32 @@ namespace Fida.UI
         public static void DrawBackButton(SpriteBatch spriteBatch, Texture2D pixel,
             Rectangle bounds, bool hovered = false, bool pressed = false)
         {
-            spriteBatch.Draw(pixel, bounds, pressed ? UITheme.PanelPressed :
-                hovered ? UITheme.PanelHover : UITheme.PanelLight);
-            DrawFrame(spriteBatch, pixel, bounds, UITheme.AccentBlue,
-                pressed || hovered ? 2 : 1);
+            UIPaper.Sheet(spriteBatch, bounds, hovered ? UITheme.AccentBlue : UIPaper.Face, pressed ? 0 : 3, 7);
 
             float half = Math.Max(10f, Math.Min(bounds.Width, bounds.Height) * 0.25f);
             Vector2 center = bounds.Center.ToVector2();
             Vector2 tip = new(center.X - half, center.Y);
             float thickness = Math.Max(2f, Math.Min(bounds.Width, bounds.Height) * 0.055f);
             DrawLine(spriteBatch, pixel, tip, new Vector2(center.X + half, center.Y),
-                UITheme.AccentBlue, thickness);
+                UIPaper.Ink, thickness);
             DrawLine(spriteBatch, pixel, tip,
                 new Vector2(center.X - half * 0.15f, center.Y - half * 0.82f),
-                UITheme.AccentBlue, thickness);
+                UIPaper.Ink, thickness);
             DrawLine(spriteBatch, pixel, tip,
                 new Vector2(center.X - half * 0.15f, center.Y + half * 0.82f),
-                UITheme.AccentBlue, thickness);
+                UIPaper.Ink, thickness);
         }
 
         public static void DrawCloseButton(SpriteBatch spriteBatch, Texture2D pixel,
             Rectangle bounds)
         {
-            spriteBatch.Draw(pixel, bounds, UITheme.PanelLight);
-            DrawFrame(spriteBatch, pixel, bounds, UITheme.AccentBlue, 1);
+            UIPaper.Sheet(spriteBatch, bounds, UIPaper.Face, 2, 6);
             float inset = Math.Min(bounds.Width, bounds.Height) * 0.28f;
             Vector2 topLeft = new(bounds.Left + inset, bounds.Top + inset);
             Vector2 bottomRight = new(bounds.Right - inset, bounds.Bottom - inset);
-            DrawLine(spriteBatch, pixel, topLeft, bottomRight, UITheme.AccentBlue, 2f);
+            DrawLine(spriteBatch, pixel, topLeft, bottomRight, UIPaper.Ink, 2f);
             DrawLine(spriteBatch, pixel, new Vector2(bottomRight.X, topLeft.Y),
-                new Vector2(topLeft.X, bottomRight.Y), UITheme.AccentBlue, 2f);
+                new Vector2(topLeft.X, bottomRight.Y), UIPaper.Ink, 2f);
         }
 
         public override bool Contains(Point point) =>
@@ -95,20 +91,9 @@ namespace Fida.UI
                 return;
             }
 
-            Color accent = State is UIButtonState.Pressed or UIButtonState.Selected
-                ? UITheme.AccentGreen
-                : State == UIButtonState.Hovered ? UITheme.GoldBright : UITheme.AccentBlue;
-            spriteBatch.Draw(Pixel, Bounds, GetBackColor());
-
-            if (State == UIButtonState.Pressed)
-                spriteBatch.Draw(Pixel, Bounds, UITheme.AccentViolet * 0.24f);
-
-            float pulse = State == UIButtonState.Normal
-                ? 0.48f
-                : 0.72f + 0.18f * (float)Math.Sin(
-                    gameTime.TotalGameTime.TotalSeconds * 7.0);
-            UIUtils.DrawGlowFrame(spriteBatch, Bounds, Pixel, accent,
-                Math.Max(1, GetBorderThickness()), pulse);
+            Color accent = UIPaper.Ink;
+            UIPaper.Sheet(spriteBatch, Bounds, State == UIButtonState.Hovered ? UITheme.Gold : UIPaper.Face,
+                State == UIButtonState.Pressed ? 0 : 3, 6);
 
             float layoutScale = UIDesktopLayout.LayoutScale(spriteBatch.GraphicsDevice.Viewport);
             float pressOffset = State == UIButtonState.Pressed ? 2f * layoutScale : 0f;

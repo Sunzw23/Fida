@@ -60,7 +60,7 @@ namespace Fida.UI
             Color foreColor = GetForeColor();
             Color borderColor = GetBorderColor();
             int borderThickness = GetBorderThickness();
-            bool primary = Name is "startGame" or "retry";
+            bool primary = Name is "startGame" or "retry" or "resume";
             if (primary && State != UIButtonState.Disabled)
             {
                 backColor = Color.Lerp(UITheme.Ink, UITheme.GoldBright, HoverAmount) * EntranceAmount;
@@ -69,7 +69,7 @@ namespace Fida.UI
             }
 
             // 绘制背景
-            sb.Draw(Pixel, Bounds, backColor);
+            UIPaper.Sheet(sb, Bounds, backColor, _isPressed ? 0 : 3, 8);
 
             bool emphasized = State is UIButtonState.Hovered or UIButtonState.Pressed or UIButtonState.Selected;
             if (emphasized)
@@ -95,12 +95,7 @@ namespace Fida.UI
             UITextRenderer.DrawString(sb, Font, displayText, pos, foreColor, 0f, Vector2.Zero,
                 textScale, SpriteEffects.None, 0f);
 
-            // 绘制边框（禁用状态 borderThickness=0，不绘制）
-            if (borderThickness > 0)
-            {
-                UIUtils.DrawRectangleOutlines(sb, Bounds, borderColor,
-                    emphasized ? Math.Max(2, borderThickness) : borderThickness, Pixel);
-            }
+
         }
 
         public override void Update(string text)

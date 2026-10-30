@@ -178,31 +178,32 @@ namespace Fida.UI
             float healthLine = UITypography.LineHeight(UITextRole.Caption, viewport.Width, viewport.Height);
             float skillLine = UITypography.LineHeight(UITextRole.Small, viewport.Width, viewport.Height);
             int gap = Math.Max(3, UIConfig.ScaleDesktopMetric(5));
-            _skillsCenter = new Vector2(CardBounds.Center.X, Number0Bounds.Top - gap - skillLine / 2);
-            float healthY = Number0Bounds.Top - gap - skillLine - (skillLine > 0 ? gap : 0) - healthLine / 2;
-            _nameCenter = new Vector2(CardBounds.Center.X, healthY - healthLine / 2 - gap - nameLine / 2);
-            int portraitHeight = Math.Max(1, (int)(_nameCenter.Y - nameLine / 2 - gap - CardBounds.Top));
-            int portraitWidth = Math.Min(CardBounds.Width / 2, portraitHeight);
-            PortraitBounds = new Rectangle(CardBounds.Center.X - portraitWidth / 2,
-                CardBounds.Top, portraitWidth, portraitHeight);
-            NameLabel = new UILabel(0, player.Name, _nameCenter, nameFont)
+            int infoLeft = CardBounds.Left + CardBounds.Width * 44 / 100;
+            int infoWidth = CardBounds.Right - infoLeft - gap;
+            float nameHeight = nameLine * 2;
+            _nameCenter = new Vector2(infoLeft + infoWidth / 2f, CardBounds.Top + gap + nameHeight / 2);
+            string displayName = player.Name;
+            if (nameFont.MeasureString(displayName).X * UITypography.Scale(nameFont, UITextRole.Name, viewport) > infoWidth)
+                displayName = displayName.Replace(" ", "\n");
+            NameLabel = new UILabel(0, displayName, _nameCenter, nameFont)
             {
-                MaximumWidth = CardBounds.Width - 8,
-                MaximumHeight = nameLine,
+                MaximumWidth = infoWidth,
+                MaximumHeight = nameHeight,
                 TypographyRole = UITextRole.Name
             };
-            HealthBounds = new Rectangle(CardBounds.Left + CardBounds.Width / 5,
-                (int)healthY - 2, CardBounds.Width * 2 / 5,
-                Math.Max(3, UIConfig.ScaleDesktopMetric(5)));
-            _healthCenter = new Vector2(HealthBounds.Right + gap * 2 + CardBounds.Width * 0.115f, HealthBounds.Center.Y);
-            HealthLabel = new UILabel(11, $"{player.Health}/{player.MaxHealth}", _healthCenter, _captionFont)
+            int healthY = (int)(_nameCenter.Y + nameHeight / 2 + gap + healthLine / 2);
+            HealthBounds = new Rectangle(infoLeft, healthY - 3, Math.Max(30, infoWidth * 62 / 100), Math.Max(5, UIConfig.ScaleDesktopMetric(8)));
+            _healthCenter = new Vector2(HealthBounds.Right + gap + (infoWidth - HealthBounds.Width - gap) / 2, healthY);
+            HealthLabel = new UILabel(11, $"{player.Health}/{Player.MaxHealth}", _healthCenter, _captionFont)
             {
-                MaximumWidth = CardBounds.Width * 0.23f,
+                MaximumWidth = infoWidth - HealthBounds.Width - gap,
                 MaximumHeight = healthLine,
                 TypographyRole = UITextRole.Caption
             };
-            _skillStripBounds = new Rectangle(CardBounds.Left, CardBounds.Top,
-                CardBounds.Width, Math.Max(1, Number0Bounds.Top - CardBounds.Top));
+            _skillsCenter = new Vector2(infoLeft + infoWidth / 2f, healthY + healthLine / 2 + gap + skillLine / 2);
+            PortraitBounds = new Rectangle(CardBounds.Left - gap, CardBounds.Top - gap,
+                CardBounds.Width * 50 / 100, Number0Bounds.Top - CardBounds.Top);
+            _skillStripBounds = new Rectangle(CardBounds.Left, CardBounds.Top, CardBounds.Width, Number0Bounds.Top - CardBounds.Top);
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
                 pixel, font) { ParentDrawOnly = true, DarkTileStyle = true };
@@ -409,6 +410,9 @@ namespace Fida.UI
             var art = PortraitBounds;
             float enter = UIMotion.Reduced ? 1 : MathHelper.SmoothStep(0, 1, _arrivalProgress);
             Color tint = (_visuallyDefeated ? Color.Lerp(Color.White, UITheme.InkMuted * 0.35f, _deathReveal) : Color.White) * enter;
+            var infoSheet = new Rectangle(CardBounds.Left + CardBounds.Width * 35 / 100, CardBounds.Top + 4,
+                CardBounds.Width * 65 / 100, Math.Max(1, Number0Bounds.Top - CardBounds.Top - 10));
+            UIPaper.Sheet(sb, infoSheet, UITheme.PanelDark, 2, 12);
             if (PortraitTexture != null)
             {
                 Rectangle source = PortraitSource ?? PortraitTexture.Bounds;
@@ -419,26 +423,32 @@ namespace Fida.UI
                     new Vector2(fit * portraitScale, fit * portraitScale * (1 + breath * 0.009f)),
                     SpriteEffects.None, 0);
             }
-            NameLabel.SetColor(IsCurrentTurn || IsPresentingAction ? UITheme.Gold : UITheme.Ink);
+            if (IsCurrentTurn || IsPresentingAction)
+                UIPaper.Sheet(sb, new Rectangle(infoSheet.Left + 8,
+                    (int)(_nameCenter.Y - 18 * scale), infoSheet.Width - 16, Math.Max(24, (int)(36 * scale))), UITheme.Gold, 1, 5);
+            NameLabel.SetColor(IsCurrentTurn || IsPresentingAction ? UIPaper.Ink : UITheme.Ink);
             NameLabel.DrawAt(sb, time, _nameCenter, scale);
             sb.Draw(Pixel, HealthBounds, UITheme.Line * 0.55f);
             float ratio = Player.MaxHealth <= 0 ? 0 : MathHelper.Clamp(_displayHealth / Player.MaxHealth, 0, 1);
             if (ratio > 0)
                 sb.Draw(Pixel, new Rectangle(HealthBounds.X, HealthBounds.Y,
                     Math.Max(1, (int)(HealthBounds.Width * ratio)), HealthBounds.Height),
-                    IsAlly ? UITheme.Gold : UITheme.Ink);
+                    IsAlly ? UITheme.Gold : new Color(196, 113, 106));
             HealthLabel.SetColor(UITheme.InkMuted);
             HealthLabel.DrawAt(sb, time, _healthCenter, scale);
             if (Player.Skills.Count > 0)
             {
-                string skills = string.Join("  /  ", Player.Skills.ConvertAll(skill => UISkillIconCatalog.Glyph(skill.Type)));
+                int side = Math.Clamp((int)(34 * scale), 20, 38);
+                int shown = Math.Min(4, Player.Skills.Count), total = shown * (side + 10) - 10;
+                Vector2 center =
 #if FIDA_ANDROID
-                DrawCompactText(sb, skills, _skillStripBounds.Center.ToVector2(), UITheme.InkMuted,
-                    0.50f, _skillStripBounds.Width);
+                    _skillStripBounds.Center.ToVector2();
 #else
-                DrawCompactText(sb, skills, _skillsCenter, UITheme.InkMuted,
-                    0.23f * scale, CardBounds.Width - 12);
+                    _skillsCenter;
 #endif
+                for (int i = 0; i < shown; i++)
+                    Campaign.UISkillArt.Draw(sb, Player.Skills[i].Type, new Rectangle((int)center.X - total / 2 + i * (side + 10),
+                        (int)center.Y - side / 2, side, side), UITheme.Ink);
             }
             if (IsCurrentTurn || IsPresentingAction)
                 sb.Draw(Pixel, new Rectangle(CardBounds.Center.X - Math.Max(4, (int)(8 * scale)),

@@ -31,6 +31,12 @@ namespace Fida.UI
         /// </summary>
         public ControllerInputHandler ControllerInput => _controllerInput;
 
+        public void SynchronizeInput()
+        {
+            _previousMouseState = _currentMouseState = UIPointer.GetState();
+            _previousKeyboardState = Keyboard.GetState();
+        }
+
         /// <summary>
         /// 更新鼠标状态并检测点击的 UI 区域。
         /// 注意：此方法假设 UI 控件已经在 UIManager.UpdateUIButtons 中更新过

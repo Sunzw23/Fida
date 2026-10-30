@@ -91,13 +91,9 @@ namespace Fida.UI.Campaign
             spriteBatch.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height),
                 new Color(8, 14, 26, 166));
 
-            Color paper = UITheme.Panel;
-            spriteBatch.Draw(_pixel, Bounds, paper);
-            UIUtils.DrawRectangleOutlines(spriteBatch, Bounds, UITheme.Ink, 2, _pixel);
-            int accent = Math.Clamp(Bounds.Width / 7, 54, 148);
-            spriteBatch.Draw(_pixel, new Rectangle(Bounds.Left, Bounds.Top, accent, 6), UITheme.Gold);
-            spriteBatch.Draw(_pixel, new Rectangle(Bounds.Right - accent, Bounds.Bottom - 6, accent, 6),
-                UITheme.AccentGreen);
+            var backing = Bounds; backing.Offset(-6, 6);
+            UIPaper.Sheet(spriteBatch, backing, UITheme.PanelLight, 3, 10);
+            UIPaper.Sheet(spriteBatch, Bounds, UIPaper.Face, 4, 9);
 
             int pad = Math.Clamp(Bounds.Width / 32, 18, 38);
             float scale = UITypography.Scale(_font, UITextRole.Body, viewport);
@@ -105,22 +101,22 @@ namespace Fida.UI.Campaign
             float captionScale = UITypography.Scale(_font, UITextRole.Small, viewport);
             Vector2 speakerAt = new(Bounds.Left + pad, Bounds.Top + pad * 0.55f);
             UITextRenderer.DrawString(spriteBatch, _font, _lines[_lineIndex].Speaker.ToUpperInvariant(), speakerAt,
-                UITheme.AccentGreen, 0f, Vector2.Zero, speakerScale,
+                UIPaper.Ink, 0f, Vector2.Zero, speakerScale,
                 SpriteEffects.None, 0f);
 
             int textTop = (int)(speakerAt.Y + _font.LineSpacing * speakerScale + 12);
             int textBottom = Bounds.Bottom - pad - (int)(_font.LineSpacing * captionScale) - 10;
             Rectangle textArea = new(Bounds.Left + pad, textTop,
                 Bounds.Width - pad * 2 - 12, System.Math.Max(1, textBottom - textTop));
-            DrawWrapped(spriteBatch, _lines[_lineIndex].Text, textArea, scale, UITheme.Ink);
+            DrawWrapped(spriteBatch, _lines[_lineIndex].Text, textArea, scale, UIPaper.Ink);
 
             string progress = $"{_lineIndex + 1:00} / {_lines.Length:00}";
             Vector2 progressSize = _font.MeasureString(progress) * captionScale;
             UITextRenderer.DrawString(spriteBatch, _font, progress,
                 new Vector2(Bounds.Right - pad - progressSize.X, Bounds.Bottom - pad - progressSize.Y),
-                UITheme.InkMuted, 0f, Vector2.Zero, captionScale, SpriteEffects.None, 0f);
+                UIPaper.MutedInk, 0f, Vector2.Zero, captionScale, SpriteEffects.None, 0f);
             DrawChevron(spriteBatch, new Vector2(Bounds.Right - pad * 0.55f, Bounds.Center.Y),
-                Math.Max(6, (int)(10 * scale)), UITheme.Gold);
+                Math.Max(6, (int)(10 * scale)), UIPaper.Ink);
         }
 
         private void DrawWrapped(SpriteBatch sb, string text, Rectangle area, float scale, Color color)

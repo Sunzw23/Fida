@@ -98,7 +98,7 @@ namespace Fida.UI
             }
 
             // 绘制背景
-            sb.Draw(Pixel, Bounds, BackColor);
+            UIPaper.Sheet(sb, Bounds, BackColor, 2, 7);
             if (AccentBar)
                 sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Top, 6, Bounds.Height),
                     BorderColor);
@@ -108,17 +108,6 @@ namespace Fida.UI
             {
                 UITextRenderer.DrawString(sb, Font, _cachedDisplayText, _cachedTextPos, ForeColor,
                     0f, Vector2.Zero, _cachedTextScale, SpriteEffects.None, 0f);
-            }
-
-            // 绘制边框
-            if (BorderThickness > 0)
-            {
-                if (BorderThickness >= 2)
-                    UIUtils.DrawGlowFrame(sb, Bounds, Pixel, BorderColor,
-                        BorderThickness, 0.55f);
-                else
-                    UIUtils.DrawRectangleOutlines(sb, Bounds, BorderColor,
-                        BorderThickness, Pixel);
             }
 
             if (SignalRails)

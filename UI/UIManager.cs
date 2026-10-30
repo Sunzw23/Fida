@@ -28,7 +28,7 @@ namespace Fida.UI
     /// - 把「鼠标 / 键盘 / 手柄交互」委托给 <see cref="UIInputHandler"/>
     /// 公共签名保持不变，便于外部调用方无感知切换。
     /// </summary>
-    public class UIManager
+    public class UIManager : System.IDisposable
     {
         public const int RulesPageCount = 5;
 
@@ -44,6 +44,13 @@ namespace Fida.UI
         private readonly UIScreenBuilder _screenBuilder;
         private UIControl? _entranceAnchor;
         private double _entranceStart;
+        private double _lastUiTime;
+        private RenderTarget2D? _pageFrame, _previousPageFrame;
+        private bool _hasPageFrame, _showPreviousPage;
+        private bool _transitionPointerHeld;
+        public bool IsPageTransitionActive => !UIMotion.Reduced &&
+            (_transitionPointerHeld || (_uiControls.Count > 0 && !ReferenceEquals(_uiControls[0], _entranceAnchor)) ||
+             (_showPreviousPage && _lastUiTime - _entranceStart < .14));
 
         public GameManager GameManager { get; private set; }
 
@@ -75,27 +82,38 @@ namespace Fida.UI
 
         public void Draw(GameTime gameTime)
         {
-            _graphicsDevice.Clear(UITheme.BgTop);
-
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
-                SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState);
-            // Shared editorial background for menus and battle screens.
-            UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel,
-                _graphicsDevice.Viewport, gameTime);
+            var viewport = _graphicsDevice.Viewport;
+            if (_pageFrame == null || _pageFrame.Width != viewport.Width || _pageFrame.Height != viewport.Height)
+            {
+                _pageFrame?.Dispose(); _previousPageFrame?.Dispose();
+                _pageFrame = new RenderTarget2D(_graphicsDevice, viewport.Width, viewport.Height, false,
+                    SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+                _previousPageFrame = new RenderTarget2D(_graphicsDevice, viewport.Width, viewport.Height, false,
+                    SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+                _hasPageFrame = false; _showPreviousPage = false;
+            }
             UIControl? anchor = _uiControls.Count > 0 ? _uiControls[0] : null;
             if (!ReferenceEquals(anchor, _entranceAnchor))
             {
+                if (_hasPageFrame && !UIMotion.Reduced)
+                {
+                    (_pageFrame, _previousPageFrame) = (_previousPageFrame, _pageFrame);
+                    _showPreviousPage = true;
+                }
                 _entranceAnchor = anchor;
                 _entranceStart = gameTime.TotalGameTime.TotalSeconds;
                 int order = 0;
                 foreach (var control in _uiControls)
                     if (control is UIButton button) button.EntranceDelay = System.Math.Min(order++, 5) * 0.04f;
             }
-            float entrance = UIMotion.Reveal(gameTime.TotalGameTime.TotalSeconds - _entranceStart);
-            _spriteBatch.End();
+            float entrance = UIMotion.Reveal(gameTime.TotalGameTime.TotalSeconds - _entranceStart, .20f);
+            _graphicsDevice.SetRenderTarget(_pageFrame);
+            _graphicsDevice.Clear(UITheme.BgTop);
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
-                SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState,
-                transformMatrix: Matrix.Identity);
+                SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState);
+            UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel, _graphicsDevice.Viewport, gameTime);
+            foreach (var control in _uiControls)
+                if (control is UIPlayer) { UIPaper.BattleBackground(_spriteBatch, _graphicsDevice.Viewport); break; }
             foreach (UIControl control in _uiControls)
             {
                 if (control.IsVisible) control.Draw(_spriteBatch, gameTime);
@@ -106,14 +124,14 @@ namespace Fida.UI
                 _resourceManager.Pixel, _resourceManager.Font);
 #endif
             _spriteBatch.End();
-            if (entrance < 1f)
-            {
-                _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-                _spriteBatch.Draw(_resourceManager.Pixel,
-                    new Rectangle(0, 0, _graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height),
-                    UITheme.BgTop * (1 - entrance));
-                _spriteBatch.End();
-            }
+            _graphicsDevice.SetRenderTarget(null);
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp);
+            _spriteBatch.Draw(_pageFrame, viewport.Bounds, Color.White);
+            if (_showPreviousPage && entrance < 1 && !UIMotion.Reduced)
+                _spriteBatch.Draw(_previousPageFrame, viewport.Bounds, Color.White * (1 - entrance));
+            else _showPreviousPage = false;
+            _spriteBatch.End();
+            _hasPageFrame = true;
         }
 
         public void Clear() => _uiControls.Clear();
@@ -121,8 +139,22 @@ namespace Fida.UI
         /// <summary>每帧逻辑更新 - 处理动画计时等与渲染无关的逻辑</summary>
         public void Update(GameTime gameTime)
         {
+            _lastUiTime = gameTime.TotalGameTime.TotalSeconds;
+            var pointer = UIPointer.GetState();
+            if (pointer.LeftButton == ButtonState.Released) _transitionPointerHeld = false;
+            else if (IsPageTransitionActive) _transitionPointerHeld = true;
+            bool blocked = IsPageTransitionActive;
+            if (blocked) _inputHandler.SynchronizeInput();
             foreach (UIControl control in _uiControls)
             {
+                if (blocked && control is UICampaignMap map) { map.SynchronizeInput(); continue; }
+                if (blocked && control is UIRoomCodeInput code) { code.SynchronizeInput(); continue; }
+                if (blocked && control is UICampaignSkillWheel wheel)
+                {
+                    bool previous = wheel.InputBlocked;
+                    wheel.InputBlocked = true; wheel.Update(gameTime); wheel.Update(pointer); wheel.InputBlocked = previous;
+                    continue;
+                }
                 control.Update(gameTime);
             }
         }
@@ -143,6 +175,7 @@ namespace Fida.UI
 
         public void Dispose()
         {
+            _pageFrame?.Dispose(); _previousPageFrame?.Dispose();
             _uiRasterizerState.Dispose();
             _spriteBatch.Dispose();
         }
@@ -244,6 +277,7 @@ namespace Fida.UI
         /// <summary>更新所有 UI 按钮的状态（让按钮通过 EnabledChecker 询问环境来决定是否启用）</summary>
         public void UpdateUIButtons(GameManager gameManager)
         {
+            if (IsPageTransitionActive) return;
             var mouseState = UIPointer.GetState();
             foreach (UIControl control in _uiControls)
             {
@@ -254,7 +288,7 @@ namespace Fida.UI
         /// <summary>更新鼠标输入并检测点击，返回对应游戏动作</summary>
         public GameAction UpdateMouseAndCheckClicks(GameManager gameManager)
         {
-            return _inputHandler.UpdateMouseAndCheckClicks(gameManager);
+            return IsPageTransitionActive ? new GameAction { Type = ActionType.None } : _inputHandler.UpdateMouseAndCheckClicks(gameManager);
         }
 
         // ─── 手柄焦点 / 输入模式（委托 UIFocusManager） ───
@@ -263,7 +297,7 @@ namespace Fida.UI
         public void UpdateControllerInput(GameTime gameTime) => _focusManager.UpdateControllerInput(gameTime);
 
         /// <summary>检查手柄确认键并生成游戏动作</summary>
-        public GameAction CheckControllerConfirm(GameManager gameManager) => _focusManager.CheckControllerConfirm(gameManager);
+        public GameAction CheckControllerConfirm(GameManager gameManager) => IsPageTransitionActive ? new GameAction { Type = ActionType.None } : _focusManager.CheckControllerConfirm(gameManager);
 
         /// <summary>更新输入模式 - 根据最近的输入活动自动切换</summary>
         public void UpdateInputMode() => _focusManager.UpdateInputMode();

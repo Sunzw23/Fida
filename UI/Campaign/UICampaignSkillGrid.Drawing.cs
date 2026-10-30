@@ -24,10 +24,9 @@ public sealed partial class UICampaignSkillGrid
     private void Button(SpriteBatch batch, Rectangle bounds, string label, bool enabled, bool primary = false)
     {
         bool hover = bounds.Contains(_previousMouse.Position) && enabled && !InputBlocked;
-        batch.Draw(_pixel, bounds, primary && enabled ? hover ? UITheme.GoldBright : UITheme.Ink : hover ? UITheme.PanelHover : UITheme.PanelLight);
-        UIUtils.DrawRectangleOutlines(batch, bounds, enabled ? primary ? UITheme.Ink : UITheme.Gold : UITheme.Line, hover ? 2 : 1, _pixel);
+        UIPaper.Sheet(batch, bounds, enabled ? hover ? UITheme.Gold : UIPaper.Face : UITheme.PanelLight, 3, 6);
         Text(batch, label.Length>1 ? label.TrimEnd(' ','>') : label, new Rectangle(bounds.X+8,bounds.Y+3,Math.Max(1,bounds.Width-16),Math.Max(1,bounds.Height-6)),
-            UITextRole.Name, primary && enabled ? UITheme.BgTop : enabled ? UITheme.Gold : UITheme.InkMuted);
+            UITextRole.Name, enabled ? UIPaper.Ink : UITheme.InkMuted);
     }
     private string StateLabel(SkillType skill) => AvailabilityLabelOverride?.Invoke(skill) ?? Availability(skill) switch
     {
@@ -41,6 +40,10 @@ public sealed partial class UICampaignSkillGrid
     private void DrawGridScreen(SpriteBatch batch, SkillSelectionLayout layout)
     {
         float s = layout.Scale;
+        UIPaper.Sheet(batch, layout.Panel, UITheme.PanelDark, 4, 12);
+        var detailSheet = layout.Details; detailSheet.Inflate(8, 8);
+        UIPaper.Sheet(batch, detailSheet, UITheme.Panel, 3, 9);
+        UIPaper.Sheet(batch, layout.Footer, UITheme.Panel, 2, 7);
         int gap = Math.Max(6,(int)(16*s));
         int small = (int)UITypography.LineHeight(UITextRole.Small,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
         int caption = (int)UITypography.LineHeight(UITextRole.Caption,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
@@ -48,7 +51,7 @@ public sealed partial class UICampaignSkillGrid
         int budgetWidth = layout.Portrait ? layout.Header.Width : (int)(470*s);
         Rectangle title = new(layout.Header.Left,layout.Header.Top,
             layout.Portrait ? layout.Header.Width : layout.Header.Width-budgetWidth-gap,Math.Max(28,(int)(45*s)));
-        Text(batch,UseUnifiedActionButton ? HeaderText : "SKILL LOADOUT",title,UITextRole.Heading,UITheme.Ink,true);
+        Text(batch,UseUnifiedActionButton ? HeaderText : "Loadout",title,UITextRole.Heading,UITheme.Ink,true);
         Text(batch,string.IsNullOrEmpty(StatusText) ? UseUnifiedActionButton ? "Choose a skill" : HeaderText : StatusText,
             new Rectangle(title.Left,title.Bottom+4,title.Width,small+4),UITextRole.Small,UITheme.InkMuted,true);
         var budget = new Rectangle(layout.Portrait ? layout.Header.Left : layout.Header.Right-budgetWidth,
@@ -78,8 +81,9 @@ public sealed partial class UICampaignSkillGrid
         for (int i=0;i<4;i++)
         {
             var tab = layout.Tab(i); bool active = (int)Category==i;
-            Text(batch,tabs[i],tab,UITextRole.Caption,active ? UITheme.Gold : UITheme.InkMuted);
-            if (active) batch.Draw(_pixel,new Rectangle(tab.Left+gap,tab.Bottom-3,tab.Width-gap*2,3),UITheme.Gold);
+            var face = tab; face.Inflate(-3, -3);
+            UIPaper.Sheet(batch, face, active ? UITheme.Gold : UITheme.PanelLight, 2, 5);
+            Text(batch,tabs[i],tab,UITextRole.Caption,active ? UIPaper.Ink : UITheme.Ink);
         }
         var visible = _grid.PageItems;
         for (int i=0;i<visible.Count;i++) DrawTile(batch,layout.Tile(i),visible[i],layout);
@@ -99,14 +103,13 @@ public sealed partial class UICampaignSkillGrid
         var chips = EquippedChips(layout);
         foreach (var chip in chips)
         {
-            batch.Draw(_pixel,chip.Bounds,UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(batch,chip.Bounds,UITheme.Line,1,_pixel);
+            UIPaper.Sheet(batch,chip.Bounds,UIPaper.Face,2,5);
             int iconSize = Math.Min(chip.Bounds.Height-10,Math.Max(20,(int)(30*s)));
-            UISkillArt.Draw(batch,chip.Skill,new Rectangle(chip.Bounds.Left+5,chip.Bounds.Center.Y-iconSize/2,iconSize,iconSize),UITheme.Ink);
+            UISkillArt.Draw(batch,chip.Skill,new Rectangle(chip.Bounds.Left+5,chip.Bounds.Center.Y-iconSize/2,iconSize,iconSize),UIPaper.Ink);
             Text(batch,$"{GameText.SkillName(chip.Skill)}  {CampaignSkillBalance.Cost(chip.Skill)} SP",
                 new Rectangle(chip.Bounds.Left+iconSize+10,chip.Bounds.Top,chip.Bounds.Width-iconSize-34,chip.Bounds.Height),
-                UITextRole.Small,UITheme.Ink,true);
-            Text(batch,"×",new Rectangle(chip.Bounds.Right-26,chip.Bounds.Top,22,chip.Bounds.Height),UITextRole.Caption,UITheme.InkMuted);
+                UITextRole.Small,UIPaper.Ink,true);
+            Text(batch,"×",new Rectangle(chip.Bounds.Right-26,chip.Bounds.Top,22,chip.Bounds.Height),UITextRole.Caption,UIPaper.MutedInk);
         }
         var overflow = ChipOverflow(layout);
         if (overflow.Width>0) Button(batch,overflow,$"+{_selected.Count-chips.Count}",true);
@@ -124,23 +127,22 @@ public sealed partial class UICampaignSkillGrid
         int pad = Math.Max(7,(int)(18*layout.Scale));
         int caption = (int)UITypography.LineHeight(UITextRole.Small,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
         int name = (int)UITypography.LineHeight(UITextRole.Name,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
-        batch.Draw(_pixel,bounds,focused ? UITheme.PanelHover : UITheme.PanelLight);
-        UIUtils.DrawRectangleOutlines(batch,bounds,focused ? UITheme.Ink : selected ? UITheme.Gold : UITheme.Line,focused ? 2 : 1,_pixel);
+        UIPaper.Sheet(batch,bounds,focused ? UITheme.Gold : unavailable ? Color.Lerp(UIPaper.Face,UITheme.PanelLight,.22f) : UIPaper.Face,focused ? 4 : 2,7);
         var nameArea = new Rectangle(bounds.Left+pad,bounds.Bottom-pad-caption-name-3,bounds.Width-pad*2,name);
         var art = new Rectangle(bounds.Left+pad,bounds.Top+pad,bounds.Width-pad*2,Math.Max(8,nameArea.Top-bounds.Top-pad*2));
-        UISkillArt.Draw(batch,skill,art,unavailable ? UITheme.InkMuted*.65f : UITheme.Ink);
-        Text(batch,GameText.SkillName(skill),nameArea,UITextRole.Name,unavailable ? UITheme.InkMuted : UITheme.Ink,true);
+        UISkillArt.Draw(batch,skill,art,unavailable ? UIPaper.MutedInk : UIPaper.Ink);
+        Text(batch,GameText.SkillName(skill),nameArea,UITextRole.Name,UIPaper.Ink,true);
         string state = StateLabel(skill);
         int costWidth = Math.Min(bounds.Width/3,Math.Max(44,(int)(74*layout.Scale)));
         Text(batch,state,new Rectangle(bounds.Left+pad,bounds.Bottom-pad-caption,bounds.Width-pad*2-costWidth,caption),
-            UITextRole.Small,selected ? UITheme.Gold : UITheme.InkMuted,true);
+            UITextRole.Small,selected ? UITheme.PanelHover : UIPaper.MutedInk,true);
         Text(batch,$"{CampaignSkillBalance.Cost(skill)} SP",new Rectangle(bounds.Right-pad-costWidth,bounds.Bottom-pad-caption,costWidth,caption),
-            UITextRole.Small,unavailable ? UITheme.InkMuted : UITheme.Ink);
+            UITextRole.Small,UIPaper.MutedInk);
         if (selected || availability==CampaignSkillAvailability.Locked)
         {
             int side = Math.Max(14,(int)(24*layout.Scale));
             UISkillSymbols.Status(batch,_pixel,new Rectangle(bounds.Right-pad-side,bounds.Top+pad,side,side),
-                selected ? CampaignSkillAvailability.Selected : CampaignSkillAvailability.Locked,selected ? UITheme.Gold : UITheme.InkMuted);
+                selected ? CampaignSkillAvailability.Selected : CampaignSkillAvailability.Locked,selected ? UITheme.PanelHover : UIPaper.MutedInk);
         }
     }
 
@@ -202,9 +204,9 @@ public sealed partial class UICampaignSkillGrid
         var right = new Rectangle(area.Right-width,left.Top,width,left.Height);
         Text(batch,example.Item1,new Rectangle(left.X,area.Y,width,labelHeight),UITextRole.Small,UITheme.InkMuted);
         Text(batch,example.Item3,new Rectangle(right.X,area.Y,width,labelHeight),UITextRole.Small,UITheme.InkMuted);
-        UIUtils.DrawRectangleOutlines(batch,left,UITheme.Line,1,_pixel); UIUtils.DrawRectangleOutlines(batch,right,UITheme.Line,1,_pixel);
-        UIAngularNumber.Draw(batch,example.Item2,new Rectangle(left.X+8,left.Y+6,left.Width-16,left.Height-12),UITheme.Ink);
-        UIAngularNumber.Draw(batch,example.Item4,new Rectangle(right.X+8,right.Y+6,right.Width-16,right.Height-12),UITheme.Gold);
+        UIPaper.Sheet(batch,left,UIPaper.Face,2,5); UIPaper.Sheet(batch,right,UITheme.Gold,2,5);
+        UIAngularNumber.Draw(batch,example.Item2,new Rectangle(left.X+8,left.Y+6,left.Width-16,left.Height-12),UIPaper.Ink);
+        UIAngularNumber.Draw(batch,example.Item4,new Rectangle(right.X+8,right.Y+6,right.Width-16,right.Height-12),UIPaper.Ink);
         Vector2 center = new((left.Right+right.Left)/2f,left.Center.Y);
         batch.Draw(_pixel,new Rectangle((int)center.X-18,(int)center.Y-1,24,2),UITheme.Ink);
         UISkillSymbols.Play(batch,_pixel,center,UITheme.Ink);

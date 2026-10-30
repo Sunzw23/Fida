@@ -41,7 +41,7 @@ public class ColdBattleLayoutTests
                 .Select(i => UIBattleLayout.Unit(i, count, true, 1920, 1200)).ToArray();
             foreach (Rectangle slot in slots)
             {
-                Assert.True(new Rectangle(0, 680, 1920, 410).Contains(slot));
+                Assert.True(new Rectangle(0, 660, 1920, 420).Contains(slot));
                 Assert.DoesNotContain(slots, other => other != slot && other.Intersects(slot));
             }
         }
