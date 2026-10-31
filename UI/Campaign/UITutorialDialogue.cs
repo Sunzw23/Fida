@@ -16,6 +16,7 @@ namespace Fida.UI.Campaign
         private readonly SpriteFont _font;
         private CampaignStoryPage[] _lines;
         private int _lineIndex;
+        public Texture2D? PortraitAtlas { get; set; }
 
         public event Action? Finished;
 
@@ -99,24 +100,37 @@ namespace Fida.UI.Campaign
             float scale = UITypography.Scale(_font, UITextRole.Body, viewport);
             float speakerScale = UITypography.Scale(_font, UITextRole.Name, viewport);
             float captionScale = UITypography.Scale(_font, UITextRole.Small, viewport);
-            Vector2 speakerAt = new(Bounds.Left + pad, Bounds.Top + pad * 0.55f);
-            UITextRenderer.DrawString(spriteBatch, _font, _lines[_lineIndex].Speaker.ToUpperInvariant(), speakerAt,
+            int portraitWidth = Bounds.Width >= 700 && PortraitAtlas != null ? Math.Min(Bounds.Width/4,Bounds.Height) : 0;
+            if(portraitWidth>0)
+            {
+                int cellWidth=PortraitAtlas!.Width/3, cellHeight=PortraitAtlas.Height/2;
+                string speaker=_lines[_lineIndex].Speaker?.ToLowerInvariant() ?? "";
+                int index=speaker.Contains("mara") ? 1 : speaker.Contains("king") ? 3 : speaker.Contains("echo") ? 5 : 0;
+                var source=new Rectangle(index%3*cellWidth,index/3*cellHeight,cellWidth,cellHeight);
+                float fit=Math.Min(portraitWidth/(float)cellWidth,(Bounds.Height-pad)/(float)cellHeight);
+                spriteBatch.Draw(PortraitAtlas,new Vector2(Bounds.Left+pad+portraitWidth/2,Bounds.Bottom-pad/2),source,Color.White,
+                    0,new Vector2(cellWidth/2f,cellHeight),fit,SpriteEffects.None,0);
+            }
+            Vector2 speakerAt = new(Bounds.Left + pad + portraitWidth, Bounds.Top + pad * 0.55f);
+            UITextRenderer.DrawString(spriteBatch, _font, _lines[_lineIndex].Speaker, speakerAt,
                 UIPaper.Ink, 0f, Vector2.Zero, speakerScale,
                 SpriteEffects.None, 0f);
 
             int textTop = (int)(speakerAt.Y + _font.LineSpacing * speakerScale + 12);
             int textBottom = Bounds.Bottom - pad - (int)(_font.LineSpacing * captionScale) - 10;
-            Rectangle textArea = new(Bounds.Left + pad, textTop,
-                Bounds.Width - pad * 2 - 12, System.Math.Max(1, textBottom - textTop));
+            Rectangle textArea = new(Bounds.Left + pad + portraitWidth, textTop,
+                Bounds.Width - pad * 2 - 12 - portraitWidth, System.Math.Max(1, textBottom - textTop));
             DrawWrapped(spriteBatch, _lines[_lineIndex].Text, textArea, scale, UIPaper.Ink);
 
-            string progress = $"{_lineIndex + 1:00} / {_lines.Length:00}";
+            int nextWidth=Math.Clamp(Bounds.Width/7,100,180), nextHeight=Math.Clamp(Bounds.Height/5,42,64);
+            var next=new Rectangle(Bounds.Right-pad-nextWidth,Bounds.Bottom-pad-nextHeight,nextWidth,nextHeight);
+            UIPaper.Sheet(spriteBatch,next,UITheme.AccentBlue,2,6);
+            UIUtils.DrawCenteredFit(spriteBatch,_font,"Next  >",next.Center.ToVector2(),next.Width-16,captionScale*1.25f,UIPaper.Ink);
+            string progress = $"{_lineIndex + 1} / {_lines.Length}";
             Vector2 progressSize = _font.MeasureString(progress) * captionScale;
             UITextRenderer.DrawString(spriteBatch, _font, progress,
-                new Vector2(Bounds.Right - pad - progressSize.X, Bounds.Bottom - pad - progressSize.Y),
+                new Vector2(next.Left - pad - progressSize.X, next.Center.Y-progressSize.Y/2),
                 UIPaper.MutedInk, 0f, Vector2.Zero, captionScale, SpriteEffects.None, 0f);
-            DrawChevron(spriteBatch, new Vector2(Bounds.Right - pad * 0.55f, Bounds.Center.Y),
-                Math.Max(6, (int)(10 * scale)), UIPaper.Ink);
         }
 
         private void DrawWrapped(SpriteBatch sb, string text, Rectangle area, float scale, Color color)

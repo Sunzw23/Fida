@@ -35,18 +35,21 @@ public sealed class UIReferenceSurface : UIControl
             UIPaper.Sheet(batch, p ? l.Rect(50, 245, 800, 420) : l.Rect(110, 265, 780, 790), UITheme.Panel, 4, 10);
             UIPaper.Sheet(batch, p ? l.Rect(50, 755, 800, 650) : l.Rect(1030, 265, 780, 790), UITheme.Panel, 4, 10);
             Rule(batch, p ? l.Rect(80, 720, 740, 1) : l.Rect(960, 290, 1, 710));
-            Text(batch, "Create room", p ? l.Rect(80, 280, 740, 80) : l.Rect(150, 300, 700, 90), 52);
-            Paragraph(batch, "Start a session and share its code.", p ? l.Rect(80, 390, 740, 90) : l.Rect(150, 425, 700, 110));
+            Text(batch, "Create room", p ? l.Rect(80, 280, 740, 80) : l.Rect(150, 630, 700, 90), 52, true);
+            Paragraph(batch, "Start a session and share its code.", p ? l.Rect(80, 390, 740, 90) : l.Rect(260, 745, 480, 110));
             if (!p)
             {
-                batch.Draw(_resources.Pixel, l.Rect(440, 650, 120, 12), UITheme.Ink);
-                batch.Draw(_resources.Pixel, l.Rect(494, 596, 12, 120), UITheme.Ink);
+                UIPaper.Sheet(batch,l.Rect(340,380,320,190),UITheme.AccentBlue,2,9);
+                UIPaperAvatar.Draw(batch,l.Rect(255,350,190,240));
+                UIPaperAvatar.Draw(batch,l.Rect(555,350,190,240),1);
+                batch.Draw(_resources.Pixel, l.Rect(465,445,90,15), UITheme.Ink);
+                batch.Draw(_resources.Pixel, l.Rect(502,408,15,90), UITheme.Ink);
             }
-            Text(batch, "Join room", p ? l.Rect(80, 790, 740, 80) : l.Rect(1070, 300, 700, 90), 52);
+            Text(batch, "Join room", p ? l.Rect(80, 790, 740, 80) : l.Rect(1070, 630, 700, 90), 52,true);
             Paragraph(batch, RoomCodeRequired ? "Enter the code from your opponent." : "Connect to the configured server.",
-                p ? l.Rect(80, 900, 740, 80) : l.Rect(1070, 425, 700, 110));
+                p ? l.Rect(80, 900, 740, 80) : l.Rect(1180, 745, 480, 80));
             if (RoomCodeRequired)
-                Text(batch, "4 characters - letters or numbers", p ? l.Rect(80, 1170, 740, 65) : l.Rect(1070, 780, 700, 65), 30, muted: true);
+                Text(batch, "4 characters - letters or numbers", p ? l.Rect(80, 1170, 740, 65) : l.Rect(1070, 835, 700, 45), 26, true, muted: true);
             else Text(batch, "Direct connection", layout.Code, 44, true);
             return;
         }
@@ -59,13 +62,19 @@ public sealed class UIReferenceSurface : UIControl
         }
         else if (_screen == UIReferenceScreen.Hosting)
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 260, 800, 870) : l.Rect(450, 240, 1020, 620), UITheme.Panel, 4, 12);
-            Text(batch, "Room code", p ? l.Rect(80, 300, 740, 80) : l.Rect(600, 270, 720, 80), 38, true, muted: true);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 260, 800, 1100) : l.Rect(220, 240, 1480, 820), UITheme.Panel, 4, 12);
+            Text(batch, "Room code", p ? l.Rect(80, 300, 740, 80) : l.Rect(600, 300, 720, 80), 38, true);
+            Text(batch,"Share this code to invite your opponent.",p ? l.Rect(80,960,740,100) : l.Rect(460,820,1000,60),30,true,muted:true);
         }
         else
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 800) : l.Rect(350, 270, 1220, 590), UITheme.Panel, 4, 12);
-            Text(batch, "Joining session", p ? l.Rect(80, 400, 740, 80) : l.Rect(600, 350, 720, 80), 44, true);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 1040) : l.Rect(220, 240, 1480, 820), UITheme.Panel, 4, 12);
+            for(int i=0;i<3;i++)
+            {
+                float pulse = UIMotion.Reduced ? .75f : .65f + .25f * (float)Math.Sin(time.TotalGameTime.TotalSeconds*3-i*.8);
+                var dot = p ? l.Rect(285+i*125,520,70,70) : l.Rect(800+i*140,460,70,70);
+                UIPaper.Sheet(batch,dot,UITheme.AccentBlue*pulse,2,8);
+            }
         }
     }
 

@@ -28,6 +28,7 @@ namespace Fida.UI.Campaign
         private readonly List<string> _scope = new();
         private IReadOnlyList<string> _folders = Array.Empty<string>();
         private IReadOnlyList<int> _visibleNodes = Array.Empty<int>();
+        private readonly Dictionary<string, Vector2> _routePositions = new();
         private int _selectedFolder;
 
         private MouseState _previousMouse;
@@ -245,9 +246,6 @@ namespace Fida.UI.Campaign
             EnsureViewport();
             Rectangle viewport = _camera.Viewport;
 
-            UIPaper.Sheet(spriteBatch, viewport, UITheme.PanelDark, 2, 10);
-            if (_visibleNodes.Count > 0)
-                UIPaper.Scene(spriteBatch, viewport, UIPaper.ChapterIndex(string.Join(" ", _scope)), .20f);
 
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
@@ -655,7 +653,7 @@ namespace Fida.UI.Campaign
         private void DrawConnections(SpriteBatch spriteBatch)
         {
             var positions = _visibleNodes.ToDictionary(i => _nodes[i].Id,
-                i => _camera.WorldToScreen(new Vector2(_nodes[i].MapX, _nodes[i].MapY)));
+                i => _camera.WorldToScreen(RoutePosition(_nodes[i])));
             foreach (int index in _visibleNodes)
             {
                 CampaignNode node = _nodes[index];
@@ -694,11 +692,13 @@ namespace Fida.UI.Campaign
                 spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 3, bounds.Height), UITheme.AccentBlue);
             bool showName = bounds.Height >= 66 && bounds.Width >= 170;
             DrawMapText(spriteBatch, node.Id, new Rectangle(bounds.Left + 12, bounds.Top + 8,
-                bounds.Width - 44, showName ? bounds.Height / 2 - 8 : bounds.Height - 16),
-                Math.Clamp(bounds.Height * .45f, 20, 36), foreground, true);
+                showName ? 44 : bounds.Width - 44, showName ? 30 : bounds.Height - 16),
+                Math.Clamp(bounds.Height * .3f, 20, 30), foreground, true);
             if (showName)
-                DrawMapText(spriteBatch, node.Name, new Rectangle(bounds.Left + 12, bounds.Center.Y,
-                    bounds.Width - 24, bounds.Height / 2 - 6), 20, UIPaper.MutedInk);
+            {
+                DrawMapText(spriteBatch,node.Name,new Rectangle(bounds.Left+62,bounds.Top+8,bounds.Width-80,30),20,foreground);
+                UIPaper.Scene(spriteBatch,new Rectangle(bounds.Left+8,bounds.Top+42,bounds.Width-16,Math.Max(1,bounds.Height-50)),UIPaper.MissionScene(node.Name,node.Chapter));
+            }
 
         }
 
@@ -884,12 +884,12 @@ namespace Fida.UI.Campaign
             }
             var visible = _visibleNodes.Select(i => _nodes[i]).ToArray();
             int current = _visibleNodes.ToList().IndexOf(_selectedIndex);
-            int localNext = CampaignMapNavigator.FindNext(visible, current, direction);
+            int localNext = CampaignMapNavigator.FindNext(visible, current, direction, RoutePosition);
             int next = localNext >= 0 && localNext < _visibleNodes.Count ? _visibleNodes[localNext] : -1;
             if (next < 0 || next == _selectedIndex) return;
             _selectedIndex = next;
             CampaignNode node = _nodes[_selectedIndex];
-            _camera.EnsureVisible(new Vector2(node.MapX, node.MapY));
+            _camera.EnsureVisible(RoutePosition(node));
         }
 
         private void ConfirmSelection()
@@ -957,10 +957,10 @@ namespace Fida.UI.Campaign
             if (_visibleNodes.Count == 0) return new Rectangle(0, 0, 1, 1);
             float halfWidth = _options.NodeWidth / 2f;
             float halfHeight = _options.NodeHeight / 2f;
-            int left = (int)Math.Floor(_visibleNodes.Min(i => _nodes[i].MapX - halfWidth));
-            int top = (int)Math.Floor(_visibleNodes.Min(i => _nodes[i].MapY - halfHeight));
-            int right = (int)Math.Ceiling(_visibleNodes.Max(i => _nodes[i].MapX + halfWidth));
-            int bottom = (int)Math.Ceiling(_visibleNodes.Max(i => _nodes[i].MapY + halfHeight));
+            int left = (int)Math.Floor(_visibleNodes.Min(i => RoutePosition(_nodes[i]).X - halfWidth));
+            int top = (int)Math.Floor(_visibleNodes.Min(i => RoutePosition(_nodes[i]).Y - halfHeight));
+            int right = (int)Math.Ceiling(_visibleNodes.Max(i => RoutePosition(_nodes[i]).X + halfWidth));
+            int bottom = (int)Math.Ceiling(_visibleNodes.Max(i => RoutePosition(_nodes[i]).Y + halfHeight));
             return new Rectangle(left, top, Math.Max(1, right - left), Math.Max(1, bottom - top));
         }
 
@@ -969,6 +969,7 @@ namespace Fida.UI.Campaign
             _routeAge = 0;
             _folders = _hierarchy.Children(_scope);
             _visibleNodes = _hierarchy.Missions(_scope);
+            LayoutRoute();
             _selectedFolder = Math.Clamp(_selectedFolder, 0, Math.Max(0, _folders.Count - 1));
             if (_visibleNodes.Count > 0 && !_visibleNodes.Contains(_selectedIndex))
                 _selectedIndex = _visibleNodes.FirstOrDefault(i =>
@@ -1008,7 +1009,7 @@ namespace Fida.UI.Campaign
             int rows = (_folders.Count + columns - 1) / columns;
             int gap = Math.Clamp(viewport.Width / 40, 16, 36);
             int width = Math.Min(460, (viewport.Width - gap * (columns + 1)) / columns);
-            int height = Math.Clamp((viewport.Height - gap * (rows + 1)) / Math.Max(1, rows), 94, 156);
+            int height = Math.Clamp((viewport.Height - gap * (rows + 1)) / Math.Max(1, rows), 94, 210);
             int totalWidth = columns * width + (columns - 1) * gap;
             int totalHeight = rows * height + (rows - 1) * gap;
             int left = viewport.Center.X - totalWidth / 2;
@@ -1039,10 +1040,38 @@ namespace Fida.UI.Campaign
 
         private Rectangle NodeScreenBounds(CampaignNode node)
         {
-            var world = new Rectangle((int)(node.MapX - _options.NodeWidth / 2f),
-                (int)(node.MapY - _options.NodeHeight / 2f),
+            Vector2 position=RoutePosition(node);
+            var world = new Rectangle((int)(position.X - _options.NodeWidth / 2f),
+                (int)(position.Y - _options.NodeHeight / 2f),
                 (int)_options.NodeWidth, (int)_options.NodeHeight);
             return _camera.WorldToScreen(world);
+        }
+
+        private Vector2 RoutePosition(CampaignNode node) => _routePositions.TryGetValue(node.Id,out var position)
+            ? position : new Vector2(node.MapX,node.MapY);
+
+        private void LayoutRoute()
+        {
+            _routePositions.Clear();
+#if !FIDA_ANDROID
+            var visible=_visibleNodes.Select(i=>_nodes[i]).ToDictionary(n=>n.Id);
+            var depths=new Dictionary<string,int>();
+            int Depth(string id,HashSet<string> path)
+            {
+                if(depths.TryGetValue(id,out int known)) return known;
+                if(!path.Add(id)) return 0;
+                int depth=0;
+                foreach(string parent in visible[id].Parents)
+                    if(visible.ContainsKey(parent)) depth=Math.Max(depth,Depth(parent,path)+1);
+                path.Remove(id); depths[id]=depth; return depth;
+            }
+            foreach(var node in visible.Values) Depth(node.Id,new HashSet<string>());
+            foreach(var row in visible.Values.GroupBy(n=>depths[n.Id]))
+            {
+                var nodes=row.OrderBy(n=>n.MapX).ThenBy(n=>n.Id).ToArray();
+                for(int i=0;i<nodes.Length;i++) _routePositions[nodes[i].Id]=new Vector2((i-(nodes.Length-1)/2f)*350,row.Key*250);
+            }
+#endif
         }
 
         private int FindInitialSelection()

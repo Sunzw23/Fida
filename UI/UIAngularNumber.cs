@@ -39,7 +39,7 @@ public static class UIAngularNumber
         float y = bounds.Center.Y - H * scale / 2;
         foreach (char c in text)
         {
-            batch.Draw(atlas, new Vector2(x, y), new Rectangle((c - '0') * W * resolution, 0, W * resolution, H * resolution),
+            batch.Draw(atlas, new Vector2(x, y), new Rectangle(((c - '0') * (W + 4) + 2) * resolution, 2 * resolution, W * resolution, H * resolution),
                 color, 0, Vector2.Zero, scale / resolution, SpriteEffects.None, 0);
             x += 72 * scale;
         }
@@ -49,7 +49,8 @@ public static class UIAngularNumber
     private static Texture2D CreateAtlas(GraphicsDevice device, int resolution)
     {
         int width = W * resolution, height = H * resolution, samples = resolution > 1 ? 2 : Samples;
-        var pixels = new Color[width * 10 * height];
+        int stride = (W + 4) * resolution, atlasHeight = (H + 4) * resolution;
+        var pixels = new Color[stride * 10 * atlasHeight];
         for (int digit = 0; digit < 10; digit++)
         for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
@@ -63,9 +64,9 @@ public static class UIAngularNumber
                     if (Contains(polygon, (x + (sx + 0.5f) / samples) / resolution, (y + (sy + 0.5f) / samples) / resolution)) inside = !inside;
                 if (inside) covered++;
             }
-            pixels[y * width * 10 + digit * width + x] = Color.White * (covered / (float)(samples * samples));
+            pixels[(y + 2 * resolution) * stride * 10 + digit * stride + x + 2 * resolution] = Color.White * (covered / (float)(samples * samples));
         }
-        var atlas = new Texture2D(device, width * 10, height);
+        var atlas = new Texture2D(device, stride * 10, atlasHeight);
         atlas.SetData(pixels);
         device.Disposing += (_, _) => atlas.Dispose();
         return atlas;

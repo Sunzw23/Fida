@@ -16,6 +16,7 @@ public static class UIPaper
         public Texture2D? Scenes;
         public Texture2D? Skins;
         public Texture2D? Background;
+        public Texture2D? Battle;
         public Rectangle[] SkinRegions = new Rectangle[4];
     }
     private static readonly ConditionalWeakTable<GraphicsDevice, Materials> Cache = new();
@@ -26,9 +27,9 @@ public static class UIPaper
 
     private static Materials Get(GraphicsDevice device) => Cache.GetValue(device, Create);
     public static void RegisterScenes(GraphicsDevice device, Texture2D atlas) => Get(device).Scenes = atlas;
-    public static void RegisterMaterials(GraphicsDevice device, Texture2D skins, Texture2D background)
+    public static void RegisterMaterials(GraphicsDevice device, Texture2D skins, Texture2D background, Texture2D? battle = null)
     {
-        var material = Get(device); material.Skins = skins; material.Background = background;
+        var material = Get(device); material.Skins = skins; material.Background = background; material.Battle = battle;
         var pixels = new Color[skins.Width * skins.Height]; skins.GetData(pixels);
         int w = skins.Width / 2, h = skins.Height / 2;
         for (int i = 0; i < 4; i++)
@@ -110,11 +111,16 @@ public static class UIPaper
         {
             float opacity = color.A / 255f;
             if(opacity <= 0) return;
+            if(shadow && depth>0)
+            {
+                var shade=bounds; shade.Offset(1,depth+2); shade.Inflate(4,4);
+                Slices(batch,material.Shadow,shade,Color.White*opacity,24,10);
+            }
             float red = color.R / opacity, green = color.G / opacity, blue = color.B / opacity;
             int index = green > red * 1.25f && red > 65 ? 1
-                : red > 140 ? 0 : red + green + blue > 215 ? 3 : 2;
+                : red > 140 ? 0 : red + green + blue > 100 ? 3 : 2;
             Rectangle source = material.SkinRegions[index];
-            int sx = Math.Min(128, source.Width / 3), sy = Math.Min(128, source.Height / 3);
+            int sx = Math.Min(64, source.Width / 3), sy = Math.Min(64, source.Height / 3);
             int edge = Math.Min(Math.Max(14, cut * 3), Math.Min(bounds.Width, bounds.Height) / 3);
             int[] xs = { source.Left, source.Left + sx, source.Right - sx, source.Right };
             int[] ys = { source.Top, source.Top + sy, source.Bottom - sy, source.Bottom };
@@ -128,14 +134,7 @@ public static class UIPaper
                 if(target.Width > 0 && target.Height > 0)
                 {
                     var patch = new Rectangle(xs[col], ys[row], xs[col + 1] - xs[col], ys[row + 1] - ys[row]);
-                    if (row == 1 || col == 1)
-                    {
-                        float grainScale = Math.Clamp(Math.Min(bounds.Width, bounds.Height) / 400f, .35f, .7f);
-                        Tile(batch, material.Skins, target, patch, tint,
-                            col == 1 ? grainScale : target.Width / (float)patch.Width,
-                            row == 1 ? grainScale : target.Height / (float)patch.Height);
-                    }
-                    else batch.Draw(material.Skins, target, patch, tint);
+                    batch.Draw(material.Skins, target, patch, tint);
                 }
             }
             return;
@@ -167,8 +166,14 @@ public static class UIPaper
 
     public static void Background(SpriteBatch batch, Viewport viewport)
     {
-        Texture2D? background = Get(batch.GraphicsDevice).Background;
-        if(background != null) { batch.Draw(background, viewport.Bounds, Color.White); return; }
+        var material = Get(batch.GraphicsDevice);
+        if(material.Skins != null)
+        {
+            var sheet = material.SkinRegions[2];
+            batch.Draw(material.Skins, viewport.Bounds, new Rectangle(sheet.Center.X - 100, sheet.Center.Y - 100, 200, 200),
+                new Color(175,185,195));
+            return;
+        }
         Sheet(batch, viewport.Bounds, UITheme.BgTop, 0, 0, false);
         int width = viewport.Width, height = viewport.Height;
         Sheet(batch, new Rectangle(width * 53 / 100, height * 8 / 100, width * 42 / 100, height * 82 / 100), UITheme.PanelDark, 2, 14);
@@ -178,6 +183,7 @@ public static class UIPaper
     public static void BattleBackground(SpriteBatch batch, Viewport viewport)
     {
         var material = Get(batch.GraphicsDevice);
+        if (material.Battle != null) { batch.Draw(material.Battle, viewport.Bounds, Color.White); return; }
         if (material.Skins == null) { Background(batch, viewport); return; }
         var sheet = material.SkinRegions[2];
         var grain = new Rectangle(sheet.Center.X - 128, sheet.Center.Y - 128, 256, 256);
@@ -192,6 +198,16 @@ public static class UIPaper
         if (name?.Contains("Chapter I", StringComparison.OrdinalIgnoreCase) == true) return 2;
         if (name?.Contains("Long Road", StringComparison.OrdinalIgnoreCase) == true) return 1;
         return 0;
+    }
+
+    public static int MissionScene(string? name,string? chapter)
+    {
+        string title=(name ?? "").ToLowerInvariant();
+        if(title.Contains("gate") || title.Contains("bridge")) return 3;
+        if(title.Contains("arsenal") || title.Contains("forge")) return 2;
+        if(title.Contains("hospice") || title.Contains("palace")) return 0;
+        if(title.Contains("general") || title.Contains("stronghold")) return 4;
+        return ChapterIndex(chapter);
     }
 
     public static void Scene(SpriteBatch batch, Rectangle area, int index, float opacity = 1)

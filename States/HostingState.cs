@@ -13,11 +13,13 @@ namespace Fida.States
 
         public override void OnEnter()
         {
-            BindButton("cancelHost", () =>
+            void Cancel()
             {
                 _networkManager.Cleanup();
                 _stateMachine.SwitchToState(State.OnlineMenu);
-            });
+            }
+            BindButton("cancelHost", Cancel);
+            BindButton("waitingBack", Cancel);
         }
 
         /// <summary>

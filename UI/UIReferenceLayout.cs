@@ -19,6 +19,6 @@ public sealed class UIReferenceLayout
     public Rectangle Page => Portrait ? Canvas.Rect(600, 1440, 120, 80) : Canvas.Rect(1510, 1040, 120, 80);
     public Rectangle HostAction => Portrait ? Canvas.Rect(80, 520, 740, 100) : Canvas.Rect(150, 900, 700, 100);
     public Rectangle JoinAction => Portrait ? Canvas.Rect(80, 1260, 740, 100) : Canvas.Rect(1070, 900, 700, 100);
-    public Rectangle Code => Portrait ? Canvas.Rect(80, 1000, 740, 155) : Canvas.Rect(1070, 570, 700, 180);
-    public Rectangle SessionAction => Portrait ? Canvas.Rect(80, 1200, 740, 100) : Canvas.Rect(600, 900, 720, 100);
+    public Rectangle Code => Portrait ? Canvas.Rect(80, 1000, 740, 155) : Canvas.Rect(1070, 350, 700, 210);
+    public Rectangle SessionAction => Portrait ? Canvas.Rect(80, 1200, 740, 100) : Canvas.Rect(700, 930, 520, 100);
 }

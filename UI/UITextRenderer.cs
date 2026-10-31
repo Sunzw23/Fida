@@ -33,7 +33,7 @@ public static class UITextRenderer
         return lines;
     }
 
-    public static void DrawParagraph(SpriteBatch batch, SpriteFont font, string text, Rectangle area, Color color)
+    public static void DrawParagraph(SpriteBatch batch, SpriteFont font, string text, Rectangle area, Color color, bool centered = false)
     {
         if (area.Width <= 0 || area.Height <= 0) return;
         float scale = UITypography.Scale(font, UITextRole.Body, batch.GraphicsDevice.Viewport);
@@ -49,7 +49,7 @@ public static class UITextRenderer
         float y = area.Top;
         foreach (string line in lines)
         {
-            DrawString(batch, font, line, new Vector2(area.Left, y), color, scale: scale);
+            DrawString(batch, font, line, new Vector2(centered ? area.Center.X-font.MeasureString(line).X*scale/2 : area.Left, y), color, scale: scale);
             y += lineHeight;
         }
     }

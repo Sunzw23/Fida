@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Fida.Campaign;
@@ -8,21 +9,22 @@ namespace Fida.UI.Campaign
     /// <summary>Spatial node navigation shared by keyboard and controller input.</summary>
     public static class CampaignMapNavigator
     {
-        public static int FindNext(IReadOnlyList<CampaignNode> nodes, int currentIndex, Vector2 direction)
+        public static int FindNext(IReadOnlyList<CampaignNode>? nodes, int currentIndex, Vector2 direction,
+            Func<CampaignNode,Vector2>? getPosition = null)
         {
             if (nodes == null || nodes.Count == 0) return -1;
             if (currentIndex < 0 || currentIndex >= nodes.Count) return 0;
             if (direction.LengthSquared() < 0.01f) return currentIndex;
 
             direction.Normalize();
-            Vector2 origin = Position(nodes[currentIndex]);
+            Vector2 origin = getPosition?.Invoke(nodes[currentIndex]) ?? Position(nodes[currentIndex]);
             int bestIndex = currentIndex;
             float bestScore = float.MaxValue;
 
             for (int i = 0; i < nodes.Count; i++)
             {
                 if (i == currentIndex) continue;
-                Vector2 delta = Position(nodes[i]) - origin;
+                Vector2 delta = (getPosition?.Invoke(nodes[i]) ?? Position(nodes[i])) - origin;
                 float forward = Vector2.Dot(delta, direction);
                 if (forward <= 0f) continue;
 

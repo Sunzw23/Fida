@@ -53,7 +53,7 @@ public partial class UIScreenBuilder
         _uiControls.Add(new UIEditorialSurface(_resourceManager, UIEditorialScreen.Lobby) { Name = "lobby_art", IsHost = isHost });
         EditorialBack("backToMain");
         EditorialButton("startPvP", "Ready", EditorialLayout.Ready, primary: true);
-        EditorialButton("disconnect", "Leave room", EditorialLayout.Leave);
+        EditorialButton("disconnect", "Leave room", EditorialLayout.Leave,primary:true);
         EditorialFocus();
     }
 }

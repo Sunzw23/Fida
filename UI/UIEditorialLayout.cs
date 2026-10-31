@@ -26,8 +26,8 @@ public sealed class UIEditorialLayout
         : Rect(150, connected ? 280 + row * 105 : 280 + row * 125, 620, connected ? 86 : 100);
     public Rectangle Back => Rect(Portrait ? 45 : 70, 60, 72, 72);
     public Rectangle Header => Rect(Portrait ? 150 : 175, 60, 600, 80);
-    public Rectangle Ready => Portrait ? Rect(100, 1200, 700, 100) : Rect(600, 920, 720, 100);
-    public Rectangle Leave => Portrait ? Rect(220, 1330, 460, 82) : Rect(730, 1040, 460, 80);
+    public Rectangle Ready => Portrait ? Rect(100, 1200, 700, 100) : Rect(150, 1030, 920, 100);
+    public Rectangle Leave => Portrait ? Rect(220, 1330, 460, 82) : Rect(1130, 1030, 640, 100);
     public Rectangle SettingControl(int row, int segment = 0, int segments = 1) => Portrait
         ? Rect(80 + 740 * segment / segments, 440 + row * 250, 740 / segments, 96)
         : Rect(1050 + 700 * segment / segments, 335 + row * 230, 700 / segments, 100);

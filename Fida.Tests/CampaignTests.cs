@@ -93,6 +93,26 @@ public class CampaignTests
     }
 
     [Fact]
+    public void MapNavigator_FollowsDisplayedRouteAfterLayoutChanges()
+    {
+        CampaignNode[] nodes =
+        [
+            new() { Id="Start", MapX=0, MapY=0 },
+            new() { Id="Lower", MapX=300, MapY=0 },
+            new() { Id="Right", MapX=0, MapY=300 }
+        ];
+        Vector2 Displayed(CampaignNode node) => node.Id switch
+        {
+            "Lower" => new Vector2(0,250),
+            "Right" => new Vector2(350,0),
+            _ => Vector2.Zero
+        };
+        Assert.Equal(2,CampaignMapNavigator.FindNext(nodes,0,Vector2.UnitX,Displayed));
+        Assert.Equal(1,CampaignMapNavigator.FindNext(nodes,0,Vector2.UnitY,Displayed));
+        Assert.Equal(1,CampaignMapNavigator.FindNext(nodes,0,Vector2.UnitX));
+    }
+
+    [Fact]
     public void CampaignDisplayText_UsesNoCjkCharacters()
     {
         static void AssertEnglishText(string text) =>

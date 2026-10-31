@@ -178,10 +178,14 @@ namespace Fida.UI
             float healthLine = UITypography.LineHeight(UITextRole.Caption, viewport.Width, viewport.Height);
             float skillLine = UITypography.LineHeight(UITextRole.Small, viewport.Width, viewport.Height);
             int gap = Math.Max(3, UIConfig.ScaleDesktopMetric(5));
-            int infoLeft = CardBounds.Left + CardBounds.Width * 44 / 100;
-            int infoWidth = CardBounds.Right - infoLeft - gap;
-            float nameHeight = nameLine * 2;
-            _nameCenter = new Vector2(infoLeft + infoWidth / 2f, CardBounds.Top + gap + nameHeight / 2);
+            int infoLeft = CardBounds.Left + gap * 2;
+            int infoWidth = CardBounds.Width - gap * 4;
+            float nameHeight = nameLine;
+            int upperHeight = Number0Bounds.Top - CardBounds.Top;
+            int portraitHeight = Math.Max(24, upperHeight - (int)(nameHeight + healthLine + gap * 3));
+            PortraitBounds = new Rectangle(CardBounds.Center.X - portraitHeight / 2, CardBounds.Top,
+                portraitHeight, portraitHeight);
+            _nameCenter = new Vector2(CardBounds.Center.X, PortraitBounds.Bottom + gap + nameHeight / 2);
             string displayName = player.Name;
             if (nameFont.MeasureString(displayName).X * UITypography.Scale(nameFont, UITextRole.Name, viewport) > infoWidth)
                 displayName = displayName.Replace(" ", "\n");
@@ -201,8 +205,6 @@ namespace Fida.UI
                 TypographyRole = UITextRole.Caption
             };
             _skillsCenter = new Vector2(infoLeft + infoWidth / 2f, healthY + healthLine / 2 + gap + skillLine / 2);
-            PortraitBounds = new Rectangle(CardBounds.Left - gap, CardBounds.Top - gap,
-                CardBounds.Width * 50 / 100, Number0Bounds.Top - CardBounds.Top);
             _skillStripBounds = new Rectangle(CardBounds.Left, CardBounds.Top, CardBounds.Width, Number0Bounds.Top - CardBounds.Top);
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
@@ -410,8 +412,11 @@ namespace Fida.UI
             var art = PortraitBounds;
             float enter = UIMotion.Reduced ? 1 : MathHelper.SmoothStep(0, 1, _arrivalProgress);
             Color tint = (_visuallyDefeated ? Color.Lerp(Color.White, UITheme.InkMuted * 0.35f, _deathReveal) : Color.White) * enter;
-            var infoSheet = new Rectangle(CardBounds.Left + CardBounds.Width * 35 / 100, CardBounds.Top + 4,
-                CardBounds.Width * 65 / 100, Math.Max(1, Number0Bounds.Top - CardBounds.Top - 10));
+            var infoSheet = new Rectangle(CardBounds.Left, PortraitBounds.Bottom - 3,
+                CardBounds.Width, Math.Max(1, Number0Bounds.Top - PortraitBounds.Bottom + 3));
+#if FIDA_ANDROID
+            infoSheet = new Rectangle(CardBounds.Left, CardBounds.Top, CardBounds.Width, CardBounds.Height);
+#endif
             UIPaper.Sheet(sb, infoSheet, UITheme.PanelDark, 2, 12);
             if (PortraitTexture != null)
             {
@@ -436,6 +441,7 @@ namespace Fida.UI
                     IsAlly ? UITheme.Gold : new Color(196, 113, 106));
             HealthLabel.SetColor(UITheme.InkMuted);
             HealthLabel.DrawAt(sb, time, _healthCenter, scale);
+#if FIDA_ANDROID
             if (Player.Skills.Count > 0)
             {
                 int side = Math.Clamp((int)(34 * scale), 20, 38);
@@ -450,9 +456,7 @@ namespace Fida.UI
                     Campaign.UISkillArt.Draw(sb, Player.Skills[i].Type, new Rectangle((int)center.X - total / 2 + i * (side + 10),
                         (int)center.Y - side / 2, side, side), UITheme.Ink);
             }
-            if (IsCurrentTurn || IsPresentingAction)
-                sb.Draw(Pixel, new Rectangle(CardBounds.Center.X - Math.Max(4, (int)(8 * scale)),
-                    PortraitBounds.Top - Math.Max(5, (int)(10 * scale)), Math.Max(8, (int)(16 * scale)), Math.Max(2, (int)(2 * scale))), UITheme.Gold);
+#endif
             if (IsHovered || IsFocused || SelectionStrength > 0)
                 UIUtils.DrawRectangleOutlines(sb, CardBounds, UITheme.InkMuted, 1, Pixel);
             Number0Button.DrawAt(sb, time, Number0Bounds);

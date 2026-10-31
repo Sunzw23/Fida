@@ -87,7 +87,21 @@ sealed class PreviewGame : Game
             case 12: _ui.BuildOnlineMenu(true); break;
             case 13: _ui.BuildHostingScreen("Waiting for opponent", "A7K2"); break;
             case 14: _ui.BuildConnectingScreen("Connecting to session..."); break;
-            case 15: _ui.BuildPauseMenu(); break;
+            case 15:
+                if(_battle == null)
+                {
+                    var team = new List<Player> { new(0,"ARITH",11,[]){ PortraitKey="arith" },new(1,"MARA",11,[]){PortraitKey="mara"},new(2,"SENTINEL",11,[]){PortraitKey="sentinel"} };
+                    var opponents = new List<Player> { new(3,"WITHERED KING",11,[]){PortraitKey="withered_king"},new(4,"WARDEN",11,[]){PortraitKey="warden"},new(5,"ECHO",11,[]){PortraitKey="echo"} };
+                    _battle=new GameManager { LocalPlayerId=0 };
+                    _battle.Initialize(team.Concat(opponents).ToList(),[new Group(0,"ALLY",team),new Group(1,"ENEMY",opponents)]);
+                }
+                _ui.BuildPlayingUI(_battle);
+                _ui.Update(new GameTime(TimeSpan.FromSeconds(2000),TimeSpan.FromSeconds(1)));
+                _ui.Draw(new GameTime(TimeSpan.FromSeconds(2000),TimeSpan.Zero));
+                _ui.Draw(new GameTime(TimeSpan.FromSeconds(2001),TimeSpan.Zero));
+                _ui.BuildPauseMenu();
+                if(_ui.GetControlByName<UIPaperPause>("pause_art").Backdrop==null) throw new Exception("Pause lost its battle backdrop.");
+                break;
             case 16:
             case 17:
                 var resultControls = _ui.GetControls();

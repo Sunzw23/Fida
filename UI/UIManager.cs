@@ -46,6 +46,7 @@ namespace Fida.UI
         private double _entranceStart;
         private double _lastUiTime;
         private RenderTarget2D? _pageFrame, _previousPageFrame;
+        private Texture2D? _pausedBattleFrame;
         private bool _hasPageFrame, _showPreviousPage;
         private bool _transitionPointerHeld;
         public bool IsPageTransitionActive => !UIMotion.Reduced &&
@@ -134,7 +135,19 @@ namespace Fida.UI
             _hasPageFrame = true;
         }
 
-        public void Clear() => _uiControls.Clear();
+        public void Clear() { CaptureBattleFrame(); _uiControls.Clear(); }
+
+        private void CaptureBattleFrame()
+        {
+            bool battle=false;
+            foreach(var control in _uiControls) if(control is UIPlayer) { battle=true; break; }
+            if(!battle || _pageFrame==null || !_hasPageFrame) return;
+            var pixels=new Color[_pageFrame.Width*_pageFrame.Height];
+            _pageFrame.GetData(pixels);
+            _pausedBattleFrame?.Dispose();
+            _pausedBattleFrame=new Texture2D(_graphicsDevice,_pageFrame.Width,_pageFrame.Height);
+            _pausedBattleFrame.SetData(pixels);
+        }
 
         /// <summary>每帧逻辑更新 - 处理动画计时等与渲染无关的逻辑</summary>
         public void Update(GameTime gameTime)
@@ -176,6 +189,7 @@ namespace Fida.UI
         public void Dispose()
         {
             _pageFrame?.Dispose(); _previousPageFrame?.Dispose();
+            _pausedBattleFrame?.Dispose();
             _uiRasterizerState.Dispose();
             _spriteBatch.Dispose();
         }
@@ -184,7 +198,12 @@ namespace Fida.UI
 
         public void BuildMainMenu(bool connected = false, bool isHost = false) =>
             _screenBuilder.BuildMainMenu(connected, isHost);
-        public void BuildPauseMenu() => _screenBuilder.BuildPauseMenu();
+        public void BuildPauseMenu()
+        {
+            CaptureBattleFrame();
+            _screenBuilder.BuildPauseMenu();
+            foreach(var control in _uiControls) if(control is UIPaperPause pause) pause.Backdrop=_pausedBattleFrame;
+        }
         public void BuildSettingsScreen() => _screenBuilder.BuildSettingsScreen();
         public void BuildRulesScreen(int page = 0) => _screenBuilder.BuildRulesScreen(page);
         public void BuildOnlineMenu(bool connected = false) => _screenBuilder.BuildOnlineMenu(connected);

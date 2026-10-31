@@ -17,6 +17,7 @@ namespace Fida.UI
         public float MaximumHeight { get; set; }
         public float MinimumScale { get; set; } = 0.58f;
         public UITextRole? TypographyRole { get; set; }
+        public Rectangle PaperCodeBounds { get; set; }
 
         public UILabel(int id, string text, Vector2 position, SpriteFont font) : base(id)
         {
@@ -32,6 +33,23 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
+            if(!IsVisible) return;
+            if (PaperCodeBounds.Width > 0)
+            {
+                int gap = System.Math.Max(8, PaperCodeBounds.Width / 40);
+                int width = (PaperCodeBounds.Width-gap*3)/4;
+                string code = (Text ?? "").PadRight(4,'-');
+                for(int i=0;i<4;i++)
+                {
+                    var cell = new Rectangle(PaperCodeBounds.Left+i*(width+gap),PaperCodeBounds.Top,width,PaperCodeBounds.Height);
+                    UIPaper.Sheet(sb,cell,UIPaper.Face,2,6);
+                    string glyph=UIFontGuard.Sanitize(Font,code[i].ToString());
+                    Vector2 size=Font.MeasureString(glyph);
+                    float scale=UITextRenderer.FitScale(size,cell.Width*.7f,cell.Height*.65f,cell.Height/(float)Font.LineSpacing);
+                    UITextRenderer.DrawString(sb,Font,glyph,cell.Center.ToVector2()-size*scale/2,UIPaper.Ink,scale:scale);
+                }
+                return;
+            }
 #if FIDA_ANDROID
             DrawAt(sb, gameTime, Position, 1f);
 #else

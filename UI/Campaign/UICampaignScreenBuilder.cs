@@ -77,10 +77,10 @@ namespace Fida.UI.Campaign
             var layout = new UIEditorialLayout(_resources.GraphicsDevice.Viewport);
             if (!duel)
                 _controls.Add(new UIEditorialButton(4, UIPaperOutcome.Action(layout, false, false), "Adjust loadout", _resources.Pixel, _resources.LabelFont)
-                { Name = "retry", FocusIndex = 0, Primary = !won });
+                { Name = "retry", FocusIndex = 0, Primary = true });
             _controls.Add(new UIEditorialButton(5, UIPaperOutcome.Action(layout, true, duel),
                 won && !duel ? "Continue journey" : "Main menu", _resources.Pixel, _resources.LabelFont)
-                { Name = "mainMenu", FocusIndex = 1, Primary = won || duel });
+                { Name = "mainMenu", FocusIndex = 1, Primary = duel, Active = won && !duel });
         }
 
         private void AddEndingButtons(bool won, CampaignNode node)

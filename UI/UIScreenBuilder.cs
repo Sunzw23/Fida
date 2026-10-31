@@ -45,7 +45,13 @@ namespace Fida.UI
         public void BuildPauseMenu()
         {
             Clear();
-            BuildFromScreen("PauseMenu");
+            _uiControls.Add(new UIPaperPause(_resourceManager) { Name = "pause_art" });
+            var layout = EditorialLayout;
+            string[] names = { "resume", "settings", "rules", "backToMenu" };
+            string[] labels = { "Resume", "Settings", "Rules", "Main menu" };
+            for(int i=0;i<names.Length;i++)
+                EditorialButton(names[i],labels[i],UIPaperPause.Button(layout,i),primary:i==0);
+            EditorialFocus();
         }
 
         /// <summary>构建设置界面</summary>
@@ -148,7 +154,7 @@ namespace Fida.UI
         public UITutorialDialogue AddTutorialDialogue(CampaignNode node)
         {
             var dialogue = new UITutorialDialogue(-1000, _resourceManager.GraphicsDevice,
-                _resourceManager.Pixel, _resourceManager.Font, node);
+                _resourceManager.Pixel, _resourceManager.Font, node) { PortraitAtlas = _resourceManager.GetTexture("cold_roster") };
             _uiControls.Add(dialogue);
             if (_focusManager.CurrentInputMode == InputMode.Controller)
                 _focusManager.FocusFirst();

@@ -66,18 +66,24 @@ public sealed class UIEditorialSurface : UIControl
             Text(batch, l, "Changes apply immediately", p ? l.Rect(80, 1300, 740, 60) : l.Rect(600, 1080, 1150, 60), 26, color: UITheme.InkMuted);
             return;
         }
-        Text(batch, l, "Connected", p ? l.Rect(550, 190, 270, 60) : l.Rect(1400, 70, 360, 60), 28, color: UITheme.AccentBlue);
+        var connected = p ? l.Rect(550,190,270,60) : l.Rect(1490,65,300,70);
+        UIPaper.Sheet(batch,connected,UITheme.AccentBlue,2,7);
+        Text(batch,l,"Connected",connected,28,true,color:UIPaper.Ink);
         UIPaper.Sheet(batch, p ? l.Rect(70, 370, 350, 650) : l.Rect(300, 300, 550, 590), UITheme.Panel, 4, 12);
         UIPaper.Sheet(batch, p ? l.Rect(480, 370, 350, 650) : l.Rect(1070, 300, 550, 590), UITheme.Panel, 4, 12);
         int y = p ? 400 : 330;
-        Portrait(batch, l, p ? l.Rect(110, y, 280, 340) : l.Rect(400, y, 350, 360), 0, time, 0);
-        Portrait(batch, l, p ? l.Rect(510, y, 280, 340) : l.Rect(1170, y, 350, 360), 1, time, 2);
+        UIPaperAvatar.Draw(batch, p ? l.Rect(110,y,280,340) : l.Rect(400,y,350,360),0);
+        UIPaperAvatar.Draw(batch, p ? l.Rect(510,y,280,340) : l.Rect(1170,y,350,360),1);
         Text(batch, l, "VS", p ? l.Rect(390, 560, 120, 80) : l.Rect(850, 490, 220, 90), 56, true, color: UITheme.InkMuted);
         string local = IsHost ? "Player 01" : "Player 02", remote = IsHost ? "Player 02" : "Player 01";
         Text(batch, l, local, p ? l.Rect(80, 800, 340, 70) : l.Rect(310, 740, 530, 70), 38, true);
         Text(batch, l, remote, p ? l.Rect(480, 800, 340, 70) : l.Rect(1080, 740, 530, 70), 38, true);
-        Text(batch, l, LocalReady ? "Ready" : "Not ready", p ? l.Rect(80, 900, 340, 60) : l.Rect(310, 820, 530, 60), 30, true, color: LocalReady ? UITheme.AccentBlue : UITheme.InkMuted);
-        Text(batch, l, RemoteReady ? "Ready" : "Waiting", p ? l.Rect(480, 900, 340, 60) : l.Rect(1080, 820, 530, 60), 30, true, color: RemoteReady ? UITheme.AccentBlue : UITheme.InkMuted);
+        var localStatus = p ? l.Rect(90,900,320,70) : l.Rect(340,810,470,80);
+        var remoteStatus = p ? l.Rect(490,900,320,70) : l.Rect(1110,810,470,80);
+        UIPaper.Sheet(batch,localStatus,LocalReady ? UITheme.AccentBlue : UITheme.PanelLight,2,6);
+        UIPaper.Sheet(batch,remoteStatus,RemoteReady ? UITheme.AccentBlue : UITheme.PanelLight,2,6);
+        Text(batch,l,LocalReady ? "Ready" : "Not ready",localStatus,30,true,color:LocalReady ? UIPaper.Ink : UITheme.InkMuted);
+        Text(batch,l,RemoteReady ? "Ready" : "Waiting",remoteStatus,30,true,color:RemoteReady ? UIPaper.Ink : UITheme.InkMuted);
     }
 
     private void Portrait(SpriteBatch batch, UIEditorialLayout l, Rectangle bounds, int column, GameTime time, float phase)

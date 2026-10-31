@@ -173,3 +173,14 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:paper/main_art.png
+
+#begin paper/battle.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:paper/battle.png

@@ -35,7 +35,7 @@ public sealed partial class UICampaignMap
             description = focus?.Story ?? "";
             int available = descendants.Count(i => CampaignCatalog.IsUnlocked(_progress, _nodes[i]) && !_progress.IsCompleted(_nodes[i].Id));
             metric = $"{completed} / {descendants.Count} completed    /    {available} available";
-            reward = focus == null ? "" : $"{focus.Name}";
+            reward = focus == null || string.IsNullOrWhiteSpace(focus.RewardText) ? "" : $"Reward: {focus.RewardText}";
             unlocked = true;
         }
         else if (node != null)
@@ -71,9 +71,11 @@ public sealed partial class UICampaignMap
         }
         else
         {
-            DrawMapParagraph(batch, _font, description, Slot(.26f, .55f), 29, UITheme.InkMuted);
-            DrawMapParagraph(batch, _font, metric, Slot(.60f, .73f), 29, UITheme.Ink);
-            DrawMapParagraph(batch, _font, reward, Slot(.78f, 1), 27, UITheme.AccentBlue);
+            var preview = Slot(.24f,.48f);
+            UIPaper.Scene(batch,preview,UIPaper.MissionScene(node?.Name,node?.Chapter));
+            DrawMapParagraph(batch, _font, description, Slot(.52f, .72f), 27, UITheme.Ink);
+            DrawMapParagraph(batch, _font, metric, Slot(.75f, .86f), 25, UITheme.Ink);
+            DrawMapParagraph(batch, _font, reward, Slot(.89f, 1), 23, UITheme.AccentYellow);
         }
         UIPaper.Sheet(batch, layout.Action, unlocked ? UIPaper.Face : UITheme.PanelLight, 3, 8);
         string action = folder ? "Open chapter" : unlocked ? "Configure skills" : "Locked";

@@ -92,7 +92,7 @@ namespace Fida.UI
                 MaximumTextScale = 0.68f,
                 TextPadding = 28,
 #endif
-                BackColor = UITheme.BgTop,
+                BackColor = Color.Transparent,
                 ForeColor = UITheme.Ink,
                 BorderColor = UITheme.Gold,
 #if FIDA_ANDROID

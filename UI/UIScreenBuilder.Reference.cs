@@ -51,15 +51,19 @@ public partial class UIScreenBuilder
         var l = layout.Canvas;
         bool p = layout.Portrait;
         _uiControls.Add(new UIReferenceSurface(_resourceManager, hosting ? UIReferenceScreen.Hosting : UIReferenceScreen.Connecting) { Name = "connection_art" });
+        EditorialBack("waitingBack");
         string[] lines = (statusText ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         if (hosting)
+        {
             ReferenceLabel("roomCodeLabel", string.IsNullOrEmpty(roomCode) ? "----" : roomCode,
-                p ? l.Rect(80, 430, 740, 150) : l.Rect(600, 400, 720, 150), _resourceManager.TitleFont);
+                p ? l.Rect(80, 430, 740, 190) : l.Rect(520, 430, 880, 210), _resourceManager.TitleFont);
+            ((UILabel)_uiControls[^1]).PaperCodeBounds = p ? l.Rect(80,430,740,190) : l.Rect(520,430,880,210);
+        }
         ReferenceLabel("statusLabel", lines.Length > 0 ? hosting ? lines[0] : statusText : hosting ? "Waiting for opponent" : "Connecting...",
-            p ? l.Rect(80, 690, 740, 160) : l.Rect(400, 620, 1120, 140), _resourceManager.Font, UITextRole.Body, wrap: true);
+            p ? l.Rect(80, 720, 740, 160) : l.Rect(400, 700, 1120, 110), _resourceManager.Font, UITextRole.Body);
         ReferenceLabel("addressLabel", lines.Length > 1 ? string.Join("  ", lines[1..]) : "",
-            p ? l.Rect(80, 900, 740, 150) : l.Rect(400, 790, 1120, 70), _resourceManager.CaptionFont, UITextRole.Caption);
-        EditorialButton(hosting ? "cancelHost" : "cancelConnect", "Cancel", layout.SessionAction);
+            p ? l.Rect(80, 1070, 740, 90) : l.Rect(400, 875, 1120, 40), _resourceManager.CaptionFont, UITextRole.Caption);
+        EditorialButton(hosting ? "cancelHost" : "cancelConnect", "Cancel", layout.SessionAction,primary:true);
         EditorialFocus();
     }
 

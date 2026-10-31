@@ -40,10 +40,12 @@ public sealed partial class UICampaignSkillGrid
     private void DrawGridScreen(SpriteBatch batch, SkillSelectionLayout layout)
     {
         float s = layout.Scale;
-        UIPaper.Sheet(batch, layout.Panel, UITheme.PanelDark, 4, 12);
-        var detailSheet = layout.Details; detailSheet.Inflate(8, 8);
+        UIPaper.Sheet(batch,new Rectangle(layout.Panel.Left,layout.Panel.Top,layout.Panel.Width,layout.Header.Bottom-layout.Panel.Top+8),UITheme.Panel,3,8);
+        var detailSheet = layout.Details;
+        if (!layout.Portrait) detailSheet.Height = layout.Footer.Bottom - detailSheet.Top + 12;
+        detailSheet.Inflate(8, 8);
         UIPaper.Sheet(batch, detailSheet, UITheme.Panel, 3, 9);
-        UIPaper.Sheet(batch, layout.Footer, UITheme.Panel, 2, 7);
+        if (layout.Portrait) UIPaper.Sheet(batch, layout.Footer, UITheme.Panel, 2, 7);
         int gap = Math.Max(6,(int)(16*s));
         int small = (int)UITypography.LineHeight(UITextRole.Small,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
         int caption = (int)UITypography.LineHeight(UITextRole.Caption,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
@@ -59,22 +61,8 @@ public sealed partial class UICampaignSkillGrid
         int spent = CampaignSkillBalance.TotalCost(_selected);
         if (ShowSkillPoints)
         {
-            Text(batch,$"USED  {spent} / {_node.SkillBudget} SP",
+            Text(batch,$"{spent} / {_node.SkillBudget} SP",
                 new Rectangle(budget.X,budget.Y,layout.Portrait ? budget.Width*55/100 : budget.Width,budget.Height),UITextRole.Caption,UITheme.Ink,true);
-            int segments = Math.Clamp(_node.SkillBudget,1,16);
-            int trackWidth = layout.Portrait ? Math.Min(budget.Width/2,400) : budget.Width;
-            int segmentGap = Math.Max(2,(int)(5*s));
-            int segmentWidth = Math.Max(1,(trackWidth-(segments-1)*segmentGap)/segments);
-            int left = layout.Portrait ? budget.Right-trackWidth : budget.Left;
-            int y = layout.Portrait ? budget.Y+(caption-8)/2 : budget.Bottom+8;
-            for (int i=0;i<segments;i++)
-            {
-                var cell = new Rectangle(left+i*(segmentWidth+segmentGap),y,segmentWidth,Math.Max(5,(int)(12*s)));
-                float filled = _node.SkillBudget <= 0 ? 0 : spent/(float)_node.SkillBudget*segments-i;
-                batch.Draw(_pixel,cell,filled>=1 ? UITheme.Gold : UITheme.PanelLight);
-                UIUtils.DrawRectangleOutlines(batch,cell,UITheme.Line,1,_pixel);
-                if (filled>0 && filled<1) batch.Draw(_pixel,new Rectangle(cell.X,cell.Y,(int)(cell.Width*filled),cell.Height),UITheme.Gold);
-            }
         }
         if (!layout.Portrait) Rule(batch,layout.Panel.Left,layout.Tabs.Top-gap,layout.Panel.Width);
         string[] tabs = { "ALL", "OFFENSE", "DEFENSE", "CONTROL" };
@@ -131,7 +119,7 @@ public sealed partial class UICampaignSkillGrid
         var nameArea = new Rectangle(bounds.Left+pad,bounds.Bottom-pad-caption-name-3,bounds.Width-pad*2,name);
         var art = new Rectangle(bounds.Left+pad,bounds.Top+pad,bounds.Width-pad*2,Math.Max(8,nameArea.Top-bounds.Top-pad*2));
         UISkillArt.Draw(batch,skill,art,unavailable ? UIPaper.MutedInk : UIPaper.Ink);
-        Text(batch,GameText.SkillName(skill),nameArea,UITextRole.Name,UIPaper.Ink,true);
+        Text(batch,GameText.SkillName(skill),nameArea,UITextRole.Name,UIPaper.Ink);
         string state = StateLabel(skill);
         int costWidth = Math.Min(bounds.Width/3,Math.Max(44,(int)(74*layout.Scale)));
         Text(batch,state,new Rectangle(bounds.Left+pad,bounds.Bottom-pad-caption,bounds.Width-pad*2-costWidth,caption),
@@ -153,13 +141,12 @@ public sealed partial class UICampaignSkillGrid
         int small = (int)UITypography.LineHeight(UITextRole.Caption,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
         int heading = (int)UITypography.LineHeight(UITextRole.Heading,_graphicsDevice.Viewport.Width,_graphicsDevice.Viewport.Height);
         int contentLeft = bounds.Left+pad, contentWidth = bounds.Width-pad*2;
-        Text(batch,family,new Rectangle(contentLeft,bounds.Top,contentWidth,small),UITextRole.Caption,UITheme.InkMuted,true);
         int iconSize = Math.Clamp((int)(bounds.Height*.18f),50,(int)(180*layout.Scale));
-        var art = new Rectangle(layout.Portrait ? contentLeft : bounds.Center.X-iconSize/2,bounds.Top+small+8,iconSize,iconSize);
+        var art = new Rectangle(contentLeft,bounds.Top+8,iconSize,iconSize);
         UISkillArt.Draw(batch,skill,art,UITheme.Ink);
-        int titleTop = layout.Portrait ? art.Top : art.Bottom+Math.Max(5,(int)(14*layout.Scale));
-        int titleLeft = layout.Portrait ? art.Right+pad : contentLeft;
-        int titleWidth = layout.Portrait ? bounds.Right-pad-titleLeft : contentWidth;
+        int titleTop = art.Top;
+        int titleLeft = art.Right+pad;
+        int titleWidth = bounds.Right-pad-titleLeft;
         Text(batch,GameText.SkillName(skill),new Rectangle(titleLeft,titleTop,titleWidth,heading),UITextRole.Heading,UITheme.Ink);
         int costY = titleTop+heading+4;
         Text(batch,$"{CampaignSkillBalance.Cost(skill)} SP",new Rectangle(titleLeft,costY,titleWidth,small),UITextRole.Caption,UITheme.Ink);

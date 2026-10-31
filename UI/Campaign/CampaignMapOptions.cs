@@ -10,7 +10,7 @@ namespace Fida.UI.Campaign
     public sealed class CampaignMapOptions
     {
         public float NodeWidth { get; init; } = 270f;
-        public float NodeHeight { get; init; } = 64f;
+        public float NodeHeight { get; init; } = 120f;
         public float ContentPadding { get; init; } = 70f;
         public float MinimumZoom { get; init; } = 0.55f;
         public float MaximumZoom { get; init; } = 2.2f;

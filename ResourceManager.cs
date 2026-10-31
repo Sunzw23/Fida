@@ -98,7 +98,8 @@ namespace Fida
             LoadTexture(contentManager, "paper_skins", "paper/skins");
             LoadTexture(contentManager, "paper_background", "paper/background");
             LoadTexture(contentManager, "paper_main_art", "paper/main_art");
-            UI.UIPaper.RegisterMaterials(_graphicsDevice, GetTexture("paper_skins"), GetTexture("paper_background"));
+            LoadTexture(contentManager, "paper_battle", "paper/battle");
+            UI.UIPaper.RegisterMaterials(_graphicsDevice, GetTexture("paper_skins"), GetTexture("paper_background"), GetTexture("paper_battle"));
 
         }
 
