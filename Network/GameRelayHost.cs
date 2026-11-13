@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.IO;
 using System.Net.Sockets;
@@ -22,8 +23,8 @@ namespace Fida.Network
         public const byte MsgCodeAssign = 0x01;
         public const byte MsgPeerJoined = 0x02;
 
-        private TcpClient _tcpClient;
-        private NetworkStream _stream;
+        private TcpClient _tcpClient = null!;
+        private NetworkStream _stream = null!;
         private bool _isRunning;
         private bool _clientConnected;
         private string _roomCode = string.Empty;
@@ -38,10 +39,10 @@ namespace Fida.Network
         public string RoomCode => _roomCode;
 
         /// <summary>客机连接时触发</summary>
-        public event Action ClientConnected;
+        public event Action? ClientConnected;
 
         /// <summary>客机断开时触发</summary>
-        public event Action<string> ClientDisconnected;
+        public event Action<string>? ClientDisconnected;
 
         public GameRelayHost() : base("Connection to the relay was lost.")
         {
@@ -82,7 +83,9 @@ namespace Fida.Network
 
                     // 阻塞等待客机加入（relay 发 0x02）；
                     // 期间不可取消——用户"取消"时 Stop() 直接关闭流使本读失败退出
-                    await _stream.ReadAsync(new byte[] { 0 }, 0, 1);
+                    // 显式取回读取结果（CA2022）：旧逻辑只要求这一次读操作完成，
+                    // 因此短读或 0 字节的结果仍然不改变后续流程。
+                    int read = await _stream.ReadAsync(new byte[] { 0 }, 0, 1);
                     if (_cts.Token.IsCancellationRequested) return;
 
                     _clientConnected = true;
@@ -132,8 +135,8 @@ namespace Fida.Network
             _clientConnected = false;
             TearDownTransport();
 
-            _stream = null;
-            _tcpClient = null;
+            _stream = null!;
+            _tcpClient = null!;
         }
 
         protected override void NotifyDisconnected(string message)

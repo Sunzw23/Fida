@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,8 +15,8 @@ namespace Fida.Network
     /// </summary>
     public class GameClient : MessageTransportBase
     {
-        private TcpClient _tcpClient;
-        private NetworkStream _stream;
+        private TcpClient _tcpClient = null!;
+        private NetworkStream _stream = null!;
         private bool _isConnected;
 
         /// <summary>
@@ -26,12 +27,12 @@ namespace Fida.Network
         /// <summary>
         /// 当连接断开时触发
         /// </summary>
-        public event Action<string> Disconnected;
+        public event Action<string>? Disconnected;
 
         /// <summary>
         /// 当连接成功时触发
         /// </summary>
-        public event System.Action Connected;
+        public event System.Action? Connected;
 
         public GameClient() : base("Connection to the server was lost.")
         {
@@ -50,7 +51,7 @@ namespace Fida.Network
         /// <param name="port">端口号</param>
         /// <param name="roleByte">可选，relay 角色字节（0 = 无角色）</param>
         /// <param name="roomCode">可选，4 位房间码（relay 模式必填）</param>
-        public void Connect(string ipAddress, int port, byte roleByte = 0, string roomCode = null)
+        public void Connect(string ipAddress, int port, byte roleByte = 0, string? roomCode = null)
         {
             if (_isConnected)
                 return;
@@ -132,8 +133,8 @@ namespace Fida.Network
             _isConnected = false;
             TearDownTransport();
 
-            _stream = null;
-            _tcpClient = null;
+            _stream = null!;
+            _tcpClient = null!;
         }
 
         protected override void NotifyDisconnected(string message)

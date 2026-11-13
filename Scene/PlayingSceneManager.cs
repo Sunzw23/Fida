@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace Fida.Scene
         private readonly AgentManager _agentManager;
         private readonly CampaignEncounterCoordinator _campaignEncounter;
         private readonly AutomatedActionPresenter _actionPresenter = new();
-        private CampaignBattleSetup _campaignSetup;
+        private CampaignBattleSetup _campaignSetup = null!;
         private bool _controlAgentsLocally = true;
         private int _deferredCuePlayerId = -1;
         private string _deferredCueMessage = "";
@@ -240,12 +241,12 @@ namespace Fida.Scene
 
         #region Event Handlers
 
-        private void OnMessageUpdated(object sender, GameEventArgs e)
+        private void OnMessageUpdated(object? sender, GameEventArgs e)
         {
             _uiManager.UpdateGameMessage(e.Message);
         }
 
-        private void OnPlayerActionRequired(object sender, PlayerActionRequiredEventArgs e)
+        private void OnPlayerActionRequired(object? sender, PlayerActionRequiredEventArgs e)
         {
             if (_controllers.TryGetValue(e.SourcePlayerId, out var controller))
             {
@@ -277,7 +278,7 @@ namespace Fida.Scene
             if (!_uiManager.IsBlockingPresentationActive) _uiManager.HideActionCue();
         }
 
-        private void OnNumberOperationResolved(object sender, NumberOperationEventArgs e)
+        private void OnNumberOperationResolved(object? sender, NumberOperationEventArgs e)
         {
             _uiManager.HideActionCue();
             _uiManager.PlayNumberFlow(
@@ -287,7 +288,7 @@ namespace Fida.Scene
                 e.BaseNumberIndex);
         }
 
-        private void OnCardActionStarted(object sender, CardActionEventArgs e)
+        private void OnCardActionStarted(object? sender, CardActionEventArgs e)
         {
             _campaignEncounter.DeferDeployment();
             if (e.IsDamaging && !_deferredGameEndForCardAction)

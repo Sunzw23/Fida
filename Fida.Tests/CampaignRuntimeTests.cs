@@ -6,6 +6,7 @@ namespace Fida.Tests;
 
 public sealed class CampaignRuntimeTests
 {
+    private static CampaignNode Node(string id) => Assert.IsType<CampaignNode>(CampaignCatalog.GetNode(id));
     [Fact]
     public void OfflineAndOnlineCampaignProgress_AreStoredSeparatelyAndOnlineClearsMerge()
     {
@@ -18,11 +19,11 @@ public sealed class CampaignRuntimeTests
             CampaignRuntime.Reset(CampaignRuntime.Local, save: false);
             CampaignRuntime.Reset(CampaignRuntime.Online, save: false);
 
-            CampaignRuntime.Complete(CampaignCatalog.GetNode("P"), CampaignRuntime.Local);
+            CampaignRuntime.Complete(Node("P"), CampaignRuntime.Local);
             Assert.True(CampaignRuntime.Progress.IsCompleted("P"));
             Assert.False(CampaignRuntime.OnlineProgress.IsCompleted("P"));
 
-            CampaignRuntime.Complete(CampaignCatalog.GetNode("A1"), CampaignRuntime.Online);
+            CampaignRuntime.Complete(Node("A1"), CampaignRuntime.Online);
             Assert.True(CampaignRuntime.OnlineProgress.IsCompleted("A1"));
             Assert.False(CampaignRuntime.Progress.IsCompleted("A1"));
 

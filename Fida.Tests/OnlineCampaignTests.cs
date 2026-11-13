@@ -6,10 +6,11 @@ namespace Fida.Tests;
 
 public class OnlineCampaignTests
 {
+    private static CampaignNode Node(string id) => Assert.IsType<CampaignNode>(CampaignCatalog.GetNode(id));
     [Fact]
     public void CooperativeCampaign_CreatesTwoAlliesAndKeepsEnemiesOnOpposingTeam()
     {
-        var node = CampaignCatalog.GetNode("A1");
+        var node = Node("A1");
         var setup = CampaignBattleFactory.CreateCooperative(node,
             [SkillType.PlusAttack], [SkillType.PlusDefence]);
 
@@ -23,7 +24,7 @@ public class OnlineCampaignTests
     [Fact]
     public void CooperativeCampaign_HostAndClientBuildIdenticalStableRoster()
     {
-        var node = CampaignCatalog.GetNode("A1");
+        var node = Node("A1");
         var host = CampaignBattleFactory.CreateCooperative(node,
             [SkillType.PlusAttack], [SkillType.PlusDefence]);
         var client = CampaignBattleFactory.CreateCooperative(node,
@@ -48,7 +49,7 @@ public class OnlineCampaignTests
     [Fact]
     public void OnlineSoloCampaign_UsesSameStableBattleRosterAsOffline()
     {
-        var node = CampaignCatalog.GetNode("A1");
+        var node = Node("A1");
         var offline = CampaignBattleFactory.Create(node, []);
         var guestSolo = CampaignBattleFactory.Create(node, [], localPlayerId: 1);
 

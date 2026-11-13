@@ -9,6 +9,33 @@ namespace Fida.Tests;
 
 public class LightweightAgentTests
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(25)]
+    [InlineData(65)]
+    [InlineData(100)]
+    public void TargetSelection_TakesWinningAttackInsteadOfSelfDamageAtEveryStrength(int strength)
+    {
+        var source = new Player(5, "Mara", 8, []) { Health = 2 };
+        var ally = new Player(7, "Arith", 11, []);
+        var enemy = new Player(9, "Enemy", 11, []) { Health = 2 };
+        var game = new GameManager();
+        game.Initialize([source, ally, enemy],
+            [new Group(0, "Allies", [source, ally]), new Group(1, "Enemies", [enemy])]);
+        game.TransitionTo(new TargetSelectionState(game, new SkillContext(source.PlayerId, damage: 2)));
+
+        for (int seed = 0; seed < 50; seed++)
+        {
+            var agent = new LightweightAgent(new() { Strength = strength, Seed = seed });
+            var action = agent.Decide(game, Request(game));
+            Assert.Equal(ActionType.ChooseTarget, action.Type);
+            Assert.Equal(enemy.PlayerId, action.TargetPlayerId);
+        }
+
+        Assert.Equal(2, source.Health);
+        Assert.Equal(2, enemy.Health);
+    }
+
     [Fact]
     public void Selector_StrengthEndpointsAndSeedAreReliable()
     {

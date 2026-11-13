@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Fida.Campaign;
 using Fida.Logic;
@@ -202,7 +203,7 @@ public sealed class OnlineCampaignSkillsState : StateBase
     }
 
     private void Publish(CampaignOnlinePhase phase, string nodeId, bool ready,
-        System.Collections.Generic.IReadOnlyCollection<SkillType> skills = null, string sessionId = "") =>
+        System.Collections.Generic.IReadOnlyCollection<SkillType>? skills = null, string sessionId = "") =>
         _networkManager.SendCampaignPresence(new CampaignPresence(_networkManager.GetLocalPlayerId(), phase,
             nodeId, ready, skills, sessionId));
 }

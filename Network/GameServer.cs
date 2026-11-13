@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -13,8 +14,8 @@ namespace Fida.Network
     public class GameServer : MessageTransportBase
     {
         private TcpListener _listener;
-        private TcpClient _client;
-        private NetworkStream _clientStream;
+        private TcpClient _client = null!;
+        private NetworkStream _clientStream = null!;
         private bool _isRunning;
         private bool _clientConnected;
 
@@ -31,12 +32,12 @@ namespace Fida.Network
         /// <summary>
         /// 当客户端连接时触发
         /// </summary>
-        public event System.Action ClientConnected;
+        public event System.Action? ClientConnected;
 
         /// <summary>
         /// 当客户端断开时触发
         /// </summary>
-        public event Action<string> ClientDisconnected;
+        public event Action<string>? ClientDisconnected;
 
         /// <summary>
         /// 构造函数
@@ -111,9 +112,9 @@ namespace Fida.Network
             TearDownTransport();
 
             _listener?.Stop();
-            _clientStream = null;
-            _client = null;
-            _listener = null;
+            _clientStream = null!;
+            _client = null!;
+            _listener = null!;
         }
 
         protected override void NotifyDisconnected(string message)

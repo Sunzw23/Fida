@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Fida.Logic;
 
@@ -10,13 +11,13 @@ namespace Fida.Scene
     /// </summary>
     public sealed class AutomatedActionPresenter
     {
-        private PendingAction _pending;
+        private PendingAction? _pending;
 
         public bool HasPendingAction => _pending != null;
         public int PendingPlayerId => _pending?.Controller.PlayerId ?? -1;
 
-        public event Action<int, PlayerActionRequiredEventArgs> PresentationStarted;
-        public event Action PresentationEnded;
+        public event Action<int, PlayerActionRequiredEventArgs>? PresentationStarted;
+        public event Action? PresentationEnded;
 
         public void Schedule(IAutomatedPlayerController controller,
             PlayerActionRequiredEventArgs args, float delaySeconds)

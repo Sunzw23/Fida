@@ -30,12 +30,12 @@ namespace Fida
         /// <summary>
         /// 状态即将切换时触发（切换前调用旧状态的 OnExit）
         /// </summary>
-        public event Action<State> OnStateExiting;
+        public event Action<State>? OnStateExiting;
 
         /// <summary>
         /// 状态已切换时触发（切换后调用新状态的 OnEnter）
         /// </summary>
-        public event Action<State> OnStateEntered;
+        public event Action<State>? OnStateEntered;
 
         public GameStateMachine(UIManager uiManager, PlayingSceneManager playingSceneManager, NetworkManager networkManager)
         {

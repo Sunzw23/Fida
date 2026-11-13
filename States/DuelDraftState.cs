@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using Fida.Campaign;
@@ -16,10 +17,10 @@ namespace Fida.States
     public sealed class DuelDraftState : StateBase
     {
         private readonly HashSet<SkillType> _picks = [];
-        private UICampaignSkillWheel _wheel;
+        private UICampaignSkillWheel? _wheel;
         private SkillType? _localBan;
         private SkillType? _remoteBan;
-        private IReadOnlyList<SkillType> _remoteLoadout;
+        private IReadOnlyList<SkillType>? _remoteLoadout;
         private bool _localLocked;
         private bool _started;
         private int LocalId => _networkManager.GetLocalPlayerId();
@@ -129,8 +130,9 @@ namespace Fida.States
         {
             if (!_networkManager.IsHost || !_localLocked || _remoteLoadout == null || _started) return;
             _started = true;
-            var player0 = LocalId == 0 ? _picks.ToArray() : _remoteLoadout;
-            var player1 = LocalId == 1 ? _picks.ToArray() : _remoteLoadout;
+            var remote = _remoteLoadout;
+            var player0 = LocalId == 0 ? _picks.ToArray() : remote;
+            var player1 = LocalId == 1 ? _picks.ToArray() : remote;
             OnlineModeRules.ConfigureDuelLoadouts(player0, player1);
             _networkManager.SendDraftStart(player0, player1);
             _stateMachine.SwitchToState(State.OnlinePlaying);
@@ -171,8 +173,8 @@ namespace Fida.States
                 {
 #if !FIDA_ANDROID
                     string bans = _localBan == _remoteBan
-                        ? GameText.SkillName(_localBan.Value)
-                        : $"{GameText.SkillName(_localBan.Value)} / {GameText.SkillName(_remoteBan.Value)}";
+                        ? GameText.SkillName(_localBan.GetValueOrDefault())
+                        : $"{GameText.SkillName(_localBan.GetValueOrDefault())} / {GameText.SkillName(_remoteBan.GetValueOrDefault())}";
 #endif
 #if FIDA_ANDROID
                     _wheel.StatusText = _localLocked
@@ -224,7 +226,7 @@ namespace Fida.States
 
         private bool IsBanned(SkillType skill) => _localBan == skill || _remoteBan == skill;
         private IReadOnlyCollection<SkillType> Bans() =>
-            new[] { _localBan, _remoteBan }.Where(s => s.HasValue).Select(s => s.Value).ToArray();
+            new[] { _localBan, _remoteBan }.Where(s => s.HasValue).Select(s => s.GetValueOrDefault()).ToArray();
 
         private void Disconnect()
         {

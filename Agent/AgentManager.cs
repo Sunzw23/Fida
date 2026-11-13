@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,11 +13,12 @@ namespace Fida.Agent
         public delegate void ChooseTargetEventHandler(int targetPlayerId);
         public delegate void DecideApplyEventHandler(bool apply);
         public delegate void ChooseNumberEventHandler(int number);
-        public event ChooseNumberIndexEventHandler ChooseNumberIndex;
-        public event ChooseTargetEventHandler ChooseTarget;
-        public event DecideApplyEventHandler DecideApply;
-        public event ChooseNumberEventHandler ChooseNumber;
-        private GameManager _gameManager;
+        public event ChooseNumberIndexEventHandler? ChooseNumberIndex;
+        public event ChooseTargetEventHandler? ChooseTarget;
+        public event DecideApplyEventHandler? DecideApply;
+        public event ChooseNumberEventHandler? ChooseNumber;
+        // 由 SetGameManager/GetAgentAction 在游戏开始后赋值；Decide 中仍保留空值保护。
+        private GameManager _gameManager = null!;
         private readonly Dictionary<int, LightweightAgent> _agents = new();
         public void SetGameManager(GameManager gameManager) => _gameManager = gameManager;
 

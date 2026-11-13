@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -56,7 +57,7 @@ namespace Fida
             _uiManager.GameManager.MessageUpdated += OnTutorialMessageUpdated;
         }
 
-        private void OnGameEnded(object sender, GameEndEventArgs e)
+        private void OnGameEnded(object? sender, GameEndEventArgs e)
         {
             bool rulesOverPlaying = _stateMachine.CurrentState == State.Rules &&
                 _stateMachine.RulesReturnState == State.Playing;
@@ -352,7 +353,7 @@ namespace Fida
             return true;
         }
 
-        private void OnTutorialActionRequired(object sender, PlayerActionRequiredEventArgs e)
+        private void OnTutorialActionRequired(object? sender, PlayerActionRequiredEventArgs e)
         {
             if (_stateMachine.CurrentState != State.Playing || !GameSetup.SelectedNode.IsTutorial ||
                 e.SourcePlayerId != _uiManager.GameManager.LocalPlayerId)
@@ -383,7 +384,7 @@ namespace Fida
             }
         }
 
-        private void OnTutorialMessageUpdated(object sender, GameEventArgs e)
+        private void OnTutorialMessageUpdated(object? sender, GameEventArgs e)
         {
             if (_stateMachine.CurrentState != State.Playing || !GameSetup.SelectedNode.IsTutorial ||
                 GameSetup.SelectedNode.Id != "T02")

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,14 +15,14 @@ namespace Fida.Network
     /// </summary>
     public class NetworkManager : IDisposable
     {
-        private GameServer _gameServer;
-        private GameClient _gameClient;
-        private GameRelayHost _relayHost;
+        private GameServer? _gameServer;
+        private GameClient? _gameClient;
+        private GameRelayHost? _relayHost;
         private readonly ServerConfig _serverConfig;
         private bool _isHost;
         private bool _disposed;
         private readonly Queue<NetworkMessage> _pendingMessages = new();
-        private CampaignPresence _localCampaignPresence;
+        private CampaignPresence? _localCampaignPresence;
 
         /// <summary>当前是否为主机</summary>
         public bool IsHost => _isHost;
@@ -40,29 +41,29 @@ namespace Fida.Network
         public string HostRoomCode => _relayHost?.RoomCode ?? string.Empty;
 
         /// <summary>主机端：客户端连入时触发</summary>
-        public event System.Action ClientConnected;
+        public event System.Action? ClientConnected;
 
         /// <summary>客机端：成功连接到服务器时触发</summary>
-        public event System.Action ConnectedToServer;
+        public event System.Action? ConnectedToServer;
 
         /// <summary>连接断开时触发</summary>
-        public event System.Action<string> Disconnected;
+        public event System.Action<string>? Disconnected;
 
         /// <summary>收到对方大厅投票时触发；双方拥有同等模式选择权。</summary>
-        public event System.Action<int> LobbyVoteReceived;
-        public event System.Action<int, SkillType> DraftBanReceived;
-        public event System.Action<int, IReadOnlyList<SkillType>> DraftLockReceived;
-        public event System.Action<IReadOnlyList<SkillType>, IReadOnlyList<SkillType>> DraftStarting;
-        public event Action<string> BattleJoinRequested;
-        public event Action<BattleSnapshot> BattleSnapshotReceived;
-        public event Action<string> BattleSnapshotAcknowledged;
-        public event Action<CampaignPresence> CampaignPresenceReceived;
-        public event Action<string, string> CampaignCoopStarting;
-        public BattleSnapshot PendingBattleSnapshot { get; private set; }
+        public event System.Action<int>? LobbyVoteReceived;
+        public event System.Action<int, SkillType>? DraftBanReceived;
+        public event System.Action<int, IReadOnlyList<SkillType>>? DraftLockReceived;
+        public event System.Action<IReadOnlyList<SkillType>, IReadOnlyList<SkillType>>? DraftStarting;
+        public event Action<string>? BattleJoinRequested;
+        public event Action<BattleSnapshot>? BattleSnapshotReceived;
+        public event Action<string>? BattleSnapshotAcknowledged;
+        public event Action<CampaignPresence>? CampaignPresenceReceived;
+        public event Action<string, string>? CampaignCoopStarting;
+        public BattleSnapshot PendingBattleSnapshot { get; private set; } = null!;
         public BattleSnapshot TakePendingBattleSnapshot()
         {
             var snapshot = PendingBattleSnapshot;
-            PendingBattleSnapshot = null;
+            PendingBattleSnapshot = null!;
             return snapshot;
         }
         public CampaignPresence RemoteCampaignPresence { get; private set; } = new(1, CampaignOnlinePhase.Map, "", false);
@@ -249,7 +250,7 @@ namespace Fida.Network
         }
 
         /// <summary>启动客机模式：直连服务器 或 连接 relay 作为客机端</summary>
-        public void StartConnecting(string ipAddress, int port, bool isRelay = false, string roomCode = null)
+        public void StartConnecting(string ipAddress, int port, bool isRelay = false, string? roomCode = null)
         {
             _isHost = false;
 
@@ -359,7 +360,7 @@ namespace Fida.Network
                 WriteSkillList(writer, second);
             }));
 
-        private List<NetworkMessage> ReceiveAvailableMessages()
+        private List<NetworkMessage>? ReceiveAvailableMessages()
         {
             if (_isHost && _gameServer != null) return _gameServer.ReceiveMessages();
             if (_isHost && _relayHost != null) return _relayHost.ReceiveMessages();

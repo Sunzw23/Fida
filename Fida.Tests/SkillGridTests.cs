@@ -9,6 +9,46 @@ namespace Fida.Tests;
 public class SkillGridTests
 {
     [Fact]
+    public void CampaignInventoryHidesUnownedSkillsAndCannotFocusThem()
+    {
+        var owned = new[] { SkillType.PlusAttack, SkillType.Xue, SkillType.Shi };
+        var grid = SkillGridModel.ForUnlocked(SkillFactory.SelectableSkills, owned, SkillType.DoubleAttack);
+        Assert.Equal(owned.OrderBy(skill => (int)skill), grid.All.OrderBy(skill => (int)skill));
+        Assert.False(grid.Focus(SkillType.DoubleAttack));
+        Assert.Contains(grid.Focused, owned);
+        grid.ChangePage(99);
+        Assert.Equal(0, grid.Page);
+        Assert.DoesNotContain(SkillType.DoubleAttack, grid.PageItems);
+    }
+
+    [Fact]
+    public void EmptyInventoryAndEmptyCategoryRemainNavigable()
+    {
+        var empty = SkillGridModel.ForUnlocked(SkillFactory.SelectableSkills, Array.Empty<SkillType>());
+        empty.Move(1); empty.MoveSpatial(0, 1, 4); empty.ChangePage(1);
+        Assert.False(empty.HasFocus);
+        Assert.Equal(-1, empty.FocusedIndex);
+        Assert.Empty(empty.PageItems);
+        var grid = SkillGridModel.ForUnlocked(SkillFactory.SelectableSkills, new[] { SkillType.Xue });
+        grid.Filter(SkillCategory.Offense);
+        grid.ChangePage(-1); grid.Move(-1);
+        Assert.Equal(SkillCategory.Offense, grid.Category);
+        Assert.False(grid.HasFocus);
+        Assert.Empty(grid.PageItems);
+        grid.Filter(SkillCategory.All);
+        Assert.True(grid.HasFocus);
+        Assert.Equal(SkillType.Xue, grid.Focused);
+    }
+
+    [Fact]
+    public void DuelInventoryStillContainsEntireSelectablePool()
+    {
+        var grid = SkillGridModel.ForUnlocked(SkillFactory.SelectableSkills, SkillFactory.SelectableSkills);
+        Assert.Equal(SkillFactory.SelectableSkills.Count, grid.All.Count);
+        Assert.True(grid.Focus(SkillType.SuperEmperor));
+    }
+
+    [Fact]
     public void EverySkillIsReachableAcrossPagesAndCategories()
     {
         var grid = new SkillGridModel(SkillFactory.SelectableSkills);

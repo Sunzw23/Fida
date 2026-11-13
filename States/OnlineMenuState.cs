@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Xna.Framework;
 
 namespace Fida.States
@@ -51,7 +52,7 @@ namespace Fida.States
         private void JoinGame()
         {
             bool isRelay = _networkManager.GetServerIsRelay();
-            string roomCode = null;
+            string? roomCode = null;
 
             if (isRelay)
             {
@@ -61,7 +62,10 @@ namespace Fida.States
                     return; // 房间码未输入/不全，停留原地
             }
 
-            _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), isRelay, roomCode);
+            if (roomCode == null)
+                _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), isRelay);
+            else
+                _networkManager.StartConnecting(_networkManager.GetServerAddress(), _networkManager.GetServerPort(), isRelay, roomCode);
             _stateMachine.SwitchToState(State.Connecting);
         }
 

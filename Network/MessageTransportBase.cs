@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace Fida.Network
     /// </summary>
     public abstract class MessageTransportBase : IDisposable
     {
-        protected CancellationTokenSource _cts;
+        protected CancellationTokenSource _cts = null!;
         protected readonly ConcurrentQueue<NetworkMessage> _incomingMessages = new();
         protected readonly ConcurrentQueue<NetworkMessage> _outgoingMessages = new();
         private bool _disposed;
@@ -46,7 +47,7 @@ namespace Fida.Network
         public List<NetworkMessage> ReceiveMessages()
         {
             var messages = new List<NetworkMessage>();
-            while (_incomingMessages.TryDequeue(out NetworkMessage message))
+            while (_incomingMessages.TryDequeue(out NetworkMessage? message))
             {
                 messages.Add(message);
             }
@@ -59,7 +60,7 @@ namespace Fida.Network
             {
                 while (!ct.IsCancellationRequested && Connection != null && Connection.Connected)
                 {
-                    NetworkMessage message = await Task.Run(() =>
+                    NetworkMessage? message = await Task.Run(() =>
                     {
                         try
                         {
@@ -91,7 +92,7 @@ namespace Fida.Network
             {
                 while (!ct.IsCancellationRequested && Connection != null && Connection.Connected)
                 {
-                    if (_outgoingMessages.TryDequeue(out NetworkMessage message))
+                    if (_outgoingMessages.TryDequeue(out NetworkMessage? message))
                     {
                         byte[] data = message.Serialize();
                         await DataStream.WriteAsync(data, 0, data.Length, ct);

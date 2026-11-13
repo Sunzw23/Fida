@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -69,7 +70,7 @@ namespace Fida.Network
         {
             var config = new ServerConfig();
 
-            string content = ContentSource.ReadText(filePath);
+            string? content = ContentSource.ReadText(filePath);
             if (content == null)
             {
                 // 如果文件不存在，返回默认的本地测试服务器

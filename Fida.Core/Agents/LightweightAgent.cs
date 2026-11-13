@@ -76,7 +76,12 @@ public sealed class LightweightAgent
         if (candidates.Length == 0) throw new InvalidOperationException("当前决策没有合法动作。");
         var values = ScoreCandidates(game, candidates, source.PlayerId, Profile.SimulationDepth,
             Profile.SimulationNodeBudget);
-        return candidates[_selector.Select(values)];
+        // Target selection should stay accurate at every difficulty; only number/skill
+        // decisions use the profile's deliberate sampling of weaker actions.
+        int selected = args.RequiredActionType == ActionType.ChooseTarget
+            ? Array.IndexOf(values, values.Max())
+            : _selector.Select(values);
+        return candidates[selected];
     }
 
     private double[] ScoreCandidates(GameManager game, GameAction[] actions, int root, int depth, int budget)

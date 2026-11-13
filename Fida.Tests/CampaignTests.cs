@@ -10,6 +10,7 @@ namespace Fida.Tests;
 
 public class CampaignTests
 {
+    private static CampaignNode Node(string id) => Assert.IsType<CampaignNode>(CampaignCatalog.GetNode(id));
     [Fact]
     public void SkillWheel_WrapsAndKeepsExactlyOneFocusedItem()
     {
@@ -154,12 +155,12 @@ public class CampaignTests
     public void General_UnlocksAfterAnyTwoFirstChapterNodes()
     {
         var progress = new CampaignProgress();
-        progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("P")));
-        progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")));
-        Assert.False(CampaignCatalog.IsUnlocked(progress, Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG"))));
+        progress.Complete(Node("P"));
+        progress.Complete(Node("A1"));
+        Assert.False(CampaignCatalog.IsUnlocked(progress, Node("AG")));
 
-        progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A3")));
-        Assert.True(CampaignCatalog.IsUnlocked(progress, Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG"))));
+        progress.Complete(Node("A3"));
+        Assert.True(CampaignCatalog.IsUnlocked(progress, Node("AG")));
     }
 
     [Fact]
@@ -178,8 +179,8 @@ public class CampaignTests
         var mainRoute = CampaignCatalog.Nodes.Where(node => node.Id != "D4" && node.Id != "E4");
         Assert.All(mainRoute, node => Assert.True(node.SkillBudget <
             CampaignSkillBalance.Cost(SkillType.Shen) + CampaignSkillBalance.Cost(SkillType.Xian)));
-        Assert.Equal(6, CampaignCatalog.GetNode("D4").SkillBudget);
-        Assert.Equal(6, CampaignCatalog.GetNode("E4").SkillBudget);
+        Assert.Equal(6, Node("D4").SkillBudget);
+        Assert.Equal(6, Node("E4").SkillBudget);
     }
 
     [Fact]
@@ -195,8 +196,7 @@ public class CampaignTests
     [Fact]
     public void FieldLessons_TellAnOrderedStoryAndTeachRulesInEnglish()
     {
-        var lessons = new[] { "T01", "T02", "T03" }
-            .Select(CampaignCatalog.GetNode).ToArray();
+        var lessons = new[] { "T01", "T02", "T03" }.Select(Node).ToArray();
 
         Assert.All(lessons, node => Assert.True(node.IsTutorial));
         Assert.Equal("Mara Venn", lessons[0].TutorialCompanion);
@@ -228,7 +228,7 @@ public class CampaignTests
         {
             UnlockedSkills = [SkillType.DoubleHealth, SkillType.TripleHealth, SkillType.Long]
         };
-        var node = Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")); // budget 3
+        var node = Node("A1"); // budget 3
         var selected = new HashSet<SkillType> { SkillType.DoubleHealth };
 
         Assert.False(CampaignLoadout.CanSelect(progress, node, selected, SkillType.TripleHealth));
@@ -242,13 +242,13 @@ public class CampaignTests
         var progress = new CampaignProgress { UnlockedSkills = [SkillType.Long, SkillType.Bian] };
         var selected = new HashSet<SkillType> { SkillType.Long };
 
-        Assert.False(CampaignLoadout.CanSelect(progress, Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("F")), selected, SkillType.Bian));
+        Assert.False(CampaignLoadout.CanSelect(progress, Node("F"), selected, SkillType.Bian));
     }
 
     [Fact]
     public void BattleFactory_GroupsInitialEnemiesAndKeepsReinforcementsInReserve()
     {
-        var setup = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG")), []);
+        var setup = CampaignBattleFactory.Create(Node("AG"), []);
 
         Assert.Equal(3, setup.Players.Count);
         Assert.Equal(2, setup.Reinforcements.Count);
@@ -260,8 +260,8 @@ public class CampaignTests
     [Fact]
     public void BattleFactory_AssignsDataDrivenPortraitKeysWithEnemyFallback()
     {
-        var prologue = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("P")), []);
-        var laterBattle = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")), []);
+        var prologue = CampaignBattleFactory.Create(Node("P"), []);
+        var laterBattle = CampaignBattleFactory.Create(Node("A1"), []);
 
         Assert.Equal("arithmetist", prologue.Players[0].PortraitKey);
         Assert.Equal("withered_king", prologue.Players[1].PortraitKey);
@@ -272,7 +272,7 @@ public class CampaignTests
     [Fact]
     public void BattleFactory_PlacesTutorialCompanionOnPlayerFaction()
     {
-        var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("T01"), []);
+        var setup = CampaignBattleFactory.Create(Node("T01"), []);
         var mara = setup.Players.Single(player => player.Name == "Mara Venn");
 
         Assert.Equal(0, setup.Groups[0].GroupId);
@@ -285,7 +285,7 @@ public class CampaignTests
     [Fact]
     public void EncounterCoordinator_DeploysReinforcementsBeforeVictoryCheck()
     {
-        var setup = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("AG")), []);
+        var setup = CampaignBattleFactory.Create(Node("AG"), []);
         var game = new GameManager();
         game.Initialize(setup.Players, setup.Groups);
         var coordinator = new CampaignEncounterCoordinator(game);
@@ -300,7 +300,7 @@ public class CampaignTests
     [Fact]
     public void EncounterCoordinator_WaitsForCardPresentationBeforeDeploying()
     {
-        var setup = CampaignBattleFactory.Create(CampaignCatalog.GetNode("AG"), []);
+        var setup = CampaignBattleFactory.Create(Node("AG"), []);
         var game = new GameManager();
         game.Initialize(setup.Players, setup.Groups);
         var coordinator = new CampaignEncounterCoordinator(game);
@@ -319,7 +319,7 @@ public class CampaignTests
     [Fact]
     public void EncounterCoordinator_UsesSharedRoundAnchorInsteadOfLocalPlayerTurn()
     {
-        var template = CampaignCatalog.GetNode("AG");
+        var template = Node("AG");
         var node = new CampaignNode
         {
             Id = template.Id,
@@ -347,7 +347,7 @@ public class CampaignTests
     [Fact]
     public void TargetSelection_UsesCampaignTeamsForAttackAndHealing()
     {
-        var setup = CampaignBattleFactory.Create(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("A1")), []);
+        var setup = CampaignBattleFactory.Create(Node("A1"), []);
         var game = new GameManager();
         game.Initialize(setup.Players, setup.Groups);
         PlayerActionRequiredEventArgs? requested = null;
@@ -371,7 +371,7 @@ public class CampaignTests
         {
             var store = new CampaignProgressStore(path);
             var progress = new CampaignProgress();
-            progress.Complete(Assert.IsType<CampaignNode>(CampaignCatalog.GetNode("P")));
+            progress.Complete(Node("P"));
             Assert.True(store.Save(progress));
 
             var loaded = store.Load();

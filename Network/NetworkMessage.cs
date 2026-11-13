@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -83,7 +84,7 @@ namespace Fida.Network
         /// <summary>
         /// 从流中读取一条完整消息
         /// </summary>
-        public static NetworkMessage ReadFromStream(Stream stream)
+        public static NetworkMessage? ReadFromStream(Stream stream)
         {
             int typeByte = stream.ReadByte();
             if (typeByte < 0) return null;
