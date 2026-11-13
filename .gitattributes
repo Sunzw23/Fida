@@ -1,7 +1,10 @@
 ###############################################################################
 # Set default behavior to automatically normalize line endings.
+#
+# Fida 统一使用 LF：仓库里所有文本文件都以 LF 存储和检出，避免 Windows 与
+# Linux/Android 构建机之间出现整文件的行尾噪声 diff。
 ###############################################################################
-* text=auto
+* text=auto eol=lf
 
 ###############################################################################
 # Set default behavior for command prompt diff.

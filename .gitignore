@@ -368,3 +368,19 @@ FodyWeavers.xsd
 
 # One-off local maintenance script (changes are already applied to source).
 /.warning-fix.ps1
+
+# 根目录兜底：某些工具/误操作的 msbuild 调用会把构建产物落在仓库根部。
+# 只忽略根目录（/*），不影响 Content 或任何子目录里需要提交的文件。
+/*.dll
+/*.pdb
+/*.exe
+/*.deps.json
+/*.runtimeconfig.json
+/*.runtimeconfig.dev.json
+
+# 音频生成中间物：Content/audio/previews 是 BellTheme 脚本的试听输出；
+# BellTheme 的两个采样库是第三方素材（保留 LICENSE 与元数据，只忽略 wav 本体）。
+# mgcb 都不引用它们，因此不进版本库，本地保留即可。
+/Content/audio/previews/
+/tools/BellTheme/piano-samples/*.wav
+/tools/BellTheme/samples/*.wav
