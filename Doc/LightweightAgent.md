@@ -8,12 +8,15 @@
 { "Strength": 65, "Seed": null, "SimulationNodeBudget": 256, "SimulationDepth": 8 }
 ```
 
-`Strength` 必须在 0–100。0 均匀随机选择合法动作，100 贪心最高评分。
+`Strength` 必须在 0–100。数字与技能决策中，0 均匀随机选择合法动作，100 贪心最高评分。
 建议体验档位：25 入门、50 普通、65 困难、80 专家、100 最高。
 这些档位是选择质量参数，不是胜率百分比；技能局的同一档位不保证与普通双人局等强。
 `SimulationNodeBudget` 和 `SimulationDepth` 限制技能连锁中的候选展开量，默认 256/8；
 所有根候选都会比较，剩余展开预算均分，预算耗尽后仍然只查 value table。
 `Seed` 可选，用于重现决策；每个 Agent 拥有独立的随机数和组合计划。
+
+目标选择始终选择模拟评分最高的合法对象，不受 `Strength` 的随机降强影响；
+数字与技能决策仍按原有实力参数采样。目标评分仍使用下述模拟与基础表投影估值。
 
 代码可调用 `AgentManager.SetStrength(50)` 更新该 manager 的 Agent；战役创建控制器时使用
 `AgentDefaults.Profile`，已创建的战役控制器保持创建时的配置，也可直接用

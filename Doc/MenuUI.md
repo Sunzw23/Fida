@@ -25,7 +25,9 @@ The desktop campaign browser keeps the original folder hierarchy, graph, camera
 and campaign unlock data. `CampaignMapLayout` reserves a persistent details pane
 beside the map, or below it in portrait windows. Clicking a mission only selects
 it; Configure skills (or Enter / controller A) confirms it. Locked missions can
-be inspected but cannot be entered. Folder actions open the selected chapter;
+be inspected but cannot be entered, so their detail ticket is dimmed, reads
+"Locked" and carries the lock stamp instead of the action arrow. Folder actions
+open the selected chapter;
 Back returns through the hierarchy. Zoom and pan remain available. Node sizes
 are world units, avoiding a second viewport scale before the camera scales them.
 Android retains its touch-oriented mission list with simplified frames.
@@ -36,8 +38,9 @@ existing numeral geometry; combat numerals retain their original atlas.
 ## Verification
 
 Run the regular unit suite and build both desktop and Android. The local preview
-runner also exercises map inspect/confirm, locked mission rejection, cross-target
-mouse release and single-consumption of navigation events without modifying saves.
+runner also exercises map inspect/confirm, locked mission rejection, locked
+chapter sheet colour, the locked detail ticket, cross-target mouse release and
+single-consumption of navigation events without modifying saves.
 
 ```powershell
 dotnet test Fida.Tests/Fida.Tests.csproj -c UiReview --no-restore -m:1 -p:BuildInParallel=false
@@ -78,6 +81,9 @@ miniature of their actual mission graph. The selected chapter pane previews that
 graph, an available mission's story (falling back to the first mission), and the
 number of available missions. Single-mission chapters show their mission ID.
 Route nodes show names when space permits, and selected incident routes use the
-ice accent. Header/back geometry matches Settings and Rules. All graph positions,
-unlock checks, hit regions and confirmation behavior remain driven by the same
-campaign data and layout; miniature graphs are noninteractive previews.
+ice accent. Locked missions and locked chapters share one grey sheet, faded
+artwork and a lock stamp, so a chapter cannot look available just because it is
+one level above the mission that is actually closed. Header/back geometry
+matches Settings and Rules. All graph positions, unlock checks, hit regions and
+confirmation behavior remain driven by the same campaign data and layout;
+miniature graphs are noninteractive previews.

@@ -7,6 +7,9 @@
 | [GameRules.md](./GameRules.md) | 游戏基本规则：回合流程、数字效果、护盾机制、胜利条件 |
 | [Skills.md](./Skills.md) | 技能系统详解：全部 17 个技能类型、触发时机、效果说明 |
 | [GameMechanics.md](./GameMechanics.md) | 游戏深层机制：状态机流程、伤害管线、技能上下文、链式反应 |
+| [Audio.md](./Audio.md) | 第一版原创音乐、音效、音量设置与素材生成／验证 |
+| [PaperShader.md](./PaperShader.md) | 纸纹是否改用 shader：可行性、实测成本、分级方案与移动端限制 |
+| [Refactoring.md](./Refactoring.md) | 模块化重构探索：现状实测、12 项问题清单、目标分层与分阶段路线 |
 
 ## 项目简介
 

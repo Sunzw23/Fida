@@ -10,6 +10,10 @@ The approved paper concept is the visual reference: navy fibrous paper, ivory nu
 
 `UIPaper` locates the largest opaque sheet in each material cell, ignores detached margin flecks, and nine-slices the clean paper surfaces with soft offset shadows. Battle uses a sparse ruins backdrop (`Content/paper/battle.png`). Other pages use a quiet navy base; visible fibers, scratches, repeated texture tiles and extra decorative planes have been removed.
 
+Paper grain is procedural: `Content/paper_grain.fx` runs once per frame over the finished page (`UI/PaperPass.cs`), so sheets are drawn as cut masks tinted by the atlas palette and nothing is baked per size. Per-size texture caches, the shared grain tile and the fallback grain texture are gone; the cut masks are generated at half atlas resolution. See `Doc/PaperShader.md` for the measurements.
+
+Because sheets are now flat palette plus mask, the cut edge needs its own light: `UIPaper.LitEdge` draws the same silhouette one pixel up and left in a slightly warmer, lighter tone (`EdgeHighlight`, 22 %) before the face. That one draw is what reads as paper thickness; it applies to sheets, menu strips, the seal, the stacked modal sheets and `UIPaperFrame` shapes.
+
 ## Selected concepts
 
 This revision follows concepts 01–08 and 13–16: main menu, chapter browser, mission route, loadout, battle, dialogue, pause, node cleared, online, hosting, connecting and lobby. Chapter art uses a few silhouette layers. Battle portraits use broad folds above a centered name/health strip and fixed number cards. Loadout details, equipped skills and Start share the right column. Dialogue adds the speaker portrait and a clear Next tab. Outcomes use a simple seal, reward strip and road scene. Hosting displays four live code cells; connecting uses three restrained moving markers. Lobby identities use six broad vector paper shapes rather than battle artwork.
@@ -29,5 +33,11 @@ Pause retains a separate frozen battle texture (approximately 6.1 MiB at 1600×1
 `tools/UiPreview` renders the real controls without reading or writing user saves. It covers menus, all Rules pages, Campaign and route view, loadout states, 3v3/4v4 battle, dialogue, online screens, pause and outcomes. It verifies map actions, skill restrictions, room-code entry, transition frame blending, reduced motion, portrait motion and stable number pixels/hit targets.
 
 Preview: `dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1600 1000 artifacts/paper-simple`.
+
+Locked sheets are grey stock at both levels of the browser. Chapters are drawn by
+`UICampaignRouteView.DrawChapterCard` with the same `LockedFace` grey as the route
+cards, artwork faded towards cold grey and the heading reduced to muted ink, so a
+closed chapter never keeps the open page's ivory. The preview samples both sheet
+colours each run and fails if a locked chapter is not clearly darker.
 
 Android compilation is a compatibility check; it does not replace device interaction or live multiplayer testing.
