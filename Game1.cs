@@ -1,3 +1,4 @@
+#nullable enable
 // Game1.cs 文件
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -8,6 +9,7 @@ using Fida.Scene;
 using Fida.UI;
 using Fida.Agent;
 using Fida.Logic;
+using Fida.Audio;
 
 namespace Fida
 {
@@ -25,11 +27,17 @@ namespace Fida
         private MenuInputHandler _menuInput = null!;
         private GameSessionManager _gameSession = null!;
         private ExitHandler _exitHandler = null!;
+        private AudioService _audio = null!;
+        private BattleAudio _battleAudio = null!;
+        private MusicTrack _musicTrack = MusicTrack.Journey;
+        private bool _audioCampaignBattle = true;
 
         private bool _isGameActive = true;
 
         // F8 布局重叠调试开关（边沿检测，仅桌面构建）
+#if !FIDA_ANDROID
         private bool _overlapDebugWasDown;
+#endif
         private bool _rulesShortcutWasDown;
 
         public Game1()
@@ -46,7 +54,9 @@ namespace Fida
 #else
             _graphics.GraphicsProfile = GraphicsProfile.HiDef;
 #endif
-            _graphics.PreferMultiSampling = true;
+            // UI is rendered into a non-multisampled texture before presentation.
+            // Match the preview's back buffer; MSAA here only affects the final quad.
+            _graphics.PreferMultiSampling = false;
             _graphics.SynchronizeWithVerticalRetrace = true;
 #if !FIDA_ANDROID
             DisplaySettingsManager.Initialize(_graphics);
@@ -74,6 +84,11 @@ namespace Fida
         protected override void LoadContent()
         {
             _resourceManager.LoadContent(Content);
+            _audio = new AudioService(Content.RootDirectory);
+            _audio.SetSuspended(!_isGameActive);
+            _battleAudio = new BattleAudio(_uiManager.GameManager, _audio, () => UIMotion.Reduced);
+            _stateMachine.OnStateEntered += OnAudioStateEntered;
+            OnAudioStateEntered(_stateMachine.CurrentState);
 
             if (_stateMachine.CurrentState == State.MainMenu)
             {
@@ -147,7 +162,27 @@ namespace Fida
                     break;
             }
 
+            _battleAudio.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+            _audio.Update((float)gameTime.ElapsedGameTime.TotalSeconds,
+                AudioScenePolicy.Gain(_stateMachine.CurrentState, _uiManager.TutorialDialogue != null));
             base.Update(gameTime);
+        }
+
+        private void OnAudioStateEntered(State state)
+        {
+            if (state is State.Playing or State.OnlinePlaying)
+                _audioCampaignBattle = state == State.Playing || _networkManager.CurrentGameMode == 2;
+            _battleAudio.Enabled = state is State.Playing or State.OnlinePlaying;
+            if (_battleAudio.Enabled) _battleAudio.RefreshPlayers();
+            else _battleAudio.Clear();
+            var node = GameSetup.SelectedNode;
+            bool prologue = !string.IsNullOrEmpty(node.SelfTargetingEnemy);
+            bool won = _stateMachine.LastBattleOutcome?.Won == true;
+            _musicTrack = AudioScenePolicy.Resolve(state, _musicTrack, _audioCampaignBattle,
+                node.IsBoss, prologue, node.Endings.Count > 0, won);
+            _audio.SetMusic(_musicTrack);
+            if (state == State.GameOver && !(_audioCampaignBattle && prologue))
+                _audio.Play(won ? SoundCue.Victory : SoundCue.Defeat);
         }
 
         // ─── MonoGame 生命周期 ─────────────────────────────
@@ -161,12 +196,14 @@ namespace Fida
         protected override void OnActivated(object sender, EventArgs args)
         {
             _isGameActive = true;
+            _audio?.SetSuspended(false);
             base.OnActivated(sender, args);
         }
 
         protected override void OnDeactivated(object sender, EventArgs args)
         {
             _isGameActive = false;
+            _audio?.SetSuspended(true);
             base.OnDeactivated(sender, args);
         }
 
@@ -174,6 +211,9 @@ namespace Fida
         {
             if (disposing)
             {
+                if (_stateMachine != null) _stateMachine.OnStateEntered -= OnAudioStateEntered;
+                _battleAudio?.Dispose();
+                _audio?.Dispose();
                 _networkManager?.Dispose();
                 _uiManager?.Dispose();
                 _resourceManager?.Dispose();

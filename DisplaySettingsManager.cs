@@ -12,6 +12,8 @@ namespace Fida
     {
         public bool Fullscreen { get; set; }
         public bool ReduceMotion { get; set; }
+        public int MusicVolume { get; set; } = 65;
+        public int EffectsVolume { get; set; } = 80;
         public int Width { get; set; } = 1920;
         public int Height { get; set; } = 1200;
     }
@@ -60,6 +62,19 @@ namespace Fida
         {
             Current.ReduceMotion = !Current.ReduceMotion;
             Save();
+        }
+
+        public static void SetAudioVolume(bool music, int percent)
+        {
+            if (music) Current.MusicVolume = Math.Clamp(percent, 0, 100);
+            else Current.EffectsVolume = Math.Clamp(percent, 0, 100);
+            Save();
+        }
+
+        public static void NormalizeAudio(DisplaySettingsData settings)
+        {
+            settings.MusicVolume = Math.Clamp(settings.MusicVolume, 0, 100);
+            settings.EffectsVolume = Math.Clamp(settings.EffectsVolume, 0, 100);
         }
 
         public static void CycleResolution()
@@ -151,9 +166,11 @@ namespace Fida
             try
             {
                 string path = SettingsPath();
-                return File.Exists(path)
+                var settings = File.Exists(path)
                     ? JsonSerializer.Deserialize<DisplaySettingsData>(File.ReadAllText(path)) ?? new()
                     : new();
+                NormalizeAudio(settings);
+                return settings;
             }
             catch { return new(); }
         }
