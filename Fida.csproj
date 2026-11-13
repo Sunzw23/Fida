@@ -46,10 +46,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
+    <PackageReference Include="Gum.MonoGame" Version="2026.7.22.1" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.5.1" />
     <MonoGameContentReference Include="Content\Content.mgcb" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Content\Gum\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Content\agent-settings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Content\screens\ConnectingScreen.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

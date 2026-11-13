@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -12,7 +13,7 @@ namespace Fida.UI
         private float _animationTimer;
         private float _animationStartTime;
         private const float AnimationDuration = 0.2f;
-        private string _newText;
+        private string _newText = null!;
         private float _wipeProgress;
 
         public UIAnimatedBoxLabel(int id, Rectangle bounds, string text, Texture2D pixel, SpriteFont font)

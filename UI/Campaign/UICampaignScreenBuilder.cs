@@ -31,9 +31,9 @@ namespace Fida.UI.Campaign
             CampaignMapOptions options = new()
             {
                 // These are world units. The camera already scales them into the viewport.
-                NodeWidth = 270f,
-                NodeHeight = 96f,
-                ContentPadding = 70f,
+                NodeWidth = 380f,
+                NodeHeight = 180f,
+                ContentPadding = 0f,
                 MinimumZoom = 0.55f,
                 MaximumZoom = 2.2f,
                 ScreenMargin = System.Math.Max(1, (int)System.Math.Round(36 * scale)),
@@ -54,7 +54,7 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
             var options = CampaignSkillWheelOptions.Mobile();
 #else
-            CampaignSkillWheelOptions options = null;
+            CampaignSkillWheelOptions? options = null;
 #endif
             _controls.Add(new UICampaignSkillWheel(0, _resources.GraphicsDevice, _resources.Pixel,
                 _resources.Font, _resources.TitleFont, node, CampaignRuntime.GetProgress(online),
@@ -77,10 +77,10 @@ namespace Fida.UI.Campaign
             var layout = new UIEditorialLayout(_resources.GraphicsDevice.Viewport);
             if (!duel)
                 _controls.Add(new UIEditorialButton(4, UIPaperOutcome.Action(layout, false, false), "Adjust loadout", _resources.Pixel, _resources.LabelFont)
-                { Name = "retry", FocusIndex = 0, Primary = true });
+                { Name = "retry", FocusIndex = 0, Primary = true, TextLineHeight = 52 });
             _controls.Add(new UIEditorialButton(5, UIPaperOutcome.Action(layout, true, duel),
                 won && !duel ? "Continue journey" : "Main menu", _resources.Pixel, _resources.LabelFont)
-                { Name = "mainMenu", FocusIndex = 1, Primary = duel, Active = won && !duel });
+                  { Name = "mainMenu", FocusIndex = 1, Primary = duel, Active = won && !duel, TrailingChevron = won && !duel, TextLineHeight = 52 });
         }
 
         private void AddEndingButtons(bool won, CampaignNode node)

@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -17,12 +18,12 @@ namespace Fida.UI
     {
         // ─── 字段存储（供具体子类读写） ─────────────────────────────
         protected Rectangle Bounds { get; set; }
-        protected string Text { get; set; }
-        protected Texture2D Pixel { get; set; }
-        protected SpriteFont Font { get; set; }
+        protected string Text { get; set; } = null!;
+        protected Texture2D Pixel { get; set; } = null!;
+        protected SpriteFont Font { get; set; } = null!;
 
         // 环境检查器 - 按钮主动询问环境来决定自己是否启用
-        public Func<bool> EnabledChecker { get; set; }
+        public Func<bool> EnabledChecker { get; set; } = null!;
 
         // 按钮状态（各子类通过 GetState 定义自己的优先级）
         public TState State => GetState();
@@ -35,12 +36,16 @@ namespace Fida.UI
         protected float PressAmount;
         public float EntranceDelay { get; set; }
         private double _motionAge;
+        private bool _audioHovered;
         protected float EntranceAmount => UIMotion.Reveal(_motionAge - EntranceDelay, 0.22f);
 
         protected void UpdateMotion(GameTime time)
         {
             _motionAge += time.ElapsedGameTime.TotalSeconds;
-            HoverAmount = UIMotion.Approach(HoverAmount, IsEnabled && (IsHovered || IsFocused || IsSelected) ? 1f : 0f,
+            bool audioHovered = IsEnabled && IsVisible && (IsHovered || IsFocused);
+            if (audioHovered && !_audioHovered) Audio.AudioService.Feedback(Audio.SoundCue.Hover);
+            _audioHovered = audioHovered;
+            HoverAmount = UIMotion.Approach(HoverAmount, IsEnabled && IsVisible && (IsHovered || IsFocused) ? 1f : 0f,
                 time.ElapsedGameTime.TotalSeconds);
             PressAmount = UIMotion.Approach(PressAmount, _isPressed ? 1f : 0f,
                 time.ElapsedGameTime.TotalSeconds, 24f);
@@ -48,11 +53,14 @@ namespace Fida.UI
 
         public override void Update(GameTime gameTime) => UpdateMotion(gameTime);
 
+        protected void DrawPaperButton(SpriteBatch batch, Color color, int cut = 7, UIPaperShape shape = UIPaperShape.Cut) =>
+            UIPaper.Button(batch, Bounds, color, HoverAmount, PressAmount, IsEnabled, EntranceAmount, cut, shape);
+
         // 支持切换模式 - 点击后切换选定状态
         public bool IsToggleMode { get; set; } = false;
 
         // 状态变化回调 - 具体子类重写以使用精确枚举类型
-        public Action<TState> OnStateChanged { get; set; }
+        public Action<TState> OnStateChanged { get; set; } = null!;
 
         // 记录上一帧的状态用于检测变化
         private TState? _lastState = null;
@@ -179,7 +187,7 @@ namespace Fida.UI
             var mousePoint = new Point(mouseState.X, mouseState.Y);
 
             // 按钮主动询问环境：我现在应该启用吗？
-            bool shouldBeEnabled = EnabledChecker?.Invoke() ?? true;
+            bool shouldBeEnabled = EnabledChecker?.Invoke() ?? IsEnabled;
 
             // 按钮从启用变为禁用
             if (IsEnabled && !shouldBeEnabled)
@@ -200,7 +208,7 @@ namespace Fida.UI
                 IsEnabled = true;
                 _mouseWasDown = mouseDown;
                 // 启用时恢复悬浮状态检测
-                IsHovered = Contains(mousePoint) || IsFocused;
+                IsHovered = Contains(mousePoint);
                 IsSelected = false; // 启用时默认不选定
                 NotifyStateChanged();
                 return;
@@ -220,8 +228,8 @@ namespace Fida.UI
 
             bool wasHovered = IsHovered;
             bool wasPressed = _isPressed;
-            // 鼠标悬停或手柄聚焦都视为 Hovered
-            IsHovered = Contains(mousePoint) || IsFocused;
+            // Focus shares the visual highlight, but cannot start a mouse click elsewhere.
+            IsHovered = Contains(mousePoint);
 
             // 鼠标刚在此按钮上按下
             if (IsHovered && mouseDown && !_mouseWasDown)
@@ -236,8 +244,8 @@ namespace Fida.UI
                 _isPressed = false;
             }
 
-            // 鼠标移出按钮（拖拽取消）：取消本次点击
-            if (!IsHovered && mouseDown)
+            // Leaving the target cancels the sequence, including release outside.
+            if (!IsHovered)
             {
                 _isPressed = false;
                 _clickStartedOnThis = false;

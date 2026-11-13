@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -26,7 +27,7 @@ namespace Fida.UI
             if (IsSelected) return UIAnimatedButtonState.Selected;
             if (!IsEnabled) return UIAnimatedButtonState.Disabled;
             if (_isPressed) return UIAnimatedButtonState.Pressed;
-            if (IsHovered) return UIAnimatedButtonState.Hovered;
+            if (IsHovered || IsFocused) return UIAnimatedButtonState.Hovered;
             return UIAnimatedButtonState.Normal;
         }
 
@@ -39,7 +40,7 @@ namespace Fida.UI
         private float _animationTimer;      // 动画计时器
         private float _animationStartTime;  // 动画开始时间
         private const float AnimationDuration = 0.2f;  // 动画时长（秒）- 很快
-        private string _newText;            // 新文字
+        private string _newText = null!;    // 新文字
         private float _wipeProgress;        // 擦除进度 0-1
 
         // 缓存 MeasureString 结果，避免每帧重复计算
@@ -144,7 +145,7 @@ namespace Fida.UI
                 _textSizeDirty = false;
             }
 
-            Color backColor = GetBackColor();
+            Color backColor = !IsEnabled ? UITheme.PanelDark : IsSelected ? UITheme.AccentBlue : UITheme.PanelLight;
             Color foreColor = GetForeColor();
             Color borderColor = GetBorderColor();
             int borderThickness = GetBorderThickness();
@@ -159,13 +160,13 @@ namespace Fida.UI
             }
 
             // 绘制背景
-            UIPaper.Sheet(sb, Bounds, backColor, _isPressed ? 0 : 3, 7);
+            DrawPaperButton(sb, backColor, 7);
 
             bool emphasized = State is UIAnimatedButtonState.Hovered or
                 UIAnimatedButtonState.Pressed or UIAnimatedButtonState.Selected;
             Color accent = State == UIAnimatedButtonState.Selected
                 ? UITheme.AccentGreen : UITheme.Gold;
-            if (!DarkTileStyle)
+            if (!DarkTileStyle && IsSelected)
                 sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Top, Bounds.Width, 4), accent);
 
             // 绘制文字（居中，使用缓存坐标）
@@ -181,13 +182,13 @@ namespace Fida.UI
                 Vector2 textPos = new(
                     Bounds.Center.X - _cachedTextSize.X * textScale / 2,
                     Bounds.Center.Y - _cachedTextSize.Y * textScale / 2 +
-                    (State == UIAnimatedButtonState.Pressed ? 2f : 0f));
+                    PressAmount * 2f);
                 UITextRenderer.DrawString(sb, Font, _cachedDisplayText, textPos, foreColor,
                     0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
             }
 
             // 绘制边框（禁用状态 borderThickness=0，不绘制）
-            if (borderThickness > 0)
+            if (borderThickness > 0 && IsSelected)
             {
                 UIUtils.DrawRectangleOutlines(sb, Bounds,
                     State == UIAnimatedButtonState.Selected ? UITheme.AccentGreen : borderColor,
@@ -229,12 +230,12 @@ namespace Fida.UI
             bool hover = State == UIAnimatedButtonState.Hovered;
             bool pressed = State == UIAnimatedButtonState.Pressed;
             bool disabled = State == UIAnimatedButtonState.Disabled;
-            Color fill = selected ? UITheme.Gold : Color.Lerp(UIPaper.Face, UITheme.Gold, HoverAmount * .13f);
+            Color fill = selected ? UITheme.Gold : UIPaper.Face;
             if (disabled) fill = Color.Lerp(UIPaper.Face, UITheme.PanelLight, .22f);
             Color foreground = disabled ? UIPaper.MutedInk : UIPaper.Ink;
             var backing = Bounds; backing.Offset(-3, 3);
             UIPaper.Sheet(sb, backing, UITheme.PanelHover, 1, 8);
-            UIPaper.Sheet(sb, Bounds, fill, pressed ? 0 : 3, Math.Max(5, Bounds.Width / 18));
+            DrawPaperButton(sb, fill, Math.Max(5, Bounds.Width / 18));
             int horizontal = Math.Max(8, Bounds.Width / 5);
             int vertical = Math.Max(7, Bounds.Height / 6);
             var glyphBounds = new Rectangle(Bounds.Left + horizontal, Bounds.Top + vertical,

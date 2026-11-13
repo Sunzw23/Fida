@@ -10,12 +10,15 @@ public enum SkillCategory { All, Offense, Defense, Control }
 /// <summary>Filtering, paging and spatial focus; independent of graphics and campaign state.</summary>
 public sealed class SkillGridModel
 {
+    public static SkillGridModel ForUnlocked(IReadOnlyList<SkillType> skills, IReadOnlyCollection<SkillType> unlocked,
+        SkillType? initial = null) => new(skills.Where(unlocked.Contains).ToArray(), initial);
     private readonly SkillType[] _all;
     private SkillType[] _filtered;
     private int _index;
     public SkillCategory Category { get; private set; }
-    public SkillType Focused => _filtered[_index];
-    public int FocusedIndex => Array.IndexOf(_all, Focused);
+    public bool HasFocus => _filtered.Length > 0;
+    public SkillType Focused => HasFocus ? _filtered[_index] : default;
+    public int FocusedIndex => HasFocus ? Array.IndexOf(_all, Focused) : -1;
     public int PageSize { get; private set; } = 12;
     public int Page => _index / PageSize;
     public int PageCount => Math.Max(1, (_filtered.Length + PageSize - 1) / PageSize);
@@ -24,7 +27,7 @@ public sealed class SkillGridModel
 
     public SkillGridModel(IReadOnlyList<SkillType> skills, SkillType? initial = null)
     {
-        if (skills == null || skills.Count == 0) throw new ArgumentException("A skill grid needs skills.", nameof(skills));
+        if (skills == null) throw new ArgumentNullException(nameof(skills));
         SkillType[] order = { SkillType.PlusAttack,SkillType.DoubleAttack,SkillType.PlusDefence,SkillType.DoubleDefence,
             SkillType.DoubleHealth,SkillType.TripleHealth,SkillType.Xue,SkillType.Shi,SkillType.Shen,SkillType.Xian,
             SkillType.Long,SkillType.Bian,SkillType.Tong,SkillType.Mo,SkillType.Seng,SkillType.Dao,SkillType.Di,
@@ -46,12 +49,11 @@ public sealed class SkillGridModel
     {
         SkillType previous = Focused;
         var filtered = _all.Where(skill => category == SkillCategory.All || CategoryOf(skill) == category).ToArray();
-        if (filtered.Length == 0) return;
         Category = category;
         _filtered = filtered;
         _index = Math.Max(0, Array.IndexOf(_filtered, previous));
     }
-    public void Move(int steps) => _index = Math.Clamp(_index + steps, 0, _filtered.Length - 1);
+    public void Move(int steps) { if (HasFocus) _index = Math.Clamp(_index + steps, 0, _filtered.Length - 1); }
     public void MoveSpatial(int dx, int dy, int columns)
     {
         if (dy != 0) Move(dy * columns);
@@ -60,6 +62,7 @@ public sealed class SkillGridModel
     }
     public void ChangePage(int delta)
     {
+        if (!HasFocus) return;
         int page = Math.Clamp(Page + delta, 0, PageCount - 1);
         _index = Math.Min(_filtered.Length - 1, page * PageSize + _index % PageSize);
     }

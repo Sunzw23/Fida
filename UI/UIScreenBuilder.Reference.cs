@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -59,7 +60,7 @@ public partial class UIScreenBuilder
                 p ? l.Rect(80, 430, 740, 190) : l.Rect(520, 430, 880, 210), _resourceManager.TitleFont);
             ((UILabel)_uiControls[^1]).PaperCodeBounds = p ? l.Rect(80,430,740,190) : l.Rect(520,430,880,210);
         }
-        ReferenceLabel("statusLabel", lines.Length > 0 ? hosting ? lines[0] : statusText : hosting ? "Waiting for opponent" : "Connecting...",
+        ReferenceLabel("statusLabel", lines.Length > 0 ? hosting ? lines[0] : (statusText ?? string.Empty) : hosting ? "Waiting for opponent" : "Connecting...",
             p ? l.Rect(80, 720, 740, 160) : l.Rect(400, 700, 1120, 110), _resourceManager.Font, UITextRole.Body);
         ReferenceLabel("addressLabel", lines.Length > 1 ? string.Join("  ", lines[1..]) : "",
             p ? l.Rect(80, 1070, 740, 90) : l.Rect(400, 875, 1120, 40), _resourceManager.CaptionFont, UITextRole.Caption);

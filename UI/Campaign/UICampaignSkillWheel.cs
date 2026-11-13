@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,8 +55,8 @@ namespace Fida.UI.Campaign
         private SkillType? _pendingToggle;
         private bool _backRequested;
         private bool _startRequested;
-        private Func<SkillType, CampaignSkillAvailability> _availabilityOverride;
-        private Func<SkillType, string> _availabilityLabelOverride;
+        private Func<SkillType, CampaignSkillAvailability> _availabilityOverride = null!;
+        private Func<SkillType, string> _availabilityLabelOverride = null!;
         private string _headerText;
         private string _statusText = "";
         private float _selectionReveal;
@@ -103,7 +104,7 @@ namespace Fida.UI.Campaign
         public UICampaignSkillWheel(int id, GraphicsDevice graphicsDevice, Texture2D pixel,
             SpriteFont font, SpriteFont titleFont, CampaignNode node, CampaignProgress progress,
             IReadOnlyCollection<SkillType> selected, IReadOnlyList<SkillType> skills,
-            CampaignSkillWheelOptions options = null, SpriteFont captionFont = null, SpriteFont labelFont = null) : base(id)
+            CampaignSkillWheelOptions? options = null, SpriteFont? captionFont = null, SpriteFont? labelFont = null) : base(id)
         {
             _graphicsDevice = graphicsDevice;
             _pixel = pixel;

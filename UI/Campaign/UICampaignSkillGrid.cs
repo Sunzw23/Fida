@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,7 @@ public sealed partial class UICampaignSkillGrid : UIControl
     private SkillType? _pendingToggle;
     private bool _backRequested, _startRequested;
     private int _chipOffset;
+    private readonly Dictionary<Rectangle, (float Hover, float Press, bool Enabled)> _actionMotion = new();
     public SkillType FocusedSkill => _grid.Focused;
     public int FocusedIndex => _grid.FocusedIndex;
     public string HeaderText { get; set; }
@@ -40,8 +42,8 @@ public sealed partial class UICampaignSkillGrid : UIControl
     public bool StartActionTogglesSelection { get; set; }
     public bool UseUnifiedActionButton { get; set; }
     public bool ShowSkillPoints { get; set; } = true;
-    public Func<SkillType, CampaignSkillAvailability> AvailabilityOverride { get; set; }
-    public Func<SkillType, string> AvailabilityLabelOverride { get; set; }
+    public Func<SkillType, CampaignSkillAvailability> AvailabilityOverride { get; set; } = null!;
+    public Func<SkillType, string> AvailabilityLabelOverride { get; set; } = null!;
     public SkillSelectionLayout Layout => new(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height);
     public IReadOnlyList<SkillType> VisibleSkills { get { SyncLayout(); return _grid.PageItems; } }
     public SkillCategory Category => _grid.Category;
@@ -55,7 +57,7 @@ public sealed partial class UICampaignSkillGrid : UIControl
     public UICampaignSkillGrid(int id, GraphicsDevice device, Texture2D pixel, SpriteFont font,
         SpriteFont titleFont, CampaignNode node, CampaignProgress progress,
         IReadOnlyCollection<SkillType> selected, IReadOnlyList<SkillType> skills,
-        SpriteFont captionFont = null, SpriteFont labelFont = null) : base(id)
+        SpriteFont? captionFont = null, SpriteFont? labelFont = null) : base(id)
     {
         _graphicsDevice = device; _pixel = pixel; _font = font; _titleFont = titleFont;
         _captionFont = captionFont ?? font; _labelFont = labelFont ?? font;
@@ -63,7 +65,7 @@ public sealed partial class UICampaignSkillGrid : UIControl
         SkillType? initial = _selected.Cast<SkillType?>().FirstOrDefault() ?? skills
             .Where(s => CampaignLoadout.Evaluate(progress, node, _selected, s) == CampaignSkillAvailability.Available)
             .Cast<SkillType?>().FirstOrDefault();
-        _grid = new SkillGridModel(skills, initial);
+        _grid = SkillGridModel.ForUnlocked(skills, progress.UnlockedSkills, initial);
     }
     public void SetSelection(IReadOnlyCollection<SkillType> selected) => _selected = selected ?? Array.Empty<SkillType>();
     public void Move(int steps) { SyncLayout(); _grid.Move(steps); }
@@ -78,7 +80,7 @@ public sealed partial class UICampaignSkillGrid : UIControl
         CampaignLoadout.Evaluate(_progress, _node, _selected, skill);
     private bool CanToggle(SkillType skill) => SelectionEnabled && !InputBlocked &&
         Availability(skill) is CampaignSkillAvailability.Available or CampaignSkillAvailability.Selected;
-    private void Toggle(SkillType skill) { if (CanToggle(skill)) _pendingToggle = skill; }
+    private void Toggle(SkillType skill) { if (_grid.HasFocus && _grid.All.Contains(skill) && CanToggle(skill)) _pendingToggle = skill; }
     private void Start()
     {
         if (!StartActionEnabled || InputBlocked) return;
@@ -86,6 +88,15 @@ public sealed partial class UICampaignSkillGrid : UIControl
     }
     public override void Update(GameTime gameTime)
     {
+        foreach (var bounds in _actionMotion.Keys.ToArray())
+        {
+            var state = _actionMotion[bounds];
+            bool hover = state.Enabled && !InputBlocked && bounds.Contains(_previousMouse.Position);
+            bool press = hover && _previousMouse.LeftButton == ButtonState.Pressed &&
+                _pressedTarget.Length > 0 && _pressedTarget == HitTarget(_previousMouse.Position);
+            _actionMotion[bounds] = (UIMotion.Approach(state.Hover, hover ? 1 : 0, gameTime.ElapsedGameTime.TotalSeconds),
+                UIMotion.Approach(state.Press, press ? 1 : 0, gameTime.ElapsedGameTime.TotalSeconds, 24), state.Enabled);
+        }
         var keyboard = Keyboard.GetState(); var pad = GamePad.GetState(PlayerIndex.One); var layout = SyncLayout();
         if (_inputInitialized && !InputBlocked)
         {

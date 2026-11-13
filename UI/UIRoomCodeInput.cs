@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace Fida.UI
         private HashSet<Keys> _lastKeys = new HashSet<Keys>();
 #if FIDA_ANDROID
         private bool _mobileKeyboardPending;
-        private string _pendingMobileValue;
+        private string? _pendingMobileValue;
 #endif
 
         /// <summary>当前输入值（已归一化为大写）</summary>
@@ -46,7 +47,7 @@ namespace Fida.UI
         public void SynchronizeInput() => _lastKeys = new HashSet<Keys>(Keyboard.GetState().GetPressedKeys());
 
         /// <summary>Enter 提交时触发（参数为当前值）</summary>
-        public event Action<string> Submitted;
+        public event Action<string>? Submitted;
 
         /// <summary>输入框屏幕矩形（加载时由设计坐标映射而来）</summary>
         public Rectangle Bounds => _bounds;

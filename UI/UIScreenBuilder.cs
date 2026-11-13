@@ -50,7 +50,7 @@ namespace Fida.UI
             string[] names = { "resume", "settings", "rules", "backToMenu" };
             string[] labels = { "Resume", "Settings", "Rules", "Main menu" };
             for(int i=0;i<names.Length;i++)
-                EditorialButton(names[i],labels[i],UIPaperPause.Button(layout,i),primary:i==0);
+                EditorialButton(names[i],labels[i],UIPaperPause.Button(layout,i),primary:i==0).TextLineHeight = 58;
             EditorialFocus();
         }
 
@@ -154,7 +154,8 @@ namespace Fida.UI
         public UITutorialDialogue AddTutorialDialogue(CampaignNode node)
         {
             var dialogue = new UITutorialDialogue(-1000, _resourceManager.GraphicsDevice,
-                _resourceManager.Pixel, _resourceManager.Font, node) { PortraitAtlas = _resourceManager.GetTexture("cold_roster") };
+                _resourceManager.Pixel, _resourceManager.Font, node)
+                { PortraitAtlas = _resourceManager.GetTexture("cold_roster"), MaraPortrait = _resourceManager.GetTexture("dialogue_mara"), SpeakerFont = _resourceManager.LabelFont };
             _uiControls.Add(dialogue);
             if (_focusManager.CurrentInputMode == InputMode.Controller)
                 _focusManager.FocusFirst();

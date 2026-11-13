@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,8 @@ namespace Fida.UI.Campaign
         private readonly IReadOnlyList<CampaignNode> _nodes;
         private readonly CampaignProgress _progress;
         private readonly CampaignMapOptions _options;
+        private readonly UICampaignRouteView _routeView;
+        private float _fitZoom = 1;
         private CampaignMapCamera _camera;
         private readonly CampaignMapHierarchy _hierarchy;
         private readonly List<string> _scope = new();
@@ -41,6 +44,27 @@ namespace Fida.UI.Campaign
         private int _selectedIndex;
         private string _pendingNodeId = "";
         private bool _backRequested;
+        private readonly Dictionary<Rectangle, (float Hover, float Press, bool Enabled)> _buttonMotion = new();
+
+        private (float Hover, float Press) ButtonMotion(Rectangle bounds, bool enabled = true)
+        {
+            if (_buttonMotion.Count > 128) _buttonMotion.Clear();
+            _buttonMotion.TryGetValue(bounds, out var state);
+            _buttonMotion[bounds] = (state.Hover, state.Press, enabled);
+            return enabled ? (state.Hover, state.Press) : (0, 0);
+        }
+
+        private void DrawMapButton(SpriteBatch batch, Rectangle bounds, Color color, bool enabled = true)
+        {
+            var motion = ButtonMotion(bounds, enabled);
+            UIPaper.Button(batch, bounds, color, motion.Hover, motion.Press, enabled, shape: UIPaperShape.Tag);
+        }
+
+        private void DrawMapBack(SpriteBatch batch, Rectangle bounds)
+        {
+            var motion = ButtonMotion(bounds);
+            UIIconButton.DrawBackButton(batch, _pixel, bounds, hoverAmount: motion.Hover, pressAmount: motion.Press);
+        }
 #if FIDA_ANDROID
         private readonly List<int> _mobileChoices = new();
         private readonly List<Rectangle> _mobileChoiceBounds = new();
@@ -61,13 +85,14 @@ namespace Fida.UI.Campaign
         public UICampaignMap(int id, GraphicsDevice graphicsDevice, Texture2D pixel,
             Texture2D antialiasedLine, SpriteFont font, SpriteFont titleFont,
             IReadOnlyList<CampaignNode> nodes, CampaignProgress progress,
-            CampaignMapOptions options = null) : base(id)
+            CampaignMapOptions? options = null) : base(id)
         {
             _graphicsDevice = graphicsDevice;
             _pixel = pixel;
             _antialiasedLine = antialiasedLine ?? pixel;
             _font = font;
             _titleFont = titleFont;
+            _routeView = new UICampaignRouteView(font, titleFont, pixel, _antialiasedLine);
             _nodes = nodes ?? Array.Empty<CampaignNode>();
             _hierarchy = new CampaignMapHierarchy(_nodes);
             _progress = progress;
@@ -75,6 +100,7 @@ namespace Fida.UI.Campaign
             _camera = new CampaignMapCamera(CalculateContentBounds(), _options.ContentPadding,
                 _options.MinimumZoom, _options.MaximumZoom);
             _camera.SetViewport(_options.GetMapViewport(_graphicsDevice.Viewport));
+            _fitZoom = _camera.Zoom;
             _selectedIndex = FindInitialSelection();
             RefreshScope();
 #if FIDA_ANDROID
@@ -99,10 +125,11 @@ namespace Fida.UI.Campaign
 
         public void ZoomIn() => _camera.ZoomAt(1.2f, ViewportCenter());
         public void ZoomOut() => _camera.ZoomAt(1f / 1.2f, ViewportCenter());
-        public void FitAll() => _camera.FitAll();
+        public void FitAll() { _camera.FitAll(); _fitZoom = _camera.Zoom; }
 
         public void SynchronizeInput()
         {
+            _buttonMotion.Clear();
             _previousMouse = UIPointer.GetState();
             _previousKeyboard = Keyboard.GetState();
             _previousGamePad = GamePad.GetState(PlayerIndex.One);
@@ -111,6 +138,15 @@ namespace Fida.UI.Campaign
 
         public override void Update(GameTime gameTime)
         {
+            foreach (var bounds in _buttonMotion.Keys.ToArray())
+            {
+                var state = _buttonMotion[bounds];
+                bool hover = state.Enabled && bounds.Contains(_previousMouse.Position);
+                bool press = hover && !_dragging && _pressedTarget.Length > 0 &&
+                    _previousMouse.LeftButton == ButtonState.Pressed && bounds.Contains(_pressPosition);
+                _buttonMotion[bounds] = (UIMotion.Approach(state.Hover, hover ? 1 : 0, gameTime.ElapsedGameTime.TotalSeconds),
+                    UIMotion.Approach(state.Press, press ? 1 : 0, gameTime.ElapsedGameTime.TotalSeconds, 24), state.Enabled);
+            }
             _routeAge += gameTime.ElapsedGameTime.TotalSeconds;
 #if FIDA_ANDROID
             UpdateMobileKeyboard(gameTime);
@@ -245,8 +281,7 @@ namespace Fida.UI.Campaign
 #else
             EnsureViewport();
             Rectangle viewport = _camera.Viewport;
-
-
+            _routeView.DrawHeader(spriteBatch, new CampaignMapLayout(_graphicsDevice.Viewport));
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
             {
@@ -392,7 +427,7 @@ namespace Fida.UI.Campaign
                 DrawChevron(spriteBatch, new Vector2(bounds.Right - 34, bounds.Center.Y), accent);
             }
 
-            CampaignNode selectedNode = _selectedIndex >= 0 && _selectedIndex < _nodes.Count
+            CampaignNode? selectedNode = _selectedIndex >= 0 && _selectedIndex < _nodes.Count
                 ? _nodes[_selectedIndex] : null;
             if (_mobileDetailsOpen && selectedNode != null)
                 DrawMissionModal(spriteBatch, viewport, selectedNode);
@@ -410,20 +445,14 @@ namespace Fida.UI.Campaign
         private void DrawMobileButton(SpriteBatch spriteBatch, Rectangle bounds,
             string text, bool enabled, Color accent)
         {
-            spriteBatch.Draw(_pixel, bounds, enabled ? UITheme.PanelLight : UITheme.PanelDark);
-            if (enabled)
-                UIUtils.DrawGlowFrame(spriteBatch, bounds, _pixel, accent, 2, 0.55f);
-            else
-                UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.InkMuted, 1, _pixel);
-            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top,
-                Math.Max(18, bounds.Width / 6), 3), accent);
+            DrawMapButton(spriteBatch, bounds, enabled ? UITheme.PanelLight : UITheme.PanelDark, enabled);
             DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(),
                 bounds.Width - 18f, 0.58f, enabled ? UITheme.Ink : UITheme.InkMuted);
         }
 
         private void DrawBackIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            UIIconButton.DrawBackButton(spriteBatch, _pixel, bounds);
+            DrawMapBack(spriteBatch, bounds);
         }
 
         private void DrawChevron(SpriteBatch spriteBatch, Vector2 center, Color color)
@@ -434,7 +463,8 @@ namespace Fida.UI.Campaign
 
         private void DrawCloseIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            UIIconButton.DrawCloseButton(spriteBatch, _pixel, bounds);
+            var motion = ButtonMotion(bounds);
+            UIIconButton.DrawCloseButton(spriteBatch, _pixel, bounds, motion.Hover, motion.Press);
         }
 
         private void DrawMobileStructure(SpriteBatch spriteBatch, Rectangle panel)
@@ -575,7 +605,10 @@ namespace Fida.UI.Campaign
             bool pressed = mouse.LeftButton == ButtonState.Pressed &&
                 _previousMouse.LeftButton == ButtonState.Released;
             if (pressed)
+            {
+                _pressPosition = position;
                 _pressedTarget = HitMobileTarget(position);
+            }
 
             bool released = mouse.LeftButton == ButtonState.Released &&
                 _previousMouse.LeftButton == ButtonState.Pressed;
@@ -652,26 +685,17 @@ namespace Fida.UI.Campaign
 
         private void DrawConnections(SpriteBatch spriteBatch)
         {
-            var positions = _visibleNodes.ToDictionary(i => _nodes[i].Id,
-                i => _camera.WorldToScreen(RoutePosition(_nodes[i])));
-            foreach (int index in _visibleNodes)
-            {
-                CampaignNode node = _nodes[index];
-                if (!positions.TryGetValue(node.Id, out Vector2 nodeEnd)) continue;
-                foreach (string parentId in node.Parents)
-                {
-                    if (!positions.TryGetValue(parentId, out Vector2 start)) continue;
-                    Vector2 end = nodeEnd;
-                    if (!ClipLine(_camera.Viewport, ref start, ref end)) continue;
-                    bool active = _progress.IsCompleted(parentId) || _progress.IsCompleted(node.Id);
-                    bool selectedRoute = _selectedIndex >= 0 &&
-                        (index == _selectedIndex || parentId == _nodes[_selectedIndex].Id);
-                    Vector2 animatedEnd = Vector2.Lerp(start, end, UIMotion.Reveal(_routeAge - Math.Min(index, 20) * 0.035, 0.6f));
-                    DrawLine(spriteBatch, start, animatedEnd,
-                        selectedRoute ? UITheme.AccentBlue * .8f : active ? UITheme.Ink * .65f : UITheme.Line,
-                        selectedRoute ? 2 : 1);
-                }
-            }
+            var visible = _visibleNodes.Select(i => _nodes[i]).ToArray();
+            IEnumerable<(string From, string To)> edges = CampaignRouteDiagram.IsReference(visible)
+                ? CampaignRouteDiagram.ReferenceEdges
+                : visible.SelectMany(node => node.Parents.Select(parent => (parent, node.Id)));
+            var bounds = visible.ToDictionary(node => node.Id, NodeScreenBounds);
+            float scale = new CampaignMapLayout(_graphicsDevice.Viewport).Scale;
+            var links = edges.ToArray();
+            foreach (var edge in links)
+                if (bounds.TryGetValue(edge.From, out var from) && bounds.TryGetValue(edge.To, out var to))
+                    _routeView.DrawConnection(spriteBatch, from, to, _camera.Viewport, scale,
+                        links.Count(link => link.From == edge.From) > 1, links.Count(link => link.To == edge.To) > 1);
         }
 
         private void DrawNode(SpriteBatch spriteBatch, int index)
@@ -679,27 +703,9 @@ namespace Fida.UI.Campaign
             CampaignNode node = _nodes[index];
             Rectangle bounds = NodeScreenBounds(node);
             if (!_camera.Viewport.Contains(bounds)) return;
-
-            bool unlocked = CampaignCatalog.IsUnlocked(_progress, node);
-            bool completed = _progress.IsCompleted(node.Id);
-            bool selected = index == _selectedIndex;
-            Color background = selected ? UITheme.Gold : UIPaper.Face;
-            Color foreground = unlocked ? UIPaper.Ink : UIPaper.MutedInk;
-            Color accent = selected ? UITheme.AccentBlue : UIPaper.MutedInk;
-            UIPaper.Sheet(spriteBatch, bounds, background, selected ? 4 : 2, 6);
-            DrawNodeStateMark(spriteBatch, bounds, completed, unlocked, accent);
-            if (selected)
-                spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 3, bounds.Height), UITheme.AccentBlue);
-            bool showName = bounds.Height >= 66 && bounds.Width >= 170;
-            DrawMapText(spriteBatch, node.Id, new Rectangle(bounds.Left + 12, bounds.Top + 8,
-                showName ? 44 : bounds.Width - 44, showName ? 30 : bounds.Height - 16),
-                Math.Clamp(bounds.Height * .3f, 20, 30), foreground, true);
-            if (showName)
-            {
-                DrawMapText(spriteBatch,node.Name,new Rectangle(bounds.Left+62,bounds.Top+8,bounds.Width-80,30),20,foreground);
-                UIPaper.Scene(spriteBatch,new Rectangle(bounds.Left+8,bounds.Top+42,bounds.Width-16,Math.Max(1,bounds.Height-50)),UIPaper.MissionScene(node.Name,node.Chapter));
-            }
-
+            _routeView.DrawNode(spriteBatch, bounds, node.Id, node.Name, node.Chapter,
+                index == _selectedIndex, _progress.IsCompleted(node.Id),
+                !CampaignCatalog.IsUnlocked(_progress, node));
         }
 
         /// <summary>
@@ -735,38 +741,6 @@ namespace Fida.UI.Campaign
                 mobile ? 0.42f : 0.37f, UITheme.AccentGreen);
         }
 
-        private void DrawNodeStateMark(SpriteBatch spriteBatch, Rectangle bounds,
-            bool completed, bool unlocked, Color accent)
-        {
-            Vector2 center = new(bounds.Right - Math.Max(13, bounds.Height / 4), bounds.Center.Y);
-            float size = Math.Max(5f, bounds.Height / 9f);
-            if (completed)
-            {
-                DrawLine(spriteBatch, new Vector2(center.X - size, center.Y),
-                    new Vector2(center.X - size * 0.2f, center.Y + size * 0.8f),
-                    UITheme.Ink, 2);
-                DrawLine(spriteBatch, new Vector2(center.X - size * 0.2f, center.Y + size * 0.8f),
-                    new Vector2(center.X + size, center.Y - size), UITheme.Ink, 2);
-            }
-            else if (unlocked)
-            {
-                int dot = Math.Max(5, bounds.Height / 8);
-                spriteBatch.Draw(_pixel, new Rectangle((int)center.X - dot / 2,
-                    (int)center.Y - dot / 2, dot, dot), UITheme.GoldBright);
-            }
-            else
-            {
-                DrawLine(spriteBatch, new Vector2(center.X, center.Y - size),
-                    new Vector2(center.X + size, center.Y), accent, 2);
-                DrawLine(spriteBatch, new Vector2(center.X + size, center.Y),
-                    new Vector2(center.X, center.Y + size), accent, 2);
-                DrawLine(spriteBatch, new Vector2(center.X, center.Y + size),
-                    new Vector2(center.X - size, center.Y), accent, 2);
-                DrawLine(spriteBatch, new Vector2(center.X - size, center.Y),
-                    new Vector2(center.X, center.Y - size), accent, 2);
-            }
-        }
-
         private void DrawFooter(SpriteBatch spriteBatch)
         {
             var viewport = _graphicsDevice.Viewport;
@@ -776,9 +750,17 @@ namespace Fida.UI.Campaign
             Rectangle back = BackButton(viewport);
             if (_visibleNodes.Count > 0)
             {
+#if FIDA_ANDROID
                 DrawSmallButton(spriteBatch, minus, "-");
                 DrawFitIcon(spriteBatch, fit);
                 DrawSmallButton(spriteBatch, plus, "+");
+#else
+                var minusMotion = ButtonMotion(minus);
+                var plusMotion = ButtonMotion(plus);
+                _routeView.DrawZoom(spriteBatch, new CampaignMapLayout(viewport),
+                    (int)Math.Round(_camera.Zoom / Math.Max(.01f, _fitZoom) * 100),
+                    minusMotion.Hover, minusMotion.Press, plusMotion.Hover, plusMotion.Press);
+#endif
             }
             DrawBackIcon(spriteBatch, back);
 
@@ -822,14 +804,13 @@ namespace Fida.UI.Campaign
 
         private void DrawBackIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            UIIconButton.DrawBackButton(spriteBatch, _pixel, bounds);
+            DrawMapBack(spriteBatch, bounds);
         }
 #endif
 
         private void DrawFitIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
-            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.Gold, 2, _pixel);
+            DrawMapButton(spriteBatch, bounds, UITheme.PanelLight);
             float inset = Math.Min(bounds.Width, bounds.Height) * 0.28f;
             float arm = Math.Min(bounds.Width, bounds.Height) * 0.18f;
             Color color = UITheme.Ink;
@@ -853,8 +834,7 @@ namespace Fida.UI.Campaign
 
         private void DrawSmallButton(SpriteBatch spriteBatch, Rectangle bounds, string text)
         {
-            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, UITheme.Gold, 2, _pixel);
+            DrawMapButton(spriteBatch, bounds, UITheme.PanelLight);
             DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12f, 0.44f, UITheme.Ink);
         }
 
@@ -978,6 +958,7 @@ namespace Fida.UI.Campaign
             _camera = new CampaignMapCamera(CalculateContentBounds(), _options.ContentPadding,
                 _options.MinimumZoom, _options.MaximumZoom);
             _camera.SetViewport(_options.GetMapViewport(_graphicsDevice.Viewport));
+            _fitZoom = _camera.Zoom;
 #if FIDA_ANDROID
             RebuildMobileChoices();
             LayoutMobile();
@@ -1041,9 +1022,10 @@ namespace Fida.UI.Campaign
         private Rectangle NodeScreenBounds(CampaignNode node)
         {
             Vector2 position=RoutePosition(node);
-            var world = new Rectangle((int)(position.X - _options.NodeWidth / 2f),
+            float width = _options.NodeWidth * CampaignRouteDiagram.WidthScale(node.Id);
+            var world = new Rectangle((int)(position.X - width / 2f),
                 (int)(position.Y - _options.NodeHeight / 2f),
-                (int)_options.NodeWidth, (int)_options.NodeHeight);
+                (int)width, (int)_options.NodeHeight);
             return _camera.WorldToScreen(world);
         }
 
@@ -1054,6 +1036,7 @@ namespace Fida.UI.Campaign
         {
             _routePositions.Clear();
 #if !FIDA_ANDROID
+            if (CampaignRouteDiagram.TryArrange(_visibleNodes.Select(i => _nodes[i]).ToArray(), _routePositions)) return;
             var visible=_visibleNodes.Select(i=>_nodes[i]).ToDictionary(n=>n.Id);
             var depths=new Dictionary<string,int>();
             int Depth(string id,HashSet<string> path)
@@ -1066,10 +1049,16 @@ namespace Fida.UI.Campaign
                 path.Remove(id); depths[id]=depth; return depth;
             }
             foreach(var node in visible.Values) Depth(node.Id,new HashSet<string>());
-            foreach(var row in visible.Values.GroupBy(n=>depths[n.Id]))
+            int rowOffset = 0;
+            foreach(var row in visible.Values.GroupBy(n=>depths[n.Id]).OrderBy(group => group.Key))
             {
                 var nodes=row.OrderBy(n=>n.MapX).ThenBy(n=>n.Id).ToArray();
-                for(int i=0;i<nodes.Length;i++) _routePositions[nodes[i].Id]=new Vector2((i-(nodes.Length-1)/2f)*350,row.Key*250);
+                for(int i=0;i<nodes.Length;i++)
+                {
+                    int columns = Math.Min(2, nodes.Length - i / 2 * 2);
+                    _routePositions[nodes[i].Id]=new Vector2((i % 2-(columns-1)/2f)*390,(rowOffset+i/2)*245);
+                }
+                rowOffset += (nodes.Length + 1) / 2;
             }
 #endif
         }
@@ -1102,9 +1091,7 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
             return new Rectangle(28, viewport.Height - 78, 72, 56);
 #else
-            int scale = DesktopControlScale(viewport);
-            return new Rectangle(ScaleDesktop(36, scale), viewport.Height - ScaleDesktop(76, scale),
-                ScaleDesktop(54, scale), ScaleDesktop(50, scale));
+            return new CampaignMapLayout(viewport).Element("Minus");
 #endif
         }
 
@@ -1113,9 +1100,7 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
             return new Rectangle(112, viewport.Height - 78, 92, 56);
 #else
-            int scale = DesktopControlScale(viewport);
-            return new Rectangle(ScaleDesktop(100, scale), viewport.Height - ScaleDesktop(76, scale),
-                ScaleDesktop(82, scale), ScaleDesktop(50, scale));
+            return new CampaignMapLayout(viewport).Element("Fit");
 #endif
         }
 
@@ -1124,9 +1109,7 @@ namespace Fida.UI.Campaign
 #if FIDA_ANDROID
             return new Rectangle(244, viewport.Height - 78, 72, 56);
 #else
-            int scale = DesktopControlScale(viewport);
-            return new Rectangle(ScaleDesktop(192, scale), viewport.Height - ScaleDesktop(76, scale),
-                ScaleDesktop(54, scale), ScaleDesktop(50, scale));
+            return new CampaignMapLayout(viewport).Element("Plus");
 #endif
         }
 
@@ -1162,39 +1145,5 @@ namespace Fida.UI.Campaign
                 scale, SpriteEffects.None, 0f);
         }
 
-        private static bool ClipLine(Rectangle rectangle, ref Vector2 start, ref Vector2 end)
-        {
-            float t0 = 0f;
-            float t1 = 1f;
-            float dx = end.X - start.X;
-            float dy = end.Y - start.Y;
-            if (!Clip(-dx, start.X - rectangle.Left, ref t0, ref t1) ||
-                !Clip(dx, rectangle.Right - start.X, ref t0, ref t1) ||
-                !Clip(-dy, start.Y - rectangle.Top, ref t0, ref t1) ||
-                !Clip(dy, rectangle.Bottom - start.Y, ref t0, ref t1)) return false;
-
-            Vector2 original = start;
-            Vector2 delta = end - start;
-            start = original + delta * t0;
-            end = original + delta * t1;
-            return true;
-        }
-
-        private static bool Clip(float p, float q, ref float t0, ref float t1)
-        {
-            if (Math.Abs(p) < 0.0001f) return q >= 0f;
-            float r = q / p;
-            if (p < 0f)
-            {
-                if (r > t1) return false;
-                if (r > t0) t0 = r;
-            }
-            else
-            {
-                if (r < t0) return false;
-                if (r < t1) t1 = r;
-            }
-            return true;
-        }
     }
 }

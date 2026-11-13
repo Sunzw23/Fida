@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -26,7 +27,7 @@ namespace Fida.UI
             if (!IsEnabled) return UIButtonState.Disabled;
             if (IsSelected) return UIButtonState.Selected;
             if (_isPressed) return UIButtonState.Pressed;
-            if (IsHovered) return UIButtonState.Hovered;
+            if (IsHovered || IsFocused) return UIButtonState.Hovered;
             return UIButtonState.Normal;
         }
 
@@ -37,14 +38,19 @@ namespace Fida.UI
         /// <summary>
         /// 按钮点击事件 - 当按钮完成一次完整点击时触发
         /// </summary>
-        public event Action<UIButton> Clicked;
+        public event Action<UIButton>? Clicked;
 
 
         // 由"启用→禁用"分支调用：UIButton 清除 Selected
         protected override void OnDisabledTransition() { IsSelected = false; }
 
         // 点击完成后触发 Clicked 事件
-        protected override void OnClickCompleted() { Clicked?.Invoke(this); }
+        protected override void OnClickCompleted()
+        {
+            Audio.AudioService.Feedback(Name.StartsWith("back", StringComparison.OrdinalIgnoreCase)
+                ? Audio.SoundCue.Back : Audio.SoundCue.Confirm);
+            Clicked?.Invoke(this);
+        }
 
         public UIButton(int id, Rectangle bounds, string text, Texture2D pixel, SpriteFont font) : base(id)
         {
@@ -56,25 +62,18 @@ namespace Fida.UI
 
         public override void Draw(SpriteBatch sb, GameTime gameTime)
         {
-            Color backColor = GetBackColor();
+            Color backColor = !IsEnabled ? UITheme.PanelDark : IsSelected ? UITheme.AccentBlue : UITheme.PanelLight;
             Color foreColor = GetForeColor();
-            Color borderColor = GetBorderColor();
-            int borderThickness = GetBorderThickness();
             bool primary = Name is "startGame" or "retry" or "resume";
             if (primary && State != UIButtonState.Disabled)
             {
-                backColor = Color.Lerp(UITheme.Ink, UITheme.GoldBright, HoverAmount) * EntranceAmount;
+                backColor = UIPaper.Face;
                 foreColor = UITheme.BgTop * EntranceAmount;
-                borderColor = backColor;
             }
 
             // 绘制背景
-            UIPaper.Sheet(sb, Bounds, backColor, _isPressed ? 0 : 3, 8);
-
-            bool emphasized = State is UIButtonState.Hovered or UIButtonState.Pressed or UIButtonState.Selected;
-            if (emphasized)
-                sb.Draw(Pixel, new Rectangle(Bounds.Left, Bounds.Bottom - 2, Bounds.Width, 2),
-                    UITheme.Gold * EntranceAmount);
+            DrawPaperButton(sb, backColor, 8);
+            if (IsSelected) foreColor = UIPaper.Ink * EntranceAmount;
 
             // 绘制文字（居中）
             string displayText = UIFontGuard.Sanitize(Font, Text);

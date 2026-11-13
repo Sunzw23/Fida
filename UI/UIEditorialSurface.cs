@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -22,7 +22,6 @@ public sealed class UIEditorialSurface : UIControl
     {
         var l = new UIEditorialLayout(batch.GraphicsDevice.Viewport);
         bool p = l.Portrait;
-        UIPaper.Background(batch, batch.GraphicsDevice.Viewport);
         if (_screen == UIEditorialScreen.Menu)
         {
             if (!p)
@@ -31,46 +30,40 @@ public sealed class UIEditorialSurface : UIControl
                 if (Connected) Text(batch, l, "Connected", l.Rect(150, 1090, 620, 40), 26, color: UITheme.AccentBlue);
                 return;
             }
+            // Portrait keeps a quiet backdrop and live title; no numeric decoration.
+            UIPaper.Background(batch, batch.GraphicsDevice.Viewport);
             Text(batch, l, "FIDA", l.Rect(p ? 80 : 150, p ? 100 : 65, p ? 740 : 680, 150), 142, false, true);
-            float drift = UIMotion.Reduced ? 0 : (float)Math.Sin(time.TotalGameTime.TotalSeconds * .45) * 7;
-            var seven = p ? l.Rect(170, 320, 330, Connected ? 210 : 290) : l.Rect(950, 280, 490, 650);
-            var two = p ? l.Rect(510, Connected ? 350 : 385, 200, Connected ? 190 : 220) : l.Rect(1420, 580, 300, 400);
-            seven.Y += (int)(drift * l.Scale); two.Y -= (int)(drift * l.Scale);
-            var sevenShadow = seven; sevenShadow.Offset(4, 7);
-            var twoShadow = two; twoShadow.Offset(4, 7);
-            UIAngularNumber.Draw(batch, "7", sevenShadow, UITheme.BgTop * .8f, displaySize: true);
-            UIAngularNumber.Draw(batch, "2", twoShadow, UITheme.BgTop * .8f, displaySize: true);
-            UIAngularNumber.Draw(batch, "7", seven, UITheme.Ink, displaySize: true);
-            UIAngularNumber.Draw(batch, "2", two, UITheme.AccentBlue, displaySize: true);
             if (Connected) Text(batch, l, "Connected", l.Rect(p ? 80 : 150, p ? 1490 : 1090, 620, 40), 26, color: UITheme.AccentBlue);
             return;
         }
+        UIPaper.Background(batch, batch.GraphicsDevice.Viewport);
+        UIPaper.Backdrop(batch, batch.GraphicsDevice.Viewport, time);
         UIPaper.Sheet(batch, p ? l.Rect(30, 30, 840, 135) : l.Rect(45, 30, 1830, 135), UITheme.Panel, 3, 9);
         Text(batch, l, _screen == UIEditorialScreen.Settings ? "Settings" : "Lobby",
             l.Header, 65);
         if (_screen == UIEditorialScreen.Settings)
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 290, 800, 850) : l.Rect(550, 290, 1250, 710), UITheme.Panel, 4, 9);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 250, 800, 1190) : l.Rect(550, 270, 1250, 790), UITheme.Panel, 4, 9);
             if (!p)
             {
-                Rule(batch, l.Rect(500, 290, 1, 690));
+                Rule(batch, l.Rect(500, 290, 1, 740));
                 batch.Draw(_resources.Pixel, l.Rect(150, 350, 4, 50), UITheme.AccentBlue);
-                Text(batch, l, "Display", l.Rect(180, 340, 280, 70), 42);
+                Text(batch, l, "Settings", l.Rect(180, 340, 280, 70), 42);
             }
-            string[] rows = { "Display mode", "Resolution", "Interface motion" };
+            string[] rows = { "Display mode", "Resolution", "Interface motion", "Music volume", "Effects volume" };
             for (int i = 0; i < rows.Length; i++)
             {
-                Text(batch, l, rows[i], p ? l.Rect(80, 350 + i * 250, 740, 70) : l.Rect(600, 350 + i * 230, 420, 70), 42);
-                Rule(batch, p ? l.Rect(80, 580 + i * 250, 740, 1) : l.Rect(600, 495 + i * 230, 1150, 1));
+                Text(batch, l, rows[i], p ? l.Rect(80, 290 + i * 225, 740, 65) : l.Rect(600, 325 + i * 145, 420, 65), 38);
+                Rule(batch, p ? l.Rect(80, 480 + i * 225, 740, 1) : l.Rect(600, 430 + i * 145, 1150, 1));
             }
-            Text(batch, l, "Changes apply immediately", p ? l.Rect(80, 1300, 740, 60) : l.Rect(600, 1080, 1150, 60), 26, color: UITheme.InkMuted);
+            Text(batch, l, "Changes apply immediately. Click volume to mute.", p ? l.Rect(80, 1470, 740, 60) : l.Rect(600, 1100, 1150, 60), 26, color: UITheme.InkMuted);
             return;
         }
         var connected = p ? l.Rect(550,190,270,60) : l.Rect(1490,65,300,70);
         UIPaper.Sheet(batch,connected,UITheme.AccentBlue,2,7);
         Text(batch,l,"Connected",connected,28,true,color:UIPaper.Ink);
-        UIPaper.Sheet(batch, p ? l.Rect(70, 370, 350, 650) : l.Rect(300, 300, 550, 590), UITheme.Panel, 4, 12);
-        UIPaper.Sheet(batch, p ? l.Rect(480, 370, 350, 650) : l.Rect(1070, 300, 550, 590), UITheme.Panel, 4, 12);
+        UIPaper.Sheet(batch, p ? l.Rect(70, 370, 350, 650) : l.Rect(300, 300, 550, 590), UITheme.Panel, 4, 9);
+        UIPaper.Sheet(batch, p ? l.Rect(480, 370, 350, 650) : l.Rect(1070, 300, 550, 590), UITheme.Panel, 4, 9);
         int y = p ? 400 : 330;
         UIPaperAvatar.Draw(batch, p ? l.Rect(110,y,280,340) : l.Rect(400,y,350,360),0);
         UIPaperAvatar.Draw(batch, p ? l.Rect(510,y,280,340) : l.Rect(1170,y,350,360),1);
@@ -109,3 +102,4 @@ public sealed class UIEditorialSurface : UIControl
         UITextRenderer.DrawString(batch, font, safe, pos, color ?? UITheme.Ink, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
     }
 }
+

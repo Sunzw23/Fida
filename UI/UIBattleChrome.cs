@@ -20,13 +20,14 @@ public sealed class UIBattleChrome : UIControl
         void Text(string text, Vector2 point, Color color, float size, float width) =>
             UIUtils.DrawCenteredFit(batch, _font, text, UIDesktopLayout.MapPoint(point, vp), width * scale,
                 size > 0.5f ? UITypography.Scale(_font, UITextRole.Heading, vp) : UITypography.Scale(_font, UITextRole.Caption, vp), color);
-        Text("FIDA", new Vector2(150, 65), UITheme.Ink, 0.9f, 200);
-        Text("ENEMY", new Vector2(90, 345), UITheme.InkMuted, 0.26f, 140);
-        Text("ALLY", new Vector2(90, 865), UITheme.InkMuted, 0.26f, 140);
-        foreach (int y in new[] { 115, 1110 })
-            batch.Draw(_pixel, UIDesktopLayout.MapRectangle(new Rectangle(64, y, 1792, 1), vp), UITheme.Line * 0.6f);
-        Text($"TURN {_game.TurnNumber + 1:00}", new Vector2(960, 65), UITheme.InkMuted, 0.3f, 700);
-        Text("Hover portrait for skills    /    Tab: Field guide", new Vector2(960, 1150),
-            UITheme.InkMuted, 0.26f, 1000);
+        Text("BATTLE", new Vector2(160, 50), UITheme.Ink, 0.9f, 240);
+        Text($"TURN {_game.TurnNumber + 1:00}", new Vector2(960, 50), UITheme.InkMuted, 0.3f, 700);
+        foreach (int x in new[] { 105, 1540 })
+            batch.Draw(_pixel, UIDesktopLayout.MapRectangle(new Rectangle(x, 585, 275, 1), vp), UITheme.InkMuted * .65f);
+        var footer = UIDesktopLayout.MapRectangle(new Rectangle(55, 1100, 1810, 74), vp);
+        UIPaper.Sheet(batch, footer, UITheme.PanelDark, 1, 4);
+        UIUtils.DrawRectangleOutlines(batch, footer, UITheme.Line * .55f, 1, _pixel);
+        Text("Hover portrait for skills    /    Tab: Field guide", new Vector2(960, 1137),
+            UITheme.InkMuted, 0.26f, 1400);
     }
 }

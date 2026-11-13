@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+#nullable enable
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -8,7 +9,7 @@ namespace Fida.UI
     public class UIControl
     {
         int Id;
-        SpriteFont Font;
+        SpriteFont Font = null!;
 
         /// <summary>
         /// 控件名称（来自 JSON 的 name 字段），用于按名称查找控件
@@ -38,17 +39,17 @@ namespace Fida.UI
         /// <summary>
         /// 获取焦点时触发
         /// </summary>
-        public event Action<UIControl> FocusGained;
+        public event Action<UIControl>? FocusGained;
 
         /// <summary>
         /// 失去焦点时触发
         /// </summary>
-        public event Action<UIControl> FocusLost;
+        public event Action<UIControl>? FocusLost;
 
         /// <summary>
         /// 确认键按下时触发（手柄 A 键）
         /// </summary>
-        public event Action<UIControl> Confirmed;
+        public event Action<UIControl>? Confirmed;
 
         /// <summary>
         /// 设置焦点状态
@@ -68,6 +69,9 @@ namespace Fida.UI
         /// </summary>
         public void OnConfirmed()
         {
+            if (this is UIButton)
+                Audio.AudioService.Feedback(Name.StartsWith("back", StringComparison.OrdinalIgnoreCase)
+                    ? Audio.SoundCue.Back : Audio.SoundCue.Confirm);
             Confirmed?.Invoke(this);
         }
 

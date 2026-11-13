@@ -5,7 +5,9 @@
 /intermediateDir:obj/$(Platform)
 /platform:DesktopGL
 /config:
-/profile:Reach
+# HiDef is required for DXT on non-power-of-two art; the desktop game also runs HiDef
+# (Game1 sets GraphicsProfile.HiDef). Android keeps its own Reach content file.
+/profile:HiDef
 /compress:False
 
 #-------------------------------- References --------------------------------#
@@ -49,6 +51,8 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
+# Kept as Color: the engraving hatching in this portrait loses too much detail at DXT1
+# (~32 dB PSNR, visible blockiness at 1:1), and it is drawn large during battle.
 /processorParam:TextureFormat=Color
 /build:portraits/arithmetist.png
 
@@ -60,6 +64,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
+# Kept as Color: fine engraving detail does not survive DXT1 (see arithmetist above).
 /processorParam:TextureFormat=Color
 /build:portraits/withered_king.png
 
@@ -71,6 +76,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
+# Kept as Color: this engraved portrait goes blocky at DXT1 (see arithmetist above).
 /processorParam:TextureFormat=Color
 /build:portraits/enemy_fallback.png
 
@@ -82,7 +88,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:portraits/cold_roster.png
 
 #begin portraits/arithmetist_future.png
@@ -93,7 +99,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:portraits/arithmetist_future.png
 
 #begin portraits/withered_king_future.png
@@ -104,7 +110,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:portraits/withered_king_future.png
 
 #begin portraits/sentinel_future.png
@@ -115,7 +121,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:portraits/sentinel_future.png
 
 
@@ -127,8 +133,19 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:portraits/paper_roster.png
+
+#begin portraits/dialogue_mara_concept.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:portraits/dialogue_mara_concept.png
 
 #begin paper/chapters.png
 /importer:TextureImporter
@@ -138,7 +155,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:paper/chapters.png
 
 #begin paper/skins.png
@@ -160,7 +177,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:paper/background.png
 
 #begin paper/main_art.png
@@ -171,7 +188,7 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:paper/main_art.png
 
 #begin paper/battle.png
@@ -182,5 +199,210 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
+/processorParam:TextureFormat=DxtCompressed
 /build:paper/battle.png
+
+#begin paper/victory_road_concept.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+# Kept as Color: UIPaperOutcome reads the pixels back to trim its alpha padding.
+/processorParam:TextureFormat=Color
+/build:paper/victory_road_concept.png
+
+#begin paper/mission_locations_v2.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/mission_locations_v2.png
+
+#begin paper/route_locations_concept.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+# Kept as Color: UIPaper.PrepareRouteScenes reads the pixels back to build previews.
+/processorParam:TextureFormat=Color
+/build:paper/route_locations_concept.png
+
+#begin paper/campaign_cutpaper_locations.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/campaign_cutpaper_locations.png
+
+#begin paper/campaign_cutpaper_locations_extra.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/campaign_cutpaper_locations_extra.png
+
+#begin paper/campaign_nodes_1.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/campaign_nodes_1.png
+
+#begin paper/campaign_nodes_2.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/campaign_nodes_2.png
+
+#begin paper/campaign_nodes_3.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/campaign_nodes_3.png
+
+#begin paper/campaign_nodes_4.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/campaign_nodes_4.png
+
+#begin paper/campaign_nodes_5.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/campaign_nodes_5.png
+
+#begin audio/music/Battle.wav
+/copy:audio/music/Battle.wav
+
+#begin audio/music/Boss.wav
+/copy:audio/music/Boss.wav
+
+#begin audio/music/Ending.wav
+/copy:audio/music/Ending.wav
+
+#begin audio/music/Journey.wav
+/copy:audio/music/Journey.wav
+
+#begin audio/music/Prologue.wav
+/copy:audio/music/Prologue.wav
+
+#begin audio/sfx/Back.wav
+/copy:audio/sfx/Back.wav
+
+#begin audio/sfx/Combine.wav
+/copy:audio/sfx/Combine.wav
+
+#begin audio/sfx/Confirm.wav
+/copy:audio/sfx/Confirm.wav
+
+#begin audio/sfx/Defeat.wav
+/copy:audio/sfx/Defeat.wav
+
+#begin audio/sfx/Drain.wav
+/copy:audio/sfx/Drain.wav
+
+#begin audio/sfx/Fire.wav
+/copy:audio/sfx/Fire.wav
+
+#begin audio/sfx/Heal.wav
+/copy:audio/sfx/Heal.wav
+
+#begin audio/sfx/HeavyHit.wav
+/copy:audio/sfx/HeavyHit.wav
+
+#begin audio/sfx/Hit.wav
+/copy:audio/sfx/Hit.wav
+
+#begin audio/sfx/Hover.wav
+/copy:audio/sfx/Hover.wav
+
+#begin audio/sfx/Invalid.wav
+/copy:audio/sfx/Invalid.wav
+
+#begin audio/sfx/Reflect.wav
+/copy:audio/sfx/Reflect.wav
+
+#begin audio/sfx/Reinforcement.wav
+/copy:audio/sfx/Reinforcement.wav
+
+#begin audio/sfx/Select.wav
+/copy:audio/sfx/Select.wav
+
+#begin audio/sfx/ShieldBreak.wav
+/copy:audio/sfx/ShieldBreak.wav
+
+#begin audio/sfx/ShieldForm.wav
+/copy:audio/sfx/ShieldForm.wav
+
+#begin audio/sfx/Skill.wav
+/copy:audio/sfx/Skill.wav
+
+#begin audio/sfx/Stone.wav
+/copy:audio/sfx/Stone.wav
+
+#begin audio/sfx/Turn.wav
+/copy:audio/sfx/Turn.wav
+
+#begin audio/sfx/Victory.wav
+/copy:audio/sfx/Victory.wav
+
+
+#begin paper/main_journey.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=DxtCompressed
+/build:paper/main_journey.png
+#begin paper_grain.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:paper_grain.fx
+

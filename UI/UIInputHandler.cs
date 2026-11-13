@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using Fida.Logic;
@@ -120,7 +121,7 @@ namespace Fida.UI
             _controllerActionConsumed = true;
 
             // 找到当前聚焦的控件
-            UIControl focusedControl = _uiControls.FirstOrDefault(c => c.IsFocused && c.CanFocus);
+            UIControl? focusedControl = _uiControls.FirstOrDefault(c => c.IsFocused && c.CanFocus);
             if (focusedControl == null)
                 return new GameAction { Type = ActionType.None };
 

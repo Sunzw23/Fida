@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Fida.Logic;
 using Fida.Campaign;
 using Microsoft.Xna.Framework;
@@ -9,6 +10,38 @@ namespace Fida.UI.Campaign;
 /// <summary>Compact status symbols; skill artwork retains the original letter medallions.</summary>
 internal static class UISkillSymbols
 {
+    private static readonly ConditionalWeakTable<GraphicsDevice,Texture2D> LockMasks = new();
+
+    private static Texture2D CreateLockMask(GraphicsDevice device)
+    {
+        const int size=128;
+        var data=new Color[size*size];
+        static bool Inside(float x,float y)
+        {
+            // Rounded solid body, an arched shackle, and a transparent keyhole.
+            float dx=Math.Max(Math.Abs(x-.5f)-.245f,0);
+            float dy=Math.Max(Math.Abs(y-.675f)-.175f,0);
+            bool body=dx*dx+dy*dy<=.055f*.055f;
+            float r=(x-.5f)*(x-.5f)+(y-.34f)*(y-.34f);
+            bool arch=y<=.34f && r<=.225f*.225f && r>=.14f*.14f;
+            bool legs=y>=.34f && y<=.5f && Math.Abs(x-.5f)>=.14f && Math.Abs(x-.5f)<=.225f;
+            bool keyhole=(x-.5f)*(x-.5f)+(y-.635f)*(y-.635f)<.057f*.057f ||
+                (y>=.635f && y<=.775f && Math.Abs(x-.5f)<.026f);
+            return (body || arch || legs) && !keyhole;
+        }
+        for(int y=0;y<size;y++)for(int x=0;x<size;x++)
+        {
+            int coverage=0;
+            for(int sy=0;sy<4;sy++)for(int sx=0;sx<4;sx++)
+                if(Inside((x+(sx+.5f)/4)/size,(y+(sy+.5f)/4)/size))coverage++;
+            data[y*size+x]=Color.White*(coverage/16f);
+        }
+        var texture=new Texture2D(device,size,size);
+        texture.SetData(data);
+        device.Disposing+=(_,_)=>texture.Dispose();
+        return texture;
+    }
+
     private static void Line(SpriteBatch batch, Texture2D pixel, Vector2 a, Vector2 b, Color color, float width = 3)
     {
         Vector2 delta = b - a;
@@ -22,11 +55,9 @@ internal static class UISkillSymbols
         Vector2 P(float x, float y) => new(bounds.X + x * bounds.Width, bounds.Y + y * bounds.Height);
         if (status == CampaignSkillAvailability.Locked)
         {
-            UIUtils.DrawRectangleOutlines(batch, new Rectangle(bounds.X + bounds.Width/5,
-                bounds.Y + bounds.Height/2, bounds.Width*3/5, bounds.Height/2), color, 2, pixel);
-            Line(batch,pixel,P(.35f,.5f),P(.35f,.18f),color,2);
-            Line(batch,pixel,P(.35f,.18f),P(.65f,.18f),color,2);
-            Line(batch,pixel,P(.65f,.18f),P(.65f,.5f),color,2);
+            int side=Math.Min(bounds.Width,bounds.Height);
+            var area=new Rectangle(bounds.Center.X-side/2,bounds.Center.Y-side/2,side,side);
+            batch.Draw(LockMasks.GetValue(batch.GraphicsDevice,CreateLockMask),area,color);
         }
         else if (status == CampaignSkillAvailability.Selected)
         {

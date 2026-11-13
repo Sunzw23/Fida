@@ -1,4 +1,4 @@
-#nullable enable annotations
+﻿#nullable enable annotations
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +17,8 @@ namespace Fida.UI.Campaign
         private CampaignStoryPage[] _lines;
         private int _lineIndex;
         public Texture2D? PortraitAtlas { get; set; }
+        public Texture2D? MaraPortrait { get; set; }
+        public SpriteFont? SpeakerFont { get; set; }
 
         public event Action? Finished;
 
@@ -76,12 +78,7 @@ namespace Fida.UI.Campaign
         public override void Update(GameTime gameTime)
         {
             Viewport viewport = _graphicsDevice.Viewport;
-            Rectangle safe = UIMobileSafeArea.Get(viewport);
-            int margin = Math.Clamp(viewport.Width / 24, 18, 44);
-            int height = Math.Min(safe.Height - 36, Math.Clamp(viewport.Height / 3, 210, 340));
-            int bottomMargin = Math.Max(18, viewport.Height - safe.Bottom + 18);
-            Bounds = new Rectangle(margin, viewport.Height - bottomMargin - height,
-                Math.Max(1, viewport.Width - margin * 2), height);
+            Bounds = UIGumLayout.Bounds("Dialogue", "Panel", viewport);
             base.Update(gameTime);
         }
 
@@ -89,47 +86,67 @@ namespace Fida.UI.Campaign
         {
             if (!IsVisible) return;
             Viewport viewport = _graphicsDevice.Viewport;
-            spriteBatch.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height),
-                new Color(8, 14, 26, 166));
+            // A state change can create this dialogue after Update in the same frame.
+            // Resolve geometry here too so its first draw never uses Rectangle.Empty.
+            Bounds = UIGumLayout.Bounds("Dialogue", "Panel", viewport);
+            spriteBatch.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black * .64f);
 
-            var backing = Bounds; backing.Offset(-6, 6);
-            UIPaper.Sheet(spriteBatch, backing, UITheme.PanelLight, 3, 10);
-            UIPaper.Sheet(spriteBatch, Bounds, UIPaper.Face, 4, 9);
+            UIPaper.StackedSquare(spriteBatch, Bounds, UIPaper.Face);
 
-            int pad = Math.Clamp(Bounds.Width / 32, 18, 38);
+            var layout = new UIEditorialLayout(viewport);
             float scale = UITypography.Scale(_font, UITextRole.Body, viewport);
-            float speakerScale = UITypography.Scale(_font, UITextRole.Name, viewport);
+            var speakerFont = SpeakerFont ?? _font;
+            float speakerScale = UITypography.Scale(speakerFont, UITextRole.Name, viewport);
             float captionScale = UITypography.Scale(_font, UITextRole.Small, viewport);
-            int portraitWidth = Bounds.Width >= 700 && PortraitAtlas != null ? Math.Min(Bounds.Width/4,Bounds.Height) : 0;
-            if(portraitWidth>0)
+            if (!layout.Portrait)
+            {
+                scale = layout.Scale * 46 / _font.LineSpacing;
+                speakerScale = layout.Scale * 58 / speakerFont.LineSpacing;
+                captionScale = layout.Scale * 32 / _font.LineSpacing;
+            }
+            Rectangle portrait = layout.Element("Dialogue", "Portrait");
+            if(portrait.Width > 0 && portrait.Height > 0 && PortraitAtlas != null)
             {
                 int cellWidth=PortraitAtlas!.Width/3, cellHeight=PortraitAtlas.Height/2;
                 string speaker=_lines[_lineIndex].Speaker?.ToLowerInvariant() ?? "";
+                if (speaker.Contains("mara") && MaraPortrait != null)
+                {
+                    float maraFit = Math.Min(portrait.Width / (float)MaraPortrait.Width,
+                        portrait.Height / (float)MaraPortrait.Height);
+                    spriteBatch.Draw(MaraPortrait, new Vector2(portrait.Center.X, portrait.Bottom),
+                        null, Color.White, 0, new Vector2(MaraPortrait.Width / 2f, MaraPortrait.Height),
+                        maraFit, SpriteEffects.None, 0);
+                }
+                else
+                {
                 int index=speaker.Contains("mara") ? 1 : speaker.Contains("king") ? 3 : speaker.Contains("echo") ? 5 : 0;
                 var source=new Rectangle(index%3*cellWidth,index/3*cellHeight,cellWidth,cellHeight);
-                float fit=Math.Min(portraitWidth/(float)cellWidth,(Bounds.Height-pad)/(float)cellHeight);
-                spriteBatch.Draw(PortraitAtlas,new Vector2(Bounds.Left+pad+portraitWidth/2,Bounds.Bottom-pad/2),source,Color.White,
+                float fit=Math.Min(portrait.Width/(float)cellWidth,portrait.Height/(float)cellHeight);
+                spriteBatch.Draw(PortraitAtlas,new Vector2(portrait.Center.X,portrait.Bottom),source,Color.White,
                     0,new Vector2(cellWidth/2f,cellHeight),fit,SpriteEffects.None,0);
+                }
             }
-            Vector2 speakerAt = new(Bounds.Left + pad + portraitWidth, Bounds.Top + pad * 0.55f);
-            UITextRenderer.DrawString(spriteBatch, _font, _lines[_lineIndex].Speaker, speakerAt,
+            Rectangle speakerArea = layout.Element("Dialogue", "Speaker");
+            Vector2 speakerAt = speakerArea.Location.ToVector2();
+            speakerScale = Math.Min(speakerScale, speakerArea.Height / (float)speakerFont.LineSpacing);
+            UITextRenderer.DrawString(spriteBatch, speakerFont, _lines[_lineIndex].Speaker, speakerAt,
                 UIPaper.Ink, 0f, Vector2.Zero, speakerScale,
                 SpriteEffects.None, 0f);
 
-            int textTop = (int)(speakerAt.Y + _font.LineSpacing * speakerScale + 12);
-            int textBottom = Bounds.Bottom - pad - (int)(_font.LineSpacing * captionScale) - 10;
-            Rectangle textArea = new(Bounds.Left + pad + portraitWidth, textTop,
-                Bounds.Width - pad * 2 - 12 - portraitWidth, System.Math.Max(1, textBottom - textTop));
+            spriteBatch.Draw(_pixel, layout.Element("Dialogue", "Divider"), UIPaper.MutedInk * .6f);
+            Rectangle textArea = layout.Element("Dialogue", "Body");
             DrawWrapped(spriteBatch, _lines[_lineIndex].Text, textArea, scale, UIPaper.Ink);
 
-            int nextWidth=Math.Clamp(Bounds.Width/7,100,180), nextHeight=Math.Clamp(Bounds.Height/5,42,64);
-            var next=new Rectangle(Bounds.Right-pad-nextWidth,Bounds.Bottom-pad-nextHeight,nextWidth,nextHeight);
-            UIPaper.Sheet(spriteBatch,next,UITheme.AccentBlue,2,6);
-            UIUtils.DrawCenteredFit(spriteBatch,_font,"Next  >",next.Center.ToVector2(),next.Width-16,captionScale*1.25f,UIPaper.Ink);
+            Rectangle next = layout.Element("Dialogue", "Next");
+            UIPaper.Button(spriteBatch, next, UITheme.AccentBlue, HoverAmount, PressAmount, IsEnabled, cut: 6);
+            UIUtils.DrawCenteredFit(spriteBatch,speakerFont,"Next",next.Center.ToVector2() - new Vector2(next.Width * .06f, 0),Math.Max(1,next.Width-30),
+                layout.Scale * 44 / speakerFont.LineSpacing,UIPaper.Ink);
+            DrawChevron(spriteBatch, new Vector2(next.Right - next.Height * .25f, next.Center.Y), Math.Max(4, next.Height / 9), UIPaper.Ink);
             string progress = $"{_lineIndex + 1} / {_lines.Length}";
             Vector2 progressSize = _font.MeasureString(progress) * captionScale;
+            Rectangle progressArea = layout.Element("Dialogue", "Progress");
             UITextRenderer.DrawString(spriteBatch, _font, progress,
-                new Vector2(next.Left - pad - progressSize.X, next.Center.Y-progressSize.Y/2),
+                progressArea.Center.ToVector2() - progressSize / 2,
                 UIPaper.MutedInk, 0f, Vector2.Zero, captionScale, SpriteEffects.None, 0f);
         }
 
@@ -190,3 +207,4 @@ namespace Fida.UI.Campaign
         }
     }
 }
+

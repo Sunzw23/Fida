@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Generic;
 using Fida.Logic;
 using Microsoft.Xna.Framework;
@@ -22,7 +23,7 @@ namespace Fida.UI
             };
 
         public static string Glyph(SkillType skill) =>
-            Glyphs.TryGetValue(skill, out string glyph) ? glyph : "?";
+            Glyphs.TryGetValue(skill, out string? glyph) ? glyph : "?";
 
         public static Color Fill(Skill skill) => skill.Trigger switch
         {

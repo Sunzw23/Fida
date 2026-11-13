@@ -1,0 +1,13 @@
+#Build this file with the MonoGame Content Pipeline (mgcb).
+/outputDir:bin/$(Platform)
+/intermediateDir:obj/$(Platform)
+/platform:DesktopGL
+/config:
+/profile:HiDef
+/compress:False
+
+#begin PaperGrain.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:PaperGrain.fx

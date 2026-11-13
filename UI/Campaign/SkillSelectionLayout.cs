@@ -31,15 +31,16 @@ public sealed class SkillSelectionLayout
         {
             Rectangle R(int x, int y, int w, int h) => UIDesktopLayout.MapRectangle(new Rectangle(x, y, w, h), width, height);
             Panel = R(48, 30, 1824, 1140);
-            Header = R(150, 35, 1710, 85);
-            Back = R(60, 42, 64, 64);
+            var campaign = new CampaignMapLayout(width, height);
+            Header = new Rectangle(campaign.Header.Left, campaign.Header.Top, R(150, 35, 1710, 85).Right - campaign.Header.Left, campaign.Header.Height);
+            Back = campaign.Back;
             Tabs = R(60, 155, 1160, 58);
             Grid = R(60, 235, 1160, 800);
-            Details = R(1290, 195, 550, 660);
-            Action = R(1310, 755, 510, 80);
-            Footer = R(1290, 870, 550, 265);
-            Chips = R(1290, 925, 550, 80);
-            Start = R(1290, 1040, 550, 90);
+            Details = R(1260, 185, 610, 670);
+            Action = R(1282, 755, 566, 80);
+            Footer = R(1260, 870, 610, 265);
+            Chips = R(1260, 925, 610, 80);
+            Start = R(1260, 1040, 610, 90);
             Previous = R(480, 1070, 62, 48);
             Next = R(740, 1070, 62, 48);
         }

@@ -36,6 +36,7 @@ namespace Fida.UI
         private readonly SpriteBatch _spriteBatch;
         private readonly ResourceManager _resourceManager;
         private readonly RasterizerState _uiRasterizerState;
+        private readonly PaperPass _paperPass;
 
         private readonly List<UIControl> _uiControls = new List<UIControl>();
         private readonly UIPlayerManager _playerManager;
@@ -46,6 +47,13 @@ namespace Fida.UI
         private double _entranceStart;
         private double _lastUiTime;
         private RenderTarget2D? _pageFrame, _previousPageFrame;
+        public int RenderSampleCount => _pageFrame?.MultiSampleCount ?? 0;
+#if FIDA_ANDROID
+        private const int UiSamples = 0;
+#else
+        // UI geometry is rendered here, so back-buffer MSAA alone cannot smooth it.
+        private const int UiSamples = 4;
+#endif
         private Texture2D? _pausedBattleFrame;
         private bool _hasPageFrame, _showPreviousPage;
         private bool _transitionPointerHeld;
@@ -60,6 +68,7 @@ namespace Fida.UI
 
         public UIManager(GraphicsDevice graphicsDevice, ResourceManager resourceManager)
         {
+            UIGumLayout.Initialize(graphicsDevice);
             _graphicsDevice = graphicsDevice;
             _spriteBatch = new SpriteBatch(graphicsDevice);
             _uiRasterizerState = new RasterizerState
@@ -69,6 +78,7 @@ namespace Fida.UI
                 ScissorTestEnable = false
             };
             _resourceManager = resourceManager;
+            _paperPass = new PaperPass(graphicsDevice, resourceManager);
 
             _playerManager = new UIPlayerManager(_uiControls, _resourceManager);
             _inputHandler = new UIInputHandler(_uiControls);
@@ -88,9 +98,9 @@ namespace Fida.UI
             {
                 _pageFrame?.Dispose(); _previousPageFrame?.Dispose();
                 _pageFrame = new RenderTarget2D(_graphicsDevice, viewport.Width, viewport.Height, false,
-                    SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+                    SurfaceFormat.Color, DepthFormat.None, UiSamples, RenderTargetUsage.PreserveContents);
                 _previousPageFrame = new RenderTarget2D(_graphicsDevice, viewport.Width, viewport.Height, false,
-                    SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+                    SurfaceFormat.Color, DepthFormat.None, UiSamples, RenderTargetUsage.PreserveContents);
                 _hasPageFrame = false; _showPreviousPage = false;
             }
             UIControl? anchor = _uiControls.Count > 0 ? _uiControls[0] : null;
@@ -126,12 +136,11 @@ namespace Fida.UI
 #endif
             _spriteBatch.End();
             _graphicsDevice.SetRenderTarget(null);
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp);
-            _spriteBatch.Draw(_pageFrame, viewport.Bounds, Color.White);
-            if (_showPreviousPage && entrance < 1 && !UIMotion.Reduced)
-                _spriteBatch.Draw(_previousPageFrame, viewport.Bounds, Color.White * (1 - entrance));
-            else _showPreviousPage = false;
-            _spriteBatch.End();
+            // One pass over the finished page: crossfade, then procedural paper tooth.
+            bool crossfade = _showPreviousPage && entrance < 1 && !UIMotion.Reduced;
+            if (_pageFrame is { } pageFrame)
+                _paperPass.Draw(pageFrame, crossfade ? _previousPageFrame : null, crossfade ? entrance : 1f);
+            if (!crossfade) _showPreviousPage = false;
             _hasPageFrame = true;
         }
 

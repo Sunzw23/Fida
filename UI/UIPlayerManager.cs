@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +16,13 @@ namespace Fida.UI
         private readonly List<UIPlayer> _uiPlayers = new List<UIPlayer>();
         private readonly List<UIControl> _uiControls;
         private readonly ResourceManager _resourceManager;
-        private UIBoxLabel _gameMessageLabel;
-        private UIBoxLabel _actionCueLabel;
-        private UINumberFlowEffect _numberFlowEffect;
-        private UICardCombatAnimator _cardCombatAnimator;
-        private UIDecideApplyDialog _decideApplyDialog;
-        private UINumberSelectionDialog _numberSelectionDialog;
-        private GameManager _gameManager;
+        private UIBoxLabel _gameMessageLabel = null!;
+        private UIBoxLabel _actionCueLabel = null!;
+        private UINumberFlowEffect _numberFlowEffect = null!;
+        private UICardCombatAnimator _cardCombatAnimator = null!;
+        private UIDecideApplyDialog _decideApplyDialog = null!;
+        private UINumberSelectionDialog _numberSelectionDialog = null!;
+        private GameManager _gameManager = null!;
         private readonly Dictionary<int, Rectangle> _unitBounds = new();
 
         // 玩家头像纹理字典，key 为 PlayerId，value 为头像纹理（可为 null）
@@ -75,7 +76,7 @@ namespace Fida.UI
             int pauseGap = 12;
             messageWidth = System.Math.Max(1,
                 viewportWidth - messageMargin * 2 - pauseSize - pauseGap);
-            var messageBounds = UIDesktopLayout.MapRectangle(new Rectangle(280, 590, 1360, 60), viewport);
+            var messageBounds = UIDesktopLayout.MapRectangle(new Rectangle(420, 555, 1080, 60), viewport);
 #endif
             _gameMessageLabel = new UIBoxLabel(0, messageBounds, gameManager.GameMessage, _resourceManager.Pixel, _resourceManager.CaptionFont)
             {
@@ -178,7 +179,8 @@ namespace Fida.UI
                 
                 // Explicit per-player overrides take precedence; data-driven portrait keys
                 // then resolve through the resource catalog with a safe team fallback.
-                if (!_portraitTextures.TryGetValue(player.PlayerId, out Texture2D portraitTexture))
+                if (!_portraitTextures.TryGetValue(player.PlayerId, out Texture2D? portraitTexture) ||
+                    portraitTexture == null)
                 {
                     portraitTexture = _resourceManager.GetPortrait(
                         player.PortraitKey,
@@ -262,7 +264,7 @@ namespace Fida.UI
             int centerX = Math.Max(safeArea.Left,
                 safeArea.Left + (safeArea.Width - mobileCardWidth) / 2);
 
-            Group localGroupMobile = null;
+            Group? localGroupMobile = null;
             foreach (var group in gameManager.Groups)
             {
                 if (group.Players.Any(p => p.PlayerId == gameManager.LocalPlayerId))
@@ -310,7 +312,7 @@ namespace Fida.UI
             }
 
             // 找到本地玩家所在的组
-            Group localGroup = null;
+            Group? localGroup = null;
             foreach (var group in gameManager.Groups)
             {
                 foreach (var p in group.Players)
@@ -468,7 +470,7 @@ namespace Fida.UI
             _cardCombatAnimator?.Start(source, target, damaging);
         }
 
-        private void OnMessageUpdated(object sender, GameEventArgs e)
+        private void OnMessageUpdated(object? sender, GameEventArgs e)
         {
             UpdateGameMessage(e.Message);
             // 不再需要手动更新按钮状态 - 按钮会通过 EnabledChecker 自动询问环境
@@ -477,7 +479,7 @@ namespace Fida.UI
         /// <summary>
         /// 游戏状态变化时刷新所有按钮状态
         /// </summary>
-        private void OnGameStateChanged(object sender, GameStateEventArgs e)
+        private void OnGameStateChanged(object? sender, GameStateEventArgs e)
         {
             HideDecideApplyDialog();
             HideNumberSelectionDialog();
@@ -491,7 +493,7 @@ namespace Fida.UI
         }
 
         /// <summary>Refreshes contextual controls whenever the required action changes.</summary>
-        private void OnPlayerActionRequired(object sender, PlayerActionRequiredEventArgs e)
+        private void OnPlayerActionRequired(object? sender, PlayerActionRequiredEventArgs e)
         {
             // 每次步骤切换时（包括同状态内 StepIndex++），更新按钮的 Selected 状态
             UpdateButtonSelectedStates();
@@ -509,7 +511,7 @@ namespace Fida.UI
                 HideNumberSelectionDialog();
         }
 
-        private void OnEffectNumbersConsumed(object sender, EffectNumbersConsumedEventArgs e)
+        private void OnEffectNumbersConsumed(object? sender, EffectNumbersConsumedEventArgs e)
         {
             GetUIPlayer(e.SourcePlayerId)?.BeginDeferredNumberVisual();
         }
@@ -693,11 +695,14 @@ namespace Fida.UI
         }
 
         /// <summary>
-        /// 获取指定玩家 ID 的 UI 玩家控件
+        /// 获取指定玩家 ID 的 UI 玩家控件（该 ID 无对应卡片时返回 null）
         /// </summary>
         public UIPlayer GetUIPlayer(int playerId)
         {
-            return _uiPlayers.FirstOrDefault(p => p.Player.PlayerId == playerId);
+            // Absent ids legitimately yield null and every caller already guards with
+            // ?. / null checks. The declared type stays non-nullable so the pass-through
+            // in UIManager.GetUIPlayer keeps its existing signature.
+            return _uiPlayers.FirstOrDefault(p => p.Player.PlayerId == playerId)!;
         }
 
         /// <summary>

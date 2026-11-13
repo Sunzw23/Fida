@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -11,8 +12,8 @@ namespace Fida.UI
     public sealed class UICardCombatAnimator : UIControl
     {
         private const float Duration = 0.48f;
-        private UIPlayer _source;
-        private UIPlayer _target;
+        private UIPlayer? _source;
+        private UIPlayer? _target;
         private float _elapsed;
         private bool _damaging;
 
@@ -36,6 +37,8 @@ namespace Fida.UI
         {
             if (UIMotion.Reduced) { Stop(); return; }
             if (!IsPlaying) return;
+            // IsPlaying is only set while both cards are held; recover defensively.
+            if (_source == null || _target == null) return;
             _elapsed += (float)gameTime.ElapsedGameTime.TotalSeconds;
             float t = MathHelper.Clamp(_elapsed / Duration, 0f, 1f);
 
@@ -110,7 +113,7 @@ namespace Fida.UI
             _elapsed = 0f;
         }
 
-        private static void ResetCard(UIPlayer card)
+        private static void ResetCard(UIPlayer? card)
         {
             if (card == null) return;
             card.VisualOffset = Vector2.Zero;

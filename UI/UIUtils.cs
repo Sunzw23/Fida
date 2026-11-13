@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Resources;
@@ -105,7 +106,7 @@ namespace Fida.UI
         /// <summary>
         /// 绘制游戏消息。
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="text"></param>
         private static void DrawString(SpriteBatch sb, SpriteFont font, Vector2 position, string text, Color color)
         {
             UITextRenderer.DrawString(sb, font, text, position, color);

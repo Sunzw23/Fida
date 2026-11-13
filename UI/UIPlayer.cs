@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -15,13 +16,12 @@ namespace Fida.UI
 
         public SpriteFont Font { get; private set; }
         private readonly SpriteFont _captionFont;
-        private Vector2 _skillsCenter;
         public Texture2D Pixel { get; set; }
 
-        public Texture2D PortraitTexture { get; set; }
+        public Texture2D? PortraitTexture { get; set; }
         public Rectangle? PortraitSource { get; set; }
         public bool IsCurrentTurn { get; set; }
-        public Func<bool> CurrentTurnChecker { get; set; }
+        public Func<bool>? CurrentTurnChecker { get; set; }
         public bool IsAlly { get; }
 
         /// <summary>Marks the acting portrait while an automated controller is deciding.</summary>
@@ -49,7 +49,7 @@ namespace Fida.UI
             numberIndex == 0 ? Number0Bounds : Number1Bounds;
 
         // 环境检查器 — 卡片在 ChooseTarget 时启用交互
-        public Func<bool> EnabledChecker { get; set; }
+        public Func<bool>? EnabledChecker { get; set; }
 
         // 卡片交互状态
         private bool IsEnabled { get; set; } = true;
@@ -65,7 +65,7 @@ namespace Fida.UI
         private float _displayHealth;
         private int _healthDelta;
         private float _healthChangeAge = 1f;
-        private int[] _deferredNumbers;
+        private int[]? _deferredNumbers;
         private float _deathReveal = 1f;
         private bool _visuallyDefeated;
         private float _arrivalProgress = 1f;
@@ -96,7 +96,7 @@ namespace Fida.UI
             OnConfirmed();
         }
 
-        public UIPlayer(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel, Texture2D portraitTexture = null, bool isAlly = false, Rectangle? layoutBounds = null, SpriteFont labelFont = null, SpriteFont captionFont = null) : base(id)
+        public UIPlayer(int id, Player player, Vector2 position, SpriteFont font, Texture2D pixel, Texture2D? portraitTexture = null, bool isAlly = false, Rectangle? layoutBounds = null, SpriteFont? labelFont = null, SpriteFont? captionFont = null) : base(id)
         {
             Position = position;
             Player = player;
@@ -176,10 +176,9 @@ namespace Fida.UI
             var viewport = pixel.GraphicsDevice.Viewport;
             float nameLine = UITypography.LineHeight(UITextRole.Name, viewport.Width, viewport.Height);
             float healthLine = UITypography.LineHeight(UITextRole.Caption, viewport.Width, viewport.Height);
-            float skillLine = UITypography.LineHeight(UITextRole.Small, viewport.Width, viewport.Height);
             int gap = Math.Max(3, UIConfig.ScaleDesktopMetric(5));
-            int infoLeft = CardBounds.Left + gap * 2;
-            int infoWidth = CardBounds.Width - gap * 4;
+            int infoLeft = Number0Bounds.Left + gap * 2;
+            int infoWidth = Number1Bounds.Right - Number0Bounds.Left - gap * 4;
             float nameHeight = nameLine;
             int upperHeight = Number0Bounds.Top - CardBounds.Top;
             int portraitHeight = Math.Max(24, upperHeight - (int)(nameHeight + healthLine + gap * 3));
@@ -204,7 +203,6 @@ namespace Fida.UI
                 MaximumHeight = healthLine,
                 TypographyRole = UITextRole.Caption
             };
-            _skillsCenter = new Vector2(infoLeft + infoWidth / 2f, healthY + healthLine / 2 + gap + skillLine / 2);
             _skillStripBounds = new Rectangle(CardBounds.Left, CardBounds.Top, CardBounds.Width, Number0Bounds.Top - CardBounds.Top);
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
@@ -412,8 +410,8 @@ namespace Fida.UI
             var art = PortraitBounds;
             float enter = UIMotion.Reduced ? 1 : MathHelper.SmoothStep(0, 1, _arrivalProgress);
             Color tint = (_visuallyDefeated ? Color.Lerp(Color.White, UITheme.InkMuted * 0.35f, _deathReveal) : Color.White) * enter;
-            var infoSheet = new Rectangle(CardBounds.Left, PortraitBounds.Bottom - 3,
-                CardBounds.Width, Math.Max(1, Number0Bounds.Top - PortraitBounds.Bottom + 3));
+            var infoSheet = new Rectangle(Number0Bounds.Left - 3, PortraitBounds.Bottom - 3,
+                Number1Bounds.Right - Number0Bounds.Left + 6, Math.Max(1, Number0Bounds.Top - PortraitBounds.Bottom));
 #if FIDA_ANDROID
             infoSheet = new Rectangle(CardBounds.Left, CardBounds.Top, CardBounds.Width, CardBounds.Height);
 #endif
@@ -429,16 +427,22 @@ namespace Fida.UI
                     SpriteEffects.None, 0);
             }
             if (IsCurrentTurn || IsPresentingAction)
+#if FIDA_ANDROID
                 UIPaper.Sheet(sb, new Rectangle(infoSheet.Left + 8,
                     (int)(_nameCenter.Y - 18 * scale), infoSheet.Width - 16, Math.Max(24, (int)(36 * scale))), UITheme.Gold, 1, 5);
             NameLabel.SetColor(IsCurrentTurn || IsPresentingAction ? UIPaper.Ink : UITheme.Ink);
+#else
+                sb.Draw(Pixel, new Rectangle(infoSheet.Left + 8, infoSheet.Top + 5,
+                    3, Math.Max(1, infoSheet.Height - 10)), UITheme.Gold);
+            NameLabel.SetColor(UITheme.Ink);
+#endif
             NameLabel.DrawAt(sb, time, _nameCenter, scale);
             sb.Draw(Pixel, HealthBounds, UITheme.Line * 0.55f);
             float ratio = Player.MaxHealth <= 0 ? 0 : MathHelper.Clamp(_displayHealth / Player.MaxHealth, 0, 1);
             if (ratio > 0)
                 sb.Draw(Pixel, new Rectangle(HealthBounds.X, HealthBounds.Y,
                     Math.Max(1, (int)(HealthBounds.Width * ratio)), HealthBounds.Height),
-                    IsAlly ? UITheme.Gold : new Color(196, 113, 106));
+                    new Color(196, 113, 106));
             HealthLabel.SetColor(UITheme.InkMuted);
             HealthLabel.DrawAt(sb, time, _healthCenter, scale);
 #if FIDA_ANDROID
@@ -446,12 +450,7 @@ namespace Fida.UI
             {
                 int side = Math.Clamp((int)(34 * scale), 20, 38);
                 int shown = Math.Min(4, Player.Skills.Count), total = shown * (side + 10) - 10;
-                Vector2 center =
-#if FIDA_ANDROID
-                    _skillStripBounds.Center.ToVector2();
-#else
-                    _skillsCenter;
-#endif
+                Vector2 center = _skillStripBounds.Center.ToVector2();
                 for (int i = 0; i < shown; i++)
                     Campaign.UISkillArt.Draw(sb, Player.Skills[i].Type, new Rectangle((int)center.X - total / 2 + i * (side + 10),
                         (int)center.Y - side / 2, side, side), UITheme.Ink);

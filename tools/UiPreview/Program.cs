@@ -11,7 +11,7 @@ int width = args.Length > 0 ? int.Parse(args[0]) : 1600;
 int height = args.Length > 1 ? int.Parse(args[1]) : 1000;
 string destination = Path.GetFullPath(args.Length > 2 ? args[2] : "artifacts/cold-ui");
 Directory.CreateDirectory(destination);
-using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"), args.Contains("--reference-only"));
+using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"), args.Contains("--reference-only"), args.Contains("--concept-only"), args.Contains("--route-only"));
 preview.Run();
 
 sealed class PreviewGame : Game
@@ -27,17 +27,23 @@ sealed class PreviewGame : Game
     private readonly bool _skillsOnly;
     private readonly bool _menusOnly;
     private readonly bool _referenceOnly;
+    private readonly bool _conceptOnly;
+    private readonly bool _routeOnly;
     private UICampaignSkillWheel _loadout;
     private HashSet<SkillType> _loadoutSelected;
 
-    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly, bool referenceOnly)
+    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly, bool referenceOnly, bool conceptOnly, bool routeOnly)
     {
         _width = width; _height = height; _destination = destination;
         _skillsOnly = skillsOnly;
         _menusOnly = menusOnly;
         _referenceOnly = referenceOnly;
+        _conceptOnly = conceptOnly;
+        _routeOnly = routeOnly;
         if (skillsOnly) _screen = 4;
         if (referenceOnly) _screen = 2;
+        if (conceptOnly) _screen = 7;
+        if (routeOnly) _screen = 3;
         _graphics = new GraphicsDeviceManager(this)
         { PreferredBackBufferWidth = width, PreferredBackBufferHeight = height, GraphicsProfile = GraphicsProfile.HiDef };
         Content.RootDirectory = Path.Combine(AppContext.BaseDirectory, "Content");
@@ -54,8 +60,38 @@ sealed class PreviewGame : Game
         _resources = new ResourceManager(GraphicsDevice);
         _resources.LoadContent(Content);
         _ui = new UIManager(GraphicsDevice, _resources);
+        VerifyGumModalLayouts();
         VerifyPageTransitions();
+        VerifyCampaignLoadoutTransition();
         Build();
+    }
+
+    private void VerifyGumModalLayouts()
+    {
+        var viewport = new Rectangle(0, 0, _width, _height);
+        foreach (string screen in new[] { "Pause", "Outcome", "Dialogue" })
+        {
+            Rectangle panel = UIGumLayout.Bounds(screen, "Panel", _width, _height);
+            if (!viewport.Contains(panel)) throw new Exception($"Gum {screen} panel leaves the viewport.");
+        }
+        var pause = UIGumLayout.Bounds("Pause", "Panel", _width, _height);
+        Rectangle? previous = null;
+        foreach (string action in new[] { "Resume", "Settings", "Rules", "MainMenu" })
+        {
+            Rectangle button = UIGumLayout.Bounds("Pause", action, _width, _height);
+            if (!pause.Contains(button) || previous?.Intersects(button) == true)
+                throw new Exception("Gum pause actions overlap or leave their panel.");
+            previous = button;
+        }
+        Rectangle primary = UIGumLayout.Bounds("Outcome", "PrimaryAction", _width, _height);
+        Rectangle secondary = UIGumLayout.Bounds("Outcome", "SecondaryAction", _width, _height);
+        if (primary.Intersects(secondary) || !viewport.Contains(primary) || !viewport.Contains(secondary))
+            throw new Exception("Gum result actions overlap or leave the viewport.");
+        Rectangle body = UIGumLayout.Bounds("Dialogue", "Body", _width, _height);
+        Rectangle next = UIGumLayout.Bounds("Dialogue", "Next", _width, _height);
+        if (body.Intersects(next) || !viewport.Contains(body) || !viewport.Contains(next))
+            throw new Exception("Gum dialogue body collides with its action.");
+        Console.WriteLine("Verified Gum modal bounds, parenting and separated action regions.");
     }
 
     private void Build()
@@ -158,7 +194,11 @@ sealed class PreviewGame : Game
                 if (_screen == 7)
                     _ui.AddTutorialDialogue(new CampaignNode
                     {
-                        BeforeStory = [new CampaignStoryPage { Speaker = "Mara Venn", Text =
+                        BeforeStory = _conceptOnly
+                            ? [new CampaignStoryPage { Speaker = "Mara", Text = "Look at the numbers before you move.\nChoose one of your own, then another number to add." },
+                               new CampaignStoryPage { Speaker = "Mara", Text = "Choose a number to begin." },
+                               new CampaignStoryPage { Speaker = "Mara", Text = "Then choose another number to add." }]
+                            : [new CampaignStoryPage { Speaker = "Mara Venn", Text =
                             "The road is quiet now. Take a moment to look at the numbers before you move. " +
                             "Choose one of your own numbers, then choose another number to add to it. " +
                             "You can use an ally's number as well as an enemy's. We have time to decide." }]
@@ -190,7 +230,7 @@ sealed class PreviewGame : Game
         if (!wrapper.TryConsumeToggle(out skill) || skill!=SkillType.DoubleAttack) throw new Exception("Selected skill could not be removed.");
         selected.Remove(skill);
         grid.FocusSkill(SkillType.Long); Click(grid.Layout.Action); NoToggle("Over-budget skill was equipped.");
-        grid.FocusSkill(SkillType.Shen); Click(grid.Layout.Action); NoToggle("Locked skill was equipped.");
+        if (grid.FocusSkill(SkillType.Shen)) throw new Exception("An unowned skill was reachable in the campaign grid.");
         selected.Clear(); selected.Add(SkillType.DoubleHealth);
         grid.FocusSkill(SkillType.TripleHealth); Click(grid.Layout.Action); NoToggle("Conflicting skill was equipped.");
         selected.Clear(); selected.Add(SkillType.Xue); selected.Add(SkillType.Shi);
@@ -260,8 +300,10 @@ sealed class PreviewGame : Game
         _ui.Draw(time);
         if (_frame >= 30 && time.TotalGameTime.TotalSeconds - _firstDraw >= 0.7)
         {
+            if (_conceptOnly) Console.WriteLine($"UI render-target samples: {_ui.RenderSampleCount}");
             string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting", "paused", "victory", "defeat", "duel-draft", "duel-result" }[_screen];
             Save(name);
+            if (_screen == 16) SaveButtonStates(time);
             if (_screen == 2)
             {
                 for (int page = 0; page < UIManager.RulesPageCount; page++)
@@ -279,7 +321,10 @@ sealed class PreviewGame : Game
                 var bounds = new CampaignMapLayout(_width, _height).Map;
                 ClickMap(map, new Point(bounds.Left + bounds.Width / 4, bounds.Center.Y));
                 map.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
-                _ui.Draw(time); Save("campaign-route");
+                if (_routeOnly) VerifyReferenceRoute(map, bounds);
+                _ui.Draw(time); _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero)); Save("campaign-route");
+                VerifyLockedChapterContrast();
+                VerifyLockedMissionAction();
             }
             if (_screen == 9)
             {
@@ -291,15 +336,80 @@ sealed class PreviewGame : Game
             }
             if (_screen==4) SaveSkillVariants(time);
             if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
-            _screen = _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 20 }
+            _screen = _conceptOnly ? _screen switch { 7 => 15, 15 => 16, 16 => 17, _ => 20 }
+                : _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 20 }
                 : _menusOnly ? _screen switch { 0 => 1, 1 => 2, 2 => 3, 3 => 9, _ => _screen + 1 } : _screen + 1;
-            if (_skillsOnly || _screen > 19) Exit(); else Build();
+            if (_skillsOnly || _routeOnly || _screen > 19) Exit(); else Build();
         }
         base.Draw(time);
     }
 
     private static MouseState MapMouse(Point p, ButtonState button) => new(p.X,p.Y,0,button,
         ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
+
+    private void SaveButtonStates(GameTime time)
+    {
+        if (_width < _height) return;
+        GraphicsDevice.Clear(UITheme.BgTop);
+        using var batch = new SpriteBatch(GraphicsDevice);
+        batch.Begin(samplerState: SamplerState.LinearClamp);
+        string[] states = { "Normal", "Hover", "Focus", "Pressed", "Disabled" };
+        string[] types = { "Button", "Paper", "Primary", "Active", "Back", "Number" };
+        float sx = _width / 1280f, sy = _height / 720f;
+        void Label(string text, float x, float y) => UITextRenderer.DrawString(batch, _resources.CaptionFont,
+            text, new Vector2(x * sx, y * sy), UITheme.Ink, scale: .5f * sx);
+        for (int col = 0; col < states.Length; col++) Label(states[col], 200 + col * 210, 40);
+        for (int row = 0; row < types.Length; row++)
+        {
+            Label(types[row], 28, 108 + row * 98);
+            for (int col = 0; col < states.Length; col++)
+            {
+                var bounds = new Rectangle((int)((180 + col * 210) * sx), (int)((80 + row * 98) * sy),
+                    (int)(180 * sx), (int)(68 * sy));
+                UIControl control = row switch
+                {
+                    0 => new UIButton(0, bounds, "Action", _resources.Pixel, _resources.LabelFont),
+                    4 => new UIIconButton(0, bounds, UIIconButton.IconKind.Back, _resources.Pixel, _resources.LabelFont),
+                    5 => new UIAnimatedButton(0, bounds, "6", _resources.Pixel, _resources.LabelFont),
+                    _ => new UIEditorialButton(0, bounds, "Action", _resources.Pixel, _resources.LabelFont)
+                        { Primary = row == 2, Active = row == 3 }
+                };
+                void SetState<T>(UIButtonBase<T> button) where T : struct
+                {
+                    var away = new Point(-100, -100);
+                    button.Update(MapMouse(away, ButtonState.Released));
+                    if (col == 2) button.SetFocus(true);
+                    button.Update(MapMouse(col is 1 or 3 or 4 ? bounds.Center : away, ButtonState.Released));
+                    if (col == 3) button.Update(MapMouse(bounds.Center, ButtonState.Pressed));
+                    if (col == 4) button.Disable();
+                    button.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
+                }
+                if (control is UIButton b) SetState(b);
+                else if (control is UIAnimatedButton a) SetState(a);
+                control.Draw(batch, time);
+            }
+        }
+        batch.End();
+        Save("button-states");
+    }
+
+    private void VerifyCampaignLoadoutTransition()
+    {
+        using var ui = new UIManager(GraphicsDevice, _resources);
+        var time = new GameTime(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(.016));
+        ui.BuildLevelSelect(); ui.Update(time); ui.Draw(time);
+        ui.BuildSkillSelect();
+        // State input can build the next page after UI.Update, before the same frame's Draw.
+        ui.Draw(time);
+        ui.Update(time); ui.Draw(time);
+        ui.Clear();
+        var scene = new Fida.Scene.PlayingSceneManager(ui.GameManager, ui, null);
+        scene.InitializeCampaign(GameSetup.LoadCampaignBattle());
+        scene.StartGame();
+        ui.Draw(time);
+        ui.Update(time); ui.Draw(time);
+        Console.WriteLine("Verified campaign map-to-loadout first draw and story overlay.");
+    }
 
     private void VerifyPageTransitions()
     {
@@ -367,6 +477,26 @@ sealed class PreviewGame : Game
         map.Update(MapMouse(p,ButtonState.Pressed));
         map.Update(MapMouse(p,ButtonState.Released));
     }
+    private void VerifyReferenceRoute(UICampaignMap map, Rectangle bounds)
+    {
+        var layout = new CampaignMapLayout(_width, _height);
+        if (!new Rectangle(0,0,_width,_height).Contains(layout.Details) || bounds.Intersects(layout.Details))
+            throw new Exception("Route map and details overlap or leave the viewport.");
+        foreach (var (id, point) in new[] {
+            ("A2",new Point(bounds.Left+bounds.Width/4,bounds.Center.Y)),
+            ("A3",new Point(bounds.Left+bounds.Width*3/4,bounds.Center.Y)),
+            ("AG",new Point(bounds.Center.X,bounds.Bottom-(int)(90*layout.Scale))),
+            ("A1",new Point(bounds.Center.X,bounds.Top+(int)(90*layout.Scale))) })
+        {
+            ClickMap(map,point);
+            if(map.SelectedNodeId!=id)throw new Exception($"Reference route click selected {map.SelectedNodeId}, expected {id}.");
+            if(map.TryConsumeSelectedNode(out _))throw new Exception("Inspecting a reference card started a mission.");
+        }
+        map.ZoomIn(); map.FitAll();
+        ClickMap(map,new Point(bounds.Center.X,bounds.Top+(int)(90*layout.Scale)));
+        if(map.SelectedNodeId!="A1")throw new Exception("Fit lost the route's visual/hit geometry alignment.");
+        Console.WriteLine("Verified reference diamond card selection, isolated inspect intents, viewport bounds and zoom/fit alignment.");
+    }
     private void VerifyCampaignActions()
     {
         foreach (bool locked in new[] { false, true })
@@ -390,6 +520,97 @@ sealed class PreviewGame : Game
             if(!map.ConsumeBackRequest() || map.ConsumeBackRequest()) throw new Exception("Map back action did not dispatch once.");
         }
         Console.WriteLine("Verified map inspect/confirm, locked missions, cross-target release and back.");
+    }
+
+    /// <summary>
+    /// A locked chapter has to be readable as unavailable from its sheet alone: the
+    /// top-level page shares the mission card's grey stock, not just a darkened image.
+    /// </summary>
+    private void VerifyLockedChapterContrast()
+    {
+        var view = new UICampaignRouteView(_resources.Font, _resources.TitleFont,
+            _resources.Pixel, _resources.AntialiasedLine);
+        var open = new Rectangle(20, 20, 460, 200);
+        var locked = open; locked.Offset(500, 0);
+        // Render both sheets into one texture so a single readback holds the comparison.
+        using var target = new RenderTarget2D(GraphicsDevice, 1000, 240);
+        GraphicsDevice.SetRenderTarget(target);
+        GraphicsDevice.Clear(UITheme.BgTop);
+        using (var batch = new SpriteBatch(GraphicsDevice))
+        {
+            batch.Begin(samplerState: SamplerState.LinearClamp);
+            view.DrawChapterCard(batch, open, 3, "Chapter I", 0, 4, false, false, 0, 0);
+            view.DrawChapterCard(batch, locked, 4, "Chapter II", 0, 4, false, true, 0, 0);
+            batch.End();
+        }
+        GraphicsDevice.SetRenderTarget(null);
+        var pixels = new Color[1000 * 240];
+        target.GetData(pixels);
+        // The band above the chapter artwork is unprinted sheet, so its average is the stock colour.
+        Color Stock(Rectangle bounds)
+        {
+            int red = 0, green = 0, blue = 0, count = 0;
+            for (int y = bounds.Top + 3; y < bounds.Top + 7; y++)
+            for (int x = bounds.Left + 70; x < bounds.Right - 70; x++)
+            {
+                Color pixel = pixels[y * 1000 + x];
+                red += pixel.R; green += pixel.G; blue += pixel.B; count++;
+            }
+            return new Color(red / count, green / count, blue / count);
+        }
+        Color openStock = Stock(open), lockedStock = Stock(locked);
+        int Luma(Color color) => (color.R * 299 + color.G * 587 + color.B * 114) / 1000;
+        if (Luma(openStock) - Luma(lockedStock) < 40 || Math.Abs(openStock.R - lockedStock.R) < 30)
+            throw new Exception($"A locked chapter kept the open sheet's colour: " +
+                $"{openStock} vs {lockedStock}.");
+        Console.WriteLine($"Verified locked chapters print on grey stock ({openStock} vs {lockedStock}).");
+    }
+
+    /// <summary>
+    /// A closed mission can still be inspected, but its detail action must not offer the
+    /// loadout: the ticket greys out to the locked stock and reads "Locked".
+    /// </summary>
+    private void VerifyLockedMissionAction()
+    {
+        var view = new UICampaignRouteView(_resources.Font, _resources.TitleFont,
+            _resources.Pixel, _resources.AntialiasedLine);
+        var layout = new CampaignMapLayout(1600, 1000);
+        Color Action(bool locked, string name)
+        {
+            using var target = new RenderTarget2D(GraphicsDevice, 1600, 1000);
+            GraphicsDevice.SetRenderTarget(target);
+            GraphicsDevice.Clear(UITheme.BgTop);
+            using (var batch = new SpriteBatch(GraphicsDevice))
+            {
+                batch.Begin(samplerState: SamplerState.LinearClamp);
+                view.DrawDetails(batch, layout, new CampaignRouteDetails("A2", "White Stone Gate",
+                    "A guard has not slept since the road closed.", 3, 3, "Story Fragment", null,
+                    "Prologue", locked), 0, 0);
+                batch.End();
+            }
+            GraphicsDevice.SetRenderTarget(null);
+            using (var stream = File.Create(Path.Combine(_destination, $"{name}.png")))
+                target.SaveAsPng(stream, 1600, 1000);
+            var pixels = new Color[1600 * 1000];
+            target.GetData(pixels);
+            // Sample the unprinted top band of the action ticket, clear of its label.
+            int red = 0, green = 0, blue = 0, count = 0;
+            Rectangle action = layout.Action;
+            for (int y = action.Top + 10; y < action.Top + 16; y++)
+            for (int x = action.Left + 80; x < action.Right - 80; x++)
+            {
+                Color pixel = pixels[y * 1600 + x];
+                red += pixel.R; green += pixel.G; blue += pixel.B; count++;
+            }
+            return new Color(red / count, green / count, blue / count);
+        }
+        Color openAction = Action(false, "campaign-details-open");
+        Color lockedAction = Action(true, "campaign-details-locked");
+        int Luma(Color color) => (color.R * 299 + color.G * 587 + color.B * 114) / 1000;
+        if (Luma(openAction) - Luma(lockedAction) < 25)
+            throw new Exception($"A locked mission kept the open action's ticket: " +
+                $"{openAction} vs {lockedAction}.");
+        Console.WriteLine($"Verified locked detail action greys out ({openAction} vs {lockedAction}).");
     }
 
     private void SaveSkillVariants(GameTime time)
@@ -418,6 +639,22 @@ sealed class PreviewGame : Game
         _loadout.ShowSkillPoints=true; _loadout.HeaderText="PALACE / 01"; _loadout.StartActionText="START BATTLE";
         _loadout.AvailabilityOverride=null;
         _loadoutSelected.Add(SkillType.Xue); _loadoutSelected.Add(SkillType.Shi);
+        var saved = _ui.GetControls().ToArray();
+        _ui.GetControls().Clear();
+        var owned = new HashSet<SkillType> { SkillType.PlusAttack, SkillType.PlusDefence, SkillType.Xue, SkillType.Shi };
+        var inventory = new UICampaignSkillGrid(0, GraphicsDevice, _resources.Pixel, _resources.Font,
+            _resources.TitleFont, new CampaignNode { Name = "Rustblade Arsenal", SkillBudget = 8 },
+            new CampaignProgress { UnlockedSkills = owned }, new HashSet<SkillType>(), SkillFactory.SelectableSkills,
+            _resources.CaptionFont, _resources.LabelFont);
+        _ui.GetControls().Add(inventory);
+        if (inventory.VisibleSkills.Any(skill => !owned.Contains(skill)) || inventory.FocusSkill(SkillType.DoubleAttack))
+            throw new Exception("An unowned skill appeared in the campaign inventory.");
+        _ui.Draw(time);
+        _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero)); Save("loadout-owned");
+        inventory.SetCategory(SkillCategory.Control);
+        _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero)); Save("loadout-owned-control");
+        _ui.GetControls().Clear(); _ui.GetControls().AddRange(saved);
+        Console.WriteLine("Verified campaign inventory hides unowned skills without changing the duel pool.");
     }
 
     private void VerifyRenderedMotion(GameTime time, string name)

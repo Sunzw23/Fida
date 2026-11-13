@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -31,7 +32,7 @@ namespace Fida.UI
         {
             if (font == null || string.IsNullOrEmpty(text)) return text ?? string.Empty;
             GlyphSet glyphs = Cache.GetValue(font, static value => new GlyphSet(value));
-            StringBuilder result = null;
+            StringBuilder? result = null;
 
             for (int i = 0; i < text.Length; i++)
             {

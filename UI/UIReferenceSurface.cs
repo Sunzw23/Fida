@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using Fida.Logic;
 using Fida.UI.Campaign;
@@ -26,26 +26,31 @@ public sealed class UIReferenceSurface : UIControl
         var l = layout.Canvas;
         bool p = l.Portrait;
         UIPaper.Background(batch, batch.GraphicsDevice.Viewport);
+        // Same layered backdrop as the menu, settings and lobby surfaces.
+        UIPaper.Backdrop(batch, batch.GraphicsDevice.Viewport, time);
         UIPaper.Sheet(batch, p ? l.Rect(30, 30, 840, 135) : l.Rect(45, 30, 1830, 135), UITheme.Panel, 3, 9);
         string title = _screen switch { UIReferenceScreen.Rules => "Rules", UIReferenceScreen.Hosting => "Create room", UIReferenceScreen.Connecting => "Connecting", UIReferenceScreen.Connection => "Connection", _ => "Online" };
         Text(batch, title, l.Header, 65);
         if (_screen == UIReferenceScreen.Rules) { DrawRules(batch, layout); return; }
         if (_screen == UIReferenceScreen.Online)
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 245, 800, 420) : l.Rect(110, 265, 780, 790), UITheme.Panel, 4, 10);
-            UIPaper.Sheet(batch, p ? l.Rect(50, 755, 800, 650) : l.Rect(1030, 265, 780, 790), UITheme.Panel, 4, 10);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 245, 800, 420) : l.Rect(110, 265, 780, 790), UITheme.Panel, 4, 9);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 755, 800, 650) : l.Rect(1030, 265, 780, 790), UITheme.Panel, 4, 9);
             Rule(batch, p ? l.Rect(80, 720, 740, 1) : l.Rect(960, 290, 1, 710));
-            Text(batch, "Create room", p ? l.Rect(80, 280, 740, 80) : l.Rect(150, 630, 700, 90), 52, true);
+            Text(batch, "Create room", p ? l.Rect(80, 280, 740, 80) : l.Rect(150, 630, 700, 90), 42, true);
             Paragraph(batch, "Start a session and share its code.", p ? l.Rect(80, 390, 740, 90) : l.Rect(260, 745, 480, 110));
             if (!p)
             {
-                UIPaper.Sheet(batch,l.Rect(340,380,320,190),UITheme.AccentBlue,2,9);
-                UIPaperAvatar.Draw(batch,l.Rect(255,350,190,240));
-                UIPaperAvatar.Draw(batch,l.Rect(555,350,190,240),1);
-                batch.Draw(_resources.Pixel, l.Rect(465,445,90,15), UITheme.Ink);
-                batch.Draw(_resources.Pixel, l.Rect(502,408,15,90), UITheme.Ink);
+                // Was a fully saturated cyan block with ivory marks on it, which read as a
+                // glare next to the dark panel. Now the accent sheet is half-transparent
+                // over the panel and the marks are ink, so it stays a highlight, not a light.
+                UIPaper.Sheet(batch, l.Rect(340, 380, 320, 190), UITheme.AccentBlue * .34f, 2, 9);
+                UIPaperAvatar.Draw(batch, l.Rect(255, 350, 190, 240));
+                UIPaperAvatar.Draw(batch, l.Rect(555, 350, 190, 240), 1);
+                batch.Draw(_resources.Pixel, l.Rect(465, 445, 90, 15), UIPaper.Ink);
+                batch.Draw(_resources.Pixel, l.Rect(502, 408, 15, 90), UIPaper.Ink);
             }
-            Text(batch, "Join room", p ? l.Rect(80, 790, 740, 80) : l.Rect(1070, 630, 700, 90), 52,true);
+            Text(batch, "Join room", p ? l.Rect(80, 790, 740, 80) : l.Rect(1070, 630, 700, 90), 42,true);
             Paragraph(batch, RoomCodeRequired ? "Enter the code from your opponent." : "Connect to the configured server.",
                 p ? l.Rect(80, 900, 740, 80) : l.Rect(1180, 745, 480, 80));
             if (RoomCodeRequired)
@@ -55,20 +60,20 @@ public sealed class UIReferenceSurface : UIControl
         }
         if (_screen == UIReferenceScreen.Connection)
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 780) : l.Rect(540, 280, 1250, 570), UITheme.Panel, 4, 12);
-            Text(batch, "Connected", p ? l.Rect(80, 400, 740, 90) : l.Rect(600, 350, 1150, 90), 52, color: UITheme.AccentBlue);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 780) : l.Rect(540, 280, 1250, 570), UITheme.Panel, 4, 9);
+            Text(batch, "Connected", p ? l.Rect(80, 400, 740, 90) : l.Rect(600, 350, 1150, 90), 42, color: UITheme.AccentBlue);
             Paragraph(batch, "Campaign and Duel are available from the main menu.",
                 p ? l.Rect(80, 550, 740, 200) : l.Rect(600, 500, 1150, 170));
         }
         else if (_screen == UIReferenceScreen.Hosting)
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 260, 800, 1100) : l.Rect(220, 240, 1480, 820), UITheme.Panel, 4, 12);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 260, 800, 1100) : l.Rect(220, 240, 1480, 820), UITheme.Panel, 4, 9);
             Text(batch, "Room code", p ? l.Rect(80, 300, 740, 80) : l.Rect(600, 300, 720, 80), 38, true);
             Text(batch,"Share this code to invite your opponent.",p ? l.Rect(80,960,740,100) : l.Rect(460,820,1000,60),30,true,muted:true);
         }
         else
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 1040) : l.Rect(220, 240, 1480, 820), UITheme.Panel, 4, 12);
+            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 1040) : l.Rect(220, 240, 1480, 820), UITheme.Panel, 4, 9);
             for(int i=0;i<3;i++)
             {
                 float pulse = UIMotion.Reduced ? .75f : .65f + .25f * (float)Math.Sin(time.TotalGameTime.TotalSeconds*3-i*.8);
@@ -84,7 +89,7 @@ public sealed class UIReferenceSurface : UIControl
         if (!layout.Portrait) Rule(batch, l.Rect(500, 290, 1, 690));
         Rectangle area = layout.Content;
         var paper = area; paper.Inflate(24, 20);
-        UIPaper.Sheet(batch, paper, UIPaper.Face, 4, 10);
+        UIPaper.Sheet(batch, paper, UIPaper.Face, 4, 9);
         Text(batch, $"{_page + 1} / {Chapters.Length}", layout.Page, 30, true, muted: true);
         if (_page >= 3)
         {
@@ -169,3 +174,5 @@ public sealed class UIReferenceSurface : UIControl
         }
     }
 }
+
+

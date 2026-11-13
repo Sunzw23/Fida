@@ -1,4 +1,5 @@
-﻿// ResourceManager.cs 文件
+﻿#nullable enable
+// ResourceManager.cs 文件
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content; // 需要ContentManager
@@ -14,24 +15,29 @@ namespace Fida
         private GraphicsDevice _graphicsDevice;
 
         // 纹理字典，用于存储和管理所有加载的Texture2D
-        private Dictionary<string, Texture2D> _textures;
+        // 在 LoadContent 中初始化；在此之前不允许使用。
+        private Dictionary<string, System.Lazy<Texture2D>> _textures = null!;
 
         // 游戏字体，用于UI文本
-        public SpriteFont Font { get; private set; }
-        public SpriteFont CaptionFont { get; private set; }
-        public SpriteFont LabelFont { get; private set; }
+        // 由此类在 LoadContent() 中赋值，所有 UI 代码都把 Fida 字体当作非 null 使用。
+        public SpriteFont Font { get; private set; } = null!;
+        public SpriteFont CaptionFont { get; private set; } = null!;
+        public SpriteFont LabelFont { get; private set; } = null!;
 
         // IBM Plex Sans SemiBold for editorial headings; fall back to body font.
-        public SpriteFont TitleFont { get; private set; }
+        public SpriteFont TitleFont { get; private set; } = null!;
 
         // IBM Plex Sans Regular used by the zoomable campaign UI.
-        public SpriteFont MapFont { get; private set; }
+        public SpriteFont MapFont { get; private set; } = null!;
 
         // 单像素纹理，用于绘制矩形边框和填充
-        public Texture2D Pixel { get; private set; }
+        public Texture2D Pixel { get; private set; } = null!;
+
+        /// <summary>Procedural paper tooth, applied once per frame by the UI renderer.</summary>
+        public Effect PaperGrainEffect { get; private set; } = null!;
 
         /// <summary>Feathered strip for smooth rotated map connections.</summary>
-        public Texture2D AntialiasedLine { get; private set; }
+        public Texture2D AntialiasedLine { get; private set; } = null!;
 
         /// <summary>获取图形设备实例</summary>
         public GraphicsDevice GraphicsDevice => _graphicsDevice;
@@ -60,6 +66,9 @@ namespace Fida
 
             CaptionFont = contentManager.Load<SpriteFont>("ui_caption");
             LabelFont = contentManager.Load<SpriteFont>("ui_label");
+
+            // Paper grain is generated in the shader, so no grain texture is kept in memory.
+            PaperGrainEffect = contentManager.Load<Effect>("paper_grain");
 
             // Load the matching sans-serif title face; fall back safely if unavailable.
             try
@@ -91,15 +100,32 @@ namespace Fida
             Pixel = new Texture2D(_graphicsDevice, 1, 1);
             Pixel.SetData(new[] { Color.White });
             AntialiasedLine = CreateAntialiasedLineTexture();
-            _textures = new Dictionary<string, Texture2D>();
+            _textures = new Dictionary<string, System.Lazy<Texture2D>>();
             LoadTexture(contentManager, "cold_roster", "portraits/paper_roster");
+            LoadTexture(contentManager, "dialogue_mara", "portraits/dialogue_mara_concept");
             LoadTexture(contentManager, "paper_chapters", "paper/chapters");
-            UI.UIPaper.RegisterScenes(_graphicsDevice, GetTexture("paper_chapters"));
+            UI.UIPaper.RegisterScenes(_graphicsDevice, () => GetTexture("paper_chapters"));
+            LoadTexture(contentManager, "paper_missions", "paper/mission_locations_v2");
+            UI.UIPaper.RegisterMissionScenes(_graphicsDevice, () => GetTexture("paper_missions"));
+            LoadTexture(contentManager, "campaign_cutpaper", "paper/campaign_cutpaper_locations");
+            LoadTexture(contentManager, "campaign_cutpaper_extra", "paper/campaign_cutpaper_locations_extra");
+            UI.UIPaper.RegisterCutpaperScenes(_graphicsDevice, () => GetTexture("campaign_cutpaper"), () => GetTexture("campaign_cutpaper_extra"));
+            var campaignNodeAtlases = new System.Lazy<Texture2D>[5];
+            for (int i = 0; i < campaignNodeAtlases.Length; i++)
+            {
+                string key = $"campaign_nodes_{i + 1}";
+                LoadTexture(contentManager, key, $"paper/{key}");
+                campaignNodeAtlases[i] = _textures[key];
+            }
+            UI.UIPaper.RegisterCampaignNodes(_graphicsDevice, campaignNodeAtlases);
+            LoadTexture(contentManager, "route_locations", "paper/route_locations_concept");
+            UI.UIPaper.RegisterRouteScenes(_graphicsDevice, () => GetTexture("route_locations"));
             LoadTexture(contentManager, "paper_skins", "paper/skins");
             LoadTexture(contentManager, "paper_background", "paper/background");
-            LoadTexture(contentManager, "paper_main_art", "paper/main_art");
+            LoadTexture(contentManager, "paper_main_art", "paper/main_journey");
             LoadTexture(contentManager, "paper_battle", "paper/battle");
-            UI.UIPaper.RegisterMaterials(_graphicsDevice, GetTexture("paper_skins"), GetTexture("paper_background"), GetTexture("paper_battle"));
+            LoadTexture(contentManager, "victory_road", "paper/victory_road_concept");
+            UI.UIPaper.RegisterMaterials(_graphicsDevice, GetTexture("paper_skins"), () => GetTexture("paper_background"), () => GetTexture("paper_battle"));
 
         }
 
@@ -123,35 +149,31 @@ namespace Fida
             return texture;
         }
 
+        // Register assets without decoding every page's artwork at startup.
+        // ContentManager still owns each texture and loads it only once.
         private void LoadTexture(ContentManager contentManager, string name, string path)
         {
-            if (_textures.ContainsKey(name))
+            _textures[name] = new System.Lazy<Texture2D>(() =>
             {
-                // 可以选择抛出异常或仅输出警告，取决于你的需求
-                // Console.WriteLine($"Warning: Texture with name '{name}' already exists. Overwriting.");
-            }
-            try
-            {
-                Texture2D texture = contentManager.Load<Texture2D>(path);
-                _textures[name] = texture;
-            }
-            catch (ContentLoadException ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error loading texture '{path}': {ex.Message}");
-                // 你可能希望在这里抛出异常或处理加载失败的情况
-                throw new ContentLoadException($"Failed to load texture: {path}", ex);
-            }
+                try { return contentManager.Load<Texture2D>(path); }
+                catch (ContentLoadException ex)
+                {
+                    throw new ContentLoadException($"Failed to load texture: {path}", ex);
+                }
+            });
         }
 
         public Texture2D GetTexture(string name)
         {
-            if (_textures.TryGetValue(name, out Texture2D value))
+            if (_textures.TryGetValue(name, out var value))
             {
-                return value;
+                return value.Value;
             }
             else
             {
-                return null; // 返回 null 而不是抛出异常，允许缺失的纹理
+                // 未注册的纹理属于编程错误：调用方都会直接解引用返回值，
+                // 与其把 null 传下去，不如在此显式失败。
+                throw new System.InvalidOperationException($"Texture not registered: {name}");
             }
         }
 
@@ -162,14 +184,14 @@ namespace Fida
         public Texture2D GetPortrait(string portraitKey, bool isLocalPlayer)
         {
             if (!string.IsNullOrWhiteSpace(portraitKey) &&
-                _textures.TryGetValue($"portrait_{portraitKey}", out var portrait)) return portrait;
+                _textures.TryGetValue($"portrait_{portraitKey}", out var portrait)) return portrait.Value;
             return GetTexture("cold_roster");
         }
 
         /// <summary>
         /// 加载玩家头像纹理。如果加载失败，返回 null（不显示头像）。
         /// </summary>
-        public Texture2D LoadPortraitTexture(ContentManager contentManager, string path)
+        public Texture2D? LoadPortraitTexture(ContentManager contentManager, string path)
         {
             try
             {
@@ -193,9 +215,9 @@ namespace Fida
             // Textures and fonts are typically managed by ContentManager.
             // However, if they are created manually, they need to be disposed manually.
             Pixel?.Dispose();
-            Pixel = null;
+            Pixel = null!;
             AntialiasedLine?.Dispose();
-            AntialiasedLine = null;
+            AntialiasedLine = null!;
         }
     }
 }
