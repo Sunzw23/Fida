@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../Fida.csproj" /></ItemGroup>
+  <Target Name="CopyAudio" AfterTargets="Build">
+    <ItemGroup><AudioAssets Include="../../Content/audio/**/*.wav" /></ItemGroup>
+    <Copy SourceFiles="@(AudioAssets)" DestinationFiles="@(AudioAssets->'$(TargetDir)Content/audio/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

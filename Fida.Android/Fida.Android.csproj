@@ -30,10 +30,12 @@
       <GlobalPropertiesToRemove>RuntimeIdentifier;RuntimeIdentifiers;SelfContained</GlobalPropertiesToRemove>
     </ProjectReference>
     <PackageReference Include="MonoGame.Framework.Android" Version="3.8.4.1" />
+    <PackageReference Include="Gum.MonoGame" Version="2026.7.22.1" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.4.1" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Agent\AgentManager.cs" Link="Agent\AgentManager.cs" />
+    <Compile Include="..\Audio\**\*.cs" LinkBase="Audio" />
     <Compile Include="..\Logic\AgentPlayerController.cs" Link="Logic\AgentPlayerController.cs" />
     <Compile Include="..\Network\**\*.cs" LinkBase="Network" />
     <Compile Include="..\Scene\**\*.cs" LinkBase="Scene" />
@@ -60,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\drawable\fida_icon.png" />
+    <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\Gum\**\*" Link="Content\Gum\%(RecursiveDir)%(Filename)%(Extension)" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\campaign\**\*.json" Link="Content\campaign\%(RecursiveDir)%(Filename)%(Extension)" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\Content\agent-settings.json" Link="Content\agent-settings.json" />
     <AndroidAsset Include="$(MSBuildThisFileDirectory)..\gametext.json" Link="Content\gametext.json" />
