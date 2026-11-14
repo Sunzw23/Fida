@@ -105,6 +105,7 @@ namespace Fida.Scene
             ResetPresentation();
             IsInitialized = true;
             _gameManager.Initialize(players);
+            SkillCodex.RecordPlayers(players, "duel");
             _uiManager.BuildPlayingUI(_gameManager);
 
             // 如果没有显式初始化控制器，使用默认的单机模式
@@ -132,6 +133,7 @@ namespace Fida.Scene
             IsInitialized = true;
             _gameManager.Initialize(setup.Players, setup.Groups);
             _campaignEncounter.Configure(setup);
+            RecordEncounter(setup.Node.Id, setup.Players.Concat(setup.Reinforcements));
             _uiManager.BuildPlayingUI(_gameManager);
         }
 
@@ -160,6 +162,7 @@ namespace Fida.Scene
                         : CreateCampaignController(player.PlayerId, _campaignSetup);
             IsInitialized = true;
             _campaignEncounter.Configure(_campaignSetup, snapshot.CampaignRound);
+            RecordEncounter(template.Node.Id, _gameManager.Players.Concat(_campaignSetup.Reinforcements));
             _uiManager.BuildPlayingUI(_gameManager);
             _gameManager.ResumeRestoredInputBoundary();
         }
@@ -168,11 +171,15 @@ namespace Fida.Scene
         {
             _gameManager.AddPlayer(player, groupId);
             _controllers[player.PlayerId] = new RemotePlayerController(player.PlayerId);
+            RecordEncounter(_campaignSetup?.Node.Id ?? "battle", new[] { player });
             if (_campaignSetup != null)
             {
                 _uiManager.RebuildPlayingUI(_gameManager);
             }
         }
+
+        private static void RecordEncounter(string source, IEnumerable<Player> players) =>
+            SkillCodex.RecordPlayers(players, source);
 
         private IPlayerController CreateCampaignController(int playerId, CampaignBattleSetup setup)
         {
@@ -203,6 +210,7 @@ namespace Fida.Scene
                     _campaignSetup.AgentTypes.ContainsKey(player.PlayerId)
                     ? new RemotePlayerController(player.PlayerId)
                     : CreateCampaignController(player.PlayerId, _campaignSetup);
+            RecordEncounter(_campaignSetup.Node.Id, players);
             _uiManager.RebuildPlayingUI(_gameManager);
             _uiManager.PlayReinforcementEntrance(players.Select(player => player.PlayerId));
         }
