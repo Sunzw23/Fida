@@ -10,6 +10,7 @@
 | [Audio.md](./Audio.md) | 第一版原创音乐、音效、音量设置与素材生成／验证 |
 | [PaperShader.md](./PaperShader.md) | 纸纹是否改用 shader：可行性、实测成本、分级方案与移动端限制 |
 | [Refactoring.md](./Refactoring.md) | 模块化重构探索：现状实测、12 项问题清单、目标分层与分阶段路线 |
+| [RulesCodex.md](./RulesCodex.md) | Rules 重设计：规则手册 + 每技能一页的技能图鉴、发现规则与实现说明 |
 
 ## 项目简介
 

@@ -55,13 +55,28 @@ a real chapter route, and lobby before/after local readiness. This checks actual
 MonoGame rendering rather than reproducing the concept art. Android packaging
 and shared code compile checks do not replace physical touch/device testing.
 
-## Rules and online reference screens
+## Rules book and online reference screens
 
-Rules uses the same header/back geometry as Settings, with five directly
-selectable chapters. Instructions and ordinary-size numeric examples are text
-rows; there is no display-size numeric artwork. Skill pages use the canonical
-skill names and the same descriptions as the loadout details. Portrait windows
-place navigation above the reference and show skills in a single column.
+Rules is a small book: three reference pages (a turn, number effects, the skill
+stages), a skill index, then one page per discovered skill. Page numbering is
+`3 + 1 + N` and belongs to `UI/Rules/RulesBook.cs`. Discovery is owned (campaign
+unlocks in either lane) plus encountered (the codex, and the skills implied by
+finished campaign nodes); undiscovered skills never appear.
+
+A skill page carries four blocks: kicker (family, cost, NEW), medal and name, one
+effect sentence with one worked example between hairlines, and a single footnote
+line with stage, limit and source. The timing page lists the eight stages and
+links the discovered skills that fire at each; those names open their page.
+
+The index is a paginated grid of paper tiles (4x3 landscape, 2x5 portrait): filled
+tiles are owned, faded ones were only seen, and a cyan dot marks an unread page.
+Chips jump between the four chapters, and left/right turn pages in every input
+mode. Portrait windows keep the same structure with two chip rows.
+
+`SkillCodex` persists discovery to `%LOCALAPPDATA%/Fida/skill-codex.json` by skill
+name, so enum reordering cannot break a save. It is append-only; campaign
+completion is derived at read time instead of migrating old saves. The rules
+screen only reads it.
 
 Online separates Create room and Join room. A four-cell code field retains the
 existing letters/digits keyboard handling, length limit and Android keyboard.
@@ -71,10 +86,12 @@ Direct-server sessions hide the relay-code input and can join without a code.
 Connected, hosting and connecting screens share the header and actions; status
 updates preserve the existing named-label interfaces. Connection messages wrap.
 
-Use `--reference-only` in UiPreview to render every Rules page plus online,
-connected, hosting and connecting screens. It exercises incomplete/complete code
-entry, length limiting, deletion, Enter submission and Join activation using the
-actual controls, without opening network connections or changing user saves.
+Use `--reference-only` in UiPreview to render the book — reference pages, the
+index (both index pages when the profile has more than twelve skills), the first
+and last skill page, and the empty profile — plus online, connected, hosting and
+connecting screens. It exercises incomplete/complete code entry, length limiting,
+deletion, Enter submission and Join activation using the actual controls, without
+opening network connections or changing user saves.
 
 Campaign chapter cards now include their order, real completion progress and a
 miniature of their actual mission graph. The selected chapter pane previews that
