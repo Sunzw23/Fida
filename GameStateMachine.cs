@@ -22,6 +22,7 @@ namespace Fida
         private State _rulesReturnState = State.MainMenu;
         public State RulesReturnState => _rulesReturnState;
         public int RulesPage { get; private set; }
+        public int RulesIndexPage { get; private set; }
         /// <summary>Outcome of the last finished battle, produced by the session manager for the result screen. Null until a battle ends.</summary>
         public Logic.BattleOutcome? LastBattleOutcome { get; private set; }
 
@@ -117,18 +118,20 @@ namespace Fida
             if (CurrentState == State.Rules) return;
             _rulesReturnState = CurrentState;
             RulesPage = 0;
+            RulesIndexPage = 0;
             SwitchToState(State.Rules);
         }
 
         public void CloseRules() => SwitchToState(
             _rulesReturnState == State.Rules ? State.MainMenu : _rulesReturnState);
 
-        public void SetRulesPage(int page)
+        public void SetRulesPage(int page, int indexPage = 0)
         {
             if (CurrentState != State.Rules) return;
-            RulesPage = (page % UIManager.RulesPageCount + UIManager.RulesPageCount) %
-                UIManager.RulesPageCount;
-            _uiManager.BuildRulesScreen(RulesPage);
+            int total = Math.Max(1, _uiManager.RulesPageCount);
+            RulesPage = (page % total + total) % total;
+            RulesIndexPage = indexPage;
+            _uiManager.BuildRulesScreen(RulesPage, RulesIndexPage);
         }
 
         public void ReturnFromSettings() => SwitchToState(

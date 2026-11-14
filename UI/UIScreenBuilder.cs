@@ -61,12 +61,11 @@ namespace Fida.UI
             BuildEditorialSettings();
         }
 
-        /// <summary>Plain, chapter-based reference aligned with the settings layout.</summary>
-        public void BuildRulesScreen(int page = 0)
+        /// <summary>Rules book: three reference pages, the skill index, then one page per discovered skill.</summary>
+        public void BuildRulesScreen(int page = 0, int indexPage = 0)
         {
             Clear();
-            page = (page % UIManager.RulesPageCount + UIManager.RulesPageCount) % UIManager.RulesPageCount;
-            BuildReferenceRules(page);
+            BuildRulesPage(page, indexPage);
         }
 
         /// <summary>构建在线菜单</summary>

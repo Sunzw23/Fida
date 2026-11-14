@@ -3,6 +3,7 @@ using Fida.Campaign;
 using Fida.Logic;
 using Fida.UI;
 using Fida.UI.Campaign;
+using Fida.UI.Rules;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -63,6 +64,7 @@ sealed class PreviewGame : Game
         VerifyGumModalLayouts();
         VerifyPageTransitions();
         VerifyCampaignLoadoutTransition();
+        SeedRulesPreview();
         Build();
     }
 
@@ -103,7 +105,7 @@ sealed class PreviewGame : Game
         {
             case 0: _ui.BuildMainMenu(); break;
             case 1: _ui.BuildSettingsScreen(); break;
-            case 2: _ui.BuildRulesScreen(1); break;
+            case 2: _ui.BuildRulesScreen(); break;
             case 3: _ui.BuildLevelSelect(); VerifyCampaignActions(); break;
             case 4:
                 var selected = new HashSet<SkillType> { SkillType.Xue,SkillType.Shi };
@@ -304,17 +306,8 @@ sealed class PreviewGame : Game
             string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting", "paused", "victory", "defeat", "duel-draft", "duel-result" }[_screen];
             Save(name);
             if (_screen == 16) SaveButtonStates(time);
-            if (_screen == 2)
-            {
-                for (int page = 0; page < UIManager.RulesPageCount; page++)
-                {
-                    _ui.BuildRulesScreen(page);
-                    _ui.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
-                    _ui.Draw(time);
-                    _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero));
-                    Save($"rules-{page + 1}");
-                }
-            }
+            if (_screen == 2) SaveRulesPages(time);
+
             if (_screen == 3)
             {
                 var map = (UICampaignMap)_ui.GetControls().Single(c => c.Name == "campaign_map");
@@ -347,9 +340,118 @@ sealed class PreviewGame : Game
     private static MouseState MapMouse(Point p, ButtonState button) => new(p.X,p.Y,0,button,
         ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
 
-    private void SaveButtonStates(GameTime time)
+    private static readonly SkillType[] PreviewOwned =
     {
-        if (_width < _height) return;
+        SkillType.PlusAttack, SkillType.DoubleAttack, SkillType.PlusDefence,
+        SkillType.DoubleDefence, SkillType.DoubleHealth, SkillType.Xue
+    };
+
+    private static readonly SkillType[] PreviewSeen =
+    {
+        SkillType.Long, SkillType.Bian, SkillType.Shi, SkillType.Tong,
+        SkillType.Mo, SkillType.Di, SkillType.Shen, SkillType.Xian
+    };
+
+    /// <summary>Deterministic discovery for screenshots; never reads or writes the player's saves.</summary>
+    private void SeedRulesPreview()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "fida-ui-preview-" + Environment.ProcessId);
+        Directory.CreateDirectory(directory);
+        CampaignRuntime.UseStore(CampaignRuntime.Local,
+            new CampaignProgressStore(Path.Combine(directory, "local.json")));
+        CampaignRuntime.UseStore(CampaignRuntime.Online,
+            new CampaignProgressStore(Path.Combine(directory, "online.json")));
+        foreach (var skill in PreviewOwned) CampaignRuntime.Local.Progress.UnlockedSkills.Add(skill);
+
+        SkillCodex.UseStore(null);
+        SkillCodex.RecordSkills(PreviewOwned.Concat(PreviewSeen).Distinct(), "duel");
+        foreach (var skill in PreviewOwned) SkillCodex.MarkRead(skill);
+        SkillCodex.MarkRead(SkillType.Long);
+    }
+
+    private void SaveRulesPages(GameTime time)
+    {
+        var book = RulesBook.Current();
+        var shots = new List<(string Name, int Page, int Index)>
+        {
+            ("rules-1", 0, 0), ("rules-2", 1, 0), ("rules-3", 2, 0),
+            ("rules-4", RulesBook.IndexPage, 0)
+        };
+        if (book.Entries.Count > 0) shots.Add(("rules-5", RulesBook.PageForIndex(0), 0));
+        if (book.Entries.Count > 1) shots.Add(("rules-6", RulesBook.PageForIndex(book.Entries.Count - 1), 0));
+        if (book.Entries.Count > 12) shots.Add(("rules-index-2", RulesBook.IndexPage, 1));
+
+        foreach (var (name, page, index) in shots)
+        {
+            _ui.BuildRulesScreen(page, index);
+            _ui.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
+            _ui.Draw(time);
+            _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero));
+            Save(name);
+        }
+
+        VerifyRulesStructure(book);
+
+        // Empty discovery is a real state for a fresh profile; keep its copy honest.
+        CampaignRuntime.UseStore(CampaignRuntime.Local,
+            new CampaignProgressStore(Path.Combine(Path.GetTempPath(), "fida-ui-empty-" + Environment.ProcessId + ".json")));
+        CampaignRuntime.UseStore(CampaignRuntime.Online,
+            new CampaignProgressStore(Path.Combine(Path.GetTempPath(), "fida-ui-empty-online-" + Environment.ProcessId + ".json")));
+        SkillCodex.UseStore(null);
+        _ui.BuildRulesScreen(RulesBook.IndexPage);
+        _ui.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
+        _ui.Draw(time); _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero));
+        Save("rules-index-empty");
+        SeedRulesPreview();
+    }
+
+    private void VerifyRulesStructure(RulesBook book)
+    {
+        int total = _ui.RulesPageCount;
+        if (total != RulesBook.IndexPage + 1 + book.Entries.Count)
+            throw new Exception("Rules page count does not match discovered skills.");
+        var owned = book.Entries.TakeWhile(book.Owns).Count();
+        if (book.Entries.Skip(owned).Any(book.Owns))
+            throw new Exception("Owned skills must come before only-seen skills.");
+        if (book.SkillAtPage(RulesBook.PageForIndex(0)) != book.Entries.FirstOrDefault())
+            throw new Exception("Skill page mapping is broken.");
+
+        _ui.BuildRulesScreen(RulesBook.IndexPage);
+        int perPage = new UIRulesLayout(_width, _height).IndexColumns * new UIRulesLayout(_width, _height).IndexRows;
+        int tiles = _ui.GetControls().OfType<UISkillCodexTile>().Count();
+        if (tiles != Math.Min(perPage, book.Entries.Count))
+            throw new Exception($"Index page built {tiles} tiles, expected {Math.Min(perPage, book.Entries.Count)}.");
+        if (_ui.GetButtonByName("rulesTile0") == null)
+            throw new Exception("Index tiles are not addressable by page binding.");
+        foreach (int reference in new[] { 0, 1, 2 })
+        {
+            _ui.BuildRulesScreen(reference);
+            for (int chip = 0; chip < RulesBook.Chapters.Length; chip++)
+                if (_ui.GetButtonByName($"rulesChapter{chip}") == null)
+                    throw new Exception($"Rules page {reference} is missing chapter chip {chip}.");
+            if (_ui.GetButtonByName("prevPage") == null || _ui.GetButtonByName("nextPage") == null)
+                throw new Exception($"Rules page {reference} is missing page navigation.");
+        }
+        _ui.BuildRulesScreen(RulesBook.IndexPage);
+
+        _ui.BuildRulesScreen(RulesBook.TimingPage);
+        if (!_ui.GetControls().OfType<UIRulesTimingLink>().Any())
+            throw new Exception("Timing page has no skill links for discovered skills.");
+        if (!_ui.GetControls().OfType<UIRulesTimingLink>().Any(link =>
+                link.Name.StartsWith("rulesLink") &&
+                int.TryParse(link.Name["rulesLink".Length..], out int entry) &&
+                entry >= 0 && entry < book.Entries.Count))
+            throw new Exception("Timing links are not addressable by page binding.");
+
+        _ui.BuildRulesScreen(RulesBook.PageForIndex(0));
+        if (_ui.GetControlByName<UISkillCodexPage>("rules_skill") == null)
+            throw new Exception("Skill pages do not build their own surface.");
+
+        Console.WriteLine($"Verified {total} rules pages for {book.Entries.Count} discovered skills.");
+    }
+
+    private void SaveButtonStates(GameTime time)
+    {        if (_width < _height) return;
         GraphicsDevice.Clear(UITheme.BgTop);
         using var batch = new SpriteBatch(GraphicsDevice);
         batch.Begin(samplerState: SamplerState.LinearClamp);

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Fida.Logic;
 using Fida.Campaign;
 using Fida.UI.Campaign;
+using Fida.UI.Rules;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -30,7 +31,8 @@ namespace Fida.UI
     /// </summary>
     public class UIManager : System.IDisposable
     {
-        public const int RulesPageCount = 5;
+        /// <summary>Three reference pages, one skill index, then one page per discovered skill.</summary>
+        public int RulesPageCount => RulesBook.Current().TotalPages;
 
         private readonly GraphicsDevice _graphicsDevice;
         private readonly SpriteBatch _spriteBatch;
@@ -214,7 +216,8 @@ namespace Fida.UI
             foreach(var control in _uiControls) if(control is UIPaperPause pause) pause.Backdrop=_pausedBattleFrame;
         }
         public void BuildSettingsScreen() => _screenBuilder.BuildSettingsScreen();
-        public void BuildRulesScreen(int page = 0) => _screenBuilder.BuildRulesScreen(page);
+        public void BuildRulesScreen(int page = 0, int indexPage = 0) =>
+            _screenBuilder.BuildRulesScreen(page, indexPage);
         public void BuildOnlineMenu(bool connected = false) => _screenBuilder.BuildOnlineMenu(connected);
         public void BuildHostingScreen(string statusText, string roomCode = "") => _screenBuilder.BuildHostingScreen(statusText, roomCode);
         public void BuildConnectingScreen(string statusText) => _screenBuilder.BuildConnectingScreen(statusText);

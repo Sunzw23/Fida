@@ -7,24 +7,6 @@ namespace Fida.UI;
 
 public partial class UIScreenBuilder
 {
-    private void BuildReferenceRules(int page)
-    {
-        var layout = new UIReferenceLayout(_resourceManager.GraphicsDevice.Viewport);
-        _uiControls.Add(new UIReferenceSurface(_resourceManager, UIReferenceScreen.Rules, page) { Name = "rules_content" });
-        EditorialBack("back");
-        for (int i = 0; i < UIReferenceSurface.Chapters.Length; i++)
-        {
-            var button = EditorialButton($"rulesPage{i}", UIReferenceSurface.Chapters[i], layout.Chapter(i), active: i == page, left: true);
-            button.Navigation = true;
-            button.TextLineHeight = 38;
-        }
-        _uiControls.Add(new UIIconButton(91, layout.Previous, UIIconButton.IconKind.PreviousPage, _resourceManager.Pixel, _resourceManager.Font)
-        { Name = "prevPage", FocusIndex = 7 });
-        _uiControls.Add(new UIIconButton(92, layout.Next, UIIconButton.IconKind.NextPage, _resourceManager.Pixel, _resourceManager.Font)
-        { Name = "nextPage", FocusIndex = 8 });
-        EditorialFocus();
-    }
-
     private void BuildReferenceOnline(bool connected)
     {
         var layout = new UIReferenceLayout(_resourceManager.GraphicsDevice.Viewport);

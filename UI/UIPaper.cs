@@ -450,15 +450,18 @@ public static class UIPaper
         Sheet(new Vector2(11, 10), .016f, .10f);
         Sheet(Vector2.Zero, 0f, 0f);
     }
-    public static void Medal(SpriteBatch batch, Rectangle bounds)
+    public static void Medal(SpriteBatch batch, Rectangle bounds) => Medal(batch, bounds, Face);
+
+    /// <summary>A tinted seal, for medallions that sit on paper rather than on the dark background.</summary>
+    public static void Medal(SpriteBatch batch, Rectangle bounds, Color color)
     {
         var texture = Get(batch.GraphicsDevice).Seal;
         PaperShadow((offset, alpha) => batch.Draw(texture, bounds.Location.ToVector2() + offset,
             null, Color.Black * alpha, 0, Vector2.Zero, new Vector2(bounds.Width / (float)texture.Width,
             bounds.Height / (float)texture.Height), SpriteEffects.None, 0), 3);
         var lit = bounds; lit.Offset(-1, -1);
-        batch.Draw(texture, lit, LitEdge(Face));
-        batch.Draw(texture, bounds, Face);
+        batch.Draw(texture, lit, LitEdge(color));
+        batch.Draw(texture, bounds, color);
     }
 
     public static void Button(SpriteBatch batch, Rectangle bounds, Color color, float hover, float press,

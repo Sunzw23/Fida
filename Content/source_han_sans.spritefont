@@ -28,6 +28,7 @@
       <CharacterRegion><Start>&#8226;</Start><End>&#8226;</End></CharacterRegion>
       <CharacterRegion><Start>&#8230;</Start><End>&#8230;</End></CharacterRegion>
       <CharacterRegion><Start>&#8722;</Start><End>&#8722;</End></CharacterRegion>
+      <CharacterRegion><Start>&#8594;</Start><End>&#8594;</End></CharacterRegion>
     </CharacterRegions>
 
   </Asset>
