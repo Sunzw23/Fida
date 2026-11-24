@@ -21,6 +21,10 @@ namespace Fida.Logic
         public int[] Numbers {get; private set; } = [1, 1];
         public int Health { get; set; } = 11; // 玩家生命值
         public int AttacksReceivedThisTurn { get; private set; }
+        /// <summary>Campaign passive: blocks the first incoming attack of a turn.</summary>
+        public bool WardsFirstHit { get; set; }
+        /// <summary>Campaign passive: the next damaging attack lands twice.</summary>
+        public bool DoubleStrikeArmed { get; set; }
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
         public IEnumerator<Skill> GetSkillsByTrigger(SkillTrigger trigger)

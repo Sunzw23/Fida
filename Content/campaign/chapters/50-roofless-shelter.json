@@ -1,0 +1,447 @@
+[
+  {
+    "id": "WS1",
+    "chapter": "The Roofless Shelter",
+    "name": "The Queue at the Shelter",
+    "story": "A queue stands where the roof used to be, and it has not moved since morning.",
+    "tier": 3,
+    "vows": [
+      "outnumbered"
+    ],
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 220,
+    "parents": [
+      "D2",
+      "E2"
+    ],
+    "requiredCompletedParents": 2,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Waiting Traveller",
+        "health": 6,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Porter",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Porter",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Porter",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The queue starts at a cracked post and ends at a door with no roof above it. Nobody has moved since morning."
+      },
+      {
+        "speaker": "Waiting Traveller",
+        "text": "I am first. I have been first since the second day, and I am not moving for anyone."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith sets his pack down behind the last porter and stands in line. The porters lift their loads and set them down again."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The line closes where Arith stood. The traveller at the front looks back once, then faces the door again."
+      },
+      {
+        "speaker": "Waiting Traveller",
+        "text": "If it opens, call my name first. I have been here long enough."
+      }
+    ]
+  },
+  {
+    "id": "WS2",
+    "chapter": "The Roofless Shelter",
+    "name": "One More Turn",
+    "story": "The queue offers Arith one more turn at the front, if he comes to it with nobody and nothing.",
+    "tier": 4,
+    "vows": [
+      "bare_hands",
+      "alone"
+    ],
+    "skillBudget": 0,
+    "mapX": 820,
+    "mapY": 220,
+    "companions": [],
+    "parents": [
+      "WS1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Waiting Traveller",
+        "health": 6,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Porter",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Porter",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Waiting Traveller",
+        "text": "One more turn. You go up alone, and you carry nothing in your hands."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith sets his pack against the post and steps away from the others. His hands stay open at his sides."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The porters step back to let him through. The door is closer than it was, and still shut."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The turn ends at the door. Arith puts his palm flat on the wood and leans until his arm shakes."
+      },
+      {
+        "speaker": "Waiting Traveller",
+        "text": "Come back at first light. I will keep the next turn for you."
+      }
+    ]
+  },
+  {
+    "id": "WS3",
+    "chapter": "The Roofless Shelter",
+    "name": "The Weight",
+    "story": "The ferry master weighs every traveller, and offers to carry what is too heavy.",
+    "tier": 4,
+    "vows": [
+      "alone",
+      "wounded"
+    ],
+    "playerHealth": 8,
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 220,
+    "companions": [],
+    "parents": [
+      "WS2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Seng"
+    ],
+    "reinforcementAfterEnemyDeaths": 2,
+    "enemies": [
+      {
+        "name": "Ferry Master",
+        "health": 10,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Seng",
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Hand",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Hand",
+        "health": 5,
+        "number0": 2,
+        "number1": 2
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Hand",
+        "health": 4,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xue"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Ferry Master",
+        "text": "Put it all on the scale. Everything you mean to carry across goes on the scale first."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith steps onto the plate. The needle swings past the mark and stays there."
+      },
+      {
+        "speaker": "Ferry Master",
+        "text": "I can take the weight. It goes into the boat, not into you."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The ferry master writes the number in a small book and closes it. Arith lifts his own weight again and carries it down to the water."
+      },
+      {
+        "speaker": "Ferry Master",
+        "text": "You will feel it at the far bank. Come back if you want it carried the rest of the way."
+      }
+    ]
+  },
+  {
+    "id": "WS4",
+    "chapter": "The Roofless Shelter",
+    "name": "The Bench Repaired",
+    "story": "Someone is mending one end of the white bench, and the shelter will not let the work finish.",
+    "tier": 3,
+    "vows": [
+      "outnumbered"
+    ],
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 420,
+    "parents": [
+      "D2",
+      "E2"
+    ],
+    "requiredCompletedParents": 2,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Carpenter",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Helper",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Helper",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Bench Warden",
+        "health": 3,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A carpenter kneels at the end of the white bench with a new plank across his knees. Three helpers hold the old boards down."
+      },
+      {
+        "speaker": "Carpenter",
+        "text": "Every time I set the last nail, someone sits on it. Hold them back a moment longer."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith stands at the end of the bench with his back to the queue. The queue comes anyway."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The nail goes in. The bench sits level, and the queue takes the repaired end as if it had always been there."
+      },
+      {
+        "speaker": "Carpenter",
+        "text": "Do not let them move it. Not until the joint sets."
+      }
+    ]
+  },
+  {
+    "id": "WS5",
+    "chapter": "The Roofless Shelter",
+    "name": "Two Coats",
+    "story": "Two coats lie on the repaired bench, and the rain has not touched either of them.",
+    "tier": 4,
+    "vows": [
+      "outnumbered",
+      "wounded"
+    ],
+    "playerHealth": 8,
+    "skillBudget": 3,
+    "mapX": 820,
+    "mapY": 420,
+    "parents": [
+      "WS4"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Carpenter",
+        "health": 8,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Dao"
+        ]
+      },
+      {
+        "name": "Helper",
+        "health": 5,
+        "number0": 3,
+        "number1": 3,
+        "skills": [
+          "DoubleAttack"
+        ]
+      },
+      {
+        "name": "Helper",
+        "health": 5,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Helper",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Two coats on the bench. One is folded small, the way a coat is folded when its owner means to come back for it."
+      },
+      {
+        "speaker": "Helper",
+        "text": "Do not touch the folded one. He will want it dry."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith sits at the open end of the bench. He keeps his hands off the folded coat."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith folds the open coat and lays it beside the other. The two are the same size."
+      },
+      {
+        "speaker": "Helper",
+        "text": "Leave them both. He will come back for his, and then I will know which one is mine."
+      }
+    ]
+  },
+  {
+    "id": "WS6",
+    "chapter": "The Roofless Shelter",
+    "name": "Fare for One",
+    "story": "The ferry takes one passenger, and the ferryman has not reached the far bank in years.",
+    "tier": 4,
+    "vows": [
+      "bare_hands",
+      "alone"
+    ],
+    "skillBudget": 0,
+    "mapX": 1320,
+    "mapY": 420,
+    "companions": [],
+    "parents": [
+      "WS5"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Dao"
+    ],
+    "enemies": [
+      {
+        "name": "Ferryman",
+        "health": 9,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Oar",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Dao"
+        ]
+      },
+      {
+        "name": "Oar",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Ferryman",
+        "text": "Fare for one. There is room for one in the boat, and the water does not ask who."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith steps down into the boat. The ferryman pushes off without looking at the shore."
+      },
+      {
+        "speaker": "Ferryman",
+        "text": "Sit in the middle and do not trail your hand in the water. We are close now."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The current turns the boat and sets it back against the same post. The ferryman ships the oars."
+      },
+      {
+        "speaker": "Ferryman",
+        "text": "Same time tomorrow. If you find the far bank before I do, wait for me there."
+      }
+    ]
+  }
+]

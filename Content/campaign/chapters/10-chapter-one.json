@@ -1,7 +1,7 @@
 [
   {
     "id": "A1",
-    "chapter": "Chapter I",
+    "chapter": "Chapter I - The Wall",
     "name": "Rustblade Arsenal",
     "story": "A smith sharpens a sword for someone who has not come.",
     "skillBudget": 3,
@@ -56,7 +56,7 @@
   },
   {
     "id": "A2",
-    "chapter": "Chapter I",
+    "chapter": "Chapter I - The Wall",
     "name": "White Stone Gate",
     "story": "The white gate admits only those who can name their destination.",
     "skillBudget": 3,
@@ -106,7 +106,7 @@
   },
   {
     "id": "A3",
-    "chapter": "Chapter I",
+    "chapter": "Chapter I - The Wall",
     "name": "Silent Hospice",
     "story": "The hospice keeps its sleepers undisturbed, even when they want to wake.",
     "skillBudget": 3,
@@ -161,7 +161,7 @@
   },
   {
     "id": "AG",
-    "chapter": "Chapter I",
+    "chapter": "Chapter I - The Wall",
     "name": "The Nameless General",
     "story": "The General offers shelter, but will not open the road beyond it.",
     "skillBudget": 4,

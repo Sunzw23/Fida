@@ -11,7 +11,9 @@
 | [PaperShader.md](./PaperShader.md) | 纸纹是否改用 shader：可行性、实测成本、分级方案与移动端限制 |
 | [Refactoring.md](./Refactoring.md) | 模块化重构探索：现状实测、12 项问题清单、目标分层与分阶段路线 |
 | [RulesCodex.md](./RulesCodex.md) | Rules 重设计：规则手册 + 每技能一页的技能图鉴、发现规则与实现说明 |
-| [CampaignExpansion.md](./CampaignExpansion.md) | 战役扩张设计：支线章节与冷色配色、四档难度与誓约、技能唯一来源（P0/P1 与第一章支线已落地） |
+| [CampaignExpansion.md](./CampaignExpansion.md) | 战役扩张设计：13 条支线章节与冷色配色、四档难度与誓约、20 个技能唯一来源（全部已落地） |
+| [CompanionSelectUI.md](./CompanionSelectUI.md) | 同伴名册界面：立绘名册、队伍条、输入与扩展方式 |
+| [CompanionAbilities.md](./CompanionAbilities.md) | 同伴能力：四人四种打法（自适应智能、双段攻击、条件免伤、召唤循环）与实现清单 |
 
 ## 项目简介
 

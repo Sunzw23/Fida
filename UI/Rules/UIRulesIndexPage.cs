@@ -43,10 +43,6 @@ public sealed class UIRulesIndexPage : UIControl
                 empty, 30, scale, UIPaper.MutedInk);
         }
 
-        if (_book.Entries.Count > 0)
-            UIRulesText.Paragraph(batch, _resources.CaptionFont,
-                "Filled = yours · faded = seen only", layout.IndexLegend, 22, scale, UIPaper.MutedInk);
-
         if (_pageCount > 1)
             UIRulesText.Line(batch, _resources.CaptionFont, $"{_indexPage + 1} / {_pageCount}",
                 layout.IndexLabel, 22, scale, UIPaper.MutedInk, centered: true);

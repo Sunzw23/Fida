@@ -14,9 +14,7 @@
     "parents": [
       "P"
     ],
-    "rewards": [
-      "PlusAttack"
-    ],
+    "rewards": [],
     "tutorialBriefing": "Choose two different numbers. Their sum replaces your first number; keep only its last digit.",
     "tutorialRule": "TURN 01  /  Choose two numbers. Their sum becomes your first number.",
     "enemies": [
@@ -61,9 +59,7 @@
       "T01"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "PlusDefence"
-    ],
+    "rewards": [],
     "tutorialBriefing": "Equip a skill within the SP budget. Skills trigger automatically when their conditions are met.",
     "tutorialRule": "LOADOUT  /  SP is your skill budget. Skills trigger automatically when their condition is met.",
     "enemies": [
@@ -110,9 +106,7 @@
       "T02"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "DoubleHealth"
-    ],
+    "rewards": [],
     "tutorialBriefing": "Watch for reinforcement arrivals. Defeat the entire hostile squad to open the road.",
     "tutorialRule": "FIELD  /  Defeat every enemy. Reinforcements may join before the encounter ends.",
     "isBoss": true,

@@ -97,10 +97,6 @@ public sealed class UIRulesLayout
         ? Canvas.Rect(430, 415, 290, 32)
         : Canvas.Rect(1400, 385, 325, 36);
 
-    public Rectangle IndexLegend => Portrait
-        ? Canvas.Rect(80, 1190, 210, 72)
-        : Canvas.Rect(195, 872, 620, 64);
-
     public int IndexColumns => Portrait ? 2 : 4;
     public int IndexRows => Portrait ? 5 : 3;
 

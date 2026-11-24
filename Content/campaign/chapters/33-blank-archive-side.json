@@ -1,0 +1,410 @@
+[
+  {
+    "id": "ES1",
+    "chapter": "Chapter III - The Missing Page",
+    "name": "What Was Written Over",
+    "story": "A page was scraped clean and written over, and the older text keeps rising between the lines.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 220,
+    "parents": [
+      "E2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Margin Warden",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Erased Clerk",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Bian"
+        ]
+      },
+      {
+        "name": "Ink Drudge",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The sheet lies under the lamp with its first hand scraped off. A second hand has written over it."
+      },
+      {
+        "speaker": "Erased Clerk",
+        "text": "I copy what is on top. What is underneath is not mine to read."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith puts two fingers on the corner and holds the page flat. The clerk writes around his hand."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The warden turns the page over. On the back, the older hand has written the same sentence twice."
+      },
+      {
+        "speaker": "Margin Warden",
+        "text": "Leave it in the tray. Someone still has to sign the bottom of it."
+      }
+    ]
+  },
+  {
+    "id": "ES2",
+    "chapter": "Chapter III - The Missing Page",
+    "name": "The Page Nobody Signed",
+    "story": "The archive asks for a signature, and it does not accept a borrowed hand.",
+    "tier": 3,
+    "vows": [
+      "bare_hands"
+    ],
+    "skillBudget": 0,
+    "mapX": 820,
+    "mapY": 220,
+    "parents": [
+      "ES1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Clerk",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Bian"
+        ]
+      },
+      {
+        "name": "Clerk",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xian"
+        ]
+      },
+      {
+        "name": "Warden",
+        "health": 5,
+        "number0": 1,
+        "number1": 1
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The clerk sets the page down and lays the pen across the bottom line. The line is empty."
+      },
+      {
+        "speaker": "Clerk",
+        "text": "Your own hand. The page can tell a mark that was made for you."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith leaves the pen where it lies. The clerk draws the page back and waits."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith presses his bare palm on the page and holds it there until the ink takes."
+      },
+      {
+        "speaker": "Warden",
+        "text": "One hand signed it. The next page will ask for the other."
+      }
+    ]
+  },
+  {
+    "id": "ES3",
+    "chapter": "Chapter III - The Missing Page",
+    "name": "The Page Returned",
+    "story": "The copyist will give the page back, but not with a witness in the room.",
+    "tier": 4,
+    "vows": [
+      "alone",
+      "outnumbered"
+    ],
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 220,
+    "companions": [],
+    "parents": [
+      "ES2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Chief Copyist",
+        "health": 9,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Bian",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Clerk",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Bian"
+        ]
+      },
+      {
+        "name": "Clerk",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Drudge",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The copyist sits with the page under both hands. He has not looked up since Arith came in."
+      },
+      {
+        "speaker": "Chief Copyist",
+        "text": "Send the others out. What I hand over does not pass in front of a witness."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith shuts the door and stands with his back against it. The clerks outside do not knock."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The copyist pushes the page across the desk and folds his hands. In the corridor, Sable is waiting with a pen and no paper."
+      },
+      {
+        "speaker": "Chief Copyist",
+        "text": "Take her with you. She asked for a page of her own, and I am finished giving her mine."
+      }
+    ]
+  },
+  {
+    "id": "ES4",
+    "chapter": "Chapter III - The Quiet Reading Room",
+    "name": "The Quiet Reading Room",
+    "story": "One room in the archive is still quiet, and the warden means to keep it that way.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 420,
+    "parents": [
+      "E1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Reading Room Warden",
+        "health": 5,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Reader",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Reader",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The reading room keeps three lamps lit and no one at the table. The chairs are pushed in."
+      },
+      {
+        "speaker": "Reading Room Warden",
+        "text": "Sit or stand or go. Do not turn two pages at once."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith rests one hand on a chair back. The warden watches the hand, not the door."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The warden sets the chairs straight and lowers each lamp by a finger's width."
+      },
+      {
+        "speaker": "Reading Room Warden",
+        "text": "The room stays quiet. If you come back, come back with fewer people."
+      }
+    ]
+  },
+  {
+    "id": "ES5",
+    "chapter": "Chapter III - The Quiet Reading Room",
+    "name": "A Name in the Margin",
+    "story": "Someone wrote a name in the margin, and every reader since has tried to rub it out.",
+    "tier": 3,
+    "vows": [
+      "wounded"
+    ],
+    "playerHealth": 8,
+    "skillBudget": 4,
+    "mapX": 820,
+    "mapY": 420,
+    "parents": [
+      "ES4"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Warden",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Reader",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Bian"
+        ]
+      },
+      {
+        "name": "Reader",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Reader",
+        "text": "Do not say the name in the margin out loud. They come to check the ones who do."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith puts his thumb over the name and holds it there. The readers come around the table."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith lifts his thumb. The name is faint, but it is still on the page."
+      },
+      {
+        "speaker": "Reader",
+        "text": "Copy it onto your own paper. This page will not hold it."
+      }
+    ]
+  },
+  {
+    "id": "ES6",
+    "chapter": "Chapter III - The Quiet Reading Room",
+    "name": "The Last Reader",
+    "story": "The last reader has not left the room in a long time, and the room has filled up around her.",
+    "tier": 3,
+    "vows": [
+      "outnumbered"
+    ],
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 420,
+    "parents": [
+      "ES5"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Last Reader",
+        "health": 7,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Bian"
+        ]
+      },
+      {
+        "name": "Warden",
+        "health": 5,
+        "number0": 1,
+        "number1": 1
+      },
+      {
+        "name": "Warden",
+        "health": 5,
+        "number0": 1,
+        "number1": 1
+      },
+      {
+        "name": "Clerk",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The last reader sits with her back to the shelves. The wardens stand between her and the door."
+      },
+      {
+        "speaker": "Last Reader",
+        "text": "I have not finished this page. Standing there will not finish it faster."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith closes the door behind him. The clerk marks the hour on the frame and steps away."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The last reader turns the page. It is the same page she was reading when Arith came in."
+      },
+      {
+        "speaker": "Last Reader",
+        "text": "Leave the lamp lit. I will finish it before the oil does."
+      }
+    ]
+  }
+]

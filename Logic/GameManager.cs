@@ -239,6 +239,22 @@ namespace Fida.Logic
             RosterChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        /// <summary>
+        /// Removes a downed campaign summon from the board. Never removes the acting
+        /// player: callers remove at a round boundary so turn order stays coherent.
+        /// </summary>
+        public bool RemovePlayer(int playerId)
+        {
+            var player = Players.FirstOrDefault(p => p.PlayerId == playerId);
+            if (player == null) return false;
+            if (Players.Count > 1 && GetCurrentPlayer().PlayerId == playerId) return false;
+            Players.Remove(player);
+            foreach (var group in Groups) group.Players.Remove(player);
+            if (CurrentPlayerIndex >= Players.Count) CurrentPlayerIndex = 0;
+            RosterChanged?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+
         public void SkipCurrentTurn()
         {
             if (IsGameEnded || Players.Count == 0) return;

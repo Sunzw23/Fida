@@ -1,3 +1,5 @@
+#nullable enable
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Fida.Network;
@@ -12,6 +14,35 @@ namespace Fida
     /// </summary>
     public class MenuInputHandler
     {
+        /// <summary>
+        /// Input handlers by state. Every menu-like state must appear here; battle states are
+        /// driven by the session layer instead. <see cref="HandledStates"/> lets tests prove a
+        /// new state cannot be added without wiring its input.
+        /// </summary>
+        private static readonly Dictionary<State, Func<UIManager, NetworkManager, GameStateMachine, IMenuState>>
+            Factories = new()
+            {
+                { State.MainMenu,    (ui, net, machine) => new MainMenuState(ui, net, machine) },
+                { State.Paused,      (ui, net, machine) => new PausedState(ui, net, machine) },
+                { State.Rules,       (ui, net, machine) => new RulesState(ui, net, machine) },
+                { State.Settings,    (ui, net, machine) => new SettingsState(ui, net, machine) },
+                { State.LevelSelect, (ui, net, machine) => new LevelSelectState(ui, net, machine) },
+                { State.CompanionSelect, (ui, net, machine) => new CompanionSelectState(ui, net, machine) },
+                { State.Skills,      (ui, net, machine) => new SkillSelectState(ui, net, machine) },
+                { State.GameOver,    (ui, net, machine) => new GameOverState(ui, net, machine) },
+                { State.OnlineMenu,  (ui, net, machine) => new OnlineMenuState(ui, net, machine) },
+                { State.Hosting,     (ui, net, machine) => new HostingState(ui, net, machine) },
+                { State.Connecting,  (ui, net, machine) => new ConnectingState(ui, net, machine) },
+                { State.OnlineLobby, (ui, net, machine) => new OnlineLobbyState(ui, net, machine) },
+                { State.DuelDraft,   (ui, net, machine) => new DuelDraftState(ui, net, machine) },
+                { State.OnlineCampaignMap, (ui, net, machine) => new OnlineCampaignMapState(ui, net, machine) },
+                { State.OnlineCompanionSelect, (ui, net, machine) => new OnlineCompanionSelectState(ui, net, machine) },
+                { State.OnlineCampaignSkills, (ui, net, machine) => new OnlineCampaignSkillsState(ui, net, machine) },
+            };
+
+        /// <summary>States that own a menu input handler (everything except the battle states).</summary>
+        public static IReadOnlyCollection<State> HandledStates => Factories.Keys;
+
         private readonly UIManager _uiManager;
         private readonly Dictionary<State, IMenuState> _states;
         private readonly GameStateMachine _stateMachine;
@@ -21,23 +52,9 @@ namespace Fida
             _uiManager = uiManager;
             _stateMachine = stateMachine;
 
-            _states = new Dictionary<State, IMenuState>
-            {
-                { State.MainMenu,    new MainMenuState(uiManager, networkManager, stateMachine) },
-                { State.Paused,      new PausedState(uiManager, networkManager, stateMachine) },
-                { State.Rules,       new RulesState(uiManager, networkManager, stateMachine) },
-                { State.Settings,    new SettingsState(uiManager, networkManager, stateMachine) },
-                { State.LevelSelect, new LevelSelectState(uiManager, networkManager, stateMachine) },
-                { State.Skills,      new SkillSelectState(uiManager, networkManager, stateMachine) },
-                { State.GameOver,    new GameOverState(uiManager, networkManager, stateMachine) },
-                { State.OnlineMenu,  new OnlineMenuState(uiManager, networkManager, stateMachine) },
-                { State.Hosting,     new HostingState(uiManager, networkManager, stateMachine) },
-                { State.Connecting,  new ConnectingState(uiManager, networkManager, stateMachine) },
-                { State.OnlineLobby, new OnlineLobbyState(uiManager, networkManager, stateMachine) },
-                { State.DuelDraft,    new DuelDraftState(uiManager, networkManager, stateMachine) },
-                { State.OnlineCampaignMap, new OnlineCampaignMapState(uiManager, networkManager, stateMachine) },
-                { State.OnlineCampaignSkills, new OnlineCampaignSkillsState(uiManager, networkManager, stateMachine) },
-            };
+            _states = new Dictionary<State, IMenuState>();
+            foreach (var pair in Factories)
+                _states[pair.Key] = pair.Value(uiManager, networkManager, stateMachine);
 
             // 订阅状态机生命周期事件
             stateMachine.OnStateExiting += OnStateExiting;
@@ -65,36 +82,28 @@ namespace Fida
         /// </summary>
         public void OnInitialEnter()
         {
-            _states[_stateMachine.CurrentState].OnEnter();
+            if (_states.TryGetValue(_stateMachine.CurrentState, out var handler)) handler.OnEnter();
         }
 
         /// <summary>
-        /// 获取当前状态对应的处理器
+        /// 获取当前状态对应的处理器；未注册的状态返回 null（画面至少不会因此冻结或崩溃）
         /// </summary>
-        private IMenuState CurrentStateHandler => _states[_stateMachine.CurrentState];
+        private IMenuState? CurrentStateHandler =>
+            _states.TryGetValue(_stateMachine.CurrentState, out var handler) ? handler : null;
 
         /// <summary>
         /// 通用菜单输入处理（MainMenu / Paused / OnlineMenu / Hosting / Connecting）
         /// </summary>
-        public void HandleMenuInput(GameTime gameTime)
-        {
-            CurrentStateHandler.HandleInput(gameTime);
-        }
+        public void HandleMenuInput(GameTime gameTime) => CurrentStateHandler?.HandleInput(gameTime);
 
         /// <summary>
         /// 处理 Hosting 状态输入
         /// </summary>
-        public void HandleHostingInput(GameTime gameTime)
-        {
-            CurrentStateHandler.HandleInput(gameTime);
-        }
+        public void HandleHostingInput(GameTime gameTime) => CurrentStateHandler?.HandleInput(gameTime);
 
         /// <summary>
         /// 处理 Connecting 状态输入
         /// </summary>
-        public void HandleConnectingInput(GameTime gameTime)
-        {
-            CurrentStateHandler.HandleInput(gameTime);
-        }
+        public void HandleConnectingInput(GameTime gameTime) => CurrentStateHandler?.HandleInput(gameTime);
     }
 }

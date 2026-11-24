@@ -18,13 +18,13 @@ public class CompanionTests
     public void ShippedRoster_OffersMaraVennWithArtAndDescription()
     {
         var mara = Assert.IsType<CampaignCompanion>(CampaignCompanions.Get("mara_venn"));
-        Assert.Equal(2, CampaignCompanions.All.Count);
+        Assert.Equal(4, CampaignCompanions.All.Count);
 
         Assert.Equal("mara_venn", mara.Id);
         Assert.Equal("Mara Venn", mara.Name);
-        Assert.Equal(8, mara.Health);
+        Assert.Equal(10, mara.Health);
         Assert.Empty(mara.Skills);
-        Assert.Equal(CampaignAgentType.Rule, mara.AgentType);
+        Assert.Equal(CampaignAgentType.Adaptive, mara.AgentType);
         Assert.Equal("dialogue_mara", mara.ArtKey);
         Assert.Equal(1, mara.AtlasCell);
         Assert.False(string.IsNullOrWhiteSpace(mara.Description));
@@ -117,9 +117,9 @@ public class CompanionTests
         var invited = CampaignBattleFactory.Create(node, [], companionIds: ["mara_venn"]);
         var mara = invited.Players.Single(player => player.Name == "Mara Venn");
         Assert.Equal(1, mara.PlayerId);
-        Assert.Equal(8, mara.Health);
+        Assert.Equal(10, mara.Health);
         Assert.Contains(mara, invited.Groups[0].Players);
-        Assert.Equal(CampaignAgentType.Rule, invited.AgentTypes[mara.PlayerId]);
+        Assert.Equal(CampaignAgentType.Adaptive, invited.AgentTypes[mara.PlayerId]);
         Assert.Equal("Echo Scout", invited.Groups[1].Players.Single().Name);
         Assert.Equal(2, invited.Groups[1].Players.Single().PlayerId);
         Assert.Equal(3, invited.Players.Count);

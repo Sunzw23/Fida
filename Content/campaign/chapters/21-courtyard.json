@@ -11,9 +11,7 @@
       "AG"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "Shen"
-    ],
+    "rewards": [],
     "enemies": [
       {
         "name": "Broken God Priest",
@@ -65,9 +63,7 @@
       "AG"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "Xian"
-    ],
+    "rewards": [],
     "enemies": [
       {
         "name": "Immortal A",
@@ -126,9 +122,7 @@
       "AG"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "Di"
-    ],
+    "rewards": [],
     "enemies": [
       {
         "name": "False Emperor",
@@ -195,7 +189,9 @@
       "C5"
     ],
     "requiredCompletedParents": 3,
-    "rewards": [],
+    "rewards": [
+      "Di"
+    ],
     "isBoss": true,
     "isTrueEndingRequired": false,
     "reinforcementAfterEnemyDeaths": 1,

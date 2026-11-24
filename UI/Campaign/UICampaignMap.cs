@@ -995,6 +995,14 @@ namespace Fida.UI.Campaign
             return true;
         }
 
+        /// <summary>Pops one level of the chapter browser; used by previews and tests.</summary>
+        public bool TryLeaveFolder()
+        {
+            if (_scope.Count == 0) return false;
+            GoBack();
+            return true;
+        }
+
         private void GoBack()
         {
             if (_scope.Count == 0) { _backRequested = true; return; }

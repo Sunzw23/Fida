@@ -70,6 +70,7 @@ links the discovered skills that fire at each; those names open their page.
 
 The index is a paginated grid of paper tiles (4x3 landscape, 2x5 portrait): filled
 tiles are owned, faded ones were only seen, and a cyan dot marks an unread page.
+There is no legend line - the tile state is meant to read without one.
 Chips jump between the four chapters, and left/right turn pages in every input
 mode. Portrait windows keep the same structure with two chip rows.
 

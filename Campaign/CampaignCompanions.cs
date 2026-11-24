@@ -29,9 +29,22 @@ namespace Fida.Campaign
         // Node that must be cleared before this companion appears in the roster. Empty means
         // the companion is available from the start.
         public string UnlockNode { get; init; } = "";
+        // Campaign passive handled by CampaignBattleRules: "gate_ward" (Bram).
+        public string Passive { get; init; } = "";
+        // A unit this companion brings to every battle (Sable's Ink Echo).
+        public CampaignSummon? Summons { get; init; }
 
         public bool IsPlayable => !string.IsNullOrWhiteSpace(Id) && !string.IsNullOrWhiteSpace(Name) &&
             Health > 0;
+    }
+
+    /// <summary>An ally unit a summoner companion places on the board.</summary>
+    public sealed class CampaignSummon
+    {
+        public string Name { get; init; } = "Ink Echo";
+        public string PortraitKey { get; init; } = "tutorial_ally";
+        public int Health { get; init; } = 3;
+        public IReadOnlyList<SkillType> Skills { get; init; } = Array.Empty<SkillType>();
     }
 
     /// <summary>

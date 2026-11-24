@@ -39,8 +39,10 @@ namespace Fida.Campaign.Infrastructure
         private static IReadOnlyList<CampaignNode> LoadFile(string path)
         {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                options.Converters.Add(new JsonStringEnumConverter());
+                // Vows must be read before the general enum converter: `bare_hands` is not a
+                // valid enum name and would otherwise throw instead of reaching our parser.
                 options.Converters.Add(new CampaignVowJsonConverter());
+                options.Converters.Add(new JsonStringEnumConverter());
                 string json = ContentSource.ReadText(path) ?? "[]";
                 var nodes = JsonSerializer.Deserialize<List<CampaignNode>>(json, options);
                 return nodes ?? new List<CampaignNode>();

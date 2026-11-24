@@ -1,7 +1,7 @@
 [
   {
     "id": "D3",
-    "chapter": "Chapter III - Dragon Tomb",
+    "chapter": "Chapter III - Tomb Afterimages",
     "name": "Ashen Conduit",
     "story": "A flame must be carried out before the conduit closes.",
     "skillBudget": 5,
@@ -56,7 +56,7 @@
   },
   {
     "id": "D4",
-    "chapter": "Chapter III - Dragon Tomb",
+    "chapter": "Chapter III - Tomb Afterimages",
     "name": "Wyrm Reflection",
     "story": "A reflection follows Arith's movements before he makes them.",
     "skillBudget": 6,
@@ -120,7 +120,7 @@
   },
   {
     "id": "E3",
-    "chapter": "Chapter III - Blank Archive",
+    "chapter": "Chapter III - Archive Overwritten",
     "name": "Null Index",
     "story": "The index has a space where a recent name can be written.",
     "skillBudget": 5,
@@ -184,7 +184,7 @@
   },
   {
     "id": "E4",
-    "chapter": "Chapter III - Blank Archive",
+    "chapter": "Chapter III - Archive Overwritten",
     "name": "Palimpsest Engine",
     "story": "The Archive tries to remove the gaps from Mara's unfinished account.",
     "skillBudget": 6,

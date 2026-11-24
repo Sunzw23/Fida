@@ -5,22 +5,57 @@
     "portraitKey": "tutorial_ally",
     "artKey": "dialogue_mara",
     "atlasCell": 1,
-    "health": 8,
-    "agentType": "Rule",
+    "health": 10,
+    "agentType": "Adaptive",
     "skills": [],
-    "description": "Woke on a white bench with somewhere to go and no way to name it. She reads numbers faster than she reads people."
+    "description": "Woke on a white bench with somewhere to go and no way to name it. The steadiest of the three, and she only starts thinking clearly once the road stops being safe."
   },
   {
     "id": "ila",
     "name": "Ila",
-    "portraitKey": "tutorial_ally",
+    "portraitKey": "ila",
+    "artKey": "portrait_ila",
     "atlasCell": 2,
     "unlockNode": "AS3",
     "health": 7,
     "agentType": "Rule",
     "skills": [
-      "PlusAttack"
+      "PlusAttack",
+      "DoubleAttack"
     ],
-    "description": "The smith's apprentice. Carried the sword all the way to a door that finally opened."
+    "description": "The smith's apprentice. Carried the sword all the way to a door that finally opened. Her strikes leave an opening the others can follow."
+  },
+  {
+    "id": "bram",
+    "name": "Bram",
+    "portraitKey": "bram",
+    "artKey": "portrait_bram",
+    "atlasCell": 3,
+    "unlockNode": "DS6",
+    "health": 9,
+    "agentType": "Rule",
+    "skills": [
+      "DoubleDefence"
+    ],
+    "passive": "gate_ward",
+    "description": "The gate keeper of the Dragon Tomb. While both of his numbers are 1 the gate is shut, and the first blow of the turn is turned aside."
+  },
+  {
+    "id": "sable",
+    "name": "Sable",
+    "portraitKey": "sable",
+    "artKey": "portrait_sable",
+    "atlasCell": 4,
+    "unlockNode": "ES3",
+    "health": 5,
+    "agentType": "Rule",
+    "skills": [],
+    "summons": {
+      "name": "Ink Echo",
+      "portraitKey": "ink_echo",
+      "health": 3,
+      "skills": []
+    },
+    "description": "A copyist from the Blank Archive. She brings an Ink Echo into the fight; when it falls she spends two turns writing it back."
   }
 ]

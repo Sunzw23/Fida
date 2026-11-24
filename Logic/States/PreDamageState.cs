@@ -66,13 +66,24 @@ namespace Fida.Logic
                 return;
             }
 
+            var attacker = GameManager.Players.FirstOrDefault(p => p.PlayerId == _attackerId);
+            bool warded = targetPlayer.WardsFirstHit && targetPlayer.AttacksReceivedThisTurn == 0;
+            if (attacker is { DoubleStrikeArmed: true })
+            {
+                attacker.DoubleStrikeArmed = false;
+                _ctx.Damage *= 2;
+            }
             targetPlayer.RecordAttackReceived();
+            if (warded)
+            {
+                GameManager.SetGameMessage($"{targetPlayer.Name}'s gate holds the first blow.");
+                GameManager.TransitionTo(new HandleStackState(GameManager));
+                return;
+            }
             targetPlayer.TakeDamage(_ctx.Damage);
             GameManager.SetGameMessage(GameText.Damaged(targetPlayer.Name, _ctx.Damage));
 
             // 推入受伤后反应技能（栈模式，直接调用 skill.CreateState 而非 SkillManager）
-            var attacker = GameManager.Players.FirstOrDefault(p => p.PlayerId == _attackerId);
-
             // Damaging 技能（攻击者）
             var attackerStates = attacker == null
                 ? new List<GameState>()

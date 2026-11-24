@@ -50,7 +50,7 @@ public class ChapterExpansionTests
     public void SideChapter_IsResolvedFromTheNodeChapterString()
     {
         var smith = Assert.IsType<CampaignChapter>(
-            CampaignChapters.Get(new[] { "The Smith's Errand" }));
+            CampaignChapters.Get(new[] { "Chapter I", "The Smith's Errand" }));
 
         Assert.Equal(CampaignChapterKind.Side, smith.Kind);
         Assert.True(smith.IsSide);
@@ -192,6 +192,96 @@ public class ChapterExpansionTests
         Assert.Equal(8, wounded.Players[0].Health);
         Assert.Equal(8, wounded.Players[0].MaxHealth);
         Assert.Equal(11, normal.Players[0].Health);
+    }
+
+    [Fact]
+    public void SkillRewards_HaveASingleSource()
+    {
+        var rewarded = CampaignCatalog.Nodes.SelectMany(node => node.Rewards).ToArray();
+        var duplicates = rewarded.GroupBy(skill => skill).Where(group => group.Count() > 1)
+            .Select(group => group.Key).ToArray();
+
+        Assert.Empty(duplicates);
+    }
+
+    [Fact]
+    public void SideTrialsOwnTheSkillsTheMainRoadGaveAway()
+    {
+        // Chapter II hands its signature skills to the side trials and boss milestones.
+        Assert.Empty(Node("B1").Rewards);
+        Assert.Empty(Node("B2").Rewards);
+        Assert.Empty(Node("B3").Rewards);
+        Assert.Empty(Node("C1").Rewards);
+        Assert.Empty(Node("C2").Rewards);
+        Assert.Empty(Node("C3").Rewards);
+        Assert.Contains(SkillType.Xue, Node("BS3").Rewards);
+        Assert.Contains(SkillType.Tong, Node("BS6").Rewards);
+        Assert.Contains(SkillType.Shen, Node("CS3").Rewards);
+        Assert.Contains(SkillType.Xian, Node("CS6").Rewards);
+        Assert.Contains(SkillType.Mo, Node("BG").Rewards);
+        Assert.Contains(SkillType.Di, Node("CG").Rewards);
+        // The field lessons no longer duplicate the prologue's two basics.
+        Assert.Empty(Node("T01").Rewards);
+        Assert.Empty(Node("T02").Rewards);
+        Assert.Empty(Node("T03").Rewards);
+        Assert.Contains(SkillType.PlusAttack, Node("P").Rewards);
+        Assert.Contains(SkillType.PlusDefence, Node("P").Rewards);
+        Assert.Contains(SkillType.DoubleHealth, Node("A3").Rewards);
+    }
+
+    [Fact]
+    public void ChapterThreeTrialsOwnShiAndTheLastTwoSkills()
+    {
+        // Shi moved off the crossroads branch and into the Tomb trial.
+        Assert.Empty(Node("B4").Rewards);
+        Assert.Contains(SkillType.Shi, Node("DS3").Rewards);
+        // Seng and Dao are the two forbidden skills; only the Shelter trials grant them.
+        Assert.Contains(SkillType.Seng, Node("WS3").Rewards);
+        Assert.Contains(SkillType.Dao, Node("WS6").Rewards);
+        // Every selectable skill now has exactly one source.
+        var rewarded = CampaignCatalog.Nodes.SelectMany(node => node.Rewards).ToArray();
+        Assert.Equal(SkillFactory.SelectableSkills.Count, rewarded.Length);
+        Assert.Equal(SkillFactory.SelectableSkills.OrderBy(skill => skill),
+            rewarded.OrderBy(skill => skill));
+    }
+
+    [Fact]
+    public void ChapterThreeSideChapters_RecruitTheirOwnCompanions()
+    {
+        Assert.Equal("bram", Assert.Single(CampaignCompanions.ForNode("DS6")).Id);
+        Assert.Equal("sable", Assert.Single(CampaignCompanions.ForNode("ES3")).Id);
+
+        var progress = new CampaignProgress();
+        var roster = CampaignCompanions.Available(Node("A1"), progress);
+        Assert.DoesNotContain(roster, companion => companion.Id == "bram");
+        Assert.DoesNotContain(roster, companion => companion.Id == "sable");
+
+        progress.Complete(Node("DS6"));
+        progress.Complete(Node("ES3"));
+        roster = CampaignCompanions.Available(Node("A1"), progress);
+        Assert.Contains(roster, companion => companion.Id == "bram");
+        Assert.Contains(roster, companion => companion.Id == "sable");
+    }
+
+    [Fact]
+    public void Provider_ParsesSnakeCaseVows()
+    {
+        string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+            $"fida-vow-{Guid.NewGuid():N}.json");
+        System.IO.File.WriteAllText(path,
+            """
+            [{ "id": "S", "chapter": "Chapter I", "tier": 3, "skillBudget": 0,
+               "vows": ["bare_hands", "outnumbered"], "enemies": [{ "name": "E", "health": 4 }] }]
+            """);
+        try
+        {
+            var nodes = new Fida.Campaign.Infrastructure.JsonCampaignNodeProvider(path).Load();
+            Assert.Equal([CampaignVow.BareHands, CampaignVow.Outnumbered], nodes[0].Vows);
+        }
+        finally
+        {
+            System.IO.File.Delete(path);
+        }
     }
 
     [Fact]

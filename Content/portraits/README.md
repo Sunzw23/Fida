@@ -50,3 +50,25 @@ Unregistered keys use the cold atlas with a team/name-based fallback. Custom reg
 ## `enemy_fallback.png`
 
 > Use case: stylized-concept. Asset type: square fallback enemy portrait for a dark fantasy strategy game card. Primary request: create an anonymous Echo Guard, a spectral armored servant of a dead numerical kingdom, suitable as the default portrait for many enemy units. Scene/backdrop: plain warm aged-paper field with a faint fractured geometric halo, no scenery. Subject: one faceless medieval guard, half-length frontal portrait, worn dark plate and layered cloth, closed mask with narrow shadowed eye slit, restrained supernatural presence. Style/medium: authentic 18th-century copperplate engraving and woodcut hybrid, dense black cross-hatching, hand-printed ink texture, antique book illustration, restrained ochre accents only. Composition/framing: centered bust, generous margin, readable at small card size, square crop, visually consistent with The Arithmetist and Withered King portrait set. Lighting/mood: austere, ominous, impersonal, high-contrast etched shading. Color palette: black ink, warm ivory paper, muted sepia and tarnished antique gold. Constraints: one character only, no text, no letters, no numerals, no UI frame, no watermark, no blood or gore, no photorealism, clean silhouette.
+## Companion portraits (Ila, Bram, Sable, Ink Echo)
+
+These keep the paper-cut style and human silhouettes, but the skin is deliberately
+not human-toned: Ila is pale ice-blue paper with a white bob and a cold, level stare, Bram slate-blue stone with
+pupil-less ivory eyes, Sable ivory page-skin split by ink cracks with one solid ink
+eye, and the Ink Echo is faceless ink-black paper with a single horizontal light.
+They read as people-shaped outsiders, not as ordinary humans.
+
+`ila.png`, `bram.png`, `sable.png` and `ink_echo.png` are the campaign companion
+portraits, generated with the same local ComfyUI / Z-Image Turbo pipeline and cut by
+`tools/comfy/build_atlas.py`. One asset serves both the roster art (`artKey`) and the
+battle card (`portraitKey`); the registrations live in `ResourceManager` as
+`portrait_ila`, `portrait_bram`, `portrait_sable` and `portrait_ink_echo`.
+
+```powershell
+python tools/comfy/companion_art.py --seeds 8101          # all four
+python tools/comfy/companion_art.py --chars sable --seeds 8102,8103
+python tools/comfy/companion_art.py --chars bram --seeds 8101 --reprocess
+```
+
+Pick the seed whose render has the clean magenta/transparent background, then copy it
+to `<key>.png` and rebuild the game content.

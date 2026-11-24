@@ -1,0 +1,397 @@
+[
+  {
+    "id": "BS1",
+    "chapter": "Chapter II - The Hunters' Debt",
+    "name": "Debt Collectors",
+    "story": "The hunters owe the tower a life, and the collectors have come to collect it.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 220,
+    "parents": [
+      "AG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Collector",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Ledger",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Hunter",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Three collectors sit on the well. A hunter waits behind them with his hands bound."
+      },
+      {
+        "speaker": "Collector",
+        "text": "He signed. We came. You can watch, or you can pay his share."
+      },
+      {
+        "speaker": "Mara Venn",
+        "text": "They are not going to let him go no matter what you do."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The collectors count what they are owed and carry it back up the tower. The hunter is still bound."
+      },
+      {
+        "speaker": "Hunter",
+        "text": "The ledger is not closed. There is a second page."
+      }
+    ]
+  },
+  {
+    "id": "BS2",
+    "chapter": "Chapter II - The Hunters' Debt",
+    "name": "The Blood Ledger",
+    "story": "The ledger room has one rule: sign it the way we do, without the crown's tricks.",
+    "tier": 3,
+    "vows": [
+      "bare_hands"
+    ],
+    "skillBudget": 0,
+    "mapX": 820,
+    "mapY": 220,
+    "parents": [
+      "BS1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Ledger Keeper",
+        "health": 7,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Collector",
+        "health": 4,
+        "number0": 2,
+        "number1": 2
+      },
+      {
+        "name": "Collector",
+        "health": 4,
+        "number0": 2,
+        "number1": 2
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Collector",
+        "text": "Leave the skills at the door. If you can take the page off this table, it is yours."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The room is empty except for the table, the ledger, and three men who have done this before."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith takes the page. The collectors step back and let him keep it."
+      },
+      {
+        "speaker": "Collector",
+        "text": "The signature is missing. It is not a debt until someone signs."
+      }
+    ]
+  },
+  {
+    "id": "BS3",
+    "chapter": "Chapter II - The Hunters' Debt",
+    "name": "Final Payment",
+    "story": "The debt is paid in full. The master offers Arith a place in the ledger.",
+    "tier": 3,
+    "vows": [
+      "alone"
+    ],
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 220,
+    "companions": [],
+    "parents": [
+      "BS2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Xue"
+    ],
+    "reinforcementAfterEnemyDeaths": 1,
+    "enemies": [
+      {
+        "name": "Debt Master",
+        "health": 8,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xue",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Collector",
+        "health": 4,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xue"
+        ]
+      },
+      {
+        "name": "Collector",
+        "health": 4,
+        "number0": 2,
+        "number1": 2
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Ledger Shade",
+        "health": 4,
+        "number0": 1,
+        "number1": 1
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Debt Master",
+        "text": "The page is yours. The debt is not. Sign it, and the debt becomes somebody else's."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Mara waits outside the ledger room. The door is not wide enough for a witness."
+      },
+      {
+        "speaker": "Debt Master",
+        "text": "Bring nobody. The ledger takes one name at a time."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The master's name goes into the page. The room keeps the rest."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Under the page there is a second list, older than the debt. Arith copies one line into his hand and leaves."
+      }
+    ]
+  },
+  {
+    "id": "BS4",
+    "chapter": "Chapter II - The Thirteenth Ring",
+    "name": "The Hour They Kept",
+    "story": "Two keepers hold the same hour, and neither will let it end.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 420,
+    "parents": [
+      "BG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Bell Twin",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Tong"
+        ]
+      },
+      {
+        "name": "Bell Twin",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Tong"
+        ]
+      },
+      {
+        "name": "Hour Hand",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Two keepers stand at the bell rope. They strike the same hour again and again."
+      },
+      {
+        "speaker": "Hour Keeper",
+        "text": "The hour is not finished. Stay until it is."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "One keeper lowers the rope. The other is still counting."
+      }
+    ]
+  },
+  {
+    "id": "BS5",
+    "chapter": "Chapter II - The Thirteenth Ring",
+    "name": "Two of One Hour",
+    "story": "The rope asks for one pair of hands, and the keepers will not lend theirs.",
+    "tier": 3,
+    "vows": [
+      "alone"
+    ],
+    "skillBudget": 3,
+    "mapX": 820,
+    "mapY": 420,
+    "companions": [],
+    "parents": [
+      "BS4"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Hour Keeper",
+        "health": 8,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "Tong",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Bell Twin",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Tong"
+        ]
+      },
+      {
+        "name": "Bell Twin",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Tong"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Hour Keeper",
+        "text": "Take the rope alone. Two hands would put the hour out of order."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Mara waits on the stairs. The bell keeps ringing through the door."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The rope goes slack. Somewhere below, the hour finally moves on."
+      }
+    ]
+  },
+  {
+    "id": "BS6",
+    "chapter": "Chapter II - The Thirteenth Ring",
+    "name": "The Thirteenth Ring",
+    "story": "There is a thirteenth ring. The keepers will not say who it is for.",
+    "tier": 3,
+    "vows": [
+      "bare_hands"
+    ],
+    "skillBudget": 0,
+    "mapX": 1320,
+    "mapY": 420,
+    "parents": [
+      "BS5"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Tong"
+    ],
+    "enemies": [
+      {
+        "name": "Bell Twin",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Tong"
+        ]
+      },
+      {
+        "name": "Bell Twin",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Tong"
+        ]
+      },
+      {
+        "name": "Hour Keeper",
+        "health": 7,
+        "number0": 1,
+        "number1": 1
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Hour Keeper",
+        "text": "The bell asks for no skills. Ring it the way the first keeper did."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The chamber is full of ringers, all of them waiting for someone else to pull."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The thirteenth ring sounds. No one gets up afterwards."
+      },
+      {
+        "speaker": "Hour Keeper",
+        "text": "You kept the hour. Keep the rope, too."
+      }
+    ]
+  }
+]

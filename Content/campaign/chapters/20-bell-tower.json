@@ -11,9 +11,7 @@
       "AG"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "Xue"
-    ],
+    "rewards": [],
     "enemies": [
       {
         "name": "Blood Hunter A",
@@ -61,9 +59,7 @@
       "AG"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "Tong"
-    ],
+    "rewards": [],
     "reinforcementRound": 3,
     "enemies": [
       {
@@ -119,9 +115,7 @@
       "AG"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "Mo"
-    ],
+    "rewards": [],
     "enemies": [
       {
         "name": "Retaliation Golem",
@@ -177,7 +171,9 @@
       "B5"
     ],
     "requiredCompletedParents": 3,
-    "rewards": [],
+    "rewards": [
+      "Mo"
+    ],
     "isBoss": true,
     "isTrueEndingRequired": false,
     "reinforcementAfterEnemyDeaths": 1,

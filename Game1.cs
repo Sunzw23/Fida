@@ -141,6 +141,7 @@ namespace Fida
             {
                 case State.MainMenu:      _menuInput.HandleMenuInput(gameTime); break;
                 case State.LevelSelect:   _menuInput.HandleMenuInput(gameTime); break;
+                case State.CompanionSelect: _menuInput.HandleMenuInput(gameTime); break;
                 case State.Skills:        _menuInput.HandleMenuInput(gameTime); break;
                 case State.GameOver:      _menuInput.HandleMenuInput(gameTime); break;
                 case State.Playing:
@@ -157,11 +158,17 @@ namespace Fida
                 case State.OnlineLobby:   _menuInput.HandleMenuInput(gameTime); break;
                 case State.DuelDraft:     _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlineCampaignMap:
+                case State.OnlineCompanionSelect:
                 case State.OnlineCampaignSkills: _menuInput.HandleMenuInput(gameTime); break;
                 case State.OnlinePlaying:
                     _gameSession.EnsureOnlineGameStarted();
                     if (_stateMachine.CurrentState == State.OnlinePlaying)
                         _gameSession.HandleOnlinePlayingInput(gameTime);
+                    break;
+                default:
+                    // Every current state is handled above; a future menu-like state that is
+                    // forgotten here still pumps UI input instead of freezing its screen.
+                    _menuInput.HandleMenuInput(gameTime);
                     break;
             }
 

@@ -84,7 +84,7 @@ public sealed class UIRulesTimingPage : UIControl
         }
 
         UIRulesText.Paragraph(batch, _resources.Font,
-            "Skills resolve in the order shown within a stage. Only skills you have met are listed.",
+            "Skills resolve in the order shown within a stage.",
             layout.TimingFootnote, layout.Portrait ? 22 : 24, scale, UIPaper.MutedInk);
     }
 }

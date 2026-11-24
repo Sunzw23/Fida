@@ -146,7 +146,7 @@ sealed class PreviewGame : Game
                 // A preview never reads the player's save: build the map with explicit progress
                 // so the first chapter's side roads are already unlocked and coloured.
                 var chapterProgress = new CampaignProgress();
-                foreach (string completed in new[] { "P", "T01", "T02", "T03" })
+                foreach (string completed in new[] { "P", "T01", "T02", "T03", "A1", "A2", "A3", "AG", "B1", "B2", "B3", "BG", "C1", "C2", "C3", "CG", "D1", "D2", "E1", "E2" })
                     if (CampaignCatalog.GetNode(completed) is { } done) chapterProgress.Complete(done);
                 float mapScale = UIDesktopLayout.Scale(GraphicsDevice.Viewport);
                 var mapOptions = new CampaignMapOptions
@@ -422,6 +422,12 @@ sealed class PreviewGame : Game
             {
                 var map = (UICampaignMap)_ui.GetControls().Single(c => c.Name == "campaign_map");
                 var bounds = new CampaignMapLayout(_width, _height).Map;
+                // Chapter I is a container now: the reference diamond lives one level deeper.
+                if (_routeOnly)
+                {
+                    if (!map.TryEnterFolder("Chapter I")) throw new Exception("Chapter I folder is missing.");
+                    if (!map.TryEnterFolder("The Wall")) throw new Exception("The Wall folder is missing.");
+                }
                 ClickMap(map, new Point(bounds.Left + bounds.Width / 4, bounds.Center.Y));
                 map.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
                 if (_routeOnly) VerifyReferenceRoute(map, bounds);
@@ -721,8 +727,7 @@ sealed class PreviewGame : Game
         var layout = new CampaignMapLayout(_width, _height);
         if (!new Rectangle(0,0,_width,_height).Contains(layout.Details) || bounds.Intersects(layout.Details))
             throw new Exception("Route map and details overlap or leave the viewport.");
-        // The browser opens on the chapter list; the reference diamond is Chapter I.
-        if (!map.TryEnterFolder("Chapter I")) throw new Exception("Chapter I is missing from the chapter list.");
+        // The caller has already opened Chapter I -> The Wall; the diamond is that page.
         foreach (var (id, point) in new[] {
             ("A2",new Point(bounds.Left+bounds.Width/4,bounds.Center.Y)),
             ("A3",new Point(bounds.Left+bounds.Width*3/4,bounds.Center.Y)),
@@ -938,9 +943,21 @@ sealed class PreviewGame : Game
     private void SaveChapterVariants(GameTime time)
     {
         if (_chapterMap == null) throw new Exception("Chapter preview lost its map.");
-        // Root page is saved by Draw as "chapters"; the side route is captured here.
-        if (!_chapterMap.TryEnterFolder("The Smith's Errand")) throw new Exception("Side chapter is missing.");
+        // Root page is saved by Draw as "chapters".
+        if (!_chapterMap.TryEnterFolder("Chapter I")) throw new Exception("Chapter I folder is missing.");
+        Redraw(time); Save("chapters-chapter1");
+        if (!_chapterMap.TryLeaveFolder()) throw new Exception("Chapter I did not close.");
+        if (!_chapterMap.TryEnterFolder("Chapter II")) throw new Exception("Chapter II folder is missing.");
+        Redraw(time); Save("chapters-chapter2");
+        if (!_chapterMap.TryEnterFolder("The Hunters' Debt")) throw new Exception("Side chapter is missing.");
         Redraw(time); Save("chapters-side");
+        if (!_chapterMap.TryLeaveFolder()) throw new Exception("Side chapter did not close.");
+        if (!_chapterMap.TryLeaveFolder()) throw new Exception("Chapter II did not close.");
+        if (!_chapterMap.TryEnterFolder("Chapter III")) throw new Exception("Chapter III folder is missing.");
+        Redraw(time); Save("chapters-chapter3");
+        if (!_chapterMap.TryLeaveFolder()) throw new Exception("Chapter III did not close.");
+        if (!_chapterMap.TryEnterFolder("The Roofless Shelter")) throw new Exception("Shelter chapter is missing.");
+        Redraw(time); Save("chapters-shelter");
         SaveSideDetail();
         void Redraw(GameTime now)
         {

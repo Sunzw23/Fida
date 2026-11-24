@@ -36,6 +36,8 @@ namespace Fida.Campaign
             };
             var players = new List<Player> { local };
             var agentTypes = new Dictionary<int, CampaignAgentType>();
+            var companionIdsByPlayer = new Dictionary<int, string>();
+            var summons = new Dictionary<int, int>();
             Player? partner = null;
             var companions = new List<Player>();
             int nextId = 1;
@@ -60,6 +62,20 @@ namespace Fida.Campaign
                     players.Add(ally);
                     companions.Add(ally);
                     agentTypes[ally.PlayerId] = invited.AgentType;
+                    companionIdsByPlayer[ally.PlayerId] = invited.Id;
+                    if (invited.Summons is { } summon)
+                    {
+                        var echo = new Player(nextId++, summon.Name, summon.Health,
+                            summon.Skills.Distinct().OrderBy(skill => (int)skill)
+                                .Select(SkillFactory.CreateSkill).ToList())
+                        {
+                            PortraitKey = summon.PortraitKey
+                        };
+                        players.Add(echo);
+                        companions.Add(echo);
+                        agentTypes[echo.PlayerId] = CampaignAgentType.Rule;
+                        summons[ally.PlayerId] = echo.PlayerId;
+                    }
                 }
             }
             var reinforcements = new List<Player>();
@@ -97,7 +113,9 @@ namespace Fida.Campaign
                 Players = players,
                 Groups = groups,
                 Reinforcements = reinforcements,
-                AgentTypes = agentTypes
+                AgentTypes = agentTypes,
+                CompanionIds = companionIdsByPlayer,
+                Summons = summons
             };
         }
 

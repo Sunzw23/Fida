@@ -1,0 +1,413 @@
+[
+  {
+    "id": "DS1",
+    "chapter": "Chapter III - The Stone's Due",
+    "name": "The Stone Tally",
+    "story": "The scale keeper counts what the bones are owed, and the tally is heavier than the tomb.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 220,
+    "parents": [
+      "D2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Scale Keeper",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "Shi"
+        ]
+      },
+      {
+        "name": "Cinder",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Long"
+        ]
+      },
+      {
+        "name": "Ward",
+        "health": 5,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Tally stones hang in a net above the scale. The keeper moves one for Arith before either of them speaks."
+      },
+      {
+        "speaker": "Scale Keeper",
+        "text": "The bones lent out a whole war and asked to be paid back. I am still counting the interest."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith sets his hand on the empty pan. The net does not sway, so the keeper adds another stone."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The keeper chalks a figure on the wall, wipes it with his sleeve, and chalks it again."
+      },
+      {
+        "speaker": "Scale Keeper",
+        "text": "Leave the stones where they are. I have not finished the sum, and I do not want to start it again."
+      }
+    ]
+  },
+  {
+    "id": "DS2",
+    "chapter": "Chapter III - The Stone's Due",
+    "name": "What the Bones Counted",
+    "story": "The accounting room asks Arith to add without any of the crown's tricks.",
+    "tier": 3,
+    "vows": [
+      "bare_hands"
+    ],
+    "skillBudget": 0,
+    "mapX": 820,
+    "mapY": 220,
+    "parents": [
+      "DS1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Scale Keeper",
+        "health": 7,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "Shi"
+        ]
+      },
+      {
+        "name": "Cinder",
+        "health": 5,
+        "number0": 2,
+        "number1": 2
+      },
+      {
+        "name": "Cinder",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The accounting room is chalked from the door to the far wall. Cinder lamps stand at the corners with numbers written on their shades."
+      },
+      {
+        "speaker": "Scale Keeper",
+        "text": "No crown arithmetic and nothing borrowed. Add the columns and the floor opens on the next room."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith kneels and counts on his fingers. A cinder steps off its mark to watch."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The floor opens on a stair with one lamp at the bottom. Chalk is still on Arith's palm."
+      },
+      {
+        "speaker": "Scale Keeper",
+        "text": "The total was off by one and the floor opened anyway. Do not tell the next one that it worked."
+      }
+    ]
+  },
+  {
+    "id": "DS3",
+    "chapter": "Chapter III - The Stone's Due",
+    "name": "The Keeper's Refusal",
+    "story": "The keeper will not teach the stone's lesson while anyone is watching, and he wants it to hurt.",
+    "tier": 4,
+    "vows": [
+      "alone",
+      "wounded"
+    ],
+    "playerHealth": 8,
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 220,
+    "companions": [],
+    "parents": [
+      "DS2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Shi"
+    ],
+    "enemies": [
+      {
+        "name": "First Scale",
+        "health": 9,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Shi",
+          "DoubleDefence"
+        ]
+      },
+      {
+        "name": "Keeper",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Cinder",
+        "health": 5,
+        "number0": 2,
+        "number1": 2
+      }
+    ],
+    "reinforcements": [
+      {
+        "name": "Ward",
+        "health": 4,
+        "number0": 1,
+        "number1": 1
+      }
+    ],
+    "reinforcementAfterEnemyDeaths": 1,
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The keeper puts out the lamp and sends the last cinder out through the low door. One stone in his hand lights the room."
+      },
+      {
+        "speaker": "Keeper",
+        "text": "Nobody watching and nobody helping. That is the lesson, and I want it to cost you something."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith puts his back to the wall and lifts his hands. The keeper does not offer to hold the stone for him."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith's hands are raw where the stone turned in them. The keeper sets it on the floor between them and steps back."
+      },
+      {
+        "speaker": "Keeper",
+        "text": "It is yours now. Do not thank me. Ask for it again when it stops being enough."
+      }
+    ]
+  },
+  {
+    "id": "DS4",
+    "chapter": "Chapter III - The Queue at the Gate",
+    "name": "No Replacement Appointed",
+    "story": "The tomb's gate keeper finally has relief, and the relief cannot get past the queue.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 420,
+    "parents": [
+      "D1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Relieved Guard",
+        "health": 5,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Gate Hand",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Gate Hand",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A guard sits on the gate step with his helmet in his lap. The queue behind him has not moved all afternoon."
+      },
+      {
+        "speaker": "Relieved Guard",
+        "text": "My relief is in that line. He has been in it since noon."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith takes off his pack and stands at the end of the queue. The people ahead of him make room without turning around."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The relief reaches the step after dark and holds out a wooden token. The guard gives him the helmet and does not ask for it back."
+      },
+      {
+        "speaker": "Relieved Guard",
+        "text": "I am going home. If the queue asks for me, tell it I am still here."
+      }
+    ]
+  },
+  {
+    "id": "DS5",
+    "chapter": "Chapter III - The Queue at the Gate",
+    "name": "The Long Watch",
+    "story": "One night standing at the gate, and the gate is not empty at night.",
+    "tier": 3,
+    "vows": [
+      "wounded"
+    ],
+    "playerHealth": 8,
+    "skillBudget": 3,
+    "mapX": 820,
+    "mapY": 420,
+    "parents": [
+      "DS4"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Watch",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Watch",
+        "health": 5,
+        "number0": 2,
+        "number1": 2
+      },
+      {
+        "name": "Gate Hand",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The keeper hands Arith a lantern and a stick of chalk. The gate goes dark from the top down."
+      },
+      {
+        "speaker": "Watch",
+        "text": "Count them as they come. Every name you chalk gets a place inside in the morning."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith chalks the first name. The wind takes the dust off the stone and he writes it again."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "By dawn the gate is chalked from the threshold to the hinge. The bandage at Arith's side has gone dark, and he keeps writing."
+      },
+      {
+        "speaker": "Watch",
+        "text": "Whoever you left off the list will come back tonight. Leave the chalk where it lies."
+      }
+    ]
+  },
+  {
+    "id": "DS6",
+    "chapter": "Chapter III - The Queue at the Gate",
+    "name": "A Place at the Gate",
+    "story": "The keeper can leave the gate, but only if someone beats the captain's terms.",
+    "tier": 3,
+    "vows": [
+      "alone"
+    ],
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 420,
+    "companions": [],
+    "parents": [
+      "DS5"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Gate Captain",
+        "health": 8,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "DoubleDefence",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Gate Hand",
+        "health": 5,
+        "number0": 2,
+        "number1": 2
+      },
+      {
+        "name": "Gate Hand",
+        "health": 5,
+        "number0": 2,
+        "number1": 2
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The gate captain sets three terms on the step: the gate, the queue, and the road behind it. The keeper stands where he was posted."
+      },
+      {
+        "speaker": "Gate Captain",
+        "text": "Leave your post and the gate shuts behind you. That is the first term, and the other two are worse."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith puts his hand on the gate chain and waits. The keeper does not ask him to stop."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The chain comes down. Bram steps over the line he has kept for forty years and leaves his staff against the gate."
+      },
+      {
+        "speaker": "Bram",
+        "text": "Forty years I had a post and no reason to leave it. May I walk with you as far as the road goes?"
+      }
+    ]
+  }
+]

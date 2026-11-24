@@ -5,7 +5,7 @@ using Fida.Logic;
 
 namespace Fida.Campaign
 {
-    public enum CampaignAgentType { Rule, Scripted }
+    public enum CampaignAgentType { Rule, Scripted, Adaptive }
 
     public sealed class CampaignStoryPage
     {
@@ -111,5 +111,9 @@ namespace Fida.Campaign
         public List<Group> Groups { get; init; } = [];
         public List<Player> Reinforcements { get; init; } = [];
         public Dictionary<int, CampaignAgentType> AgentTypes { get; init; } = new();
+        /// <summary>Ally player id to campaign companion id, used by companion battle rules.</summary>
+        public Dictionary<int, string> CompanionIds { get; init; } = new();
+        /// <summary>Summoner player id to the summoned ally's player id.</summary>
+        public Dictionary<int, int> Summons { get; init; } = new();
     }
 }

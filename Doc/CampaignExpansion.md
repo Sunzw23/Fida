@@ -12,7 +12,7 @@
 | 项目 | 现在 | 设计后 |
 |---|---:|---:|
 | 战斗节点 | 29 | **64** |
-| 章节 | 8 个路径（全为主线） | **23 个章节条目（主线 10 / 支线 13）** |
+| 章节 | 8 个路径（全为主线） | **24 个章节条目（主线 11 / 支线 13）** |
 | 支线节点 | 4（都在第三章，且只是可选） | **39**（原有 4 个迁入支线章节 + 35 个新增） |
 | 技能奖励条目 | 21 条 / 18 个不同 | **20 条 / 20 个不同（每个技能唯一来源）** |
 | 全清能拿到的技能 | 18 | **20** |
@@ -26,17 +26,19 @@
 （`Content/campaign/chapter-index.json`，章节索引），新增 1 个校验（难度契约），
 其余全部是 JSON 内容。
 
-**第一批已落地（可玩）**
+**已落地（全部内容）**
 
-- 章节索引上线：现有 10 个主线章节全部登记（`paper`），节点不再靠字符串猜归属。
-- 两个支线章节：`The Smith's Errand`（AS1–AS3）与 `Names on the Wall`（AS4–AS5），
-  冷色纸 `frost` 与 `S1`/`S2` 编号。
-- 同伴招募：完成 AS3 后 Ila 才出现在名册；此前不显示她的卡。
-- 数据契约：`tier` / `vows` / `playerHealth` 与 `CampaignDifficulty.Audit` 已生效；
-  旧节点不声明 `tier` 即跳过契约，新支线节点全部通过审计。
-- 界面：章节卡与节点卡配色、难度徽章（菱形 + `VOW ALONE`）、战前简报最后一页自动列出誓约。
-- 战役节点 29 → 34。
-
+- 章节索引 24 条：主线 11（Prologue、The Long Road、Chapter I、The Wall、Chapter II、
+  Bell Tower、Courtyard、Chapter III、Dragon Tomb、Blank Archive、Finale），支线 13。
+  Chapter I/II/III 是纯容器，Chapter I 的原有关卡收进 **The Wall**。
+- 13 个支线章节 / 39 个支线节点，全部是 `frost`（Shelter 是 `slate`），带 `S` 编号与难度契约。
+- 技能来源：**20 个技能 20 个唯一来源**。血/同/神/仙/石/僧/道 来自支线试炼，
+  魔/帝 来自 BG/CG，超神/超仙/超帝 来自第三章可选节点；T01–T03 不再发重复技能。
+- 同伴 4 名：Mara、Ila（AS3）、Bram（DS6）、Sable（ES3），未结识前不进名册。
+- D3/D4 迁入 **Tomb Afterimages**，E3/E4 迁入 **Archive Overwritten**。
+- 难度契约覆盖全部新支线；旧主线节点不声明 `tier`，保持原样。
+- 界面：冷色纸、S 编号、难度徽章、战前简报誓约页、招募过滤、章节计数只算主线。
+- 战役节点 29 → **64**；支线章节 2 → **13**；支线节点 5 → **39**。
 ---
 
 ## 1. 现状诊断
@@ -243,7 +245,7 @@ SuperGod、SuperImmortal、Seng、Dao）。
 | 第二章 庭院 | The Altar's Answer / The Unfinished Gallery | Shen / Xian |
 | 第三章 龙墓 | The Stone's Due / The Queue at the Gate | Shi / 同伴 Bram |
 | 第三章 书库 | The Missing Page / The Quiet Reading Room | 同伴 Sable / 见闻 |
-| The Roofless Shelter（支线章节） | The Weight of Another Turn / The Bench Repaired | Seng / Dao |
+| The Roofless Shelter（支线章节） | The Weight / The Bench Repaired | Seng / Dao |
 
 ### 5.3 见闻线
 
@@ -287,10 +289,12 @@ SuperGod、SuperImmortal、Seng、Dao）。
 **层级规则：每一页要么全是章节，要么全是关卡。** 现有地图在"有子章节"时画章节卡，
 在"没有子章节"时画关卡卡，两者混在一页会重叠。所以：
 
-- `Chapter II`、`Chapter III` 是纯容器，里面只有 `Bell Tower`、`Courtyard` 等子章节；
-- `Chapter I`、`Prologue`、各支线章节直接挂关卡；
-- 支线章节与主线章节**并列在顶层**，这样每一页的渲染方式都是确定的。
-  等支线章节变多，再把同一章的支线收进一个纯容器，规则不变。
+- `Chapter I`、`Chapter II`、`Chapter III` 是纯容器，里面只有子章节；
+- `Prologue`、`The Long Road`、`The Wall`、`Bell Tower`、`Courtyard`、`Dragon Tomb`、
+  `Blank Archive`、各支线章节、`Finale` 直接挂关卡；
+- 支线章节挂在自己所属的容器章节下（Chapter I 的支线在 Chapter I 里），
+  `The Roofless Shelter` 是顶层支线章节，因为它是决战前的独立一站。
+  这样任何一页的渲染方式都是确定的，根目录也始终只有 7 张卡。
 
 | 字段 | 说明 |
 |---|---|
@@ -358,38 +362,42 @@ SuperGod、SuperImmortal、Seng、Dao）。
 如果新增的主线章节没有被后续主线节点引用，它实际上就是支线——校验会把这种"假主线"报出来，
 免得玩家以为必须打。
 
-**章节清单（23 条）：**
+**章节清单（24 条）：**
 
 | # | 章节 | 路径 | kind | palette | 节点 |
 |---:|---|---|---|---|---|
 | 1 | Prologue | Prologue | main | paper | P |
 | 2 | The Long Road | The Long Road | main | paper | T01–T03 |
-| 3 | Chapter I | Chapter I | main | paper | A1–A3, AG |
-| 4 | The Smith's Errand | （顶层） | side | frost | AS1–AS3 |
-| 5 | Names on the Wall | （顶层） | side | frost | AS4–AS5 |
-| 6 | Chapter II | Chapter II | main | paper | （容器） |
-| 7 | Bell Tower | Chapter II / Bell Tower | main | paper | B1–B5, BG |
-| 8 | Courtyard | Chapter II / Courtyard | main | paper | C1–C5, CG |
-| 9 | The Hunters' Debt | （顶层） | side | frost | BS1–BS3 |
-| 10 | The Thirteenth Ring | （顶层） | side | frost | BS4–BS6 |
-| 11 | The Altar's Answer | （顶层） | side | frost | CS1–CS3 |
-| 12 | The Unfinished Gallery | （顶层） | side | frost | CS4–CS6 |
-| 13 | Chapter III | Chapter III | main | paper | （容器） |
-| 14 | Dragon Tomb | Chapter III / Dragon Tomb | main | paper | D1, D2 |
-| 15 | Blank Archive | Chapter III / Blank Archive | main | paper | E1, E2 |
-| 16 | The Stone's Due | （顶层） | side | frost | DS1–DS3 |
-| 17 | The Queue at the Gate | （顶层） | side | frost | DS4–DS6 |
-| 18 | The Missing Page | （顶层） | side | frost | ES1–ES3 |
-| 19 | The Quiet Reading Room | （顶层） | side | frost | ES4–ES6 |
-| 20 | Tomb Afterimages | （顶层） | side | frost | D3, D4（原属龙墓） |
-| 21 | Archive Overwritten | （顶层） | side | frost | E3, E4（原属书库） |
-| 22 | The Roofless Shelter | The Roofless Shelter | side | slate | WS1–WS6 |
-| 23 | Finale | Finale | main | paper | F |
+| 3 | Chapter I | Chapter I | main | paper | （容器） |
+| 4 | The Wall | Chapter I / The Wall | main | paper | A1–A3, AG |
+| 5 | The Smith's Errand | Chapter I / … | side | frost | AS1–AS3 |
+| 6 | Names on the Wall | Chapter I / … | side | frost | AS4–AS5 |
+| 7 | Chapter II | Chapter II | main | paper | （容器） |
+| 8 | Bell Tower | Chapter II / Bell Tower | main | paper | B1–B5, BG |
+| 9 | Courtyard | Chapter II / Courtyard | main | paper | C1–C5, CG |
+| 10 | The Hunters' Debt | Chapter II / … | side | frost | BS1–BS3 |
+| 11 | The Thirteenth Ring | Chapter II / … | side | frost | BS4–BS6 |
+| 12 | The Altar's Answer | Chapter II / … | side | frost | CS1–CS3 |
+| 13 | The Unfinished Gallery | Chapter II / … | side | frost | CS4–CS6 |
+| 14 | Chapter III | Chapter III | main | paper | （容器） |
+| 15 | Dragon Tomb | Chapter III / Dragon Tomb | main | paper | D1, D2 |
+| 16 | Blank Archive | Chapter III / Blank Archive | main | paper | E1, E2 |
+| 17 | The Stone's Due | Chapter III / … | side | frost | DS1–DS3 |
+| 18 | The Queue at the Gate | Chapter III / … | side | frost | DS4–DS6 |
+| 19 | Tomb Afterimages | Chapter III / … | side | frost | D3, D4（原属龙墓） |
+| 20 | The Missing Page | Chapter III / … | side | frost | ES1–ES3 |
+| 21 | The Quiet Reading Room | Chapter III / … | side | frost | ES4–ES6 |
+| 22 | Archive Overwritten | Chapter III / … | side | frost | E3, E4（原属书库） |
+| 23 | The Roofless Shelter | The Roofless Shelter | side | slate | WS1–WS6 |
+| 24 | Finale | Finale | main | paper | F |
 
-现有四个可选节点因此换了归属：D3、D4 从「龙墓」移到支线章节 **Tomb Afterimages**，
+每个主线章节现在要么是纯容器（Chapter I/II/III），要么直接挂关卡（Prologue、The Long Road、
+The Wall、Bell Tower、Courtyard、Dragon Tomb、Blank Archive、Finale）——同一页永远不会
+既要画章节卡又要画关卡卡。Chapter I 的原有关卡因此收进 **The Wall** 子章节。
+
+现有四个可选节点也换了归属：D3、D4 从「龙墓」移到 **Tomb Afterimages**，
 E3、E4 从「书库」移到 **Archive Overwritten**。这样每个章节要么全主线、要么全支线，
 颜色不会自相矛盾；主线的 `n / m` 也不再被可选节点稀释。
-
 支线章节的插画按所在地借用现有板块（`art` 字段）：
 
 | 支线章节 | `art` |
@@ -525,7 +533,7 @@ E3、E4 从「书库」移到 **Archive Overwritten**。这样每个章节要么
 即两条第三章路线都走完才出现。它是决战前最后一处"等人"的地方。
 颜色与其它支线不同（石板灰 + 淡紫），因为这两条弧是终局挑战，不是见闻。
 
-弧① **The Weight of Another Turn**（→ 僧 Seng）
+弧① **The Weight**（Queue → One More Turn → Weight，→ 僧 Seng）
 
 | ID | 节点名 | 父节点 | 档 | 誓约 | 敌人 | 预算 | 奖励 |
 |---|---|---|---|---|---|---|---:|
@@ -577,10 +585,10 @@ D2+E2 → WS1 → WS2 → WS3      D2+E2 → WS4 → WS5 → WS6        （The R
 
 | id | 名字 | 来源 | 生命 | 技能 | 性格 / 作用 |
 |---|---|---|---:|---|---|
-| `mara_venn` | Mara Venn | P | 8 | — | 原有；默认就在名册里 |
-| `ila` | Ila | AS3 | 7 | 加攻击 | 铁匠学徒；新手期唯一能带的输出型同伴 |
-| `bram` | Bram | DS6 | 9 | 双倍防御 | 守门人；肉盾，适合空手/独行节点的替代方案 |
-| `sable` | Sable | ES3 | 7 | 仙 | 书库抄写员；会改数，配合玩家的连招 |
+| `mara_venn` | Mara Venn | P | 10 | — | 队伍最低血量越低，AI 强度越高（40 → 95） |
+| `ila` | Ila | AS3 | 7 | 加攻击、双倍攻击 | 她上一轮造成过伤害，玩家本回合的攻击翻倍 |
+| `bram` | Bram | DS6 | 9 | 双倍防御 | 两个数字都是 1 时，每回合免第一次受击 |
+| `sable` | Sable | ES3 | 5 | — | 带 3 血墨影；倒下后移除，她花 2 回合重写，可无限重召 |
 
 三名新同伴先用 3×2 名册图集（`atlasCell` 2/3/4）作立绘占位，
 之后只要给 `artKey` 或 `artPath` 就能换成正式立绘，不需要改代码。
@@ -662,12 +670,12 @@ D2+E2 → WS1 → WS2 → WS3      D2+E2 → WS4 → WS5 → WS6        （The R
 | `UI/Campaign/UICampaignCompanionSelect*.cs` | 名册按招募过滤；标题行 `ROSTER n` |
 | `UI/Campaign/UICampaignPartyStrip.cs` | 誓约说明行（`ALONE` 时说明本场无人可带） |
 | `UI/Campaign/UICampaignScreenBuilder.cs` | 誓约横幅、结算面板显示招募 |
-| `Content/campaign/chapter-index.json`（新） | 23 条章节条目 |
+| `Content/campaign/chapter-index.json`（新） | 24 条章节条目（主线 11 / 支线 13） |
 | `Content/campaign/companions.json` | 3 名新同伴 |
 
 ### 8.3 测试
 
-- 现有固定值已经改到 34（第一批 5 个支线节点）；全部内容落地后改为 64。
+- 固定值已改为 **64** 个节点、**24** 条章节条目；测试会同时校验唯一来源与难度契约。
 - 新增：技能来源唯一且覆盖全部 20 个（随 P6 奖励重排落地）；主线节点不以支线为父节点；
   难度契约对全目录通过；同伴招募按进度过滤；`playerHealth` 写入战斗。
 - 章节：每条被节点使用的 `path` 都能在索引里命中；`kind`/`palette` 合法；
@@ -690,11 +698,11 @@ D2+E2 → WS1 → WS2 → WS3      D2+E2 → WS4 → WS5 → WS6        （The R
 |---|---|---|---|
 | P0 | 章节索引 + 新字段、难度契约、校验、测试骨架 | 数据契约可运行 | **已完成** |
 | P1 | 章节配色与 S 编号、难度菱形/誓约、章节计数、面包屑、招募过滤 | UI 能表达难度与支线章节 | **已完成** |
-| P2 | 第一章 5 节点（2 个支线章节）+ Ila | 第一批可玩支线 | **部分完成**（章节与同伴已落地；技能奖励重排待做） |
-| P3 | 钟楼 + 庭院 12 节点、4 个支线章节（Xue/Tong/Shen/Xian） | 第二章支线 | 待做 |
-| P4 | 龙墓 + 书库 12 节点、4 个支线章节（Shi、Bram、Sable）+ D3/D4/E3/E4 迁章 | 第三章支线 | 待做 |
-| P5 | The Roofless Shelter 6 节点（Seng、Dao） | 终局挑战 | 待做 |
-| P6 | 奖励重排 + 平衡试玩、难度契约校准、文档 | 可发布 | 待做 |
+| P2 | 第一章 5 节点（2 个支线章节）+ Ila | 第一批可玩支线 | **已完成** |
+| P3 | 钟楼 + 庭院 12 节点、4 个支线章节（Xue/Tong/Shen/Xian） | 第二章支线 | **已完成** |
+| P4 | 龙墓 + 书库 12 节点、4 个支线章节（Shi、Bram、Sable）+ D3/D4/E3/E4 迁章 | 第三章支线 | **已完成** |
+| P5 | The Roofless Shelter 6 节点（Seng、Dao） | 终局挑战 | **已完成** |
+| P6 | 奖励重排 + 平衡试玩、难度契约校准、文档 | 可发布 | **已完成**（20 个技能 20 个唯一来源） |
 
 奖励重排（把 Xue/Tong/Shen/Xian/Shi 从主线节点移到支线试炼、Mo/Di 改由 BG/CG 给）
 必须与「技能唯一来源」测试同时落地，所以放在 P6 与平衡一起做；在那之前主线仍然

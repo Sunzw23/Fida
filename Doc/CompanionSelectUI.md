@@ -52,9 +52,17 @@ The control never mutates campaign state. It reports `TryConsumeToggle(id)`,
 `CompanionSelectState` applies them through `GameSetup` and mirrors the authoritative party
 back into the screen every frame. Paging is internal and never changes the party.
 
+**Input wiring.** A state only receives input when two things line up: `Game1.Update` routes
+the state to `MenuInputHandler`, and the handler has an entry for it. Missing either half
+leaves the screen rendered but frozen - the briefing card covers everything and no click
+reaches it, which is easy to mistake for a UI bug. `MenuInputHandler.HandledStates` exposes
+the registered states and `Fida.Tests/InputRoutingTests.cs` fails if any state (other than
+`Playing`/`OnlinePlaying`) is missing, so add the state to both lists together.
+
 The before-battle briefing plays once per node on this screen, before the cards accept
 input. `GameSetup.NodeBriefingShown` prevents a replay when the player returns from the
-loadout or retries a failed battle.
+loadout or retries a failed battle. While the card is visible, `StateBase.HandleStoryInput`
+polls only the overlay, so click/Enter/Space advance pages and Escape skips them.
 
 ## How this scales
 

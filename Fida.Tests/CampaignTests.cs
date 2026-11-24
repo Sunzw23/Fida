@@ -133,7 +133,7 @@ public class CampaignTests
     public void Catalog_HasUniqueNodesAndValidParents()
     {
         Assert.True(CampaignGraphValidator.IsValid(CampaignCatalog.Nodes));
-        Assert.Equal(34, CampaignCatalog.Nodes.Count);
+        Assert.Equal(64, CampaignCatalog.Nodes.Count);
         Assert.Equal(CampaignCatalog.Nodes.Count, CampaignCatalog.Nodes.Select(n => n.Id).Distinct().Count());
         var ids = CampaignCatalog.Nodes.Select(n => n.Id).ToHashSet();
         Assert.All(CampaignCatalog.Nodes.SelectMany(n => n.Parents), parent => Assert.Contains(parent, ids));
@@ -186,7 +186,7 @@ public class CampaignTests
     [Fact]
     public void ExpandedCampaign_HasMultiSkillEnemiesAndReachableRewards()
     {
-        Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "B4" && node.Rewards.Contains(SkillType.Shi));
+        Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "DS3" && node.Rewards.Contains(SkillType.Shi));
         Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "D3" && node.Rewards.Contains(SkillType.SuperEmperor));
         Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "E3" && node.Rewards.Contains(SkillType.SuperImmortal));
         Assert.Contains(CampaignCatalog.Nodes, node => node.Id == "D4" && node.Rewards.Contains(SkillType.SuperGod));
@@ -279,7 +279,7 @@ public class CampaignTests
         Assert.Equal(0, setup.Groups[0].GroupId);
         Assert.Contains(mara, setup.Groups[0].Players);
         Assert.DoesNotContain(mara, setup.Groups[1].Players);
-        Assert.Equal(CampaignAgentType.Rule, setup.AgentTypes[mara.PlayerId]);
+        Assert.Equal(CampaignAgentType.Adaptive, setup.AgentTypes[mara.PlayerId]);
         Assert.Equal("Echo Scout", setup.Groups[1].Players.Single().Name);
     }
 

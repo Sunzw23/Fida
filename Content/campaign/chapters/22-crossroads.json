@@ -12,9 +12,7 @@
       "B2"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [
-      "Shi"
-    ],
+    "rewards": [],
     "enemies": [
       {
         "name": "Stone Warden",

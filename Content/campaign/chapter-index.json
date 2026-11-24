@@ -28,21 +28,30 @@
       "summary": "A wall that outlived the war it was built for."
     },
     {
+      "id": "the-wall",
+      "path": ["Chapter I", "The Wall"],
+      "title": "The Wall",
+      "kind": "main",
+      "palette": "paper",
+      "order": 31,
+      "summary": "The old wall, its arsenal, its gate, its hospice, and the General who holds the line."
+    },
+    {
       "id": "side-smith",
-      "path": ["The Smith's Errand"],
+      "path": ["Chapter I", "The Smith's Errand"],
       "title": "The Smith's Errand",
       "kind": "side",
       "palette": "frost",
-      "order": 31,
+      "order": 32,
       "summary": "A finished sword, and a delivery nobody has been able to make."
     },
     {
       "id": "side-wall-names",
-      "path": ["Names on the Wall"],
+      "path": ["Chapter I", "Names on the Wall"],
       "title": "Names on the Wall",
       "kind": "side",
       "palette": "frost",
-      "order": 32,
+      "order": 33,
       "summary": "A mason still carving names, and a watch that was never relieved."
     },
     {
@@ -73,6 +82,46 @@
       "summary": "Three answers the King once asked for, and none of them helped."
     },
     {
+      "id": "side-hunters",
+      "path": ["Chapter II", "The Hunters' Debt"],
+      "title": "The Hunters' Debt",
+      "kind": "side",
+      "palette": "frost",
+      "order": 43,
+      "art": "bell tower",
+      "summary": "The hunters owe the tower a life. The collectors have come for it."
+    },
+    {
+      "id": "side-ring",
+      "path": ["Chapter II", "The Thirteenth Ring"],
+      "title": "The Thirteenth Ring",
+      "kind": "side",
+      "palette": "frost",
+      "order": 44,
+      "art": "bell tower",
+      "summary": "An hour that will not end, kept by two hands that will not let go."
+    },
+    {
+      "id": "side-altar",
+      "path": ["Chapter II", "The Altar's Answer"],
+      "title": "The Altar's Answer",
+      "kind": "side",
+      "palette": "frost",
+      "order": 45,
+      "art": "courtyard",
+      "summary": "The altar only answers pain. The acolytes have run out of other questions."
+    },
+    {
+      "id": "side-gallery",
+      "path": ["Chapter II", "The Unfinished Gallery"],
+      "title": "The Unfinished Gallery",
+      "kind": "side",
+      "palette": "frost",
+      "order": 46,
+      "art": "courtyard",
+      "summary": "A play nobody finished, still waiting for its last entrance."
+    },
+    {
       "id": "chapter-3",
       "path": ["Chapter III"],
       "title": "Chapter III",
@@ -98,6 +147,75 @@
       "palette": "paper",
       "order": 52,
       "summary": "Every number in the histories has been quietly rewritten."
+    },
+    {
+      "id": "side-stone",
+      "path": ["Chapter III", "The Stone's Due"],
+      "title": "The Stone's Due",
+      "kind": "side",
+      "palette": "frost",
+      "order": 53,
+      "art": "dragon tomb",
+      "summary": "The tomb keeps a tally of what the bones are still owed."
+    },
+    {
+      "id": "side-queue",
+      "path": ["Chapter III", "The Queue at the Gate"],
+      "title": "The Queue at the Gate",
+      "kind": "side",
+      "palette": "frost",
+      "order": 54,
+      "art": "dragon tomb",
+      "summary": "A relief that finally arrived, and a gate that will not let it through."
+    },
+    {
+      "id": "side-ash",
+      "path": ["Chapter III", "Tomb Afterimages"],
+      "title": "Tomb Afterimages",
+      "kind": "side",
+      "palette": "frost",
+      "order": 55,
+      "art": "dragon tomb",
+      "summary": "What the tomb kept of the war after the machine stopped counting."
+    },
+    {
+      "id": "side-page",
+      "path": ["Chapter III", "The Missing Page"],
+      "title": "The Missing Page",
+      "kind": "side",
+      "palette": "frost",
+      "order": 56,
+      "art": "blank archive",
+      "summary": "One page was scraped clean, and the earlier text keeps surfacing."
+    },
+    {
+      "id": "side-reading",
+      "path": ["Chapter III", "The Quiet Reading Room"],
+      "title": "The Quiet Reading Room",
+      "kind": "side",
+      "palette": "frost",
+      "order": 57,
+      "art": "blank archive",
+      "summary": "One room in the archive is still quiet, and the warden intends to keep it."
+    },
+    {
+      "id": "side-index",
+      "path": ["Chapter III", "Archive Overwritten"],
+      "title": "Archive Overwritten",
+      "kind": "side",
+      "palette": "frost",
+      "order": 58,
+      "art": "blank archive",
+      "summary": "Everything the archive wrote over, written again in the margins."
+    },
+    {
+      "id": "side-shelter",
+      "path": ["The Roofless Shelter"],
+      "title": "The Roofless Shelter",
+      "kind": "side",
+      "palette": "slate",
+      "order": 80,
+      "summary": "The last stop before the last duel: a queue, a ferry, and a bench with one end repaired."
     },
     {
       "id": "finale",

@@ -107,6 +107,11 @@ namespace Fida
             _textures = new Dictionary<string, System.Lazy<Texture2D>>();
             LoadTexture(contentManager, "cold_roster", "portraits/paper_roster");
             LoadTexture(contentManager, "dialogue_mara", "portraits/dialogue_mara_concept");
+            // Companion portraits: the same asset serves the roster art and the battle card.
+            LoadTexture(contentManager, "portrait_ila", "portraits/ila");
+            LoadTexture(contentManager, "portrait_bram", "portraits/bram");
+            LoadTexture(contentManager, "portrait_sable", "portraits/sable");
+            LoadTexture(contentManager, "portrait_ink_echo", "portraits/ink_echo");
             LoadTexture(contentManager, "paper_chapters", "paper/chapters");
             UI.UIPaper.RegisterScenes(_graphicsDevice, () => GetTexture("paper_chapters"));
             LoadTexture(contentManager, "paper_missions", "paper/mission_locations_v2");

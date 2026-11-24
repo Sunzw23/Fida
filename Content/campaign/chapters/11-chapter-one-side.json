@@ -1,7 +1,7 @@
 [
   {
     "id": "AS1",
-    "chapter": "The Smith's Errand",
+    "chapter": "Chapter I - The Smith's Errand",
     "name": "Cold Quench",
     "story": "The apprentice holds a finished blade over the oil. The quench room has been locked since the last order.",
     "tier": 1,
@@ -53,7 +53,7 @@
   },
   {
     "id": "AS2",
-    "chapter": "The Smith's Errand",
+    "chapter": "Chapter I - The Smith's Errand",
     "name": "The Test Cut",
     "story": "The practice hall is full of straw soldiers and orders nobody carried out.",
     "tier": 1,
@@ -114,7 +114,7 @@
   },
   {
     "id": "AS3",
-    "chapter": "The Smith's Errand",
+    "chapter": "Chapter I - The Smith's Errand",
     "name": "Delivery at Dusk",
     "story": "The sword is for a house that stopped answering its door years ago.",
     "tier": 2,
@@ -182,7 +182,7 @@
   },
   {
     "id": "AS4",
-    "chapter": "Names on the Wall",
+    "chapter": "Chapter I - Names on the Wall",
     "name": "Names on the Wall",
     "story": "A mason carves the names of soldiers who never came back, one letter at a time.",
     "tier": 1,
@@ -230,7 +230,7 @@
   },
   {
     "id": "AS5",
-    "chapter": "Names on the Wall",
+    "chapter": "Chapter I - Names on the Wall",
     "name": "The Watch Relieved",
     "story": "The relief never came. The watch still stands where it was posted.",
     "tier": 2,

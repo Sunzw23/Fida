@@ -46,10 +46,16 @@ Adding a companion is a data edit; no code or node change is needed.
 
 ```json
 { "id": "mara_venn", "name": "Mara Venn", "portraitKey": "tutorial_ally",
-  "artKey": "dialogue_mara", "atlasCell": 1, "health": 8,
-  "agentType": "Rule", "skills": [], "unlockNode": "", "description": "..." }
+  "artKey": "dialogue_mara", "atlasCell": 1, "health": 10,
+  "agentType": "Adaptive", "skills": [], "unlockNode": "", "description": "..." }
 ```
 
+- `agentType: "Adaptive"` selects `AdaptiveCompanionController` (Mara): her decision
+  strength follows the party's lowest health ratio instead of the default agent profile.
+- `passive: "gate_ward"` gives Bram the first-hit ward while both of his numbers are 1.
+- `summons: { name, health, skills }` gives Sable an Ink Echo; `CampaignBattleRules`
+  respawns it after two of her turns and the scene rebuilds the board on the
+  `Summoned` / `Removed` events.
 - `unlockNode` hides a companion until that node is cleared; `Ila` unlocks from `AS3`.
   Pass `CampaignCompanions.Available(node, progress)` for the real roster and omit the
   progress for the unfiltered list used by tests and previews.
@@ -101,8 +107,9 @@ touches the UI:
 - `art` reuses one of the existing chapter plates (`bell tower`, `courtyard`, `dragon tomb`,
   `blank archive`); unknown/absent values fall back to `UIPaper.ChapterIndex`.
 - The map renders one kind per level: a page shows chapter cards when it has sub-chapters,
-  otherwise mission cards. Keep containers (`Chapter II`, `Chapter III`) childless and side
-  chapters at the top level until a group container is worth adding.
+  otherwise mission cards. `Chapter I`, `Chapter II` and `Chapter III` are therefore pure
+  containers (`The Wall` holds Chapter I's missions); side chapters hang under their own
+  container, and `The Roofless Shelter` is the one top-level side chapter.
 - Main chapter counters count main nodes only; side chapters count their own nodes.
   Main folders are numbered `01`, `02`…; side folders `S1`, `S2`… on their level.
 

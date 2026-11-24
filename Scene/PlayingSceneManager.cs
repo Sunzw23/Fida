@@ -23,6 +23,7 @@ namespace Fida.Scene
         private readonly UIManager _uiManager;
         private readonly AgentManager _agentManager;
         private readonly CampaignEncounterCoordinator _campaignEncounter;
+        private readonly CampaignBattleRules _battleRules;
         private readonly AutomatedActionPresenter _actionPresenter = new();
         private CampaignBattleSetup _campaignSetup = null!;
         private bool _controlAgentsLocally = true;
@@ -45,6 +46,9 @@ namespace Fida.Scene
             _agentManager = agentManager;
             _campaignEncounter = new CampaignEncounterCoordinator(gameManager);
             _campaignEncounter.ReinforcementsDeployed += OnReinforcementsDeployed;
+            _battleRules = new CampaignBattleRules(gameManager);
+            _battleRules.Summoned += OnCompanionSummoned;
+            _battleRules.Removed += OnCompanionRemoved;
             _actionPresenter.PresentationStarted += OnAutomatedPresentationStarted;
             _actionPresenter.PresentationEnded += OnAutomatedPresentationEnded;
             _gameManager.NumberOperationResolved += OnNumberOperationResolved;
@@ -122,6 +126,7 @@ namespace Fida.Scene
             ResetPresentation();
             _campaignSetup = setup;
             _controlAgentsLocally = controlAgentsLocally;
+            _battleRules.Configure(setup);
             _controllers.Clear();
             foreach (var player in setup.Players)
                 _controllers[player.PlayerId] = player.PlayerId == remotePlayerId
@@ -150,8 +155,11 @@ namespace Fida.Scene
                 Players = _gameManager.Players,
                 Groups = _gameManager.Groups,
                 AgentTypes = template.AgentTypes,
+                CompanionIds = template.CompanionIds,
+                Summons = template.Summons,
                 Reinforcements = template.Reinforcements.Where(player => !activeIds.Contains(player.PlayerId)).ToList()
             };
+            _battleRules.Configure(_campaignSetup);
             _controllers.Clear();
             foreach (var player in _campaignSetup.Players)
                 _controllers[player.PlayerId] = player.PlayerId == localPlayerId
@@ -191,7 +199,26 @@ namespace Fida.Scene
             var type = setup.AgentTypes.TryGetValue(playerId, out var configured)
                 ? configured
                 : CampaignAgentType.Rule;
-            return CampaignControllerFactory.Create(playerId, type);
+            return CampaignControllerFactory.Create(playerId, type, _battleRules);
+        }
+
+        private void OnCompanionSummoned(Player echo)
+        {
+            if (_campaignSetup == null) return;
+            _campaignSetup.Players.Add(echo);
+            _campaignSetup.AgentTypes[echo.PlayerId] = CampaignAgentType.Rule;
+            _controllers[echo.PlayerId] = CreateCampaignController(echo.PlayerId, _campaignSetup);
+            RecordEncounter(_campaignSetup.Node.Id, new[] { echo });
+            _uiManager.RebuildPlayingUI(_gameManager);
+            _uiManager.PlayReinforcementEntrance(new[] { echo.PlayerId });
+        }
+
+        private void OnCompanionRemoved(int playerId)
+        {
+            _controllers.Remove(playerId);
+            _campaignSetup?.Players.RemoveAll(player => player.PlayerId == playerId);
+            _campaignSetup?.AgentTypes.Remove(playerId);
+            _uiManager.RebuildPlayingUI(_gameManager);
         }
 
         private void ResetPresentation()

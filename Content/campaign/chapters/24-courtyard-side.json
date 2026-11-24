@@ -1,0 +1,389 @@
+[
+  {
+    "id": "CS1",
+    "chapter": "Chapter II - The Altar's Answer",
+    "name": "Acolytes at the Altar",
+    "story": "The altar answers pain with changes, and the acolytes cannot stop asking.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 220,
+    "parents": [
+      "AG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Acolyte",
+        "health": 4,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Shen"
+        ]
+      },
+      {
+        "name": "Acolyte",
+        "health": 4,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Shen"
+        ]
+      },
+      {
+        "name": "Altar Voice",
+        "health": 6,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Acolytes kneel in a circle and cut their own hands, then wait for the answer."
+      },
+      {
+        "speaker": "Acolyte",
+        "text": "The god only answers the hurt. Give it something, or let us."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The altar goes quiet. One acolyte writes down what it answered."
+      }
+    ]
+  },
+  {
+    "id": "CS2",
+    "chapter": "Chapter II - The Altar's Answer",
+    "name": "What the Wound Asks",
+    "story": "The wound is a question. The priest will ask it until it is answered.",
+    "tier": 3,
+    "vows": [
+      "wounded"
+    ],
+    "playerHealth": 8,
+    "skillBudget": 3,
+    "mapX": 820,
+    "mapY": 220,
+    "parents": [
+      "CS1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Priest",
+        "health": 6,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Shen"
+        ]
+      },
+      {
+        "name": "Acolyte",
+        "health": 4,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Shen"
+        ]
+      },
+      {
+        "name": "Statue",
+        "health": 5,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Priest",
+        "text": "You are already carrying an answer. Let me open it."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The altar has been fed all day. The priest is not asking permission."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith keeps his hand shut until the priest stops asking."
+      }
+    ]
+  },
+  {
+    "id": "CS3",
+    "chapter": "Chapter II - The Altar's Answer",
+    "name": "The Answer Given",
+    "story": "The priest offers to write Arith's answer himself.",
+    "tier": 3,
+    "vows": [
+      "alone"
+    ],
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 220,
+    "companions": [],
+    "parents": [
+      "CS2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Shen"
+    ],
+    "enemies": [
+      {
+        "name": "Priest",
+        "health": 8,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Shen",
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Acolyte",
+        "health": 4,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Shen"
+        ]
+      },
+      {
+        "name": "Acolyte",
+        "health": 4,
+        "number0": 2,
+        "number1": 2
+      },
+      {
+        "name": "Acolyte",
+        "health": 3,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Priest",
+        "text": "Give me the name of the thing you want changed, and I will change it."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Mara is left at the courtyard wall. The altar will not answer in front of her."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "Arith speaks once. The altar writes it down and hands the page back."
+      },
+      {
+        "speaker": "Priest",
+        "text": "There. Now the change is yours."
+      }
+    ]
+  },
+  {
+    "id": "CS4",
+    "chapter": "Chapter II - The Unfinished Gallery",
+    "name": "The Understudy's Line",
+    "story": "The gallery keeps performing a play nobody finished.",
+    "tier": 2,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 420,
+    "parents": [
+      "CG"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Gallery Guide",
+        "health": 5,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xian"
+        ]
+      },
+      {
+        "name": "Understudy",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Understudy",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "An understudy waits in the wings for an entrance that was never written."
+      },
+      {
+        "speaker": "Gallery Guide",
+        "text": "Stand where the light is. The play goes on from there."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The guide marks the script. The understudy takes the line."
+      }
+    ]
+  },
+  {
+    "id": "CS5",
+    "chapter": "Chapter II - The Unfinished Gallery",
+    "name": "The Last Entrance",
+    "story": "The last entrance is blocked by everyone who wanted it.",
+    "tier": 3,
+    "vows": [
+      "outnumbered"
+    ],
+    "skillBudget": 3,
+    "mapX": 820,
+    "mapY": 420,
+    "parents": [
+      "CS4"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Gallery Guide",
+        "health": 7,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xian"
+        ]
+      },
+      {
+        "name": "Understudy",
+        "health": 5,
+        "number0": 3,
+        "number1": 3,
+        "skills": [
+          "PlusAttack"
+        ]
+      },
+      {
+        "name": "Understudy",
+        "health": 4,
+        "number0": 3,
+        "number1": 3
+      },
+      {
+        "name": "Doorman",
+        "health": 4,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Gallery Guide",
+        "text": "There were three of us at every door. Now there are four."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The last entrance is narrow. Everyone in the gallery is standing in it."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The door opens. The gallery keeps the understudies."
+      }
+    ]
+  },
+  {
+    "id": "CS6",
+    "chapter": "Chapter II - The Unfinished Gallery",
+    "name": "No One Left to Play",
+    "story": "The play needs an end, and the audience will not provide one.",
+    "tier": 3,
+    "vows": [
+      "bare_hands"
+    ],
+    "skillBudget": 0,
+    "mapX": 1320,
+    "mapY": 420,
+    "parents": [
+      "CS5"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [
+      "Xian"
+    ],
+    "enemies": [
+      {
+        "name": "Gallery Guide",
+        "health": 6,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "Xian"
+        ]
+      },
+      {
+        "name": "Understudy",
+        "health": 5,
+        "number0": 3,
+        "number1": 3,
+        "skills": [
+          "Xian"
+        ]
+      },
+      {
+        "name": "Exit Keeper",
+        "health": 5,
+        "number0": 1,
+        "number1": 1
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Gallery Guide",
+        "text": "No scripts, no skills. Just the last scene, as written."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "The stage is lit for a cast that has already left."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The stage empties. The guide bows to nobody in particular."
+      },
+      {
+        "speaker": "Gallery Guide",
+        "text": "Take the line with you. Someone will ask for it."
+      }
+    ]
+  }
+]
