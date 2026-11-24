@@ -29,6 +29,7 @@
     <None Remove="onnx_models\**" />
     <Compile Remove="Fida.Tests\**" />
     <Compile Remove="tools\**\*.cs" />
+    <Compile Remove="artifacts\**" />
     <EmbeddedResource Remove="Fida.Tests\**" />
     <None Remove="Fida.Tests\**" />
   </ItemGroup>

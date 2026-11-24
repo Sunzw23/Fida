@@ -133,7 +133,7 @@ public class CampaignTests
     public void Catalog_HasUniqueNodesAndValidParents()
     {
         Assert.True(CampaignGraphValidator.IsValid(CampaignCatalog.Nodes));
-        Assert.Equal(29, CampaignCatalog.Nodes.Count);
+        Assert.Equal(34, CampaignCatalog.Nodes.Count);
         Assert.Equal(CampaignCatalog.Nodes.Count, CampaignCatalog.Nodes.Select(n => n.Id).Distinct().Count());
         var ids = CampaignCatalog.Nodes.Select(n => n.Id).ToHashSet();
         Assert.All(CampaignCatalog.Nodes.SelectMany(n => n.Parents), parent => Assert.Contains(parent, ids));
@@ -199,7 +199,8 @@ public class CampaignTests
         var lessons = new[] { "T01", "T02", "T03" }.Select(Node).ToArray();
 
         Assert.All(lessons, node => Assert.True(node.IsTutorial));
-        Assert.Equal("Mara Venn", lessons[0].TutorialCompanion);
+        // The lessons introduce Mara in the narration; whether she fights is the player's choice.
+        Assert.Contains(lessons[0].BeforeStory, page => page.Speaker == "Mara Venn");
         Assert.Equal(new[] { "P" }, lessons[0].Parents);
         Assert.Contains("T01", lessons[1].Parents);
         Assert.Contains("T02", lessons[2].Parents);
@@ -270,9 +271,9 @@ public class CampaignTests
     }
 
     [Fact]
-    public void BattleFactory_PlacesTutorialCompanionOnPlayerFaction()
+    public void BattleFactory_PlacesInvitedCompanionOnPlayerFaction()
     {
-        var setup = CampaignBattleFactory.Create(Node("T01"), []);
+        var setup = CampaignBattleFactory.Create(Node("T01"), [], companionIds: ["mara_venn"]);
         var mara = setup.Players.Single(player => player.Name == "Mara Venn");
 
         Assert.Equal(0, setup.Groups[0].GroupId);
@@ -280,6 +281,27 @@ public class CampaignTests
         Assert.DoesNotContain(mara, setup.Groups[1].Players);
         Assert.Equal(CampaignAgentType.Rule, setup.AgentTypes[mara.PlayerId]);
         Assert.Equal("Echo Scout", setup.Groups[1].Players.Single().Name);
+    }
+
+    [Fact]
+    public void BattleFactory_FightsAloneUnlessACompanionIsInvited()
+    {
+        var alone = CampaignBattleFactory.Create(Node("T01"), []);
+        Assert.Single(alone.Groups[0].Players);
+        Assert.Equal("Arith", alone.Players[0].Name);
+
+        var invited = CampaignBattleFactory.Create(Node("T01"), [], companionIds: ["mara_venn"]);
+        Assert.Equal(2, invited.Groups[0].Players.Count);
+        Assert.Equal(new[] { 0, 1 }, invited.Groups[0].Players.Select(player => player.PlayerId));
+    }
+
+    [Fact]
+    public void BattleFactory_IgnoresUnknownCompanionsAndNodesThatForbidThem()
+    {
+        Assert.Single(CampaignBattleFactory.Create(Node("T01"), [], companionIds: ["nobody"]).Groups[0].Players);
+        // The prologue is set before Mara wakes, so its roster is empty.
+        Assert.Empty(CampaignCompanions.Available(Node("P")));
+        Assert.Single(CampaignBattleFactory.Create(Node("P"), [], companionIds: ["mara_venn"]).Groups[0].Players);
     }
 
     [Fact]

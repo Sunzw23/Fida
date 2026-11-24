@@ -94,7 +94,11 @@ public class SkillGridTests
     [InlineData(720,1280)]
     public void GridDetailsAndFooterHaveSeparateVisibleHitRegions(int width,int height)
     {
-        var layout = new SkillSelectionLayout(width,height);
+        // Header/Back come from the Gum-authored route screen, which needs a graphics device to
+        // load. The geometry asserted here is the Gum-free grid/detail layout, so hand the shared
+        // header rectangles in directly and keep this test headless.
+        var layout = new SkillSelectionLayout(width, height,
+            new Rectangle(60, 30, 1480, 85), new Rectangle(60, 30, 72, 72));
         var screen = new Rectangle(0,0,width,height);
         Assert.True(screen.Contains(layout.Grid));
         Assert.True(screen.Contains(layout.Details));

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -65,8 +65,11 @@ public sealed class UIEditorialSurface : UIControl
         UIPaper.Sheet(batch, p ? l.Rect(70, 370, 350, 650) : l.Rect(300, 300, 550, 590), UITheme.Panel, 4, 9);
         UIPaper.Sheet(batch, p ? l.Rect(480, 370, 350, 650) : l.Rect(1070, 300, 550, 590), UITheme.Panel, 4, 9);
         int y = p ? 400 : 330;
-        UIPaperAvatar.Draw(batch, p ? l.Rect(110,y,280,340) : l.Rect(400,y,350,360),0);
-        UIPaperAvatar.Draw(batch, p ? l.Rect(510,y,280,340) : l.Rect(1170,y,350,360),1);
+        Texture2D identities = _resources.GetTexture("cold_roster");
+        UIPaperAvatar.Draw(batch, identities, p ? l.Rect(110,y,280,340) : l.Rect(400,y,350,360),
+            UIPaperAvatar.PlayerCell);
+        UIPaperAvatar.Draw(batch, identities, p ? l.Rect(510,y,280,340) : l.Rect(1170,y,350,360),
+            UIPaperAvatar.OpponentCell);
         Text(batch, l, "VS", p ? l.Rect(390, 560, 120, 80) : l.Rect(850, 490, 220, 90), 56, true, color: UITheme.InkMuted);
         string local = IsHost ? "Player 01" : "Player 02", remote = IsHost ? "Player 02" : "Player 01";
         Text(batch, l, local, p ? l.Rect(80, 800, 340, 70) : l.Rect(310, 740, 530, 70), 38, true);

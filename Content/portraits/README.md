@@ -1,12 +1,34 @@
 # Portrait Assets
 
-The cold numeric UI uses `cold_roster.png`, a transparent 3-column × 2-row atlas:
+The cold numeric UI uses `paper_roster.png`, a transparent 3-column × 2-row atlas:
 Arith, Mara, Sentinel, Withered King, Warden, Echo. The full built-in image generation
-prompt is in `cold_roster.prompt.txt`. Runtime regions are selected in `UIPlayerManager`.
+prompt is in `paper_roster.prompt.txt`. Runtime regions are selected in `UIPlayerManager`.
 See `Doc/ColdNumericUI.md` for integration and motion details. The older portraits below
 remain available as source assets.
 
 These portraits were generated as a visually consistent card set. Runtime text and UI frames are intentionally excluded from the images.
+
+## Atlas authoring
+
+`paper_roster.png` is 1536 × 1024 (512 px cells), transparent, straight alpha, straight
+row-major order. It was rendered with a local ComfyUI instance running Z-Image Turbo from a
+per-character prompt and then assembled by script:
+
+```powershell
+python tools/comfy/fida_portraits.py full --variant g_prod --seeds 4001,4002,4003
+python tools/comfy/build_atlas.py --out artifacts/portraits-comfy/paper_roster-new.png `
+  --cell 512 --strength 0.50 --scale 0.95,1.05,1.10,1.00,1.10,1.02 <six source renders>
+python tools/comfy/preview.py <six cells> --sizes 64,320     # check it at real card size
+python tools/comfy/compare.py --before <old atlas> --after <new atlas> --out compare.png
+```
+
+Two constraints drive the frame: `UIPlayer.Draw` sizes each cell aspect-fit and bottom-centred
+against `PortraitBounds`, and MGCB premultiplies alpha, so every bust must be cut by the
+bottom edge of its cell and carry a hard matte. `build_atlas.py` keys the render, flattens the
+palette onto the shared navy/ivory swatches, and bottom-anchors the bust inside each cell.
+
+Regenerating without the tooling still works: keep the filename, the 3 × 2 order, square cells
+and transparency, and both `Content.mgcb` and `Content.Android.mgcb` stay valid.
 
 ## Adding a portrait
 

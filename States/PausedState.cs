@@ -21,13 +21,22 @@ namespace Fida.States
 
             BindButton("backToMenu", () =>
             {
-                // Leaving an active Duel is a forfeit: closing the socket lets the
-                // opponent's session award the win immediately.
-                bool leavingSharedCampaign = _networkManager.CurrentGameMode == 2 &&
-                    _networkManager.IsCampaignSharedBattle;
-                if (_networkManager.IsConnected &&
-                    (_networkManager.CurrentGameMode == 0 || leavingSharedCampaign))
-                    _networkManager.Cleanup();
+                // Walking out of a live online battle concedes it for the opponent. The
+                // session itself survives: only an explicit Disconnect closes the socket.
+                bool sharedBattle = _networkManager.IsConnected &&
+                    (_networkManager.CurrentGameMode == 0 ||
+                     (_networkManager.CurrentGameMode == 2 && _networkManager.IsCampaignSharedBattle));
+                if (sharedBattle)
+                {
+                    _networkManager.SendBattleForfeit(_networkManager.GetLocalPlayerId());
+                    if (_networkManager.CurrentGameMode == 2)
+                    {
+                        _networkManager.IsCampaignSharedBattle = false;
+                        _networkManager.SendCampaignPresence(new Network.CampaignPresence(
+                            _networkManager.GetLocalPlayerId(), Network.CampaignOnlinePhase.Map,
+                            string.Empty, false));
+                    }
+                }
                 _stateMachine.GoToMainMenu();
             });
             BindButton("settings", () => _stateMachine.SwitchToState(State.Settings));

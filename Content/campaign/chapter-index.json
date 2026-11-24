@@ -1,0 +1,112 @@
+{
+  "chapters": [
+    {
+      "id": "prologue",
+      "path": ["Prologue"],
+      "title": "Prologue",
+      "kind": "main",
+      "palette": "paper",
+      "order": 10,
+      "summary": "A voice in the Void, and a ruined palace at the end of it."
+    },
+    {
+      "id": "long-road",
+      "path": ["The Long Road"],
+      "title": "The Long Road",
+      "kind": "main",
+      "palette": "paper",
+      "order": 20,
+      "summary": "Three lessons on the road away from the palace."
+    },
+    {
+      "id": "chapter-1",
+      "path": ["Chapter I"],
+      "title": "Chapter I",
+      "kind": "main",
+      "palette": "paper",
+      "order": 30,
+      "summary": "A wall that outlived the war it was built for."
+    },
+    {
+      "id": "side-smith",
+      "path": ["The Smith's Errand"],
+      "title": "The Smith's Errand",
+      "kind": "side",
+      "palette": "frost",
+      "order": 31,
+      "summary": "A finished sword, and a delivery nobody has been able to make."
+    },
+    {
+      "id": "side-wall-names",
+      "path": ["Names on the Wall"],
+      "title": "Names on the Wall",
+      "kind": "side",
+      "palette": "frost",
+      "order": 32,
+      "summary": "A mason still carving names, and a watch that was never relieved."
+    },
+    {
+      "id": "chapter-2",
+      "path": ["Chapter II"],
+      "title": "Chapter II",
+      "kind": "main",
+      "palette": "paper",
+      "order": 40,
+      "summary": "Two roads leave the General's line."
+    },
+    {
+      "id": "bell-tower",
+      "path": ["Chapter II", "Bell Tower"],
+      "title": "Bell Tower",
+      "kind": "main",
+      "palette": "paper",
+      "order": 41,
+      "summary": "The tower keeps the last day of the war. Every bell raises the dead."
+    },
+    {
+      "id": "courtyard",
+      "path": ["Chapter II", "Courtyard"],
+      "title": "Courtyard",
+      "kind": "main",
+      "palette": "paper",
+      "order": 42,
+      "summary": "Three answers the King once asked for, and none of them helped."
+    },
+    {
+      "id": "chapter-3",
+      "path": ["Chapter III"],
+      "title": "Chapter III",
+      "kind": "main",
+      "palette": "paper",
+      "order": 50,
+      "summary": "Beyond the bell and the court, two ways further down."
+    },
+    {
+      "id": "dragon-tomb",
+      "path": ["Chapter III", "Dragon Tomb"],
+      "title": "Dragon Tomb",
+      "kind": "main",
+      "palette": "paper",
+      "order": 51,
+      "summary": "A machine that predicted the end of the war and was buried for it."
+    },
+    {
+      "id": "blank-archive",
+      "path": ["Chapter III", "Blank Archive"],
+      "title": "Blank Archive",
+      "kind": "main",
+      "palette": "paper",
+      "order": 52,
+      "summary": "Every number in the histories has been quietly rewritten."
+    },
+    {
+      "id": "finale",
+      "path": ["Finale"],
+      "title": "Finale",
+      "kind": "main",
+      "palette": "paper",
+      "order": 90,
+      "summary": "The last duel, and the water beyond it."
+    }
+  ]
+}

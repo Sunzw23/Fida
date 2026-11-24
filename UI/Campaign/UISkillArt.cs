@@ -27,55 +27,85 @@ public static class UISkillArt
         var shapes = new List<Mask>();
         void Fill(params int[] points) => shapes.Add(new Mask(points));
         void Cut(params int[] points) => shapes.Add(new Mask(points, false));
-        void Slash(int x) => Fill(x,82, x+5,46, x+35,14, x+30,45);
-        void Shield(int x, int w)
-        {
-            Fill(x,24,x+w/2,14,x+w,24,x+w,62,x+w/2,85,x,62);
-            Cut(x+8,30,x+w/2,24,x+w-8,30,x+w-8,57,x+w/2,72,x+8,57);
-        }
+        // A bold diagonal cut, wide flat base tapering to a point. Kept inside the 100 box so
+        // the point never clips on the cell edge.
+        void Strike(int x) => Fill(x,90, x+16,94, x+50,14, x+34,10);
+        // A pointed heraldic crest: straight top, straight sides, pointed base.
+        void Crest() => Fill(14,16, 86,16, 86,56, 50,94, 14,56);
+        void Heart() => Fill(50,86, 20,58, 20,34, 34,22, 50,36, 66,22, 80,34, 80,58);
+        // The paper punch mark that lifts a base sigil into the super tier.
+        void Punch() => Fill(83,3, 89,3, 89,11, 97,11, 97,17, 89,17, 89,25, 83,25,
+                             83,17, 75,17, 75,11, 83,11);
         switch (type)
         {
-            case SkillType.PlusAttack: Slash(30); break;
-            case SkillType.DoubleAttack: Slash(13); Slash(49); break;
-            case SkillType.PlusDefence: Shield(25,50); break;
-            case SkillType.DoubleDefence: Shield(13,42); Shield(47,42); break;
-            case SkillType.DoubleHealth:
+            // Offense: a strike, then a doubled strike, then a fang for the single great blow.
+            case SkillType.PlusAttack: Strike(22); break;
+            case SkillType.DoubleAttack: Strike(6); Strike(44); break;
+            case SkillType.Long:
+                Fill(12,14, 88,14, 50,94); Cut(34,46, 66,46, 50,74); break;
+            // A dial: the damage can be set to any value.
+            case SkillType.Bian:
+                Fill(50,8, 70,15, 85,30, 92,50, 85,70, 70,85, 50,92, 30,85, 15,70, 8,50, 15,30, 30,15);
+                Cut(50,26, 63,31, 72,40, 76,50, 72,60, 63,69, 50,74, 37,69, 28,60, 24,50, 28,40, 37,31);
+                Fill(44,50, 70,16, 78,26, 58,54);
+                break;
+            // Defense: one crest for reducing by one, the same crest split in half for halving.
+            case SkillType.PlusDefence:
+                Crest(); Cut(22,32, 78,32, 78,44, 50,66, 22,44); break;
+            case SkillType.DoubleDefence:
+                Crest(); Cut(14,50, 86,50, 86,58, 14,58); break;
+            // A flat faceted block with two facet lines, not a crumpled outline.
+            case SkillType.Shi:
+                Fill(24,78, 24,40, 50,16, 78,32, 76,72, 46,86);
+                Cut(50,16, 42,46, 76,52);
+                Cut(24,40, 46,86);
+                break;
+            // Vitality: one heart, then the same heart banded into three.
+            case SkillType.DoubleHealth: Heart(); break;
             case SkillType.TripleHealth:
-                Fill(50,83,22,55,22,32,35,22,50,34,65,22,78,32,78,55);
-                if (type == SkillType.TripleHealth)
-                { Fill(14,27,7,36,7,61,25,78,25,65,15,54); Fill(86,27,93,36,93,61,75,78,75,65,85,54); }
+                Heart();
+                Cut(37,36, 45,33, 45,72, 37,75);
+                Cut(55,33, 63,36, 63,75, 55,72);
                 break;
             case SkillType.Xue:
-                Fill(50,12,26,54,25,70,36,84,56,88,74,73,73,56);
-                Cut(50,43,63,64,61,76,52,80,54,65); break;
-            case SkillType.Shi:
-                Fill(28,18,56,12,75,31,58,44,33,38);
-                Fill(23,24,29,43,51,52,38,82,16,60); Fill(61,50,81,35,88,57,66,85,45,86); break;
-            case SkillType.Long:
-                Fill(28,15,65,15,81,34,62,34,68,41,45,50,73,62,64,84,36,89,17,70,36,70,30,63,54,56,26,43,37,31,19,31); break;
-            case SkillType.Bian:
-                Fill(47,12,70,23,85,46,74,55,61,32,45,25,29,35,20,29);
-                Fill(83,58,82,77,52,90,45,76,66,68,66,48,80,43);
-                Fill(34,87,14,73,14,45,30,40,29,62,44,70,49,57,61,65); break;
+                Fill(50,8, 24,52, 24,70, 36,86, 50,92, 64,86, 76,70, 76,52);
+                Cut(50,34, 63,62, 60,78, 50,84, 54,64); break;
+            // Counter: damage returned along the same line.
+            case SkillType.Mo:
+                Fill(8,50, 34,22, 34,42, 62,42, 62,28, 92,50, 62,72, 62,58, 34,58, 34,78);
+                break;
+            // Control: two number tiles for "both of your numbers".
             case SkillType.Tong:
-                Fill(20,31,80,31,80,43,20,43); Fill(20,58,80,58,80,70,20,70); break;
-            case SkillType.Mo: Fill(12,50,39,22,39,41,64,41,64,20,90,47,64,75,64,57,39,57,39,78); break;
-            case SkillType.Seng:
-            case SkillType.Dao:
-                Fill(50,12,86,75,74,84,50,42,26,84,14,75);
-                if (type == SkillType.Dao) Fill(22,48,78,48,84,58,16,58); break;
-            case SkillType.Xian:
-            case SkillType.SuperImmortal:
-                Fill(50,9,71,49,50,88,29,49); Cut(50,28,59,49,50,68,41,49);
-                Fill(22,34,32,66,13,53,5,27); Fill(78,34,68,66,87,53,95,27); break;
+                Fill(14,34, 44,34, 44,66, 14,66);
+                Fill(56,34, 86,34, 86,66, 56,66);
+                break;
             case SkillType.Di:
             case SkillType.SuperEmperor:
-                Fill(12,31,35,49,50,17,65,49,88,31,78,77,22,77); Cut(27,62,73,62,71,68,29,68); break;
+                Fill(10,26, 34,48, 50,14, 66,48, 90,26, 82,82, 18,82);
+                Cut(26,64, 74,64, 72,72, 28,72);
+                break;
+            case SkillType.Xian:
+            case SkillType.SuperImmortal:
+                Fill(50,6, 86,50, 50,94, 14,50); Cut(50,30, 70,50, 50,70, 30,50); break;
+            // Extra steps: a chevron for one step, a second chevron for another.
+            case SkillType.Seng:
+                Fill(50,12, 88,58, 74,70, 50,40, 26,70, 12,58);
+                Fill(50,52, 74,82, 62,92, 50,80, 38,92, 26,82);
+                break;
+            case SkillType.Dao:
+                Fill(50,14, 86,58, 72,70, 50,42, 28,70, 14,58);
+                Fill(26,80, 74,80, 74,92, 26,92);
+                break;
+            // God and anything added later: a heavy hexagon sigil with a small hole.
+            case SkillType.Shen:
+            case SkillType.SuperGod:
             default:
-                Fill(50,10,84,30,84,70,50,90,16,70,16,30); Cut(50,25,71,38,71,62,50,75,29,62,29,38); break;
+                Fill(50,8, 88,30, 88,70, 50,92, 12,70, 12,30);
+                Cut(50,38, 61,44, 61,56, 50,62, 39,56, 39,44);
+                break;
         }
         if (type is SkillType.SuperGod or SkillType.SuperImmortal or SkillType.SuperEmperor)
-            Fill(83,3,89,3,89,11,97,11,97,17,89,17,89,25,83,25,83,17,75,17,75,11,83,11);
+            Punch();
         return shapes;
     }
     private static Texture2D Create(GraphicsDevice device)

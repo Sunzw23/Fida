@@ -2,12 +2,13 @@
 using System;
 using Fida.Campaign;
 using Fida.Logic;
+using Fida.UI.Campaign;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Fida.UI.Rules;
 
-/// <summary>One discovered skill in the index: glyph, name, cost. Filled when owned, faded when only seen.</summary>
+/// <summary>One discovered skill in the index: icon, name, cost. Filled when owned, faded when only seen.</summary>
 public sealed class UISkillCodexTile : UIButton
 {
     private readonly ResourceManager _resources;
@@ -42,11 +43,13 @@ public sealed class UISkillCodexTile : UIButton
                 bar, Math.Max(1, Bounds.Height * 3 / 5)), UITheme.AccentBlue);
         }
 
+        // The codex used to print the two-letter code ("A+", "DR", "TR") where an icon belongs.
+        // The grids, the battle cards and the route rewards all draw the real skill mark, so the
+        // index now does too instead of asking the player to learn a second, letter-only notation.
         int pad = Math.Max(10, (int)MathF.Round(22 * scale));
-        var glyph = new Rectangle(Bounds.Left + pad, Bounds.Top + (int)(Bounds.Height * .12f),
-            Math.Max(20, (int)(Bounds.Width * .16f)), (int)(Bounds.Height * .32f));
-        UIRulesText.Line(batch, _resources.TitleFont, UISkillIconCatalog.Glyph(Skill), glyph,
-            32, scale, ink * opacity);
+        int icon = Math.Max(18, (int)(Bounds.Height * .30f));
+        var mark = new Rectangle(Bounds.Left + pad, Bounds.Top + (int)(Bounds.Height * .10f), icon, icon);
+        UISkillArt.Draw(batch, Skill, mark, ink * opacity);
 
         var name = new Rectangle(Bounds.Left + pad, Bounds.Top + (int)(Bounds.Height * .46f),
             Bounds.Width - pad * 2, (int)(Bounds.Height * .26f));

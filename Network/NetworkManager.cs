@@ -40,6 +40,21 @@ namespace Fida.Network
         /// <summary>主机端：relay 分配的房间码（客机用此码加入）</summary>
         public string HostRoomCode => _relayHost?.RoomCode ?? string.Empty;
 
+        /// <summary>Connection screen caption: a relay host shares a room code, everyone else shows the server.</summary>
+        public string SessionDetailLabel => GetServerIsRelay() && IsHost ? "Room" : "Server";
+
+        /// <summary>Room code (relay host) or "[address]:port" for the connected session page.</summary>
+        public string SessionDetailValue
+        {
+            get
+            {
+                if (GetServerIsRelay() && IsHost)
+                    return string.IsNullOrEmpty(HostRoomCode) ? "----" : HostRoomCode;
+                string address = GetServerAddress();
+                return (address.Contains(':') ? $"[{address}]" : address) + ":" + GetServerPort();
+            }
+        }
+
         /// <summary>主机端：客户端连入时触发</summary>
         public event System.Action? ClientConnected;
 
@@ -59,6 +74,8 @@ namespace Fida.Network
         public event Action<string>? BattleSnapshotAcknowledged;
         public event Action<CampaignPresence>? CampaignPresenceReceived;
         public event Action<string, string>? CampaignCoopStarting;
+        /// <summary>Opponent conceded a live battle. Payload is the conceding player id.</summary>
+        public event Action<int>? BattleForfeitReceived;
         public BattleSnapshot PendingBattleSnapshot { get; private set; } = null!;
         public BattleSnapshot TakePendingBattleSnapshot()
         {
@@ -172,6 +189,35 @@ namespace Fida.Network
             }
             RetainMessages(unhandled);
         }
+
+        /// <summary>
+        /// Drains session-level messages that are meaningful in any screen (currently a battle
+        /// concession). Battle frames are retained untouched for the state that owns them, so this
+        /// is safe to call every frame, including from the main menu and the pause menu.
+        /// </summary>
+        public void ProcessSessionMessages()
+        {
+            var messages = TakePendingMessages();
+            if (messages.Count == 0) return;
+
+            var unhandled = new List<NetworkMessage>(messages.Count);
+            foreach (var message in messages)
+            {
+                if (message.Type != MessageType.BattleForfeit)
+                {
+                    unhandled.Add(message);
+                    continue;
+                }
+                var payload = message.Payload;
+                if (payload is { Length: >= sizeof(int) })
+                    BattleForfeitReceived?.Invoke(BitConverter.ToInt32(payload, 0));
+            }
+            RetainMessages(unhandled);
+        }
+
+        /// <summary>Tells the opponent that this player left a live battle without closing the session.</summary>
+        public void SendBattleForfeit(int playerId) => SendMessage(
+            new NetworkMessage(MessageType.BattleForfeit, BitConverter.GetBytes(playerId)));
 
         /// <summary>
         /// Shared campaign-protocol dispatch used by both <see cref="ProcessCampaignMessages"/> and
@@ -368,9 +414,14 @@ namespace Fida.Network
             return null;
         }
 
+        /// <summary>Shared empty result so the per-frame session pump does not allocate.</summary>
+        private static readonly List<NetworkMessage> NoMessages = new();
+
         private List<NetworkMessage> TakePendingMessages()
         {
             var incoming = ReceiveAvailableMessages();
+            if (_pendingMessages.Count == 0 && (incoming == null || incoming.Count == 0))
+                return NoMessages;
             var result = new List<NetworkMessage>(_pendingMessages.Count + (incoming?.Count ?? 0));
             while (_pendingMessages.Count > 0) result.Add(_pendingMessages.Dequeue());
             if (incoming != null) result.AddRange(incoming);

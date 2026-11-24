@@ -1,50 +1,46 @@
 using System;
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Fida.UI;
 
-/// <summary>Small neutral lobby identities, built from six broad paper shapes.</summary>
+/// <summary>
+/// Neutral lobby identities, drawn from the portrait atlas the battle screen already uses.
+///
+/// An earlier version hand-authored two 512x640 figures from a dozen polygons. At any size
+/// they read as crude mannequins standing next to the generated character art: broad plinth
+/// shoulders, a blob head and no silhouette of their own. Reusing two atlas cells keeps the
+/// lobby on-model with the rest of the game and adds no asset to the content pipeline.
+/// </summary>
 public static class UIPaperAvatar
 {
-    private static readonly ConditionalWeakTable<GraphicsDevice, Texture2D[]> Cache = new();
-    public static void Draw(SpriteBatch batch, Rectangle bounds, int variant = 0)
+    /// <summary>Cell for the local player: Arith, the roster's first slot.</summary>
+    public const int PlayerCell = 0;
+
+    /// <summary>
+    /// Cell for the opponent. Echo is the atlas's least specific identity - a hooded figure
+    /// with a void face - which suits a stranger you have not met yet, and its tall narrow
+    /// silhouette balances Arith. The Warden cell was tried first but its broad pauldrons and
+    /// chest chain read as a much bigger character beside Arith.
+    /// </summary>
+    public const int OpponentCell = 5;
+
+    /// <summary>
+    /// Draws one atlas cell inside <paramref name="bounds"/>, aspect fit and bottom centred,
+    /// which is how <see cref="UIPlayer"/> frames the same art on the battle cards.
+    /// </summary>
+    public static void Draw(SpriteBatch batch, Texture2D atlas, Rectangle bounds, int cell)
     {
-        Texture2D texture = Cache.GetValue(batch.GraphicsDevice, Create)[Math.Abs(variant) % 2];
-        float scale = Math.Min(bounds.Width / 512f, bounds.Height / 640f);
-        var size = new Vector2(512,640) * scale;
-        var at = new Vector2(bounds.Center.X, bounds.Bottom) - new Vector2(size.X/2,size.Y);
-        batch.Draw(texture, at + new Vector2(3,5), null, Color.Black * .25f,0,Vector2.Zero,scale,SpriteEffects.None,0);
-        batch.Draw(texture, at, null, Color.White,0,Vector2.Zero,scale,SpriteEffects.None,0);
-    }
-    private static Texture2D[] Create(GraphicsDevice device)
-    {
-        var result = new Texture2D[2];
-        for(int variant=0;variant<2;variant++)
-        {
-            var pixels = new Color[512*640];
-            void Shape(Color color, params int[] polygon)
-            {
-                for(int y=0;y<640;y++) for(int x=0;x<512;x++)
-                {
-                    float px=(x+.5f)/4,py=(y+.5f)/4;
-                    bool inside=false;
-                    for(int i=0,j=polygon.Length-2;i<polygon.Length;j=i,i+=2)
-                        if((polygon[i+1]>py)!=(polygon[j+1]>py) && px<(polygon[j]-polygon[i])*(py-polygon[i+1])/(polygon[j+1]-polygon[i+1])+polygon[i]) inside=!inside;
-                    if(inside) pixels[y*512+x]=color;
-                }
-            }
-            Shape(new Color(222,216,200), 20,110,48,96,80,96,108,110,119,153,9,153);
-            Shape(new Color(33,54,70), 45,101,64,115,83,101,100,153,28,153);
-            Shape(new Color(206,201,187), 48,79,80,79,80,103,64,115,48,103);
-            Shape(new Color(239,234,220), 34,35,57,19,85,26,97,48,88,79,64,96,40,79);
-            Shape(new Color(214,209,194), 64,33,85,26,97,48,88,79,64,96);
-            if(variant==0) Shape(new Color(246,240,224), 30,37,53,12,92,21,99,44,75,31,56,43,32,50);
-            else Shape(new Color(244,238,222), 31,35,43,11,80,13,101,33,96,52,77,30,55,32,34,61);
-            var texture = new Texture2D(device,512,640); texture.SetData(pixels); result[variant]=texture;
-        }
-        device.Disposing += (_,_) => { foreach(var texture in result) texture.Dispose(); };
-        return result;
+        if (atlas == null || atlas.Width < 6 || atlas.Height < 4) return;
+
+        int cellWidth = atlas.Width / 3;
+        int cellHeight = atlas.Height / 2;
+        var source = new Rectangle(Math.Abs(cell) % 3 * cellWidth, Math.Abs(cell) / 3 * cellHeight,
+            cellWidth, cellHeight);
+        float scale = Math.Min(bounds.Width / (float)source.Width, bounds.Height / (float)source.Height);
+
+        batch.Draw(atlas, new Vector2(bounds.Center.X, bounds.Bottom), source, Color.White, 0f,
+            new Vector2(source.Width / 2f, source.Height), new Vector2(scale, scale),
+            SpriteEffects.None, 0f);
     }
 }

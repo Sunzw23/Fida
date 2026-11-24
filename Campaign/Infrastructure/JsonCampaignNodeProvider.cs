@@ -40,6 +40,7 @@ namespace Fida.Campaign.Infrastructure
         {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 options.Converters.Add(new JsonStringEnumConverter());
+                options.Converters.Add(new CampaignVowJsonConverter());
                 string json = ContentSource.ReadText(path) ?? "[]";
                 var nodes = JsonSerializer.Deserialize<List<CampaignNode>>(json, options);
                 return nodes ?? new List<CampaignNode>();

@@ -15,6 +15,8 @@ public sealed class SkillSelectionLayout
     public Rectangle Action { get; }
     public Rectangle Footer { get; }
     public Rectangle Chips { get; }
+    /// <summary>Read-only party summary on the loadout screen; the companion screen owns the choice.</summary>
+    public Rectangle Party { get; }
     public Rectangle Start { get; }
     public Rectangle Previous { get; }
     public Rectangle Next { get; }
@@ -24,6 +26,14 @@ public sealed class SkillSelectionLayout
     public float Scale { get; }
 
     public SkillSelectionLayout(int width, int height)
+        : this(width, height, null, null) { }
+
+    /// <summary>
+    /// <paramref name="header"/> and <paramref name="back"/> carry the route screen's Gum-authored
+    /// header geometry so both screens stay aligned. Callers that only need the grid/detail geometry
+    /// (layout checks) can supply it directly instead of loading the Gum project.
+    /// </summary>
+    public SkillSelectionLayout(int width, int height, Rectangle? header, Rectangle? back)
     {
         Portrait = height > width;
         Scale = Portrait ? Math.Min(width / 1080f, height / 1920f) : UIDesktopLayout.Scale(width, height);
@@ -31,11 +41,21 @@ public sealed class SkillSelectionLayout
         {
             Rectangle R(int x, int y, int w, int h) => UIDesktopLayout.MapRectangle(new Rectangle(x, y, w, h), width, height);
             Panel = R(48, 30, 1824, 1140);
-            var campaign = new CampaignMapLayout(width, height);
-            Header = new Rectangle(campaign.Header.Left, campaign.Header.Top, R(150, 35, 1710, 85).Right - campaign.Header.Left, campaign.Header.Height);
-            Back = campaign.Back;
+            if (header is { } sharedHeader && back is { } sharedBack)
+            {
+                Header = sharedHeader;
+                Back = sharedBack;
+            }
+            else
+            {
+                var campaign = new CampaignMapLayout(width, height);
+                Header = new Rectangle(campaign.Header.Left, campaign.Header.Top, R(150, 35, 1710, 85).Right - campaign.Header.Left, campaign.Header.Height);
+                Back = campaign.Back;
+            }
             Tabs = R(60, 155, 1160, 58);
-            Grid = R(60, 235, 1160, 800);
+            // The party strip takes the band under the grid; three rows of tiles stay large.
+            Grid = R(60, 235, 1160, 700);
+            Party = R(60, 940, 1160, 110);
             Details = R(1260, 185, 610, 670);
             Action = R(1282, 755, 566, 80);
             Footer = R(1260, 870, 610, 265);
@@ -58,7 +78,10 @@ public sealed class SkillSelectionLayout
             Previous = new Rectangle(width / 2 - (int)(130 * Scale), Grid.Bottom + pad / 2, (int)(60 * Scale), (int)(48 * Scale));
             Next = new Rectangle(width / 2 + (int)(70 * Scale), Previous.Y, Previous.Width, Previous.Height);
             Footer = new Rectangle(pad, height - pad - footerHeight, Panel.Width, footerHeight);
-            Details = new Rectangle(pad, Previous.Bottom + pad, Panel.Width, Math.Max(1, Footer.Top - Previous.Bottom - pad * 2));
+            int partyHeight = Math.Max(64, (int)(120 * Scale));
+            Party = new Rectangle(pad, Previous.Bottom + pad / 2, Panel.Width, partyHeight);
+            Details = new Rectangle(pad, Party.Bottom + pad / 2, Panel.Width,
+                Math.Max(1, Footer.Top - Party.Bottom - pad * 2));
             Action = new Rectangle(Details.Left + pad, Details.Bottom - (int)(70 * Scale) - pad,
                 Details.Width - pad * 2, (int)(70 * Scale));
             Start = new Rectangle(pad, Footer.Bottom - (int)(80 * Scale), Panel.Width, (int)(80 * Scale));

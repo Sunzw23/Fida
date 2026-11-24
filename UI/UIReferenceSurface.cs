@@ -12,6 +12,12 @@ public sealed class UIReferenceSurface : UIControl
     private readonly ResourceManager _resources;
     private readonly UIReferenceScreen _screen;
     public bool RoomCodeRequired { get; set; } = true;
+    /// <summary>Connected page: this player opened the session instead of joining it.</summary>
+    public bool IsHost { get; set; }
+    /// <summary>Connected page: caption for the endpoint row, "Room" for relay hosts.</summary>
+    public string DetailLabel { get; set; } = "Server";
+    /// <summary>Connected page: room code or server address shown as the endpoint value.</summary>
+    public string DetailValue { get; set; } = string.Empty;
     public UIReferenceSurface(ResourceManager resources, UIReferenceScreen screen) : base(-60)
     { _resources = resources; _screen = screen; }
 
@@ -35,14 +41,20 @@ public sealed class UIReferenceSurface : UIControl
             Paragraph(batch, "Start a session and share its code.", p ? l.Rect(80, 390, 740, 90) : l.Rect(260, 745, 480, 110));
             if (!p)
             {
-                // Was a fully saturated cyan block with ivory marks on it, which read as a
-                // glare next to the dark panel. Now the accent sheet is half-transparent
-                // over the panel and the marks are ink, so it stays a highlight, not a light.
-                UIPaper.Sheet(batch, l.Rect(340, 380, 320, 190), UITheme.AccentBlue * .34f, 2, 9);
-                UIPaperAvatar.Draw(batch, l.Rect(255, 350, 190, 240));
-                UIPaperAvatar.Draw(batch, l.Rect(555, 350, 190, 240), 1);
-                batch.Draw(_resources.Pixel, l.Rect(465, 445, 90, 15), UIPaper.Ink);
-                batch.Draw(_resources.Pixel, l.Rect(502, 408, 15, 90), UIPaper.Ink);
+                // Two lobby identities, side by side. The previous version put both figures on a
+                // saturated cyan slab that cut them in half and drove a heavy black cross through
+                // the seam, so the artwork was the loudest thing on an otherwise quiet screen.
+                // Now the busts carry the illustration and the invitation mark is a small cyan
+                // plus on the panel itself.
+                Texture2D atlas = _resources.GetTexture("cold_roster");
+                const int bustSize = 250;
+                UIPaperAvatar.Draw(batch, atlas, l.Rect(230, 300, bustSize, bustSize),
+                    UIPaperAvatar.PlayerCell);
+                UIPaperAvatar.Draw(batch, atlas, l.Rect(520, 300, bustSize, bustSize),
+                    UIPaperAvatar.OpponentCell);
+                Color mark = UITheme.AccentBlue;
+                batch.Draw(_resources.Pixel, l.Rect(487, 397, 26, 6), mark);
+                batch.Draw(_resources.Pixel, l.Rect(497, 387, 6, 26), mark);
             }
             Text(batch, "Join room", p ? l.Rect(80, 790, 740, 80) : l.Rect(1070, 630, 700, 90), 42,true);
             Paragraph(batch, RoomCodeRequired ? "Enter the code from your opponent." : "Connect to the configured server.",
@@ -54,10 +66,32 @@ public sealed class UIReferenceSurface : UIControl
         }
         if (_screen == UIReferenceScreen.Connection)
         {
-            UIPaper.Sheet(batch, p ? l.Rect(50, 320, 800, 780) : l.Rect(540, 280, 1250, 570), UITheme.Panel, 4, 9);
-            Text(batch, "Connected", p ? l.Rect(80, 400, 740, 90) : l.Rect(600, 350, 1150, 90), 42, color: UITheme.AccentBlue);
-            Paragraph(batch, "Campaign and Duel are available from the main menu.",
-                p ? l.Rect(80, 550, 740, 200) : l.Rect(600, 500, 1150, 170));
+            // A connected session is a status card: the headline state plus the two facts worth
+            // knowing (own role, what we are attached to). The header arrow is the way back.
+            UIPaper.Sheet(batch, p ? l.Rect(50, 380, 800, 700) : l.Rect(510, 340, 900, 550), UITheme.Panel, 4, 9);
+            int left = p ? 90 : 570;
+            int right = p ? 810 : 1350;
+            int labelWidth = p ? 230 : 250;
+
+            int statusTop = p ? 450 : 390;
+            batch.Draw(_resources.Pixel, l.Rect(left, statusTop + 6, 5, 54), UITheme.AccentBlue);
+            Text(batch, "Connected", l.Rect(left + 26, statusTop, right - left - 26, 68), 42, color: UITheme.AccentBlue);
+            int firstRule = p ? 600 : 494;
+            Rule(batch, l.Rect(left, firstRule, right - left, 1));
+
+            int roleTop = firstRule + 30;
+            Text(batch, "Role", l.Rect(left, roleTop + 8, labelWidth, 40), 26, muted: true);
+            Text(batch, IsHost ? "Host" : "Guest",
+                l.Rect(left + labelWidth, roleTop, right - left - labelWidth, 56), 34);
+            int secondRule = p ? 730 : 608;
+            Rule(batch, l.Rect(left, secondRule, right - left, 1));
+
+            int endpointTop = secondRule + 30;
+            Text(batch, DetailLabel, l.Rect(left, endpointTop + 8, labelWidth, 40), 26, muted: true);
+            Text(batch, string.IsNullOrWhiteSpace(DetailValue) ? "----" : DetailValue,
+                l.Rect(left + labelWidth, endpointTop, right - left - labelWidth, 56), 34);
+            int thirdRule = p ? 860 : 722;
+            Rule(batch, l.Rect(left, thirdRule, right - left, 1));
         }
         else if (_screen == UIReferenceScreen.Hosting)
         {

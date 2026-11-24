@@ -1,5 +1,8 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Fida.Campaign;
 using Fida.Logic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -7,9 +10,10 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Fida.UI.Campaign;
 
 public sealed record CampaignRouteDetails(string Id, string Title, string Story, int EnemyCount,
-    int SkillBudget, string Reward, SkillType? RewardSkill, string Chapter, bool Locked = false);
+    int SkillBudget, string Reward, SkillType? RewardSkill, string Chapter, bool Locked = false,
+    int Tier = 0, IReadOnlyList<CampaignVow>? Vows = null, bool Side = false);
 public sealed record CampaignChapterDetails(string Id, string Title, string Story, int Cleared,
-    int Total);
+    int Total, bool Side = false);
 
 /// <summary>Route visuals only. Receives read-only display data and bounds; owns no campaign or input state.</summary>
 public sealed class UICampaignRouteView
@@ -37,11 +41,20 @@ public sealed class UICampaignRouteView
             new Vector2(center ? area.Center.X - size.X * scale / 2 : area.Left, area.Center.Y - size.Y * scale / 2), color, scale: scale);
     }
 
-    public void DrawHeader(SpriteBatch batch, CampaignMapLayout layout)
+    public void DrawHeader(SpriteBatch batch, CampaignMapLayout layout, string? chapter = null,
+        ChapterStyle? style = null)
     {
         float s = layout.Scale;
         UIPaperFrame.Draw(batch, layout.Element("HeaderStrip"), Header, UIPaperFrameShape.Rectangle, 0);
         Text(batch, "Campaign", layout.Header, 60 * s, UITheme.Ink, true);
+        if (string.IsNullOrWhiteSpace(chapter)) return;
+        var look = style ?? ChapterStyle.Default;
+        var area = layout.Header;
+        int offset = (int)(_heading.MeasureString("Campaign").X * (60 * s / _heading.LineSpacing)) + (int)(26 * s);
+        area.X += offset;
+        area.Width = Math.Max(1, area.Width - offset);
+        Text(batch, "/  " + chapter, area, 34 * s,
+            look.Side ? Lighten(look.Accent) : UITheme.InkMuted);
     }
 
     private static void DrawPanel(SpriteBatch batch, CampaignMapLayout layout)
@@ -50,21 +63,27 @@ public sealed class UICampaignRouteView
     }
 
     public void DrawChapterDetails(SpriteBatch batch, CampaignMapLayout layout, CampaignChapterDetails detail,
-        float hover, float press)
+        float hover, float press, ChapterStyle? style = null)
     {
+        var look = style ?? ChapterStyle.Default;
         float s=layout.Scale;
         Rectangle E(string name)=>layout.Element(name);
         DrawPanel(batch,layout);
-        Text(batch,detail.Id,E("NodeId"),27*s,UITheme.InkMuted);
+        string eyebrow = detail.Side ? $"{detail.Id}   SIDE CHAPTER" : detail.Id;
+        Text(batch,eyebrow,E("NodeId"),27*s,detail.Side ? Lighten(look.Accent) : UITheme.InkMuted);
         Text(batch,detail.Title,E("Title"),51*s,UITheme.Ink,true);
+        if (detail.Side)
+            batch.Draw(_pixel,new Rectangle(E("Title").Left,E("Title").Bottom-(int)(4*s),(int)(150*s),Math.Max(2,(int)(4*s))),look.Accent);
         var image=E("Image");image.Y+=(int)(38*s);image.Height-=(int)(38*s);
-        UIPaper.ChapterLocation(batch,image,detail.Title);
+        UIPaper.ChapterLocation(batch,image,string.IsNullOrWhiteSpace(look.ArtKey) ? detail.Title : look.ArtKey);
         foreach(string divider in new[]{"DividerImage","DividerStory","DividerMetric"})
             batch.Draw(_pixel,E(divider),new Color(77,94,101)*.65f);
         Paragraph(batch,detail.Story,E("Story"),38*s);
         Text(batch,$"{detail.Cleared} / {detail.Total} cleared",E("Metric"),33*s,UITheme.Ink);
         DrawAction(batch,layout,"Open chapter",hover,press);
     }
+
+    private static Color Lighten(Color color) => Color.Lerp(color, Color.White, .35f);
 
     private void DrawAction(SpriteBatch batch,CampaignMapLayout layout,string label,float hover,float press,
         bool enabled=true)
@@ -86,32 +105,37 @@ public sealed class UICampaignRouteView
         }
     }
 
-    public void DrawChapterCard(SpriteBatch batch,Rectangle bounds,int number,string title,int cleared,int total,
-        bool selected,bool locked,float hover,float press)
+    public void DrawChapterCard(SpriteBatch batch,Rectangle bounds,string number,string title,int cleared,int total,
+        bool selected,bool locked,float hover,float press,ChapterStyle? style=null)
     {
+        var look=style ?? ChapterStyle.Default;
         float s=bounds.Height/200f;
         if(selected)
         {
             var back=bounds;back.Offset(-(int)(5*s),(int)(4*s));
-            UIPaperFrame.Draw(batch,back,Cyan,UIPaperFrameShape.Node,1.5f*s);
+            UIPaperFrame.Draw(batch,back,look.Side ? look.Accent : Cyan,UIPaperFrameShape.Node,1.5f*s);
         }
+        Color stock=look.Side ? look.Face : UIPaper.Face;
         Color face=locked ? Color.Lerp(LockedFace,Color.White,hover*.06f)
-            : Color.Lerp(UIPaper.Face,Color.White,hover*.08f);
+            : Color.Lerp(stock,Color.White,hover*.08f);
         UIPaperFrame.Draw(batch,bounds,face,UIPaperFrameShape.Node,1.5f*s);
         int pad=Math.Max(8,(int)(12*s)),header=Math.Max(32,(int)(46*s));
-        Text(batch,$"{number:00}",new Rectangle(bounds.Left+pad,bounds.Top+5,(int)(42*s),header-5),29*s,
-            locked ? Color.Lerp(UIPaper.MutedInk,LockedFace,.45f) : UIPaper.MutedInk,true);
-        batch.Draw(_pixel,new Rectangle(bounds.Left+pad+(int)(47*s),bounds.Top+(int)(10*s),1,(int)(24*s)),UIPaper.MutedInk*.35f);
-        Text(batch,title,new Rectangle(bounds.Left+pad+(int)(62*s),bounds.Top+5,bounds.Width-pad*2-(int)(62*s),header-5),33*s,
-            locked ? UIPaper.MutedInk : UIPaper.Ink,true);
+        Color muted=locked ? Color.Lerp(UIPaper.MutedInk,LockedFace,.45f) : look.MutedInk;
+        Color ink=locked ? UIPaper.MutedInk : look.Ink;
+        Text(batch,number,new Rectangle(bounds.Left+pad,bounds.Top+5,(int)(52*s),header-5),29*s,
+            locked ? muted : look.Side ? look.Accent : muted,true);
+        batch.Draw(_pixel,new Rectangle(bounds.Left+pad+(int)(54*s),bounds.Top+(int)(10*s),1,(int)(24*s)),muted*.45f);
+        Text(batch,title,new Rectangle(bounds.Left+pad+(int)(68*s),bounds.Top+5,bounds.Width-pad*2-(int)(68*s),header-5),33*s,
+            ink,true);
         var image=new Rectangle(bounds.Left+pad,bounds.Top+header,bounds.Width-pad*2,Math.Max(1,bounds.Height-header-pad));
-        UIPaper.ChapterLocation(batch,image,title);
+        UIPaper.ChapterLocation(batch,image,string.IsNullOrWhiteSpace(look.ArtKey) ? title : look.ArtKey);
         var count=new Rectangle(image.Right-(int)(92*s),image.Bottom-(int)(30*s),(int)(92*s),(int)(30*s));
-        batch.Draw(_pixel,count,new Color(15,29,39)*.88f);
-        Text(batch,$"{cleared} / {total}",count,26*s,locked ? UITheme.InkMuted : UITheme.Ink,true,true);
+        batch.Draw(_pixel,count,look.Side && !locked ? Color.Lerp(look.Ink,Color.Black,.12f) : new Color(15,29,39)*.88f);
+        Text(batch,$"{cleared} / {total}",count,26*s,
+            locked ? UITheme.InkMuted : look.Side ? look.Face : UITheme.Ink,true,true);
         if(locked)
         {
-            // A locked chapter is unprinted stock: grey sheet, faded artwork and the same stamp.
+            // A locked chapter is unprinted stock: grey sheet, faded artwork and the same badge.
             batch.Draw(_pixel,image,LockedWashColor*LockedWash);
             int side=Math.Max(14,(int)(22*s));
             UISkillSymbols.Status(batch,_pixel,new Rectangle(image.Right-side-5,image.Top+5,side,side),
@@ -119,19 +143,46 @@ public sealed class UICampaignRouteView
         }
     }
 
-    public void DrawDetails(SpriteBatch batch, CampaignMapLayout layout, CampaignRouteDetails detail,
-        float hover, float press)
+    /// <summary>Small diamonds printed on the location art: one per difficulty tier.</summary>
+    private void DrawTierPips(SpriteBatch batch, Rectangle art, float s, ChapterStyle look, int tier)
     {
+        float radius = Math.Max(2.5f, 4.2f * s);
+        float gap = radius * 2.7f;
+        float x = art.Left + radius + 6 * s;
+        float y = art.Bottom - radius - 6 * s;
+        Color color = Color.Lerp(look.Side ? look.Ink : UIPaper.Ink, Color.White, .25f);
+        for (int i = 0; i < tier; i++)
+        {
+            Vector2 center = new(x + i * gap, y);
+            Vector2 top = center + new Vector2(0, -radius);
+            Vector2 right = center + new Vector2(radius, 0);
+            Vector2 bottom = center + new Vector2(0, radius);
+            Vector2 left = center + new Vector2(-radius, 0);
+            foreach (var (a, b) in new[] { (top, right), (right, bottom), (bottom, left), (left, top) })
+            {
+                Line(batch, a + new Vector2(1, 1.5f), b + new Vector2(1, 1.5f), Color.Black * .45f, Math.Max(1, 2.2f * s));
+                Line(batch, a, b, color, Math.Max(1, 1.5f * s));
+            }
+        }
+    }
+
+    public void DrawDetails(SpriteBatch batch, CampaignMapLayout layout, CampaignRouteDetails detail,
+        float hover, float press, ChapterStyle? style = null)
+    {
+        var look = style ?? ChapterStyle.Default;
         float s = layout.Scale;
         Rectangle E(string name) => layout.Element(name);
         DrawPanel(batch,layout);
-        Text(batch, detail.Id, E("NodeId"), 27 * s, UITheme.InkMuted);
+        string eyebrow = detail.Side ? $"{detail.Id}   ·   SIDE CHAPTER" : detail.Id;
+        Text(batch, eyebrow, E("NodeId"), 27 * s, detail.Side ? Lighten(look.Accent) : UITheme.InkMuted);
         Text(batch, detail.Title, E("Title"), 51 * s, UITheme.Ink, true);
         var image=E("Image");
         int imageTop=Math.Max(image.Top,E("Title").Bottom+Math.Max(2,(int)(12*s)));
         image.Height=Math.Max(1,image.Bottom-imageTop);
         image.Y=imageTop;
         UIPaper.CampaignNodeLocation(batch, image, detail.Id, detail.Title, detail.Chapter);
+        if (detail.Side)
+            DrawDifficultyBadge(batch, image, s, look, detail.Tier, detail.Vows);
         foreach (string divider in new[] { "DividerImage", "DividerStory", "DividerMetric" })
             batch.Draw(_pixel, E(divider), new Color(77,94,101));
         Paragraph(batch, detail.Story, E("Story"), 38 * s);
@@ -147,6 +198,43 @@ public sealed class UICampaignRouteView
         }
         Text(batch, detail.Reward, E("RewardText"), 31 * s, UITheme.AccentYellow, true);
         DrawAction(batch,layout,detail.Locked ? "Locked" : "Configure skills",hover,press,!detail.Locked);
+    }
+
+    /// <summary>Difficulty diamonds and vows, printed on a dark strip over the location art.</summary>
+    private void DrawDifficultyBadge(SpriteBatch batch, Rectangle image, float s, ChapterStyle look,
+        int tier, IReadOnlyList<CampaignVow>? vows)
+    {
+        int pips = tier is >= 1 and <= 4 ? tier : 0;
+        string vowText = vows is { Count: > 0 } ? "VOW " + CampaignVows.Labels(vows) : "";
+        if (pips == 0 && vowText.Length == 0) return;
+        if (image.Width < 40) return;
+
+        float scale = MathHelper.Clamp(s * .62f, .4f, 1.1f);
+        string safe = UIFontGuard.Sanitize(_body, vowText);
+        Vector2 textSize = safe.Length == 0 ? Vector2.Zero : _body.MeasureString(safe) * scale;
+        float pipRadius = Math.Max(2.5f, 4.5f * s);
+        float pipStep = pipRadius * 2.4f;
+        float pipWidth = pips * pipStep;
+        int height = (int)(Math.Max(textSize.Y, pipRadius * 2) + 14 * s);
+        int width = (int)(pipWidth + (safe.Length == 0 ? 0 : textSize.X + pipStep) + 22 * s);
+        var strip = new Rectangle(image.Left, image.Bottom - height, Math.Min(image.Width, width), height);
+        batch.Draw(_pixel, strip, new Color(15, 29, 39) * .88f);
+
+        Color ink = Lighten(look.Accent);
+        float x = strip.Left + 11 * s;
+        float centerY = strip.Center.Y;
+        for (int i = 0; i < pips; i++)
+        {
+            Vector2 center = new(x + pipRadius, centerY);
+            Line(batch, center + new Vector2(0, -pipRadius), center + new Vector2(pipRadius, 0), ink, Math.Max(1, 1.6f * s));
+            Line(batch, center + new Vector2(pipRadius, 0), center + new Vector2(0, pipRadius), ink, Math.Max(1, 1.6f * s));
+            Line(batch, center + new Vector2(0, pipRadius), center + new Vector2(-pipRadius, 0), ink, Math.Max(1, 1.6f * s));
+            Line(batch, center + new Vector2(-pipRadius, 0), center + new Vector2(0, -pipRadius), ink, Math.Max(1, 1.6f * s));
+            x += pipStep;
+        }
+        if (safe.Length > 0)
+            UITextRenderer.DrawString(batch, _body, safe,
+                new Vector2(x + pipStep * .4f, centerY - textSize.Y / 2), ink, scale: scale);
     }
 
     private void Paragraph(SpriteBatch batch, string text, Rectangle area, float height)
@@ -165,26 +253,31 @@ public sealed class UICampaignRouteView
         }
     }
 
-    public void DrawNode(SpriteBatch batch, Rectangle bounds, string id, string name, string chapter, bool selected, bool completed, bool locked)
+    public void DrawNode(SpriteBatch batch, Rectangle bounds, string id, string name, string chapter, bool selected, bool completed, bool locked,
+        ChapterStyle? style = null, int tier = 0)
     {
+        var look = style ?? ChapterStyle.Default;
         float s = bounds.Height / 180f;
         Rectangle R(float x, float y, float w, float h) => new(bounds.X+(int)(x*s),bounds.Y+(int)(y*s),
             Math.Max(1,(int)(w*s)),Math.Max(1,(int)(h*s)));
         var tab = R(-17,12,29,144);
-        UIPaperFrame.Draw(batch, tab, selected ? Cyan : new Color(180,188,184), UIPaperFrameShape.Tab, 1.5f*s);
+        Color tabColor = selected ? look.Accent : look.Side ? look.Accent : new Color(180,188,184);
+        UIPaperFrame.Draw(batch, tab, tabColor, UIPaperFrameShape.Tab, 1.5f*s);
         var shadow=bounds; shadow.Offset((int)(3*s),Math.Max(2,(int)(9*s)));
         UIPaperFrame.Draw(batch,shadow,new Color(6,15,22),UIPaperFrameShape.RouteNode,0);
         var backing = bounds; backing.Offset(-(int)(6*s), (int)(6*s));
         UIPaperFrame.Draw(batch, backing, new Color(56,76,87), UIPaperFrameShape.RouteNode, 1.5f*s);
         var rim=bounds; rim.Offset(0,Math.Max(1,(int)(3*s)));
-        UIPaperFrame.Draw(batch,rim,selected ? new Color(76,149,159) : new Color(151,157,151),UIPaperFrameShape.RouteNode,0);
-        Color face=locked ? LockedFace : UIPaper.Face;
-        UIPaperFrame.Draw(batch, bounds, selected ? Color.Lerp(face,Cyan,locked ? .3f : 1f) : face, UIPaperFrameShape.RouteNode, 1.5f*s);
+        UIPaperFrame.Draw(batch,rim,selected ? Color.Lerp(look.Accent,Color.Black,.25f) : new Color(151,157,151),UIPaperFrameShape.RouteNode,0);
+        Color face=locked ? LockedFace : look.Side ? look.Face : UIPaper.Face;
+        UIPaperFrame.Draw(batch, bounds, selected ? Color.Lerp(face,look.Accent,locked ? .3f : 1f) : face, UIPaperFrameShape.RouteNode, 1.5f*s);
         var art = new Rectangle(bounds.Left+(int)(10*s), bounds.Top+(int)(70*s), bounds.Width-(int)(20*s), bounds.Height-(int)(84*s));
         UIPaper.CampaignNodeLocation(batch, art, id, name, chapter, miniature: true);
         if(locked) batch.Draw(_pixel,art,new Color(13,28,39)*.48f);
-        Text(batch, id, R(22,18,60,42), 37*s, UIPaper.Ink, true);
-        Text(batch, name, new Rectangle(bounds.Left+(int)(98*s),bounds.Top+(int)(40*s),bounds.Width-(int)(110*s),(int)(38*s)), 25*s, UIPaper.Ink, true);
+        Text(batch, id, R(22,18,60,42), 37*s, look.Side && !locked ? look.Ink : UIPaper.Ink, true);
+        Text(batch, name, new Rectangle(bounds.Left+(int)(98*s),bounds.Top+(int)(40*s),bounds.Width-(int)(110*s),(int)(38*s)), 25*s,
+            look.Side && !locked ? look.Ink : UIPaper.Ink, true);
+        if(!locked && tier is >= 1 and <= 4) DrawTierPips(batch, art, s, look, tier);
         Vector2 center = new(bounds.Right-29*s,bounds.Bottom-27*s);
         if(locked)
         {

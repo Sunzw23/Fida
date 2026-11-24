@@ -21,7 +21,12 @@ namespace Fida.UI.Campaign
 
         public IReadOnlyList<string> Children(IReadOnlyList<string> scope) =>
             _paths.Where(path => HasPrefix(path, scope) && path.Length > scope.Count)
-                .Select(path => path[scope.Count]).Distinct(StringComparer.Ordinal).ToArray();
+                .Select(path => path[scope.Count]).Distinct(StringComparer.Ordinal)
+                // The chapter index owns the reading order; undeclared folders follow by name.
+                .OrderBy(name => CampaignChapters.Get(scope.Concat(new[] { name }).ToArray())?.Order
+                                 ?? int.MaxValue)
+                .ThenBy(name => name, StringComparer.Ordinal)
+                .ToArray();
 
         public IReadOnlyList<int> Missions(IReadOnlyList<string> scope) =>
             Enumerable.Range(0, _nodes.Count)

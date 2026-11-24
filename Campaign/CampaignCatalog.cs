@@ -25,9 +25,10 @@ namespace Fida.Campaign
         private static IReadOnlyList<CampaignNode> BuildNodes()
         {
             var nodes = JsonCampaignNodeProvider.FromDefaultContent().Load();
-            if (!CampaignGraphValidator.IsValid(nodes))
+            var problems = CampaignGraphValidator.Validate(nodes);
+            if (problems.Count > 0)
                 throw new InvalidDataException(
-                    "Campaign data is missing or invalid. Check Content/campaign/chapters JSON files.");
+                    "Campaign data is missing or invalid: " + string.Join(" | ", problems.Take(4)));
             return nodes;
         }
     }

@@ -41,6 +41,8 @@ namespace Fida.Network
         CampaignPresence = 0x40,
         CampaignReady = 0x41,
         CampaignCoopStart = 0x42,
+        /// <summary>Player left a live battle (concede). The session itself survives.</summary>
+        BattleForfeit = 0x43,
         ChatMessage = 0x20,
         Disconnect = 0xFF,
     }

@@ -14,4 +14,6 @@ public sealed class UIReferenceLayout
     public Rectangle JoinAction => Portrait ? Canvas.Rect(80, 1260, 740, 100) : Canvas.Rect(1070, 900, 700, 100);
     public Rectangle Code => Portrait ? Canvas.Rect(80, 1000, 740, 155) : Canvas.Rect(1070, 350, 700, 210);
     public Rectangle SessionAction => Portrait ? Canvas.Rect(80, 1200, 740, 100) : Canvas.Rect(700, 930, 520, 100);
+    /// <summary>Connected session page: the only action, spanning the card's content column.</summary>
+    public Rectangle DisconnectAction => Portrait ? Canvas.Rect(90, 940, 720, 100) : Canvas.Rect(570, 752, 780, 100);
 }

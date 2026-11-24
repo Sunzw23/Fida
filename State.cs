@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +13,7 @@ namespace Fida
         Skills,
         Settings,
         LevelSelect,
+        CompanionSelect,
         Playing,
         Paused,
         GameOver,
@@ -23,6 +24,7 @@ namespace Fida
         OnlineLobby,
         DuelDraft,
         OnlineCampaignMap,
+        OnlineCompanionSelect,
         OnlineCampaignSkills,
     }
 

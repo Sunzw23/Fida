@@ -69,10 +69,11 @@ namespace Fida.UI
         }
 
         /// <summary>构建在线菜单</summary>
-        public void BuildOnlineMenu(bool connected = false)
+        public void BuildOnlineMenu(bool connected = false, bool isHost = false,
+            string detailLabel = "Server", string detailValue = "")
         {
             Clear();
-            BuildReferenceOnline(connected);
+            BuildReferenceOnline(connected, isHost, detailLabel, detailValue);
         }
 
         public void BuildHostingScreen(string statusText, string roomCode = "")
@@ -132,22 +133,61 @@ namespace Fida.UI
         public void BuildSkillSelect(bool online = false)
         {
             Clear();
-            _campaignScreens.BuildLoadout(GameSetup.SelectedNode, online);
+            var node = GameSetup.SelectedNode;
+            _campaignScreens.BuildLoadout(node, online);
             var wheel = _uiControls.OfType<UICampaignSkillWheel>().First();
-            bool canChoose = CampaignLoadout.HasSelectableSkills(CampaignRuntime.GetProgress(online), GameSetup.SelectedNode);
-            wheel.IsVisible = canChoose;
-            wheel.InputBlocked = !canChoose;
-            if (!canChoose && online)
+            var partyStrip = _uiControls.OfType<UICampaignPartyStrip>().FirstOrDefault();
+            var progress = CampaignRuntime.GetProgress(online);
+            bool canChooseSkills = CampaignLoadout.HasSelectableSkills(progress, node);
+            // The loadout stays visible whenever it has skills to spend, even if the party
+            // strip is the only other thing on the page.
+            wheel.IsVisible = canChooseSkills || partyStrip != null;
+            wheel.InputBlocked = !canChooseSkills && partyStrip == null;
+            wheel.SelectionEnabled = canChooseSkills;
+            if (partyStrip != null)
+            {
+                partyStrip.SetParty(GameSetup.SelectedCompanionIds);
+                partyStrip.InputBlocked = !wheel.IsVisible;
+            }
+            if (!wheel.IsVisible && online)
                 _uiControls.Add(new UILabel(-1001, "Waiting for ally...",
                     new Vector2(_resourceManager.GraphicsDevice.Viewport.Width / 2f,
                         _resourceManager.GraphicsDevice.Viewport.Height / 2f), _resourceManager.Font));
-            if (GameSetup.SelectedNode.BeforeStory.Count > 0)
+            // A node that offers companions shows its introduction on the companion screen;
+            // the loadout only carries the briefing for battles with no companion choice.
+            if (node.BeforeStory.Count > 0 && !CampaignLoadout.HasCompanionChoices(node, progress) &&
+                !GameSetup.NodeBriefingShown)
             {
-                var dialogue = AddTutorialDialogue(GameSetup.SelectedNode);
-                dialogue.PresentPages(GameSetup.SelectedNode.BeforeStory, CampaignRuntime.GetProgress(online));
-                wheel.InputBlocked = !canChoose || dialogue.IsVisible;
-                dialogue.Finished += () => wheel.InputBlocked = !canChoose;
+                var dialogue = AddTutorialDialogue(node);
+                dialogue.PresentPages(BriefingPages(node), progress);
+                GameSetup.MarkNodeBriefingShown();
+                wheel.InputBlocked = !wheel.IsVisible || dialogue.IsVisible;
+                if (partyStrip != null) partyStrip.InputBlocked = !wheel.IsVisible || dialogue.IsVisible;
+                dialogue.Finished += () =>
+                {
+                    wheel.InputBlocked = !wheel.IsVisible;
+                    if (partyStrip != null) partyStrip.InputBlocked = !wheel.IsVisible;
+                };
             }
+        }
+
+        /// <summary>构建同伴选择界面（立绘名册 + 队伍确认）。</summary>
+        public void BuildCompanionSelect(bool online = false)
+        {
+            Clear();
+            var node = GameSetup.SelectedNode;
+            _campaignScreens.BuildCompanionSelect(node, online);
+            var screen = _uiControls.OfType<UICampaignCompanionSelect>().FirstOrDefault();
+            if (screen == null) return;
+            screen.SetSelection(GameSetup.SelectedCompanionIds);
+            screen.ContinueActionText = CampaignLoadout.HasSelectableSkills(
+                CampaignRuntime.GetProgress(online), node) ? "CONTINUE" : "START BATTLE";
+            if (node.BeforeStory.Count == 0 || GameSetup.NodeBriefingShown) return;
+            var dialogue = AddTutorialDialogue(node);
+            dialogue.PresentPages(BriefingPages(node), CampaignRuntime.GetProgress(online));
+            GameSetup.MarkNodeBriefingShown();
+            screen.InputBlocked = dialogue.IsVisible;
+            dialogue.Finished += () => screen.InputBlocked = false;
         }
 
         public UITutorialDialogue AddTutorialDialogue(CampaignNode node)
@@ -159,6 +199,22 @@ namespace Fida.UI
             if (_focusManager.CurrentInputMode == InputMode.Controller)
                 _focusManager.FocusFirst();
             return dialogue;
+        }
+
+        /// <summary>
+        /// The node's introduction plus one generated page per vow, so a "bare hands" or
+        /// "alone" side chapter states its condition before the fight, not on the map only.
+        /// </summary>
+        private static IReadOnlyList<CampaignStoryPage> BriefingPages(CampaignNode node)
+        {
+            if (node.Vows.Count == 0) return node.BeforeStory;
+            var pages = node.BeforeStory.ToList();
+            pages.Add(new CampaignStoryPage
+            {
+                Speaker = "The Long Road",
+                Text = string.Join(" ", node.Vows.Select(CampaignVows.Sentence))
+            });
+            return pages;
         }
 
         public void BuildCampaignResult(bool won, string message) =>

@@ -34,7 +34,10 @@ namespace Fida.States
             }
 
             if (map.TryConsumeSelectedNode(out string nodeId) && GameSetup.SelectCampaignNode(nodeId))
-                _stateMachine.SwitchToState(State.Skills);
+                _stateMachine.SwitchToState(
+                    CampaignLoadout.HasCompanionChoices(GameSetup.SelectedNode, CampaignRuntime.Progress)
+                        ? State.CompanionSelect
+                        : State.Skills);
         }
     }
 }

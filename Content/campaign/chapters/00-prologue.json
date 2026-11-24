@@ -13,6 +13,7 @@
       "PlusAttack",
       "PlusDefence"
     ],
+    "companions": [],
     "enemies": [
       {
         "name": "The Withered King",

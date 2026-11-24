@@ -1,0 +1,26 @@
+[
+  {
+    "id": "mara_venn",
+    "name": "Mara Venn",
+    "portraitKey": "tutorial_ally",
+    "artKey": "dialogue_mara",
+    "atlasCell": 1,
+    "health": 8,
+    "agentType": "Rule",
+    "skills": [],
+    "description": "Woke on a white bench with somewhere to go and no way to name it. She reads numbers faster than she reads people."
+  },
+  {
+    "id": "ila",
+    "name": "Ila",
+    "portraitKey": "tutorial_ally",
+    "atlasCell": 2,
+    "unlockNode": "AS3",
+    "health": 7,
+    "agentType": "Rule",
+    "skills": [
+      "PlusAttack"
+    ],
+    "description": "The smith's apprentice. Carried the sword all the way to a door that finally opened."
+  }
+]

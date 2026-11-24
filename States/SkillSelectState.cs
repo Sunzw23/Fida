@@ -27,12 +27,13 @@ namespace Fida.States
                 return;
             }
             base.HandleInput(gameTime);
+            UpdatePartyStrip();
             var wheel = _uiManager.GetControlByName<UICampaignSkillWheel>("skill_wheel");
             if (wheel == null) return;
 
             if (wheel.ConsumeBackRequest())
             {
-                _stateMachine.SwitchToState(State.LevelSelect);
+                _stateMachine.SwitchToState(PreviousState());
                 return;
             }
 
@@ -41,5 +42,20 @@ namespace Fida.States
             if (wheel.ConsumeStartRequest())
                 _stateMachine.SwitchToState(State.Playing);
         }
+
+        /// <summary>The party strip mirrors the choice made on the companion screen.</summary>
+        private void UpdatePartyStrip()
+        {
+            var strip = _uiManager.GetControlByName<UICampaignPartyStrip>("party_strip");
+            if (strip == null) return;
+            strip.SetParty(GameSetup.SelectedCompanionIds);
+            if (strip.TryConsumeChangeRequest()) _stateMachine.SwitchToState(PreviousState());
+        }
+
+        /// <summary>Back returns to the screen that owns the party, when this battle has one.</summary>
+        private State PreviousState() => CampaignLoadout.HasCompanionChoices(GameSetup.SelectedNode,
+            CampaignRuntime.Progress)
+            ? State.CompanionSelect
+            : State.LevelSelect;
     }
 }

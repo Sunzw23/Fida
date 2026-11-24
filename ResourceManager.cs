@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 // ResourceManager.cs 文件
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -17,6 +17,9 @@ namespace Fida
         // 纹理字典，用于存储和管理所有加载的Texture2D
         // 在 LoadContent 中初始化；在此之前不允许使用。
         private Dictionary<string, System.Lazy<Texture2D>> _textures = null!;
+
+        // 保留内容管理器，供数据驱动的贴图（如战役同伴立绘）按需注册。
+        private ContentManager? _contentManager;
 
         // 游戏字体，用于UI文本
         // 由此类在 LoadContent() 中赋值，所有 UI 代码都把 Fida 字体当作非 null 使用。
@@ -57,6 +60,7 @@ namespace Fida
         /// <param name="contentManager">游戏的内容管理器。</param>
         public void LoadContent(ContentManager contentManager)
         {
+            _contentManager = contentManager;
             // Both platforms bundle the same IBM Plex Sans family.
             Font = contentManager.Load<SpriteFont>("source_han_sans");
             if (Font==null)
@@ -125,6 +129,7 @@ namespace Fida
             LoadTexture(contentManager, "paper_main_art", "paper/main_journey");
             LoadTexture(contentManager, "paper_battle", "paper/battle");
             LoadTexture(contentManager, "victory_road", "paper/victory_road_concept");
+            LoadTexture(contentManager, "defeat_ground", "paper/defeat_ground");
             UI.UIPaper.RegisterMaterials(_graphicsDevice, GetTexture("paper_skins"), () => GetTexture("paper_background"), () => GetTexture("paper_battle"));
 
         }
@@ -174,6 +179,29 @@ namespace Fida
                 // 未注册的纹理属于编程错误：调用方都会直接解引用返回值，
                 // 与其把 null 传下去，不如在此显式失败。
                 throw new System.InvalidOperationException($"Texture not registered: {name}");
+            }
+        }
+
+        /// <summary>
+        /// Returns a registered texture, or registers one on first use from
+        /// <paramref name="contentPath"/>. Data-driven screens (campaign companions) can name
+        /// their own art without a code change; a missing asset returns null instead of
+        /// failing the frame, so the caller can fall back to the roster atlas.
+        /// </summary>
+        public Texture2D? TryGetTexture(string? name, string? contentPath = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            if (_textures.TryGetValue(name, out var registered)) return registered.Value;
+            if (string.IsNullOrWhiteSpace(contentPath) || _contentManager is null) return null;
+            try
+            {
+                LoadTexture(_contentManager, name, contentPath);
+                return _textures[name].Value;
+            }
+            catch (ContentLoadException)
+            {
+                _textures.Remove(name);
+                return null;
             }
         }
 

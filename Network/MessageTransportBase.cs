@@ -41,11 +41,15 @@ namespace Fida.Network
         /// <summary>子类实现的停止逻辑（设置标志、取消、关闭资源、置空字段）</summary>
         protected abstract void OnStop();
 
+        /// <summary>Shared result for the common "nothing arrived" case; callers must not mutate it.</summary>
+        private static readonly List<NetworkMessage> NoMessages = new();
+
         /// <summary>
         /// 获取所有待处理的消息（非阻塞）
         /// </summary>
         public List<NetworkMessage> ReceiveMessages()
         {
+            if (_incomingMessages.IsEmpty) return NoMessages;
             var messages = new List<NetworkMessage>();
             while (_incomingMessages.TryDequeue(out NetworkMessage? message))
             {

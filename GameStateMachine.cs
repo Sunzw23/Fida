@@ -80,6 +80,7 @@ namespace Fida
                 case State.Rules:         _uiManager.BuildRulesScreen(); break;
                 case State.Settings:      _uiManager.BuildSettingsScreen(); break;
                 case State.LevelSelect:   _uiManager.BuildLevelSelect(); break;
+                case State.CompanionSelect: _uiManager.BuildCompanionSelect(); break;
                 case State.Skills:        _uiManager.BuildSkillSelect(); break;
                 case State.Playing:
                     if (!_playingSceneManager.IsInitialized)
@@ -99,12 +100,14 @@ namespace Fida
                             _uiManager.BuildCampaignResult(outcome.Won, outcome.Message);
                     }
                     break;
-                case State.OnlineMenu:    _uiManager.BuildOnlineMenu(_networkManager.IsConnected); break;
+                case State.OnlineMenu:    _uiManager.BuildOnlineMenu(_networkManager.IsConnected,
+                    _networkManager.IsHost, _networkManager.SessionDetailLabel, _networkManager.SessionDetailValue); break;
                 case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText, _networkManager.HostRoomCode); break;
                 case State.Connecting:    _uiManager.BuildConnectingScreen(_networkManager.StatusText); break;
                 case State.OnlineLobby:   _uiManager.BuildOnlineLobby(_networkManager.IsHost); break;
                 case State.DuelDraft:     _uiManager.BuildDuelDraft(); break;
                 case State.OnlineCampaignMap: _uiManager.BuildLevelSelect(online: true); break;
+                case State.OnlineCompanionSelect: _uiManager.BuildCompanionSelect(online: true); break;
                 case State.OnlineCampaignSkills: _uiManager.BuildSkillSelect(online: true); break;
                 case State.OnlinePlaying: _uiManager.BuildPlayingUI(_uiManager.GameManager); break;
             }

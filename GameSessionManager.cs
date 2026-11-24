@@ -35,6 +35,7 @@ namespace Fida
         private bool _awaitingBattleJoinAcknowledgement;
         private bool _controlsCampaignAgents;
         private bool _disconnectForfeitPending;
+        private bool _battleForfeitPending;
         private bool _campaignDisconnectPending;
         private readonly ConcurrentQueue<string> _pendingNetworkDisconnects = new();
 
@@ -48,6 +49,7 @@ namespace Fida
 
             // 监听网络断开事件，在游戏中时强制结束游戏
             _networkManager.Disconnected += OnNetworkDisconnected;
+            _networkManager.BattleForfeitReceived += OnBattleForfeit;
             _networkManager.BattleJoinRequested += OnBattleJoinRequested;
             _networkManager.BattleSnapshotAcknowledged += OnBattleSnapshotAcknowledged;
             _networkManager.CampaignPresenceReceived += OnCampaignPresenceReceived;
@@ -73,7 +75,12 @@ namespace Fida
             var game = _uiManager.GameManager;
             bool won = !e.IsDraw && game.AreAllies(e.WinnerPlayerId, game.LocalPlayerId);
             string resultMessage = e.Message;
-            if (_disconnectForfeitPending)
+            if (_battleForfeitPending)
+            {
+                won = true;
+                resultMessage = "Opponent conceded. Victory awarded.";
+            }
+            else if (_disconnectForfeitPending)
             {
                 won = true;
                 resultMessage = "Opponent disconnected. Victory awarded.";
@@ -87,6 +94,7 @@ namespace Fida
                 CampaignRuntime.Complete(GameSetup.SelectedNode, onlineCampaign ? CampaignRuntime.Online : CampaignRuntime.Local);
             _stateMachine.SetLastBattleOutcome(new Logic.BattleOutcome(won, resultMessage, onlineDuel));
             _disconnectForfeitPending = false;
+            _battleForfeitPending = false;
             _campaignDisconnectPending = false;
             _playingSceneManager.IsInitialized = false;
             _networkGameStarted = false;
@@ -106,6 +114,42 @@ namespace Fida
         /// </summary>
         private void OnNetworkDisconnected(string message) =>
             _pendingNetworkDisconnects.Enqueue(message ?? string.Empty);
+
+        /// <summary>
+        /// The opponent left a live battle without closing the session (pause → main menu).
+        /// The fight is still resolved for this player, but the connection stays up so both
+        /// can return to the connected main menu and play again without reconnecting.
+        /// </summary>
+        private void OnBattleForfeit(int playerId)
+        {
+            if (playerId == _networkManager.GetLocalPlayerId()) return;
+            if (_stateMachine.CurrentState != State.OnlinePlaying &&
+                !(_stateMachine.CurrentState == State.Rules &&
+                  _stateMachine.RulesReturnState == State.OnlinePlaying) &&
+                !(_stateMachine.CurrentState == State.Paused && _networkGameStarted)) return;
+
+            if (_networkManager.CurrentGameMode == 2)
+            {
+                if (!_networkManager.IsCampaignSharedBattle)
+                    return; // independent campaign routes are unaffected
+                ContinueCampaignWithoutPartner();
+                return;
+            }
+
+            if (_networkManager.CurrentGameMode != 0) return;
+            _battleForfeitPending = true;
+            _playingSceneManager.HandleRemotePlayerDisconnect();
+        }
+
+        /// <summary>Keeps simulating a shared campaign battle for the surviving player.</summary>
+        private void ContinueCampaignWithoutPartner()
+        {
+            _networkManager.IsCampaignSharedBattle = false;
+            _networkManager.IsCampaignBattleContinuingLocally = true;
+            _controlsCampaignAgents = true;
+            _campaignDisconnectPending = false;
+            _playingSceneManager.ContinueCampaignAfterPartnerDisconnect();
+        }
 
         private void OnCampaignPresenceReceived(CampaignPresence presence)
         {
@@ -135,11 +179,7 @@ namespace Fida
                         _networkManager.ProcessMessages(game);
                         if (game.IsGameEnded) continue;
 
-                        _networkManager.IsCampaignSharedBattle = false;
-                        _networkManager.IsCampaignBattleContinuingLocally = true;
-                        _controlsCampaignAgents = true;
-                        _campaignDisconnectPending = false;
-                        _playingSceneManager.ContinueCampaignAfterPartnerDisconnect();
+                        ContinueCampaignWithoutPartner();
                         continue;
                     }
 
@@ -187,6 +227,7 @@ namespace Fida
                 _networkGameStarted = false;
             if (_networkGameStarted) return;
             _networkGameStarted = true;
+            _battleForfeitPending = false;
             _networkManager.IsCampaignBattleContinuingLocally = false;
 
             int localId = _networkManager.GetLocalPlayerId();
@@ -206,7 +247,8 @@ namespace Fida
                     ? CampaignBattleFactory.CreateCooperative(GameSetup.SelectedNode,
                         localId == 0 ? GameSetup.SelectedLocalSkills : _networkManager.RemoteCampaignPresence.Skills ?? [],
                         localId == 1 ? GameSetup.SelectedLocalSkills : _networkManager.RemoteCampaignPresence.Skills ?? [])
-                    : CampaignBattleFactory.Create(GameSetup.SelectedNode, GameSetup.SelectedLocalSkills);
+                    : CampaignBattleFactory.Create(GameSetup.SelectedNode, GameSetup.SelectedLocalSkills,
+                        companionIds: GameSetup.SelectedCompanionIds);
                 var pendingSnapshot = _networkManager.TakePendingBattleSnapshot();
                 _controlsCampaignAgents = pendingSnapshot == null &&
                     (!shared || _networkManager.IsHost);

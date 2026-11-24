@@ -17,7 +17,6 @@
     "rewards": [
       "PlusAttack"
     ],
-    "tutorialCompanion": "Mara Venn",
     "tutorialBriefing": "Choose two different numbers. Their sum replaces your first number; keep only its last digit.",
     "tutorialRule": "TURN 01  /  Choose two numbers. Their sum becomes your first number.",
     "enemies": [
@@ -65,7 +64,6 @@
     "rewards": [
       "PlusDefence"
     ],
-    "tutorialCompanion": "Mara Venn",
     "tutorialBriefing": "Equip a skill within the SP budget. Skills trigger automatically when their conditions are met.",
     "tutorialRule": "LOADOUT  /  SP is your skill budget. Skills trigger automatically when their condition is met.",
     "enemies": [
@@ -115,7 +113,6 @@
     "rewards": [
       "DoubleHealth"
     ],
-    "tutorialCompanion": "Mara Venn",
     "tutorialBriefing": "Watch for reinforcement arrivals. Defeat the entire hostile squad to open the road.",
     "tutorialRule": "FIELD  /  Defeat every enemy. Reinforcements may join before the encounter ends.",
     "isBoss": true,

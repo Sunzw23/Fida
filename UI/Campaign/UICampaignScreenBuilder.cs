@@ -62,6 +62,25 @@ namespace Fida.UI.Campaign
             {
                 Name = "skill_wheel"
             });
+            if (CampaignLoadout.HasCompanionChoices(node, CampaignRuntime.GetProgress(online)))
+                _controls.Add(new UICampaignPartyStrip(1, _resources.GraphicsDevice, _resources,
+                    node, _resources.Font, _resources.CaptionFont,
+                    CampaignCompanions.PartyLimitFor(node, CampaignRuntime.GetProgress(online)))
+                {
+                    Name = "party_strip"
+                });
+        }
+
+        /// <summary>Full roster screen with art; the player builds the battle party here.</summary>
+        public void BuildCompanionSelect(CampaignNode node, bool online = false)
+        {
+            var roster = CampaignCompanions.Available(node, CampaignRuntime.GetProgress(online));
+            if (roster.Count == 0) return;
+            _controls.Add(new UICampaignCompanionSelect(0, _resources.GraphicsDevice, _resources,
+                node, roster, _resources.Font, _resources.TitleFont, _resources.CaptionFont)
+            {
+                Name = "companion_select"
+            });
         }
 
         public void BuildResult(bool won, string message, CampaignNode node)

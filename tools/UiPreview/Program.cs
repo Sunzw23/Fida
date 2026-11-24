@@ -12,7 +12,7 @@ int width = args.Length > 0 ? int.Parse(args[0]) : 1600;
 int height = args.Length > 1 ? int.Parse(args[1]) : 1000;
 string destination = Path.GetFullPath(args.Length > 2 ? args[2] : "artifacts/cold-ui");
 Directory.CreateDirectory(destination);
-using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"), args.Contains("--reference-only"), args.Contains("--concept-only"), args.Contains("--route-only"));
+using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"), args.Contains("--reference-only"), args.Contains("--concept-only"), args.Contains("--route-only"), args.Contains("--companions-only"), args.Contains("--chapters-only"));
 preview.Run();
 
 sealed class PreviewGame : Game
@@ -30,10 +30,14 @@ sealed class PreviewGame : Game
     private readonly bool _referenceOnly;
     private readonly bool _conceptOnly;
     private readonly bool _routeOnly;
+    private readonly bool _companionsOnly;
+    private readonly bool _chaptersOnly;
     private UICampaignSkillWheel _loadout;
     private HashSet<SkillType> _loadoutSelected;
+    private UICampaignCompanionSelect _companionScreen;
+    private UICampaignMap _chapterMap;
 
-    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly, bool referenceOnly, bool conceptOnly, bool routeOnly)
+    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly, bool referenceOnly, bool conceptOnly, bool routeOnly, bool companionsOnly, bool chaptersOnly)
     {
         _width = width; _height = height; _destination = destination;
         _skillsOnly = skillsOnly;
@@ -41,10 +45,14 @@ sealed class PreviewGame : Game
         _referenceOnly = referenceOnly;
         _conceptOnly = conceptOnly;
         _routeOnly = routeOnly;
+        _companionsOnly = companionsOnly;
+        _chaptersOnly = chaptersOnly;
         if (skillsOnly) _screen = 4;
         if (referenceOnly) _screen = 2;
         if (conceptOnly) _screen = 7;
         if (routeOnly) _screen = 3;
+        if (companionsOnly) _screen = 20;
+        if (chaptersOnly) _screen = 21;
         _graphics = new GraphicsDeviceManager(this)
         { PreferredBackBufferWidth = width, PreferredBackBufferHeight = height, GraphicsProfile = GraphicsProfile.HiDef };
         Content.RootDirectory = Path.Combine(AppContext.BaseDirectory, "Content");
@@ -64,6 +72,7 @@ sealed class PreviewGame : Game
         VerifyGumModalLayouts();
         VerifyPageTransitions();
         VerifyCampaignLoadoutTransition();
+        VerifySideChapterStock();
         SeedRulesPreview();
         Build();
     }
@@ -118,11 +127,48 @@ sealed class PreviewGame : Game
                 _loadoutSelected = selected;
                 loadout.GridBrowser.FocusSkill(SkillType.DoubleAttack);
                 VerifySkillGrid(loadout,selected);
+                var partyStrip = new UICampaignPartyStrip(1,GraphicsDevice,_resources,node,
+                    _resources.Font,_resources.CaptionFont);
+                partyStrip.SetParty(["mara_venn"]);
+                _ui.GetControls().Add(partyStrip);
+                VerifyPartyStrip(partyStrip,loadout.GridBrowser.Layout);
+                break;
+            case 20:
+                var companionNode = CampaignCatalog.GetNode("T01") ?? CampaignCatalog.Nodes.First();
+                var companionScreen = new UICampaignCompanionSelect(0,GraphicsDevice,_resources,
+                    companionNode,CampaignCompanions.Available(companionNode),_resources.Font,
+                    _resources.TitleFont,_resources.CaptionFont);
+                _ui.GetControls().Add(companionScreen);
+                _companionScreen = companionScreen;
+                VerifyCompanionScreen(companionScreen,companionNode);
+                break;
+            case 21:
+                // A preview never reads the player's save: build the map with explicit progress
+                // so the first chapter's side roads are already unlocked and coloured.
+                var chapterProgress = new CampaignProgress();
+                foreach (string completed in new[] { "P", "T01", "T02", "T03" })
+                    if (CampaignCatalog.GetNode(completed) is { } done) chapterProgress.Complete(done);
+                float mapScale = UIDesktopLayout.Scale(GraphicsDevice.Viewport);
+                var mapOptions = new CampaignMapOptions
+                {
+                    NodeWidth = 380f,
+                    NodeHeight = 180f,
+                    ContentPadding = 0f,
+                    MinimumZoom = 0.55f,
+                    MaximumZoom = 2.2f,
+                    ScreenMargin = Math.Max(1, (int)Math.Round(36 * mapScale)),
+                    HeaderHeight = Math.Max(1, (int)Math.Round(24 * mapScale)),
+                    FooterHeight = Math.Max(1, (int)Math.Round(94 * mapScale))
+                };
+                _chapterMap = new UICampaignMap(0, GraphicsDevice, _resources.Pixel,
+                    _resources.AntialiasedLine, _resources.MapFont, _resources.TitleFont,
+                    CampaignCatalog.Nodes, chapterProgress, mapOptions) { Name = "campaign_map" };
+                _ui.GetControls().Add(_chapterMap);
                 break;
             case 9: _ui.BuildOnlineLobby(true); break;
             case 10: _ui.BuildMainMenu(true); break;
             case 11: _ui.BuildOnlineMenu(); VerifyRoomCodeInput(); break;
-            case 12: _ui.BuildOnlineMenu(true); break;
+            case 12: _ui.BuildOnlineMenu(true, true, "Room", "A7K2"); break;
             case 13: _ui.BuildHostingScreen("Waiting for opponent", "A7K2"); break;
             case 14: _ui.BuildConnectingScreen("Connecting to session..."); break;
             case 15:
@@ -262,6 +308,70 @@ sealed class PreviewGame : Game
         Console.WriteLine("Verified grid browsing, equip/remove, restrictions, paging and draft compatibility.");
     }
 
+    /// <summary>The loadout party strip is a read-only summary with one way back to the roster.</summary>
+    private void VerifyPartyStrip(UICampaignPartyStrip strip,SkillSelectionLayout layout)
+    {
+        MouseState State(Point p,ButtonState button) => new(p.X,p.Y,0,button,ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
+        var band = strip.BarBounds;
+        if (!layout.Party.Contains(band) && band.Intersects(layout.Grid))
+            throw new Exception("Party strip left its band and overlaps the skill grid.");
+        if (band.Intersects(layout.Start) || band.Intersects(layout.Details))
+            throw new Exception("Party strip collides with the loadout footer.");
+        if (strip.Party.Count!=1 || strip.Party[0].Id!="mara_venn")
+            throw new Exception("Party strip did not mirror the selected party.");
+        strip.Update(State(new Point(0,0),ButtonState.Released));
+        void Click(Rectangle bounds)
+        {
+            strip.Update(State(bounds.Center,ButtonState.Released));
+            strip.Update(State(bounds.Center,ButtonState.Pressed));
+            strip.Update(State(bounds.Center,ButtonState.Released));
+        }
+        Click(band);
+        if (!strip.TryConsumeChangeRequest()) throw new Exception("Party strip did not request the companion screen.");
+        if (strip.TryConsumeChangeRequest()) throw new Exception("Party strip request was delivered twice.");
+        strip.InputBlocked=true;
+        Click(band);
+        if (strip.TryConsumeChangeRequest()) throw new Exception("Blocked party strip still requested a change.");
+        strip.InputBlocked=false;
+        Console.WriteLine("Verified loadout party strip geometry and change intent.");
+    }
+
+    /// <summary>Checks the companion roster screen: cards, party limit and one-shot toggles.</summary>
+    private void VerifyCompanionScreen(UICampaignCompanionSelect screen,CampaignNode node)
+    {
+        MouseState State(Point p,ButtonState button) => new(p.X,p.Y,0,button,ButtonState.Released,ButtonState.Released,ButtonState.Released,ButtonState.Released);
+        var layout = screen.Layout;
+        var cards = screen.CardBounds;
+        var roster = CampaignCompanions.Available(node);
+        if (cards.Count!=roster.Count) throw new Exception("Companion screen showed a card for every roster entry and nothing else.");
+        foreach (var (_,bounds) in cards)
+            if (!layout.Roster.Contains(bounds)) throw new Exception("Companion card left the roster band.");
+        if (layout.Details.Intersects(layout.Roster) || layout.Continue.Intersects(layout.Details))
+            throw new Exception("Companion screen panels overlap.");
+        screen.Update(State(new Point(0,0),ButtonState.Released));
+        void Click(Rectangle bounds)
+        {
+            screen.Update(State(bounds.Center,ButtonState.Released));
+            screen.Update(State(bounds.Center,ButtonState.Pressed));
+            screen.Update(State(bounds.Center,ButtonState.Released));
+        }
+        var card = cards[0];
+        Click(card.Bounds);
+        if (!screen.TryConsumeToggle(out string chosen) || chosen!=card.CardId)
+            throw new Exception("Companion card did not report its id.");
+        if (screen.TryConsumeToggle(out _)) throw new Exception("Companion toggle was delivered twice.");
+        if (screen.FocusedCardId!=card.CardId) throw new Exception("Click did not focus the companion card.");
+        if (screen.PartyLimit!=CampaignCompanions.PartyLimitFor(node))
+            throw new Exception("Companion screen limit disagrees with campaign data.");
+        if (screen.CanToggle("nobody")) throw new Exception("An unknown companion was toggleable.");
+        // A member of the party can always be dismissed, which is how the player ends up alone.
+        screen.SetSelection([card.CardId]);
+        if (!screen.CanToggle(card.CardId)) throw new Exception("A selected companion could not be dismissed.");
+        if (screen.SelectedIds.Count!=1) throw new Exception("Companion screen lost its selected card.");
+        screen.SetSelection([]);
+        if (screen.SelectedIds.Count!=0) throw new Exception("Companion screen kept a cleared party.");
+        Console.WriteLine("Verified companion roster cards, party limit and toggle intents.");
+    }
     private void VerifyNumberInput(UIPlayer player)
     {
         Rectangle original = player.Number0Bounds;
@@ -303,7 +413,7 @@ sealed class PreviewGame : Game
         if (_frame >= 30 && time.TotalGameTime.TotalSeconds - _firstDraw >= 0.7)
         {
             if (_conceptOnly) Console.WriteLine($"UI render-target samples: {_ui.RenderSampleCount}");
-            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting", "paused", "victory", "defeat", "duel-draft", "duel-result" }[_screen];
+            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting", "paused", "victory", "defeat", "duel-draft", "duel-result", "companions", "chapters" }[_screen];
             Save(name);
             if (_screen == 16) SaveButtonStates(time);
             if (_screen == 2) SaveRulesPages(time);
@@ -328,11 +438,13 @@ sealed class PreviewGame : Game
                 _ui.Draw(time); Save("lobby-ready");
             }
             if (_screen==4) SaveSkillVariants(time);
+            if (_screen==20) SaveCompanionVariants(time);
+            if (_screen==21) SaveChapterVariants(time);
             if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
-            _screen = _conceptOnly ? _screen switch { 7 => 15, 15 => 16, 16 => 17, _ => 20 }
-                : _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 20 }
+            _screen = _conceptOnly ? _screen switch { 7 => 15, 15 => 16, 16 => 17, _ => 21 }
+                : _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 21 }
                 : _menusOnly ? _screen switch { 0 => 1, 1 => 2, 2 => 3, 3 => 9, _ => _screen + 1 } : _screen + 1;
-            if (_skillsOnly || _routeOnly || _screen > 19) Exit(); else Build();
+            if (_skillsOnly || _routeOnly || _companionsOnly || _chaptersOnly || _screen > 21) Exit(); else Build();
         }
         base.Draw(time);
     }
@@ -500,19 +612,44 @@ sealed class PreviewGame : Game
         using var ui = new UIManager(GraphicsDevice, _resources);
         var time = new GameTime(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(.016));
         ui.BuildLevelSelect(); ui.Update(time); ui.Draw(time);
+        // A companion-enabled lesson owns a roster screen before the 0 SP loadout.
+        if (CampaignCatalog.GetNode("P") is { } prologue) CampaignRuntime.Local.Progress.Complete(prologue);
+        if (!GameSetup.SelectCampaignNode("T01")) throw new Exception("Preview could not select a tutorial node.");
+        var settled = new GameTime(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(.25));
+        ui.BuildCompanionSelect();
+        ui.Update(settled); ui.Draw(settled);
+        var roster = ui.GetControlByName<UICampaignCompanionSelect>("companion_select");
+        if (roster == null) throw new Exception("A companion-enabled node built no roster screen.");
+        if (roster.SelectedIds.Count != 0) throw new Exception("A campaign battle defaulted to a companion.");
+        if (GameSetup.ToggleCampaignCompanion("mara_venn") is false) throw new Exception("Preview could not invite a companion.");
+        roster.SetSelection(GameSetup.SelectedCompanionIds);
+        if (roster.SelectedIds.Count != 1) throw new Exception("Companion screen did not mirror the invited party.");
+        // Walking into the loadout must keep the party and show it read-only.
         ui.BuildSkillSelect();
-        // State input can build the next page after UI.Update, before the same frame's Draw.
-        ui.Draw(time);
-        ui.Update(time); ui.Draw(time);
+        ui.Update(settled); ui.Draw(settled);
+        var wheel = ui.GetControlByName<UICampaignSkillWheel>("skill_wheel");
+        var strip = ui.GetControlByName<UICampaignPartyStrip>("party_strip");
+        if (strip == null) throw new Exception("The loadout built no party strip.");
+        if (wheel == null || !wheel.IsVisible) throw new Exception("The 0 SP lesson hid its loadout page.");
+        if (strip.Party.Count != 1 || strip.Party[0].Id != "mara_venn")
+            throw new Exception("Party strip lost the invited companion.");
+        // Let the page crossfade settle and dismiss the briefing so both rows are reviewable.
+        ui.Update(settled); ui.Draw(settled);
+        ui.TutorialDialogue?.Finish();
+        ui.Update(settled); ui.Draw(settled);
+        Save("loadout-no-sp");
         ui.Clear();
         var scene = new Fida.Scene.PlayingSceneManager(ui.GameManager, ui, null);
         scene.InitializeCampaign(GameSetup.LoadCampaignBattle());
         scene.StartGame();
+        var invited = GameSetup.LoadCampaignBattle();
+        if (invited.Groups[0].Players.Count != 2)
+            throw new Exception("The invited companion did not reach the battle roster.");
         ui.Draw(time);
         ui.Update(time); ui.Draw(time);
-        Console.WriteLine("Verified campaign map-to-loadout first draw and story overlay.");
+        GameSetup.ClearCampaignCompanions();
+        Console.WriteLine("Verified map-to-roster-to-loadout party flow and story overlay.");
     }
-
     private void VerifyPageTransitions()
     {
         using var ui = new UIManager(GraphicsDevice, _resources);
@@ -641,8 +778,8 @@ sealed class PreviewGame : Game
         using (var batch = new SpriteBatch(GraphicsDevice))
         {
             batch.Begin(samplerState: SamplerState.LinearClamp);
-            view.DrawChapterCard(batch, open, 3, "Chapter I", 0, 4, false, false, 0, 0);
-            view.DrawChapterCard(batch, locked, 4, "Chapter II", 0, 4, false, true, 0, 0);
+            view.DrawChapterCard(batch, open, "03", "Chapter I", 0, 4, false, false, 0, 0);
+            view.DrawChapterCard(batch, locked, "04", "Chapter II", 0, 4, false, true, 0, 0);
             batch.End();
         }
         GraphicsDevice.SetRenderTarget(null);
@@ -757,6 +894,120 @@ sealed class PreviewGame : Game
         _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero)); Save("loadout-owned-control");
         _ui.GetControls().Clear(); _ui.GetControls().AddRange(saved);
         Console.WriteLine("Verified campaign inventory hides unowned skills without changing the duel pool.");
+    }
+
+    /// <summary>Renders the roster screen with an empty party and with Mara invited.</summary>
+    private void SaveCompanionVariants(GameTime time)
+    {
+        if (_companionScreen == null) return;
+        string first = _companionScreen.CardIds.FirstOrDefault() ?? "";
+        _companionScreen.FocusCard(first);
+        _companionScreen.SetSelection([]);
+        _ui.Draw(time); Save("companions-alone");
+        _companionScreen.FocusCard("mara_venn");
+        _companionScreen.SetSelection(["mara_venn"]);
+        _ui.Draw(time); Save("companions-party");
+        _companionScreen.SetSelection([]);
+    }
+
+    /// <summary>Screenshots of the chapter list (main + side cards) and a side chapter route.</summary>
+    private void SaveChapterVariants(GameTime time)
+    {
+        if (_chapterMap == null) throw new Exception("Chapter preview lost its map.");
+        // Root page is saved by Draw as "chapters"; the side route is captured here.
+        if (!_chapterMap.TryEnterFolder("The Smith's Errand")) throw new Exception("Side chapter is missing.");
+        Redraw(time); Save("chapters-side");
+        SaveSideDetail();
+        void Redraw(GameTime now)
+        {
+            _ui.Draw(now);
+            _ui.Draw(new GameTime(now.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero));
+        }
+    }
+
+    private void SaveSideDetail()
+    {
+        var view = new UICampaignRouteView(_resources.Font, _resources.TitleFont, _resources.Pixel,
+            _resources.AntialiasedLine);
+        var layout = new CampaignMapLayout(_width, _height);
+        using var target = new RenderTarget2D(GraphicsDevice, _width, _height);
+        GraphicsDevice.SetRenderTarget(target);
+        GraphicsDevice.Clear(UITheme.BgTop);
+        using (var batch = new SpriteBatch(GraphicsDevice))
+        {
+            batch.Begin(samplerState: SamplerState.LinearClamp);
+            view.DrawDetails(batch, layout, new CampaignRouteDetails("AS3", "Delivery at Dusk",
+                "The sword is for a house that stopped answering its door years ago.",
+                3, 3, "Ila joins", null, "Chapter I", false, 2,
+                new[] { CampaignVow.Alone }, true), 0, 0, ChapterStyle.For(CampaignCatalog.GetNode("AS3")));
+            batch.End();
+        }
+        GraphicsDevice.SetRenderTarget(null);
+        using var stream = File.Create(Path.Combine(_destination, "chapters-side-detail.png"));
+        target.SaveAsPng(stream, _width, _height);
+    }
+
+    /// <summary>
+    /// A side chapter has to read as a different stock without new art: cooler sheet and a
+    /// stamped accent, while the main chapter keeps the cream stock.
+    /// </summary>
+    private void VerifySideChapterStock()
+    {
+        var view = new UICampaignRouteView(_resources.Font, _resources.TitleFont,
+            _resources.Pixel, _resources.AntialiasedLine);
+        var main = new Rectangle(20, 20, 460, 200);
+        var side = main; side.Offset(500, 0);
+        var frost = new ChapterStyle(new Color(203, 216, 218), new Color(26, 42, 51),
+            new Color(79, 102, 112), new Color(94, 110, 158), true, "bell tower");
+        using var target = new RenderTarget2D(GraphicsDevice, 1000, 240);
+        GraphicsDevice.SetRenderTarget(target);
+        GraphicsDevice.Clear(UITheme.BgTop);
+        using (var batch = new SpriteBatch(GraphicsDevice))
+        {
+            batch.Begin(samplerState: SamplerState.LinearClamp);
+            view.DrawChapterCard(batch, main, "03", "Chapter I", 2, 4, false, false, 0, 0);
+            view.DrawChapterCard(batch, side, "S1", "The Hunters' Debt", 1, 3, false, false, 0, 0, frost);
+            batch.End();
+        }
+        GraphicsDevice.SetRenderTarget(null);
+        var pixels = new Color[1000 * 240];
+        target.GetData(pixels);
+        Color Stock(Rectangle bounds)
+        {
+            int red = 0, green = 0, blue = 0, count = 0;
+            for (int y = bounds.Top + 3; y < bounds.Top + 7; y++)
+            for (int x = bounds.Left + 70; x < bounds.Right - 70; x++)
+            {
+                Color pixel = pixels[y * 1000 + x];
+                red += pixel.R; green += pixel.G; blue += pixel.B; count++;
+            }
+            return new Color(red / count, green / count, blue / count);
+        }
+        int Accent(Rectangle bounds, Color wanted)
+        {
+            int count = 0;
+            for (int y = bounds.Top; y < bounds.Bottom; y++)
+            for (int x = bounds.Left; x < bounds.Right; x++)
+            {
+                Color pixel = pixels[y * 1000 + x];
+                if (Math.Abs(pixel.R - wanted.R) < 14 && Math.Abs(pixel.G - wanted.G) < 14 &&
+                    Math.Abs(pixel.B - wanted.B) < 14) count++;
+            }
+            return count;
+        }
+        Color mainStock = Stock(main), sideStock = Stock(side);
+        if (mainStock.R - mainStock.B < 8)
+            throw new Exception($"The main chapter lost its cream stock: {mainStock}.");
+        if (sideStock.B - sideStock.R < 8)
+            throw new Exception($"The side chapter did not get a cool stock: {sideStock}.");
+        // Without a stamp the kind still has to read: the side number is printed in the accent.
+        int sideNumber = Accent(new Rectangle(side.Left, side.Top, side.Width / 2, 60), frost.Accent);
+        int mainNumber = Accent(new Rectangle(main.Left, main.Top, main.Width / 2, 60), frost.Accent);
+        if (sideNumber < 40)
+            throw new Exception($"The side chapter number is not in the accent colour ({sideNumber} px).");
+        if (mainNumber > 5)
+            throw new Exception("A main chapter number was printed in the side accent.");
+        Console.WriteLine($"Verified side chapter stock ({mainStock} vs {sideStock}) and accent numbering.");
     }
 
     private void VerifyRenderedMotion(GameTime time, string name)

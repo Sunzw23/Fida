@@ -7,13 +7,21 @@ namespace Fida.UI;
 
 public partial class UIScreenBuilder
 {
-    private void BuildReferenceOnline(bool connected)
+    private void BuildReferenceOnline(bool connected, bool isHost, string detailLabel, string detailValue)
     {
         var layout = new UIReferenceLayout(_resourceManager.GraphicsDevice.Viewport);
-        _uiControls.Add(new UIReferenceSurface(_resourceManager, connected ? UIReferenceScreen.Connection : UIReferenceScreen.Online) { Name = "online_art" });
+        _uiControls.Add(new UIReferenceSurface(_resourceManager, connected ? UIReferenceScreen.Connection : UIReferenceScreen.Online)
+        {
+            Name = "online_art",
+            IsHost = isHost,
+            DetailLabel = string.IsNullOrWhiteSpace(detailLabel) ? "Server" : detailLabel,
+            DetailValue = detailValue ?? string.Empty
+        });
         EditorialBack("backToMain");
         if (connected)
-            EditorialButton("disconnect", "Disconnect", layout.SessionAction);
+        {
+            EditorialButton("disconnect", "Disconnect", layout.DisconnectAction, primary: true);
+        }
         else
         {
             EditorialButton("hostGame", "Create room", layout.HostAction, primary: true);

@@ -59,13 +59,32 @@ namespace Fida.Campaign
         public bool IsTrueEndingRequired { get; init; }
         public string TutorialBriefing { get; init; } = "";
         public string TutorialRule { get; init; } = "";
-        public string TutorialCompanion { get; init; } = "";
+        // Optional narrowing of the companion roster for this battle. Absent means every
+        // companion in Content/campaign/companions.json may join; an empty array means nobody.
+        public IReadOnlyList<string>? Companions { get; init; }
+        // Difficulty band. Nodes without a tier are unclassified: the difficulty contract
+        // skips them, so old content keeps working until it is reviewed.
+        public int? Tier { get; init; }
+        // Conditions the requester imposes; each vow is mirrored by the battle data and
+        // checked by CampaignDifficulty.Audit.
+        public IReadOnlyList<CampaignVow> Vows { get; init; } = Array.Empty<CampaignVow>();
+        // Health the local player starts with (the wounded vow lowers it).
+        public int PlayerHealth { get; init; } = 11;
 
         public bool IsTutorial => !string.IsNullOrWhiteSpace(TutorialBriefing);
 
-        public string RewardText => Rewards.Count == 0
-            ? "Story Fragment"
-            : string.Join(", ", Rewards.Select(GameText.SkillName));
+        public string VowText => CampaignVows.Labels(Vows);
+
+        public string RewardText
+        {
+            get
+            {
+                var parts = Rewards.Select(GameText.SkillName).ToList();
+                foreach (var companion in CampaignCompanions.ForNode(Id))
+                    parts.Add(companion.Name + " joins");
+                return parts.Count == 0 ? "Story Fragment" : string.Join(", ", parts);
+            }
+        }
     }
 
     public sealed class CampaignProgress

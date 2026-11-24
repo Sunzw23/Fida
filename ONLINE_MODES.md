@@ -4,6 +4,8 @@
 
 Hosting or joining creates a persistent session and returns both players to the main menu. Leaving a submenu does not disconnect. Only **Disconnect Session** tears the session down.
 
+Leaving a live battle from the pause menu is a concession, not a disconnect. The protocol carries a `BattleForfeit` frame; the opponent is awarded the win (a shared campaign battle instead keeps running for the surviving player) and both players end up on the connected main menu, ready to start another match. The same rule applies to the result screen: returning to the main menu never closes the socket.
+
 The connected main menu exposes two game intents:
 
 - **Co-op Campaign** — two human players share a team against campaign enemies.
@@ -36,5 +38,6 @@ Both players share the campaign map but each owns an independent route:
 - Entering the same node's loadout screen together requires both players to Ready before the cooperative battle starts (host-authoritative `CampaignCoopStart`). Either player may also start the same node solo.
 - If a peer is already fighting a node, the other player can pick that node and Join: the battle owner captures a turn-boundary `BattleSnapshot` and the joiner rebuilds the battle from it.
 - Battles are independent unless explicitly shared (`IsCampaignSharedBattle`); actions from another route are dropped.
+- A campaign party is a solo-route choice and stays local: `CampaignPresence` does not carry it, the roster screen is reached per route, the loadout party strip marks a co-op draft as `CO-OP · ALLY JOINS`, and `CampaignBattleFactory.CreateCooperative` never adds companions because the second human owns that slot.
 
 All tuning constants live in `Network/OnlineModeRules.cs` so UI, encounter generation, and tests can share one source of truth.

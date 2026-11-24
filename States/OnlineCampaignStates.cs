@@ -56,12 +56,62 @@ public sealed class OnlineCampaignMapState : StateBase
         if (map.TryConsumeSelectedNode(out string nodeId) && GameSetup.SelectCampaignNode(nodeId, online: true))
         {
             Publish(CampaignOnlinePhase.Loadout, nodeId, false);
-            _stateMachine.SwitchToState(State.OnlineCampaignSkills);
+            _stateMachine.SwitchToState(CampaignLoadout.HasCompanionChoices(GameSetup.SelectedNode,
+                CampaignRuntime.OnlineProgress)
+                ? State.OnlineCompanionSelect
+                : State.OnlineCampaignSkills);
         }
     }
 
     private void Publish(CampaignOnlinePhase phase, string nodeId, bool ready) =>
         _networkManager.SendCampaignPresence(new CampaignPresence(_networkManager.GetLocalPlayerId(), phase, nodeId, ready));
+}
+
+/// <summary>
+/// Online companion preparation. The party is a solo-route decision, so a co-op draft hides
+/// the chooser: the partner already fills the second ally slot.
+/// </summary>
+public sealed class OnlineCompanionSelectState : StateBase
+{
+    public OnlineCompanionSelectState(UI.UIManager uiManager, NetworkManager networkManager,
+        GameStateMachine stateMachine) : base(uiManager, networkManager, stateMachine) { }
+
+    public override void OnEnter() => Publish();
+
+    public override void HandleInput(GameTime gameTime)
+    {
+        _networkManager.ProcessCampaignMessages();
+        if (HandleStoryInput(gameTime)) return;
+        base.HandleInput(gameTime);
+        var screen = _uiManager.GetControlByName<UICampaignCompanionSelect>("companion_select");
+        if (screen == null) return;
+        screen.SetSelection(GameSetup.SelectedCompanionIds);
+        // A draft on the same node means the partner takes the ally slot, so say so instead
+        // of letting the player believe the party will fight alongside them.
+        var remote = _networkManager.RemoteCampaignPresence;
+        bool coOpDraft = remote.Phase == CampaignOnlinePhase.Loadout &&
+            string.Equals(remote.NodeId, GameSetup.SelectedNodeId, StringComparison.OrdinalIgnoreCase);
+        screen.StatusText = coOpDraft ? "CO-OP · ALLY JOINS" : "";
+        if (screen.ConsumeBackRequest())
+        {
+            _stateMachine.SwitchToState(State.OnlineCampaignMap);
+            return;
+        }
+        if (screen.TryConsumeToggle(out string companionId))
+        {
+            GameSetup.ToggleCampaignCompanion(companionId);
+            screen.SetSelection(GameSetup.SelectedCompanionIds);
+        }
+        if (screen.ConsumeContinueRequest())
+        {
+            Publish();
+            _stateMachine.SwitchToState(State.OnlineCampaignSkills);
+        }
+    }
+
+    private void Publish() =>
+        _networkManager.SendCampaignPresence(new CampaignPresence(_networkManager.GetLocalPlayerId(),
+            CampaignOnlinePhase.Loadout, GameSetup.SelectedNodeId, false));
 }
 
 /// <summary>Per-player skill draft. Matching drafts require both players to ready.</summary>
@@ -107,7 +157,10 @@ public sealed class OnlineCampaignSkillsState : StateBase
                 ? "ALLY IN BATTLE · REINFORCEMENT AVAILABLE"
                 : "SOLO ROUTE";
         wheel.StartActionEnabled = !_ready;
-        wheel.SelectionEnabled = !_ready;
+        // Skill toggling also needs a skill that fits this node's budget; buddy-or-alone
+        // remains available on zero-SP lessons.
+        wheel.SelectionEnabled = !_ready &&
+            CampaignLoadout.HasSelectableSkills(CampaignRuntime.OnlineProgress, GameSetup.SelectedNode);
         wheel.StartActionText = matchingDraft
             ? (_ready ? "WAITING FOR ALLY" : "READY")
             : joiningBattle
@@ -131,9 +184,13 @@ public sealed class OnlineCampaignSkillsState : StateBase
         if (wheel.ConsumeBackRequest())
         {
             Publish(CampaignOnlinePhase.Map, "", false);
-            _stateMachine.SwitchToState(State.OnlineCampaignMap);
+            _stateMachine.SwitchToState(CampaignLoadout.HasCompanionChoices(GameSetup.SelectedNode,
+                CampaignRuntime.OnlineProgress)
+                ? State.OnlineCompanionSelect
+                : State.OnlineCampaignMap);
             return;
         }
+        UpdatePartyStrip(matchingDraft);
         if (wheel.TryConsumeToggle(out SkillType skill) && !_ready) GameSetup.ToggleCampaignSkill(skill, online: true);
 
         if (!_ready && (wheel.ConsumeStartRequest() ||
@@ -179,6 +236,21 @@ public sealed class OnlineCampaignSkillsState : StateBase
                 _networkManager.CampaignSessionId);
             _stateMachine.SwitchToState(State.OnlinePlaying);
         }
+    }
+
+    /// <summary>
+    /// The party summary mirrors the companion screen. A co-op draft says so explicitly,
+    /// because the partner replaces the local party in a shared battle.
+    /// </summary>
+    private void UpdatePartyStrip(bool matchingDraft)
+    {
+        var strip = _uiManager.GetControlByName<UICampaignPartyStrip>("party_strip");
+        if (strip == null) return;
+        strip.SetParty(GameSetup.SelectedCompanionIds);
+        strip.StatusOverride = matchingDraft ? "CO-OP · ALLY JOINS" : "";
+        if (_ready || matchingDraft) return;
+        if (strip.TryConsumeChangeRequest())
+            _stateMachine.SwitchToState(State.OnlineCompanionSelect);
     }
 
     private void TryStartCoop()

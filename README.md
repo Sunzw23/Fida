@@ -21,9 +21,22 @@ dotnet build
 # 运行（首次构建会自动执行 `dotnet tool restore` 安装 MonoGame 内容管线）
 dotnet run
 
-# 测试（48 个）
+# 测试（240 个，xUnit）
 dotnet test
 ```
+
+在受限沙箱里 `dotnet test` 会在启动 testhost 时中止（VSTest 打不开父进程句柄，
+`Win32Exception (5)`，与代码无关）。此时改用等价运行器：它加载已编译的测试程序集并
+逐个调用 `[Fact]`/`[Theory]`，输出与 `dotnet test` 相同。
+
+```bash
+dotnet build tools/TestRunner/TestRunner.csproj -m:1 -p:BuildInParallel=false
+dotnet Fida.Tests/bin/Debug/net8.0/TestRunner.dll                 # 全部测试
+dotnet Fida.Tests/bin/Debug/net8.0/TestRunner.dll Fida.Tests.dll Fida.Tests.RelayTests
+```
+
+`TestRunner.dll` 必须输出到 `Fida.Tests` 的输出目录，因为战役/Gum 数据通过
+`AppContext.BaseDirectory` 解析 `Content/`。设 `RUNNER_DETAIL=1` 可打印失败用例的内部异常栈。
 
 启动后应看到轻量 Agent 加载成功：
 

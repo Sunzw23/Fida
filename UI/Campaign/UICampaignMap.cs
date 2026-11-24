@@ -281,7 +281,8 @@ namespace Fida.UI.Campaign
 #else
             EnsureViewport();
             Rectangle viewport = _camera.Viewport;
-            _routeView.DrawHeader(spriteBatch, new CampaignMapLayout(_graphicsDevice.Viewport));
+            _routeView.DrawHeader(spriteBatch, new CampaignMapLayout(_graphicsDevice.Viewport),
+                _scope.Count > 0 ? _scope[^1] : null, ChapterStyle.ForPath(_scope));
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
             {
@@ -436,10 +437,7 @@ namespace Fida.UI.Campaign
         private void DrawMobileFolder(SpriteBatch spriteBatch, int index)
         {
             Rectangle bounds = _mobileChoiceBounds[index];
-            var path = _scope.Concat(new[] { _folders[index] }).ToArray();
-            IReadOnlyList<int> descendants = _hierarchy.Descendants(path);
-            int cleared = descendants.Count(i => _progress.IsCompleted(_nodes[i].Id));
-            DrawChapterCard(spriteBatch, bounds, index, descendants, cleared, index == _selectedFolder);
+            DrawChapterCard(spriteBatch, bounds, index, index == _selectedFolder);
         }
 
         private void DrawMobileButton(SpriteBatch spriteBatch, Rectangle bounds,
@@ -705,7 +703,8 @@ namespace Fida.UI.Campaign
             if (!_camera.Viewport.Contains(bounds)) return;
             _routeView.DrawNode(spriteBatch, bounds, node.Id, node.Name, node.Chapter,
                 index == _selectedIndex, _progress.IsCompleted(node.Id),
-                !CampaignCatalog.IsUnlocked(_progress, node));
+                !CampaignCatalog.IsUnlocked(_progress, node),
+                ChapterStyle.For(node), node.Tier ?? 0);
         }
 
         /// <summary>
@@ -973,6 +972,18 @@ namespace Fida.UI.Campaign
             RefreshScope();
         }
 
+        /// <summary>Opens a chapter by its displayed name; used by previews and tests.</summary>
+        public bool TryEnterFolder(string title)
+        {
+            int index = -1;
+            for (int i = 0; i < _folders.Count; i++)
+                if (string.Equals(_folders[i], title, StringComparison.Ordinal)) { index = i; break; }
+            if (index < 0) return false;
+            _selectedFolder = index;
+            EnterFolder(index);
+            return true;
+        }
+
         private void GoBack()
         {
             if (_scope.Count == 0) { _backRequested = true; return; }
@@ -1009,14 +1020,7 @@ namespace Fida.UI.Campaign
         private void DrawFolders(SpriteBatch spriteBatch)
         {
             for (int i = 0; i < _folders.Count; i++)
-            {
-                Rectangle bounds = FolderBounds(i);
-                var path = _scope.Concat(new[] { _folders[i] }).ToArray();
-                IReadOnlyList<int> descendants = _hierarchy.Descendants(path);
-                int cleared = descendants.Count(index => _progress.IsCompleted(_nodes[index].Id));
-                bool selected = i == _selectedFolder;
-                DrawChapterCard(spriteBatch, bounds, i, descendants, cleared, selected);
-            }
+                DrawChapterCard(spriteBatch, FolderBounds(i), i, i == _selectedFolder);
         }
 
         private Rectangle NodeScreenBounds(CampaignNode node)

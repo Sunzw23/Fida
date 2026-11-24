@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using Fida.Campaign;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -12,45 +12,46 @@ public sealed class UIPaperOutcome : UIControl
     private readonly CampaignNode? _node;
     private readonly bool _won, _duel;
     private readonly string _message;
-    private Rectangle? _roadSource;
     public UIPaperOutcome(ResourceManager resources, CampaignNode? node, bool won, string message, bool duel) : base(0)
     { _resources = resources; _node = node; _won = won; _message = message; _duel = duel; }
     public static Rectangle Action(UIEditorialLayout layout, bool primary, bool duel) =>
         layout.Element("Outcome", duel ? "DuelAction" : primary ? "PrimaryAction" : "SecondaryAction");
+
+    /// <summary>
+    /// Draws a transparent landscape strip into the scene band.
+    ///
+    /// The strips are authored at roughly the band's aspect and are already cropped to their
+    /// silhouette, so a uniform fit plus a bottom anchor is all that is needed - the empty sky
+    /// is real transparency and the panel shows through it, which is what stops the artwork
+    /// from reading as a pasted rectangle. This used to read the whole texture back with
+    /// GetData to trim alpha padding; that stall is gone now that the builder crops instead.
+    /// </summary>
+    private static void DrawStrip(SpriteBatch batch, Texture2D strip, Rectangle scene)
+    {
+        if (strip == null || strip.Width < 1 || strip.Height < 1) return;
+        float fit = System.Math.Min(scene.Width / (float)strip.Width, scene.Height / (float)strip.Height);
+        batch.Draw(strip, new Vector2(scene.Center.X - strip.Width * fit / 2f, scene.Bottom - strip.Height * fit),
+            null, Color.White, 0f, Vector2.Zero, new Vector2(fit, fit), SpriteEffects.None, 0f);
+    }
+
     public override void Draw(SpriteBatch batch, GameTime time)
     {
         var l = new UIEditorialLayout(batch.GraphicsDevice.Viewport);
         UIPaper.StackedSquare(batch, l.Element("Outcome", "Panel"), UITheme.PanelDark);
         Rectangle scene = l.Element("Outcome", "Scene");
-        var victoryRoad = _resources.GetTexture("victory_road");
-        if (_won && !_duel && _node != null && _node.Endings.Count == 0 && victoryRoad != null)
+        // Both outcomes now use one kind of artwork: a paper-cut strip with a transparent sky.
+        // Defeat used to borrow a chapter cell, which put a soft painted rectangle on the card
+        // and showed whichever chapter happened to be nearest rather than the loss itself.
+        bool ending = _won && _node != null && _node.Endings.Count > 0;
+        Texture2D strip = _resources.GetTexture(_won ? "victory_road" : "defeat_ground");
+        if (ending || strip == null)
         {
-            if (_roadSource == null)
-            {
-                // Trim transparent padding, then fit uniformly so the moon stays round.
-                var pixels = new Color[victoryRoad.Width * victoryRoad.Height];
-                victoryRoad.GetData(pixels);
-                int left = victoryRoad.Width, top = victoryRoad.Height, right = -1, bottom = -1;
-                for (int y = 0; y < victoryRoad.Height; y++)
-                for (int x = 0; x < victoryRoad.Width; x++)
-                {
-                    if (pixels[y * victoryRoad.Width + x].A < 128) continue;
-                    left = System.Math.Min(left, x); top = System.Math.Min(top, y);
-                    right = System.Math.Max(right, x); bottom = System.Math.Max(bottom, y);
-                }
-                _roadSource = right >= left ? new Rectangle(left, top, right - left + 1, bottom - top + 1)
-                    : victoryRoad.Bounds;
-            }
-            Rectangle source = _roadSource.Value;
-            float fit = System.Math.Min(scene.Width / (float)source.Width, scene.Height / (float)source.Height);
-            // Use the same floating-point scale on both axes, including portrait layouts.
-            batch.Draw(victoryRoad, new Vector2(scene.Center.X - source.Width * fit / 2, scene.Bottom - source.Height * fit),
-                source, Color.White, 0, Vector2.Zero, fit, SpriteEffects.None, 0);
+            UIPaper.Scene(batch, scene, ending ? 5 : _won ? 1 : UIPaper.ChapterIndex(_node?.Chapter ?? ""),
+                _won ? 1f : .55f);
         }
         else
         {
-            UIPaper.Scene(batch, scene, _won && _node?.Endings.Count > 0 ? 5 :
-                _won ? 1 : UIPaper.ChapterIndex(_node?.Chapter ?? ""), _won ? 1 : .55f);
+            DrawStrip(batch, strip, scene);
         }
         string title = _duel ? _won ? "Victory" : "Defeat" : _won && _node?.Endings.Count > 0 ? "At the Ferry" : _won ? "Node Cleared" : "Defeat";
         Rectangle heading = l.Element("Outcome", "Heading");

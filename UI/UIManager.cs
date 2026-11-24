@@ -218,12 +218,15 @@ namespace Fida.UI
         public void BuildSettingsScreen() => _screenBuilder.BuildSettingsScreen();
         public void BuildRulesScreen(int page = 0, int indexPage = 0) =>
             _screenBuilder.BuildRulesScreen(page, indexPage);
-        public void BuildOnlineMenu(bool connected = false) => _screenBuilder.BuildOnlineMenu(connected);
+        public void BuildOnlineMenu(bool connected = false, bool isHost = false,
+            string detailLabel = "Server", string detailValue = "") =>
+            _screenBuilder.BuildOnlineMenu(connected, isHost, detailLabel, detailValue);
         public void BuildHostingScreen(string statusText, string roomCode = "") => _screenBuilder.BuildHostingScreen(statusText, roomCode);
         public void BuildConnectingScreen(string statusText) => _screenBuilder.BuildConnectingScreen(statusText);
         public void BuildOnlineLobby(bool isHost) => _screenBuilder.BuildOnlineLobby(isHost);
         public void BuildDuelDraft() => _screenBuilder.BuildDuelDraft();
         public void BuildLevelSelect(bool online = false) => _screenBuilder.BuildLevelSelect(online);
+        public void BuildCompanionSelect(bool online = false) => _screenBuilder.BuildCompanionSelect(online);
         public void BuildSkillSelect(bool online = false) => _screenBuilder.BuildSkillSelect(online);
         public UITutorialDialogue AddTutorialDialogue(CampaignNode node) =>
             _screenBuilder.AddTutorialDialogue(node);

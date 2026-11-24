@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -16,35 +17,66 @@ public sealed partial class UICampaignMap
         bool folder = _folders.Count > 0;
         if (!folder)
         {
-            CampaignNode selected = _selectedIndex >= 0 && _selectedIndex < _nodes.Count ? _nodes[_selectedIndex] : null;
+            CampaignNode? selected = _selectedIndex >= 0 && _selectedIndex < _nodes.Count ? _nodes[_selectedIndex] : null;
             if (selected == null) return;
             var motion = ButtonMotion(layout.Action);
             _routeView.DrawDetails(batch, layout, new CampaignRouteDetails(selected.Id, selected.Name,
                 selected.Story, selected.Enemies.Count, selected.SkillBudget, selected.RewardText,
                 selected.Rewards.Count > 0 ? selected.Rewards[0] : null, selected.Chapter,
-                !CampaignCatalog.IsUnlocked(_progress, selected)), motion.Hover, motion.Press);
+                !CampaignCatalog.IsUnlocked(_progress, selected), selected.Tier ?? 0, selected.Vows,
+                CampaignChapters.IsSide(selected)), motion.Hover, motion.Press, ChapterStyle.For(selected));
             return;
         }
         string title = _folders[Math.Clamp(_selectedFolder,0,_folders.Count-1)];
-        var descendants = _hierarchy.Descendants(_scope.Concat(new[]{title}).ToArray());
+        var path = _scope.Concat(new[]{title}).ToArray();
+        var chapter = CampaignChapters.Get(path);
+        var style = ChapterStyle.ForPath(path);
+        var descendants = CountedDescendants(path, descendants: _hierarchy.Descendants(path));
         int completed = descendants.Count(i=>_progress.IsCompleted(_nodes[i].Id));
         var focus = descendants.Select(i=>_nodes[i]).FirstOrDefault(n=>
             CampaignCatalog.IsUnlocked(_progress,n) && !_progress.IsCompleted(n.Id))
             ?? descendants.Select(i=>_nodes[i]).FirstOrDefault();
         var actionMotion = ButtonMotion(layout.Action);
         _routeView.DrawChapterDetails(batch,layout,new CampaignChapterDetails(
-            $"{_selectedFolder+1:00}",title,focus?.Story ?? "",completed,descendants.Count),
-            actionMotion.Hover,actionMotion.Press);
+            FolderNumber(_selectedFolder, chapter),title,
+            string.IsNullOrWhiteSpace(chapter?.Summary) ? focus?.Story ?? "" : chapter!.Summary,
+            completed,descendants.Count, chapter?.IsSide == true),
+            actionMotion.Hover,actionMotion.Press, style);
     }
 #endif
 
-    private void DrawChapterCard(SpriteBatch batch,Rectangle bounds,int index,
-        IReadOnlyList<int> descendants,int cleared,bool selected)
+    /// <summary>Main chapters only count main nodes; a side chapter counts its own nodes.</summary>
+    private IReadOnlyList<int> CountedDescendants(IReadOnlyList<string> path, IReadOnlyList<int> descendants) =>
+        CampaignChapters.Get(path) is { IsSide: false }
+            ? descendants.Where(index => !CampaignChapters.IsSide(_nodes[index])).ToArray()
+            : descendants;
+
+    /// <summary>Main folders are numbered 01, 02...; side folders S1, S2... within their level.</summary>
+    private string FolderNumber(int index, CampaignChapter? chapter)
     {
+        bool side = chapter?.IsSide == true;
+        int counter = 0;
+        for (int i = 0; i < _folders.Count; i++)
+        {
+            var other = CampaignChapters.Get(_scope.Concat(new[]{_folders[i]}).ToArray());
+            if ((other?.IsSide == true) != side) continue;
+            counter++;
+            if (i != index) continue;
+            return side ? $"S{counter}" : counter.ToString("00");
+        }
+        return side ? "S" : "";
+    }
+
+    private void DrawChapterCard(SpriteBatch batch,Rectangle bounds,int index, bool selected)
+    {
+        var path = _scope.Concat(new[]{_folders[index]}).ToArray();
+        var chapter = CampaignChapters.Get(path);
+        var descendants = CountedDescendants(path, _hierarchy.Descendants(path));
+        int cleared = descendants.Count(i => _progress.IsCompleted(_nodes[i].Id));
         var motion=ButtonMotion(bounds);
         bool locked=!descendants.Any(i=>CampaignCatalog.IsUnlocked(_progress,_nodes[i]));
-        _routeView.DrawChapterCard(batch,bounds,index+1,_folders[index],cleared,descendants.Count,
-            selected,locked,motion.Hover,motion.Press);
+        _routeView.DrawChapterCard(batch,bounds,FolderNumber(index, chapter),_folders[index],
+            cleared,descendants.Count, selected,locked,motion.Hover,motion.Press, ChapterStyle.ForPath(path));
     }
 
     private void DrawChapterPreview(SpriteBatch batch, IReadOnlyList<int> indices, Rectangle area, Color color)

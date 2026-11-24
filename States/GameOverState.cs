@@ -24,10 +24,8 @@ namespace Fida.States
                         : State.LevelSelect);
                     return;
                 }
-                if (wasOnlineDuel || _networkManager.CurrentGameMode == 2)
-                {
-                    _networkManager.Cleanup();
-                }
+                // A finished battle never ends the session; the connected main menu stays
+                // available until the player chooses Disconnect explicitly.
                 _stateMachine.SwitchToState(State.MainMenu);
             });
 

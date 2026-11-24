@@ -1,0 +1,289 @@
+[
+  {
+    "id": "AS1",
+    "chapter": "The Smith's Errand",
+    "name": "Cold Quench",
+    "story": "The apprentice holds a finished blade over the oil. The quench room has been locked since the last order.",
+    "tier": 1,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 220,
+    "parents": [
+      "T03"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Quench Tender",
+        "health": 4,
+        "number0": 1,
+        "number1": 1
+      },
+      {
+        "name": "Hearth Guard",
+        "health": 5,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The arsenal is cold. Ila holds a finished blade over the oil and does not lower it."
+      },
+      {
+        "speaker": "Ila",
+        "text": "They will not move for me. The smith will not leave this room until the edge is right."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The blade goes into the oil. Ila keeps her hand on the tang until the steam clears."
+      },
+      {
+        "speaker": "Ila",
+        "text": "Not finished. It still has to be carried to the wall before dark."
+      }
+    ]
+  },
+  {
+    "id": "AS2",
+    "chapter": "The Smith's Errand",
+    "name": "The Test Cut",
+    "story": "The practice hall is full of straw soldiers and orders nobody carried out.",
+    "tier": 1,
+    "skillBudget": 3,
+    "mapX": 820,
+    "mapY": 220,
+    "parents": [
+      "AS1"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Straw Man",
+        "health": 3,
+        "number0": 2,
+        "number1": 2
+      },
+      {
+        "name": "Drill Master",
+        "health": 4,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusAttack"
+        ]
+      },
+      {
+        "name": "Drill Master",
+        "health": 4,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusAttack"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Ila",
+        "text": "Cut the beam. Not the post, not me. The beam."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Two men still run the drill. They have not been told the war is over."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The cut holds. Ila marks the beam with chalk and steps back to look at it."
+      },
+      {
+        "speaker": "Ila",
+        "text": "It will do. It only has to be worth carrying."
+      }
+    ]
+  },
+  {
+    "id": "AS3",
+    "chapter": "The Smith's Errand",
+    "name": "Delivery at Dusk",
+    "story": "The sword is for a house that stopped answering its door years ago.",
+    "tier": 2,
+    "vows": [
+      "alone"
+    ],
+    "skillBudget": 3,
+    "mapX": 1320,
+    "mapY": 220,
+    "companions": [],
+    "parents": [
+      "AS2"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Door Guard",
+        "health": 4,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Door Guard",
+        "health": 4,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Receiver",
+        "health": 6,
+        "number0": 2,
+        "number1": 2,
+        "skills": [
+          "DoubleDefence"
+        ]
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Ila",
+        "text": "I carry it. If you walk beside me, they will not open the door."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Mara waits at the corner with the waterskin. Arith goes on alone."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The door opens. Ila sets the sword on the table inside and comes back out without it."
+      },
+      {
+        "speaker": "Ila",
+        "text": "It is delivered. I do not have anywhere to be now. May I walk with you?"
+      }
+    ]
+  },
+  {
+    "id": "AS4",
+    "chapter": "Names on the Wall",
+    "name": "Names on the Wall",
+    "story": "A mason carves the names of soldiers who never came back, one letter at a time.",
+    "tier": 1,
+    "skillBudget": 4,
+    "mapX": 320,
+    "mapY": 420,
+    "parents": [
+      "T03"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Mason",
+        "health": 5,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Wall Hand",
+        "health": 3,
+        "number0": 3,
+        "number1": 3
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "A mason works along the wall. The list is long and he is still at the beginning of it."
+      },
+      {
+        "speaker": "Mason",
+        "text": "Do not stand where I am cutting. The names go here, not around you."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "The mason finishes a name and starts the next. He does not ask Arith to add one."
+      }
+    ]
+  },
+  {
+    "id": "AS5",
+    "chapter": "Names on the Wall",
+    "name": "The Watch Relieved",
+    "story": "The relief never came. The watch still stands where it was posted.",
+    "tier": 2,
+    "vows": [
+      "wounded"
+    ],
+    "playerHealth": 8,
+    "skillBudget": 3,
+    "mapX": 820,
+    "mapY": 420,
+    "parents": [
+      "AS4"
+    ],
+    "requiredCompletedParents": 1,
+    "rewards": [],
+    "enemies": [
+      {
+        "name": "Standing Watch",
+        "health": 5,
+        "number0": 1,
+        "number1": 1,
+        "skills": [
+          "PlusDefence"
+        ]
+      },
+      {
+        "name": "Night Relief",
+        "health": 4,
+        "number0": 2,
+        "number1": 2
+      },
+      {
+        "name": "Night Relief",
+        "health": 4,
+        "number0": 2,
+        "number1": 2
+      }
+    ],
+    "beforeStory": [
+      {
+        "speaker": "Standing Watch",
+        "text": "I am not tired. I am waiting for the one who takes the post."
+      },
+      {
+        "speaker": "The Long Road",
+        "text": "Arith takes the post until morning. Nobody comes, and the wall is colder than the road."
+      }
+    ],
+    "afterStory": [
+      {
+        "speaker": "The Long Road",
+        "text": "At dawn Arith steps down. The watch stays where it has always stood, but it faces the road now."
+      }
+    ]
+  }
+]

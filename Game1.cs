@@ -109,6 +109,9 @@ namespace Fida
             _uiManager.Update(gameTime);
             _uiManager.UpdateInputMode();
             _gameSession.ProcessPendingNetworkEvents();
+            // Session-level frames (a battle concession) are valid on every screen, including
+            // the main menu and the pause menu; battle frames stay queued for the battle screen.
+            if (_networkManager.IsConnected) _networkManager.ProcessSessionMessages();
 
             bool rulesShortcutDown = Keyboard.GetState().IsKeyDown(Keys.Tab);
             if (rulesShortcutDown && !_rulesShortcutWasDown)

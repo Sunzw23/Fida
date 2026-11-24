@@ -2,6 +2,7 @@
 using System;
 using Fida.Campaign;
 using Fida.Logic;
+using Fida.UI.Campaign;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -77,15 +78,14 @@ public sealed class UISkillCodexPage : UIControl
     private void DrawMedal(SpriteBatch batch, UIRulesLayout layout, float scale)
     {
         UIPaper.Medal(batch, layout.Medal, new Color(222, 214, 198));
-        UIRulesText.Line(batch, _resources.TitleFont, UISkillIconCatalog.Glyph(_skill),
-            new Rectangle(layout.Medal.Left, layout.Medal.Top + layout.Medal.Height / 4,
-                layout.Medal.Width, layout.Medal.Height / 2),
-            layout.Portrait ? 44 : 56, scale, _owned ? UIPaper.Ink : UIPaper.MutedInk * .85f, centered: true);
+        int side = (int)(MathF.Min(layout.Medal.Width, layout.Medal.Height) * .46f);
+        UISkillArt.Draw(batch, _skill,
+            new Rectangle(layout.Medal.Center.X - side / 2, layout.Medal.Center.Y - side / 2, side, side),
+            _owned ? UIPaper.Ink : UIPaper.MutedInk * .85f);
     }
 
     private void DrawWatermark(SpriteBatch batch, UIRulesLayout layout)
     {
-        UIRulesText.Line(batch, _resources.TitleFont, UISkillIconCatalog.Glyph(_skill),
-            layout.Watermark, 220, layout.Scale, UIPaper.Ink * .05f);
+        UISkillArt.Draw(batch, _skill, layout.Watermark, UIPaper.Ink * .05f);
     }
 }

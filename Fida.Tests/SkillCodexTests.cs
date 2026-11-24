@@ -70,7 +70,7 @@ public class SkillCodexTests : IDisposable
         SkillCodex.UseStore(new SkillCodexStore(path));
         Assert.Empty(SkillCodex.Encountered);
 
-        File.WriteAllText(path, "{\"Encountered\":[\"NotASkill\",\"Xue\"]}");
+        File.WriteAllText(path, "{\"Encountered\":[\"NotASkill\",\"Blood\"]}");
         SkillCodex.UseStore(new SkillCodexStore(path));
         Assert.Single(SkillCodex.Encountered);
         Assert.Contains(SkillType.Xue, SkillCodex.Encountered);

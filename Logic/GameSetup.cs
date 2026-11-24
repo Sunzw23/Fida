@@ -11,6 +11,7 @@ namespace Fida.Logic
     public static class GameSetup
     {
         private static readonly HashSet<SkillType> SelectedSkills = [];
+        private static readonly List<string> SelectedCompanions = [];
 
         /// <summary>当前树状战役节点。</summary>
         public static string SelectedNodeId { get; private set; } = "P";
@@ -18,6 +19,14 @@ namespace Fida.Logic
         public static CampaignNode SelectedNode => CampaignCatalog.GetNode(SelectedNodeId) ?? CampaignCatalog.Nodes[0];
 
         public static IReadOnlyCollection<SkillType> SelectedLocalSkills => SelectedSkills;
+
+        /// <summary>本场战斗邀请的同伴 id（按邀请顺序）；空表示独自作战（默认）。</summary>
+        public static IReadOnlyCollection<string> SelectedCompanionIds => SelectedCompanions;
+
+        /// <summary>该节点的战前简报是否已经播过；重试或返回配装时不再重复播放。</summary>
+        public static bool NodeBriefingShown { get; private set; }
+
+        public static void MarkNodeBriefingShown() => NodeBriefingShown = true;
 
         /// <summary>当前选择的场景名（默认 DefaultScene）。</summary>
         public static string SelectedSceneName { get; set; } = "DefaultScene";
@@ -40,7 +49,8 @@ namespace Fida.Logic
         public static List<Player> LoadLocalPlayers()
         {
             if (CampaignCatalog.GetNode(SelectedNodeId) is { } campaignNode)
-                return CampaignBattleFactory.Create(campaignNode, SelectedSkills).Players;
+                return CampaignBattleFactory.Create(campaignNode, SelectedSkills,
+                    companionIds: SelectedCompanions).Players;
 
             string sceneName = SceneLibrary.SceneNames().Contains(SelectedSceneName) ? SelectedSceneName : "DefaultScene";
             var players = SceneLibrary.LoadScene(sceneName);
@@ -79,8 +89,32 @@ namespace Fida.Logic
             if (node == null || !CampaignCatalog.IsUnlocked(CampaignRuntime.GetProgress(online), node)) return false;
             SelectedNodeId = node.Id;
             SelectedSkills.Clear();
+            // Every battle starts with an empty party; the player opts in on the companion screen.
+            SelectedCompanions.Clear();
+            NodeBriefingShown = false;
             return true;
         }
+
+        /// <summary>邀请/取消一名同伴；不在节点阵容内或已满编时被忽略。</summary>
+        public static bool ToggleCampaignCompanion(string? companionId)
+        {
+            var next = CampaignLoadout.ToggleCompanion(SelectedNode, SelectedCompanions, companionId);
+            if (next.Count == SelectedCompanions.Count && next.SequenceEqual(SelectedCompanions))
+                return false;
+            SelectedCompanions.Clear();
+            SelectedCompanions.AddRange(next);
+            return true;
+        }
+
+        /// <summary>用一组 id 覆盖本场同伴（非法项与超额项会被丢弃）。</summary>
+        public static void SetCampaignCompanions(IEnumerable<string>? companionIds)
+        {
+            var next = CampaignLoadout.SanitizeCompanions(SelectedNode, companionIds);
+            SelectedCompanions.Clear();
+            SelectedCompanions.AddRange(next);
+        }
+
+        public static void ClearCampaignCompanions() => SelectedCompanions.Clear();
 
         public static bool ToggleCampaignSkill(SkillType skill, bool online = false)
         {
@@ -93,6 +127,7 @@ namespace Fida.Logic
         public static int SelectedSkillCost => CampaignSkillBalance.TotalCost(SelectedSkills);
 
         public static CampaignBattleSetup LoadCampaignBattle() =>
-            CampaignBattleFactory.Create(SelectedNode, SelectedSkills);
+            CampaignBattleFactory.Create(SelectedNode, SelectedSkills,
+                companionIds: SelectedCompanions);
     }
 }
