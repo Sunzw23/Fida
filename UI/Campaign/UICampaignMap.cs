@@ -286,8 +286,13 @@ namespace Fida.UI.Campaign
             if (_folders.Count > 0) DrawFolders(spriteBatch);
             if (_visibleNodes.Count > 0)
             {
-            DrawConnections(spriteBatch);
-            foreach (int i in _visibleNodes) DrawNode(spriteBatch, i);
+                // The graph is cut at the map rectangle instead of being dropped as soon as
+                // a card touches it, so panned and zoomed cards stay on screen.
+                using (UIBatchClip.Enter(spriteBatch, viewport))
+                {
+                    DrawConnections(spriteBatch);
+                    foreach (int i in _visibleNodes) DrawNode(spriteBatch, i);
+                }
             }
             DrawRemotePresence(spriteBatch, viewport);
             DrawEditorialDetails(spriteBatch);
@@ -700,7 +705,13 @@ namespace Fida.UI.Campaign
         {
             CampaignNode node = _nodes[index];
             Rectangle bounds = NodeScreenBounds(node);
-            if (!_camera.Viewport.Contains(bounds)) return;
+            // Clipping trims a card that only partly overlaps the map; skip only the cards
+            // with no visible part at all. The slack covers the tab and shadow, which are
+            // printed outside the card's own rectangle.
+            Rectangle reach = bounds;
+            int slack = Math.Max(2, bounds.Height / 10);
+            reach.Inflate(slack, slack);
+            if (!_camera.Viewport.Intersects(reach)) return;
             _routeView.DrawNode(spriteBatch, bounds, node.Id, node.Name, node.Chapter,
                 index == _selectedIndex, _progress.IsCompleted(node.Id),
                 !CampaignCatalog.IsUnlocked(_progress, node),

@@ -38,6 +38,8 @@ This revision follows concepts 01–08 and 13–16: main menu, chapter browser, 
 
 Route cards are arranged by the actual parent dependencies, preserving unlock rules. Chapter and mission counts, rewards and all skill costs come from the canonical game data, so they can differ from the illustrative numbers in the concept boards.
 
+Zoomed and panned route content is clipped to the map rectangle (`UIBatchClip`) instead of being dropped as soon as a card touches the edge: a card that is half on screen is trimmed, and only cards with no visible part at all are skipped. Paths use the same rectangle, so cards and connectors cut at one line. Zooming in therefore reveals the graph at a larger scale rather than emptying the map.
+
 ## Interaction and motion
 
 Gameplay numbers keep fixed hit rectangles. Portrait breathing and action motion do not move the numeric controls. Battle layout supports uneven teams and overflow rows. Existing skill costs, budgets, campaign progression, room codes and network callbacks are preserved.
@@ -48,7 +50,7 @@ Pause retains a separate frozen battle texture (approximately 6.1 MiB at 1600×1
 
 ## Verification
 
-`tools/UiPreview` renders the real controls without reading or writing user saves. It covers menus, all Rules pages, Campaign and route view, loadout states, the companion roster screen, 3v3/4v4 battle, dialogue, online screens, pause and outcomes. It verifies map actions, skill restrictions, companion invites and the party limit, room-code entry, transition frame blending, reduced motion, portrait motion and stable number pixels/hit targets.
+`tools/UiPreview` renders the real controls without reading or writing user saves. It covers menus, all Rules pages, Campaign and route view, loadout states, the companion roster screen, 3v3/4v4 battle, dialogue, online screens, pause and outcomes. It verifies map actions, skill restrictions, companion invites and the party limit, room-code entry, transition frame blending, reduced motion, portrait motion and stable number pixels/hit targets. The route check opens Chapter I, walks the diamond by hit testing and compares paper pixels at fit and zoomed scale, so a zoom that empties the map fails the run.
 
 Preview: `dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1600 1000 artifacts/paper-simple`.
 

@@ -122,8 +122,7 @@ namespace Fida.UI
             float entrance = UIMotion.Reveal(gameTime.TotalGameTime.TotalSeconds - _entranceStart, .20f);
             _graphicsDevice.SetRenderTarget(_pageFrame);
             _graphicsDevice.Clear(UITheme.BgTop);
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
-                SamplerState.LinearClamp, DepthStencilState.None, _uiRasterizerState);
+            UIBatch.Begin(_spriteBatch, _uiRasterizerState);
             UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel, _graphicsDevice.Viewport, gameTime);
             foreach (var control in _uiControls)
                 if (control is UIPlayer) { UIPaper.BattleBackground(_spriteBatch, _graphicsDevice.Viewport); break; }

@@ -721,6 +721,8 @@ sealed class PreviewGame : Game
         var layout = new CampaignMapLayout(_width, _height);
         if (!new Rectangle(0,0,_width,_height).Contains(layout.Details) || bounds.Intersects(layout.Details))
             throw new Exception("Route map and details overlap or leave the viewport.");
+        // The browser opens on the chapter list; the reference diamond is Chapter I.
+        if (!map.TryEnterFolder("Chapter I")) throw new Exception("Chapter I is missing from the chapter list.");
         foreach (var (id, point) in new[] {
             ("A2",new Point(bounds.Left+bounds.Width/4,bounds.Center.Y)),
             ("A3",new Point(bounds.Left+bounds.Width*3/4,bounds.Center.Y)),
@@ -734,7 +736,29 @@ sealed class PreviewGame : Game
         map.ZoomIn(); map.FitAll();
         ClickMap(map,new Point(bounds.Center.X,bounds.Top+(int)(90*layout.Scale)));
         if(map.SelectedNodeId!="A1")throw new Exception("Fit lost the route's visual/hit geometry alignment.");
-        Console.WriteLine("Verified reference diamond card selection, isolated inspect intents, viewport bounds and zoom/fit alignment.");
+        // Zooming trims a card at the map edge; it must never drop a card that is part on screen.
+        map.FitAll();
+        int fit = RouteCardPixels(bounds);
+        map.ZoomIn();
+        int zoomed = RouteCardPixels(bounds);
+        map.FitAll();
+        if (zoomed < fit * .7f)
+            throw new Exception($"Zooming in dropped the route cards ({zoomed} lit pixels, was {fit}).");
+        Console.WriteLine("Verified reference diamond card selection, isolated inspect intents, viewport bounds, " +
+            $"zoom/fit alignment and trimming instead of dropping zoomed cards ({fit} -> {zoomed} lit pixels).");
+    }
+
+    /// <summary>Counts paper stock inside the map area: cards are far lighter than the map board.</summary>
+    private int RouteCardPixels(Rectangle bounds)
+    {
+        _ui.Draw(new GameTime(TimeSpan.FromSeconds(6), TimeSpan.Zero));
+        var pixels = new Color[_width * _height];
+        GraphicsDevice.GetBackBufferData(pixels);
+        int lit = 0;
+        for (int y = Math.Max(0, bounds.Top); y < Math.Min(_height, bounds.Bottom); y++)
+        for (int x = Math.Max(0, bounds.Left); x < Math.Min(_width, bounds.Right); x++)
+            if (pixels[y * _width + x].R + pixels[y * _width + x].G + pixels[y * _width + x].B > 420) lit++;
+        return lit;
     }
     private void VerifyCampaignActions()
     {
