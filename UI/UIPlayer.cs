@@ -76,6 +76,10 @@ namespace Fida.UI
         private bool _skillTouchStarted;
         private bool _skillLongPressed;
         private float _skillHoldSeconds;
+        /// <summary>Strip holding name and skill icons: they share one row.</summary>
+        private Rectangle _nameRowBounds;
+        /// <summary>Side length the skill icons were laid out for.</summary>
+        private int _skillIconSide;
 #endif
         public bool DeferHealthVisual { get; set; }
 
@@ -125,38 +129,49 @@ namespace Fida.UI
             );
 
 #if FIDA_ANDROID
-            int padding = Math.Clamp(CardBounds.Height / 12, 12, 18);
-            int numberWidth = Math.Clamp(CardBounds.Width / 9, 64, 86);
-            int numberHeight = Math.Clamp(CardBounds.Height - padding * 2, 68, 110);
+            // Portrait layout: portrait, name/skills row and number tiles share a
+            // single band. The thick health bar is pinned to the bottom of the
+            // middle column only, so it never runs under the portrait or the
+            // number tiles.
+            int padding = Math.Clamp(CardBounds.Height / 12, 10, 16);
+            int barHeight = Math.Clamp(CardBounds.Height / 8, 14, 22);
+            int numberWidth = Math.Clamp(CardBounds.Width / 10, 56, 78);
             int numberGap = 8;
             int numberRight = CardBounds.Right - padding;
-            Number1Bounds = new Rectangle(numberRight - numberWidth,
-                CardBounds.Center.Y - numberHeight / 2, numberWidth, numberHeight);
-            Number0Bounds = new Rectangle(Number1Bounds.Left - numberGap - numberWidth,
-                Number1Bounds.Y, numberWidth, numberHeight);
 
-            int badgeWidth = Math.Clamp(CardBounds.Width / 8, 72, 102);
-            PortraitBounds = new Rectangle(CardBounds.Left + padding,
-                CardBounds.Top + padding, badgeWidth, CardBounds.Height - padding * 2);
-            int infoLeft = PortraitBounds.Right + 18;
-            int infoRight = Number0Bounds.Left - 18;
+            int bandTop = CardBounds.Top + padding;
+            int bandBottom = CardBounds.Bottom - padding;
+            int bandHeight = Math.Max(44, bandBottom - bandTop);
+
+            Number1Bounds = new Rectangle(numberRight - numberWidth, bandTop, numberWidth, bandHeight);
+            Number0Bounds = new Rectangle(Number1Bounds.Left - numberGap - numberWidth,
+                bandTop, numberWidth, bandHeight);
+
+            PortraitBounds = new Rectangle(CardBounds.Left + padding, bandTop, bandHeight, bandHeight);
+
+            int infoLeft = PortraitBounds.Right + 16;
+            int infoRight = Number0Bounds.Left - 16;
             int infoWidth = Math.Max(80, infoRight - infoLeft);
-            int nameAreaHeight = Math.Clamp(CardBounds.Height / 3, 44, 66);
-            _nameCenter = new Vector2(infoLeft + infoWidth / 2f,
-                CardBounds.Top + padding + nameAreaHeight / 2f);
+
+            int shownSkills = Math.Min(4, player.Skills.Count);
+            _skillIconSide = Math.Clamp(bandHeight / 4, 18, 30);
+            int skillsWidth = shownSkills > 0 ? shownSkills * (_skillIconSide + 8) - 8 : 0;
+            int nameRowHeight = Math.Clamp(bandHeight / 3, 30, 46);
+            int nameWidth = Math.Max(60, infoWidth - skillsWidth - (shownSkills > 0 ? 12 : 0));
+
+            _nameRowBounds = new Rectangle(infoLeft, bandTop, nameWidth, nameRowHeight);
+            _nameCenter = new Vector2(infoLeft + nameWidth / 2f, bandTop + nameRowHeight / 2f);
             NameLabel = new UILabel(0, player.Name, _nameCenter, nameFont)
             {
-                MaximumWidth = infoWidth,
-                MaximumHeight = nameAreaHeight,
+                MaximumWidth = nameWidth,
+                MaximumHeight = nameRowHeight,
                 MinimumScale = 0.48f
             };
+            _skillStripBounds = new Rectangle(infoLeft + nameWidth + 12, bandTop, skillsWidth, nameRowHeight);
 
+            HealthBounds = new Rectangle(infoLeft, bandBottom - barHeight, infoWidth, barHeight);
             _healthCenter = new Vector2(infoLeft + infoWidth / 2f,
-                CardBounds.Top + padding + nameAreaHeight + 17);
-            HealthBounds = new Rectangle(infoLeft, (int)_healthCenter.Y + 22,
-                infoWidth, 10);
-            _skillStripBounds = new Rectangle(infoLeft, HealthBounds.Bottom + 8,
-                infoWidth, Math.Max(28, CardBounds.Bottom - padding - HealthBounds.Bottom - 8));
+                (bandTop + nameRowHeight + (bandBottom - barHeight)) / 2f);
 
             Number0Button = new UIAnimatedButton(10, Number0Bounds,
                 player.Numbers.Length > 0 ? player.Numbers[0].ToString() : "1",
@@ -428,8 +443,7 @@ namespace Fida.UI
             }
             if (IsCurrentTurn || IsPresentingAction)
 #if FIDA_ANDROID
-                UIPaper.Sheet(sb, new Rectangle(infoSheet.Left + 8,
-                    (int)(_nameCenter.Y - 18 * scale), infoSheet.Width - 16, Math.Max(24, (int)(36 * scale))), UITheme.Gold, 1, 5);
+                UIPaper.Sheet(sb, _nameRowBounds, UITheme.Gold, 1, 5);
             NameLabel.SetColor(IsCurrentTurn || IsPresentingAction ? UIPaper.Ink : UITheme.Ink);
 #else
                 sb.Draw(Pixel, new Rectangle(infoSheet.Left + 8, infoSheet.Top + 5,
@@ -448,11 +462,11 @@ namespace Fida.UI
 #if FIDA_ANDROID
             if (Player.Skills.Count > 0)
             {
-                int side = Math.Clamp((int)(34 * scale), 20, 38);
-                int shown = Math.Min(4, Player.Skills.Count), total = shown * (side + 10) - 10;
+                int side = _skillIconSide;
+                int shown = Math.Min(4, Player.Skills.Count), total = shown * (side + 8) - 8;
                 Vector2 center = _skillStripBounds.Center.ToVector2();
                 for (int i = 0; i < shown; i++)
-                    Campaign.UISkillArt.Draw(sb, Player.Skills[i].Type, new Rectangle((int)center.X - total / 2 + i * (side + 10),
+                    Campaign.UISkillArt.Draw(sb, Player.Skills[i].Type, new Rectangle((int)center.X - total / 2 + i * (side + 8),
                         (int)center.Y - side / 2, side, side), UITheme.Ink);
             }
 #endif

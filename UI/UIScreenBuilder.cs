@@ -62,24 +62,25 @@ namespace Fida.UI
         }
 
         /// <summary>Rules book: three reference pages, the skill index, then one page per discovered skill.</summary>
-        public void BuildRulesScreen(int page = 0, int indexPage = 0)
+        public void BuildRulesScreen(int page = 0, int indexPage = 0, bool marginsEditable = true,
+            int marginDigitA = 1, int marginDigitB = 7)
         {
             Clear();
-            BuildRulesPage(page, indexPage);
+            BuildRulesPage(page, indexPage, marginsEditable, marginDigitA, marginDigitB);
         }
 
         /// <summary>构建在线菜单</summary>
         public void BuildOnlineMenu(bool connected = false, bool isHost = false,
-            string detailLabel = "Server", string detailValue = "")
+            string detailLabel = "Server", string detailValue = "", bool direct = false)
         {
             Clear();
-            BuildReferenceOnline(connected, isHost, detailLabel, detailValue);
+            BuildReferenceOnline(connected, isHost, detailLabel, detailValue, direct);
         }
 
-        public void BuildHostingScreen(string statusText, string roomCode = "")
+        public void BuildHostingScreen(string statusText, string roomCode = "", bool direct = false)
         {
             Clear();
-            BuildReferenceWaiting(true, statusText, roomCode);
+            BuildReferenceWaiting(true, statusText, roomCode, direct);
         }
 
         public void BuildConnectingScreen(string statusText)

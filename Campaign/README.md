@@ -139,6 +139,13 @@ Nodes may declare `tier` (1-4), `vows` (snake_case strings) and `playerHealth` (
 - `CampaignMapOptions` controls card geometry, viewport margins, and zoom limits.
 - `CampaignMapCamera` owns resolution-independent pan, zoom, fit, and coordinate transforms.
 - `CampaignMapNavigator` implements spatial selection independently of catalog order.
+- `CampaignMissionList` (`UI/Campaign/CampaignMissionList.cs`) owns the phone mission rows.
+  Every mission on the page keeps a row: a cleared mission prints as `CLEARED` and stays the
+  way back into that battle, a locked mission prints as grey stock instead of disappearing, and
+  `InitialFocus` picks the next open mission. A clear outranks the parent gate, so a merged
+  co-op clear is still replayable; `GameSetup.SelectCampaignNode` accepts the same case.
+- `CampaignMissionLayout` owns the phone mission sheet geometry, and `UICampaignRouteView` draws
+  the rows and the sheet with the chapter stock, vow strip, reward seal and shared action ticket.
 - `UICampaignMap` is the input/rendering adapter. It consumes any `IReadOnlyList<CampaignNode>`,
   so additional JSON or built-in nodes appear without new buttons or state bindings.
 

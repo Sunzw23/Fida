@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Fida.Logic;
 using Gum;
 using Gum.DataTypes;
 using Gum.Managers;
@@ -16,16 +17,29 @@ namespace Fida.UI;
 public static class UIGumLayout
 {
     private static GraphicsDevice? _device;
+    private static bool _initialized;
     private static readonly Dictionary<string, GraphicalUiElement> Screens = new();
 
     public static void Initialize(GraphicsDevice device)
     {
-        if (ReferenceEquals(_device, device)) return;
-#if FIDA_ANDROID
-        const string path = "Gum/Fida.gumx";
-#else
-        string path = Path.Combine(AppContext.BaseDirectory, "Content", "Gum", "Fida.gumx");
-#endif
+        // GumService is a process-wide singleton and refuses a second Initialize.
+        // Android rebuilds the graphics device when the surface is recreated (a
+        // display-size change, or the process resuming into a new surface), so the
+        // guard tracks that we already loaded the project instead of comparing the
+        // device: re-initialising threw "Initialize has already been called once".
+        // Only layout rectangles are read back from Gum, never rendering, so the
+        // loaded screens stay valid against a replacement device.
+        if (_initialized)
+        {
+            _device = device;
+            return;
+        }
+        // Both platforms hand Gum an absolute file path. Gum's MonoGame loader
+        // prefixes "Content/" when it is given a relative path and then resolves
+        // each screen the same way again, which asks Android for
+        // "./Content/Content/Gum/Screens/*.gusx" and throws while the app starts.
+        string path = ContentSource.GumProjectPath
+            ?? Path.Combine(AppContext.BaseDirectory, "Content", "Gum", "Fida.gumx");
         GumService.Default.Initialize(device, path);
         Screens.Clear();
         var project = ObjectFinder.Self.GumProjectSave
@@ -42,6 +56,7 @@ public static class UIGumLayout
             Screens.Add(screen.Name, runtime);
         }
         _device = device;
+        _initialized = true;
     }
 
     public static Rectangle Bounds(string screenName, string elementName, int width, int height)

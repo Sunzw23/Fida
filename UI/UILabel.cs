@@ -101,7 +101,14 @@ namespace Fida.UI
                 : float.PositiveInfinity;
             // MaximumWidth/Height are already physical layout bounds.
             // Fit once; readability preferences must not override either hard bound.
+#if FIDA_ANDROID
+            // Scale 1 meant "the atlas size" on phones, which is not physical;
+            // fall back to the role matching the font so JSON labels read at dp.
+            float preferred = UITypography.Scale(Font,
+                TypographyRole ?? UITypography.RoleForFont(Font), viewport);
+#else
             float preferred = TypographyRole.HasValue ? UITypography.Scale(Font, TypographyRole.Value, viewport) : visualScale;
+#endif
             float scale = MathHelper.Min(preferred, MathHelper.Min(widthScale, heightScale));
             var pos = new Vector2(
                 position.X - textSize.X * scale / 2,

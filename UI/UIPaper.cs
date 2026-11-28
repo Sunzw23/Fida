@@ -383,7 +383,14 @@ public static class UIPaper
     }
 
     public static void Checkmark(SpriteBatch batch, Rectangle bounds) =>
-        batch.Draw(Get(batch.GraphicsDevice).Check, bounds, Ink);
+        Checkmark(batch, bounds, Ink);
+
+    /// <summary>
+    /// The same cut check, tinted for the surface it is printed on: paper ink on a light
+    /// sheet, pale ink on one of the dark stamps.
+    /// </summary>
+    public static void Checkmark(SpriteBatch batch, Rectangle bounds, Color color) =>
+        batch.Draw(Get(batch.GraphicsDevice).Check, bounds, color);
 
     private static void Slices(SpriteBatch batch, Texture2D texture, Rectangle area, Color tint, int sourceEdge, int edge)
         => Slices(batch, texture, area, texture.Bounds, tint, sourceEdge, sourceEdge, edge);

@@ -3,13 +3,35 @@
 The cold UI loadout concept is implemented with a four-column grid, fixed detail
 panel, cost preview and removable equipped chips. The complete 20-skill catalog
 uses two desktop pages; the All/Offense/Defense/Control filters retain focus when
-possible. A portrait viewport uses three columns and stacked details.
+possible. A portrait viewport uses three columns and a compact inspector.
 
 White outlines indicate the skill being inspected; cyan outlines and checkmarks
-indicate equipped skills. Locked, over-budget and conflicting states include
-text, not just color. Clicking a tile inspects it; the detail action equips or
-removes it. Equipped chips remove their skill and an overflow button exposes
-additional equipped entries without introducing a slot limit.
+indicate equipped skills. The page speaks in marks rather than labels: one diamond is
+one SP (a tile shows its cost as a diamond row, the budget is a diamond plus
+`spent / budget`, the inspector repeats a diamond and the number), page turning is a
+row of page diamonds instead of `1 / 3`, the equipped count is a check plus the
+number, and the category tabs are glyphs (a dot grid for All, then the strike, crest
+and dial the three families already use). Locked, over-budget and conflicting skills
+are dimmed instead of carrying a sentence, and the inspector explains the reason once
+for the focused skill. Clicking a tile inspects it; the inspector's ticket equips or
+removes it - a plus/minus stamp on a phone, a labeled ticket on desktop. Equipped
+chips print only the skill name and a remove mark, and an overflow button exposes
+additional equipped entries without introducing a slot limit. On a phone the start
+ticket reads `CONTINUE`; the ban and ready modes keep their `BAN` / `WAIT` words.
+
+On desktop the budget sits at the right of the header, the equip ticket closes the
+detail card, and the equipped chips share the footer with the start action. On a
+phone the whole page is one vertical column: header with the budget and a thin
+spent/budget meter, tabs, a grid that takes every remaining pixel (a filtered
+category centres its used rows), a compact inspector with the equip ticket in its
+header and the equipped chips at its foot, and a bottom row of the party summary and
+the start ticket. The party ticket itself is the "change party" affordance (tap it or
+the swap mark) and returns to the companion step, so there is no separate back button;
+the `CONTINUE` ticket starts the battle. Both respect the Android gesture-bar inset. A node
+with no companion step drops the party ticket and the start ticket owns the whole row.
+The old phone page stretched the detail card to the bottom and left a tall empty
+middle between the effect sentence and the equip ticket; the inspector now fits its
+content and the grid gets the space instead.
 
 Budget costs, unlocks and conflict checks use `CampaignLoadout` and
 `CampaignSkillBalance`. The screen reports intent; campaign and network states
@@ -18,10 +40,13 @@ result values. Geometric icons are antialiased masks generated at runtime.
 
 ## Party strip
 
-`SkillSelectionLayout.Party` reserves a band under the grid (between the page arrows and
-the detail card in portrait). `UICampaignPartyStrip` draws it as one paper ticket: a
-`PARTY n / limit` label, the companions already invited as read-only chips with their art
-and health, and a `CHANGE` affordance on the right.
+`SkillSelectionLayout.Party` is the left segment of the phone's bottom row (next to the
+back and start tickets); on desktop it is the band under the grid. `UICampaignPartyStrip`
+draws it as one paper ticket: one diamond per party slot (filled for each companion
+already invited), the invited companions as compact name chips with their art, and a
+two-way swap mark on the right that reopens the roster. Health stays on the roster
+screen; the strip is a one-line summary, not a second character sheet. An online draft
+replaces the swap mark with its `CO-OP · ALLY JOINS` status text.
 
 The ticket is a single target, not a control cluster: a click anywhere on it, `C`, gamepad
 `Y`, or Back returns to `UICampaignCompanionSelect`, which owns the party choice (roster
@@ -75,6 +100,8 @@ dotnet test Fida.Tests/Fida.Tests.csproj -c UiReview --no-restore -m:1 -p:BuildI
 dotnet build tools/UiPreview/UiPreview.csproj -c UiReview -m:1 -p:BuildInParallel=false
 dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1600 1000 artifacts/skill-grid --skills-only
 dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1280 720 artifacts/skill-grid --skills-only
+dotnet build tools/UiPreview/UiPreview.csproj -c UiReview -p:DefineConstants=FIDA_ANDROID -p:SkipDotnetToolRestore=true -m:1
+dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1080 2400 artifacts/android-loadout --skills-only --tolerant
 ```
 
 UiReview keeps verification separate from a game running in Visual Studio's

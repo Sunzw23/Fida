@@ -100,7 +100,25 @@ public sealed class UIEditorialSurface : UIControl
         SpriteFont font = title ? _resources.TitleFont : size <= 30 ? _resources.CaptionFont : _resources.LabelFont;
         string safe = UIFontGuard.Sanitize(font, text);
         Vector2 measured = font.MeasureString(safe);
-        float scale = UITextRenderer.FitScale(measured, area.Width, area.Height, size * layout.Scale / font.LineSpacing);
+        float preferred;
+#if FIDA_ANDROID
+        // The size argument is the design size these pages were laid out against;
+        // the drawn size comes from the dp ramp so it stays physical.
+        var vp = _resources.GraphicsDevice.Viewport;
+        var role = UITypography.FromDesignPixels(size);
+        float lineBox = UITypography.LineHeight(role, vp.Width, vp.Height);
+        preferred = lineBox / font.LineSpacing;
+        // The box follows the role: grow it around its centre instead of letting
+        // FitScale shrink the type back down to the authored design height.
+        if (area.Height < lineBox)
+        {
+            int grown = (int)Math.Ceiling(lineBox);
+            area = new Rectangle(area.X, area.Y - (grown - area.Height) / 2, area.Width, grown);
+        }
+#else
+        preferred = size * layout.Scale / font.LineSpacing;
+#endif
+        float scale = UITextRenderer.FitScale(measured, area.Width, area.Height, preferred);
         Vector2 pos = new(center ? area.Center.X - measured.X * scale / 2 : area.Left, area.Center.Y - measured.Y * scale / 2);
         UITextRenderer.DrawString(batch, font, safe, pos, color ?? UITheme.Ink, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
     }

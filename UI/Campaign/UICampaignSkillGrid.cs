@@ -33,8 +33,8 @@ public sealed partial class UICampaignSkillGrid : UIControl
     public int FocusedIndex => _grid.FocusedIndex;
     public string HeaderText { get; set; }
     public string StatusText { get; set; } = "";
-    public string AvailableActionText { get; set; } = "EQUIP SKILL";
-    public string SelectedActionText { get; set; } = "REMOVE SKILL";
+    public string AvailableActionText { get; set; } = "EQUIP";
+    public string SelectedActionText { get; set; } = "REMOVE";
     public string StartActionText { get; set; } = "START BATTLE";
     public bool StartActionEnabled { get; set; } = true;
     public bool SelectionEnabled { get; set; } = true;
@@ -42,9 +42,24 @@ public sealed partial class UICampaignSkillGrid : UIControl
     public bool StartActionTogglesSelection { get; set; }
     public bool UseUnifiedActionButton { get; set; }
     public bool ShowSkillPoints { get; set; } = true;
+    /// <summary>False when the node has no companion step, so the footer drops the party ticket.</summary>
+    public bool ShowParty { get; set; } = true;
     public Func<SkillType, CampaignSkillAvailability> AvailabilityOverride { get; set; } = null!;
     public Func<SkillType, string> AvailabilityLabelOverride { get; set; } = null!;
-    public SkillSelectionLayout Layout => new(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height);
+    public SkillSelectionLayout Layout
+    {
+        get
+        {
+            var viewport = _graphicsDevice.Viewport;
+            int bottomInset = 0;
+#if FIDA_ANDROID
+            // The start action must stay above the system gesture bar.
+            Rectangle safe = UIMobileSafeArea.Get(viewport);
+            bottomInset = Math.Max(0, viewport.Height - safe.Bottom);
+#endif
+            return new SkillSelectionLayout(viewport.Width, viewport.Height, null, null, bottomInset, ShowParty);
+        }
+    }
     public IReadOnlyList<SkillType> VisibleSkills { get { SyncLayout(); return _grid.PageItems; } }
     public SkillCategory Category => _grid.Category;
     public int CurrentPage => _grid.Page;
@@ -152,7 +167,7 @@ public sealed partial class UICampaignSkillGrid : UIControl
         if (layout.Action.Contains(point) && !StartActionTogglesSelection) return "toggle";
         for (int i = 0; i < 4; i++) if (layout.Tab(i).Contains(point)) return $"tab:{i}";
         var skills = _grid.PageItems;
-        for (int i = 0; i < skills.Count; i++) if (layout.Tile(i).Contains(point)) return $"skill:{(int)skills[i]}";
+        for (int i = 0; i < skills.Count; i++) if (layout.TileInPage(i, skills.Count).Contains(point)) return $"skill:{(int)skills[i]}";
         if (layout.Previous.Contains(point)) return "previous";
         if (layout.Next.Contains(point)) return "next";
         foreach (var chip in EquippedChips(layout)) if (chip.Bounds.Contains(point)) return $"remove:{(int)chip.Skill}";
@@ -182,7 +197,7 @@ public sealed partial class UICampaignSkillGrid : UIControl
         float scale = UITypography.Scale(_captionFont, UITextRole.Small, _graphicsDevice.Viewport);
         for (int i = _chipOffset; i < selected.Length; i++)
         {
-            string label = $"{GameText.SkillName(selected[i])}  {CampaignSkillBalance.Cost(selected[i])} SP";
+            string label = GameText.SkillName(selected[i]);
             int width = Math.Clamp((int)(_captionFont.MeasureString(UIFontGuard.Sanitize(_captionFont,label)).X * scale) +
                 (int)(96 * layout.Scale), 110, Math.Max(112, (int)(290 * layout.Scale)));
             if (x + width > right) break;

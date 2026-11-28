@@ -436,7 +436,7 @@ E3、E4 从「书库」移到 **Archive Overwritten**。这样每个章节要么
 | ID | 节点名 | 父节点 | 档 | 誓约 | 敌人 | 预算 | 奖励 |
 |---|---|---|---|---|---|---|---:|
 | AS1 | Cold Quench | T03 | ◆ | — | Quench Tender 4、Hearth Guard 5（加防御） | 4 | — |
-| AS2 | The Test Cut | AS1 | ◆ | — | Straw Man 3、Drill Master 4（加攻击）×2 | 3 | — |
+| AS2 | The Test Cut | AS1 | ◆ | — | Straw Man 3、Drill Master 4（加攻击）×2 | 3 | **破（Po）** |
 | AS3 | Delivery at Dusk | AS2 | ◆◆ | ALONE | Door Guard 4（加防御）×2、Receiver 6（双倍防御） | 3 | **同伴 Ila** |
 
 > 铁匠还在磨那把剑。Ila 替他送剑，条件是不许人陪——"你站在旁边，他们就不开门。"

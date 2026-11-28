@@ -12,7 +12,7 @@ int width = args.Length > 0 ? int.Parse(args[0]) : 1600;
 int height = args.Length > 1 ? int.Parse(args[1]) : 1000;
 string destination = Path.GetFullPath(args.Length > 2 ? args[2] : "artifacts/cold-ui");
 Directory.CreateDirectory(destination);
-using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"), args.Contains("--reference-only"), args.Contains("--concept-only"), args.Contains("--route-only"), args.Contains("--companions-only"), args.Contains("--chapters-only"));
+using var preview = new PreviewGame(width, height, destination, args.Contains("--skills-only"), args.Contains("--menus-only"), args.Contains("--reference-only"), args.Contains("--concept-only"), args.Contains("--route-only"), args.Contains("--companions-only"), args.Contains("--chapters-only"), args.Contains("--achievements-only"), args.Contains("--tolerant"));
 preview.Run();
 
 sealed class PreviewGame : Game
@@ -32,12 +32,19 @@ sealed class PreviewGame : Game
     private readonly bool _routeOnly;
     private readonly bool _companionsOnly;
     private readonly bool _chaptersOnly;
+    private readonly bool _achievementsOnly;
+    /// <summary>
+    /// Screenshots of a layout this harness was not written against (the touch layout built
+    /// with FIDA_ANDROID) reuse the desktop assertions only as a smoke test: a failed check is
+    /// reported and the run keeps going instead of leaving the capture set half finished.
+    /// </summary>
+    private readonly bool _tolerant;
     private UICampaignSkillWheel _loadout;
     private HashSet<SkillType> _loadoutSelected;
     private UICampaignCompanionSelect _companionScreen;
     private UICampaignMap _chapterMap;
 
-    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly, bool referenceOnly, bool conceptOnly, bool routeOnly, bool companionsOnly, bool chaptersOnly)
+    public PreviewGame(int width, int height, string destination, bool skillsOnly, bool menusOnly, bool referenceOnly, bool conceptOnly, bool routeOnly, bool companionsOnly, bool chaptersOnly, bool achievementsOnly, bool tolerant)
     {
         _width = width; _height = height; _destination = destination;
         _skillsOnly = skillsOnly;
@@ -47,12 +54,15 @@ sealed class PreviewGame : Game
         _routeOnly = routeOnly;
         _companionsOnly = companionsOnly;
         _chaptersOnly = chaptersOnly;
+        _achievementsOnly = achievementsOnly;
+        _tolerant = tolerant;
         if (skillsOnly) _screen = 4;
         if (referenceOnly) _screen = 2;
         if (conceptOnly) _screen = 7;
         if (routeOnly) _screen = 3;
         if (companionsOnly) _screen = 20;
         if (chaptersOnly) _screen = 21;
+        if (achievementsOnly) _screen = 26;
         _graphics = new GraphicsDeviceManager(this)
         { PreferredBackBufferWidth = width, PreferredBackBufferHeight = height, GraphicsProfile = GraphicsProfile.HiDef };
         Content.RootDirectory = Path.Combine(AppContext.BaseDirectory, "Content");
@@ -69,12 +79,20 @@ sealed class PreviewGame : Game
         _resources = new ResourceManager(GraphicsDevice);
         _resources.LoadContent(Content);
         _ui = new UIManager(GraphicsDevice, _resources);
-        VerifyGumModalLayouts();
-        VerifyPageTransitions();
-        VerifyCampaignLoadoutTransition();
-        VerifySideChapterStock();
+        Guard("Gum modal bounds", VerifyGumModalLayouts);
+        Guard("page transitions", VerifyPageTransitions);
+        Guard("campaign loadout transition", VerifyCampaignLoadoutTransition);
+        Guard("side chapter stock", VerifySideChapterStock);
         SeedRulesPreview();
         Build();
+    }
+
+    /// <summary>Runs a harness assertion; in tolerant mode a failure is logged, never fatal.</summary>
+    private void Guard(string label, Action check)
+    {
+        if (!_tolerant) { check(); return; }
+        try { check(); }
+        catch (Exception error) { Console.WriteLine($"WARN {label}: {error.Message}"); }
     }
 
     private void VerifyGumModalLayouts()
@@ -115,7 +133,7 @@ sealed class PreviewGame : Game
             case 0: _ui.BuildMainMenu(); break;
             case 1: _ui.BuildSettingsScreen(); break;
             case 2: _ui.BuildRulesScreen(); break;
-            case 3: _ui.BuildLevelSelect(); VerifyCampaignActions(); break;
+            case 3: _ui.BuildLevelSelect(); Guard("campaign actions", VerifyCampaignActions); break;
             case 4:
                 var selected = new HashSet<SkillType> { SkillType.Xue,SkillType.Shi };
                 var progress = new CampaignProgress { UnlockedSkills = SkillFactory.SelectableSkills.Where(skill => skill!=SkillType.Shen).ToHashSet() };
@@ -126,12 +144,12 @@ sealed class PreviewGame : Game
                 _loadout = loadout;
                 _loadoutSelected = selected;
                 loadout.GridBrowser.FocusSkill(SkillType.DoubleAttack);
-                VerifySkillGrid(loadout,selected);
+                Guard("skill grid", () => VerifySkillGrid(loadout, selected));
                 var partyStrip = new UICampaignPartyStrip(1,GraphicsDevice,_resources,node,
                     _resources.Font,_resources.CaptionFont);
                 partyStrip.SetParty(["mara_venn"]);
                 _ui.GetControls().Add(partyStrip);
-                VerifyPartyStrip(partyStrip,loadout.GridBrowser.Layout);
+                Guard("party strip", () => VerifyPartyStrip(partyStrip, loadout.GridBrowser.Layout));
                 break;
             case 20:
                 var companionNode = CampaignCatalog.GetNode("T01") ?? CampaignCatalog.Nodes.First();
@@ -140,13 +158,23 @@ sealed class PreviewGame : Game
                     _resources.TitleFont,_resources.CaptionFont);
                 _ui.GetControls().Add(companionScreen);
                 _companionScreen = companionScreen;
-                VerifyCompanionScreen(companionScreen,companionNode);
+                Guard("companion screen", () => VerifyCompanionScreen(companionScreen, companionNode));
                 break;
             case 21:
                 // A preview never reads the player's save: build the map with explicit progress
                 // so the first chapter's side roads are already unlocked and coloured.
                 var chapterProgress = new CampaignProgress();
-                foreach (string completed in new[] { "P", "T01", "T02", "T03", "A1", "A2", "A3", "AG", "B1", "B2", "B3", "BG", "C1", "C2", "C3", "CG", "D1", "D2", "E1", "E2" })
+                var completedNodes = new List<string>
+                {
+                    "P", "T01", "T02", "T03", "A1", "A2", "A3", "AG", "B1", "B2", "B3", "BG",
+                    "C1", "C2", "C3", "CG", "D1", "D2", "E1", "E2"
+                };
+#if FIDA_ANDROID
+                // The phone list must keep a cleared mission's row: seed one clear in the
+                // page the preview captures, so the replay path is on screen.
+                completedNodes.Add("WS1");
+#endif
+                foreach (string completed in completedNodes)
                     if (CampaignCatalog.GetNode(completed) is { } done) chapterProgress.Complete(done);
                 float mapScale = UIDesktopLayout.Scale(GraphicsDevice.Viewport);
                 var mapOptions = new CampaignMapOptions
@@ -167,10 +195,12 @@ sealed class PreviewGame : Game
                 break;
             case 9: _ui.BuildOnlineLobby(true); break;
             case 10: _ui.BuildMainMenu(true); break;
-            case 11: _ui.BuildOnlineMenu(); VerifyRoomCodeInput(); break;
+            case 11: _ui.BuildOnlineMenu(); Guard("room code input", VerifyRoomCodeInput); break;
             case 12: _ui.BuildOnlineMenu(true, true, "Room", "A7K2"); break;
             case 13: _ui.BuildHostingScreen("Waiting for opponent", "A7K2"); break;
             case 14: _ui.BuildConnectingScreen("Connecting to session..."); break;
+            case 22: _ui.BuildOnlineMenu(false, false, "Address", "Direct", direct: true); Guard("address field", VerifyAddressField); break;
+            case 23: _ui.BuildHostingScreen("Waiting for opponent...\nLAN 192.168.1.7:8888\nIPV6 [2408:8210:5a1::1]:8888", "192.168.1.7:8888", direct: true); break;
             case 15:
                 if(_battle == null)
                 {
@@ -216,29 +246,41 @@ sealed class PreviewGame : Game
                     row++;
                 }
                 break;
+            case 24:
+            case 25:
+                // The two modal prompts a battle turn can raise: pick a replacement value
+                // (Immortal / God) and accept an optional skill effect.
+                _battle = BuildBattleFixture(3);
+                _ui.BuildPlayingUI(_battle);
+                _battle.TransitionTo(new ChooseNumberIndexState(_battle, 0));
+                _ui.UpdateGameMessage("Choose your number, then another number to add.");
+                if (_screen == 24)
+                {
+                    var numbers = new UINumberSelectionDialog(0, GraphicsDevice, _resources.Pixel, _resources.Font);
+                    _ui.GetControls().Add(numbers);
+                    // The pad buttons are separate controls, exactly as UIPlayerManager wires them.
+                    foreach (var button in numbers.NumberButtons) _ui.GetControls().Add(button);
+                    numbers.Show("IMMORTAL · choose a new value", new[] { 1, 2, 3, 4, 5 });
+                }
+                else
+                {
+                    var decide = new UIDecideApplyDialog(0, GraphicsDevice, _resources.Pixel, _resources.Font);
+                    _ui.GetControls().Add(decide);
+                    _ui.GetControls().Add(decide.ApplyButton);
+                    _ui.GetControls().Add(decide.PassButton);
+                    decide.Show("DOUBLE ATTACK · double this attack's damage?");
+                }
+                break;
+            case 26: _ui.BuildAchievementsScreen(); break;
             default:
                 int count = _screen == 6 ? 4 : 3;
-                string[] names = { "ARITH", "MARA", "SENTINEL", "ALLY", "WITHERED KING", "WARDEN", "ECHO", "GUARD" };
-                string[] keys = { "arithmetist", "mara", "sentinel", "sentinel", "withered_king", "warden", "echo", "warden" };
-                var allies = Enumerable.Range(0, count).Select(i => new Player(i, names[i], 11, []) { PortraitKey = keys[i] }).ToList();
-                var enemies = Enumerable.Range(0, count).Select(i => new Player(i + count, names[i + 4], 11, []) { PortraitKey = keys[i + 4] }).ToList();
-                allies[0].Skills.AddRange(new[] { SkillType.DoubleAttack, SkillType.Shi, SkillType.Xue }.Select(SkillFactory.CreateSkill));
-                enemies[0].Skills.Add(SkillFactory.CreateSkill(SkillType.PlusDefence));
-                for (int i = 0; i < count; i++)
-                {
-                    allies[i].Numbers[0] = i == 0 ? 6 : i * 2;
-                    allies[i].Numbers[1] = i == 0 ? 6 : i * 2 + 1;
-                    enemies[i].Numbers[0] = i + 2;
-                    enemies[i].Numbers[1] = i + 3;
-                }
-                _battle = new GameManager { LocalPlayerId = 0 };
-                _battle.Initialize(allies.Concat(enemies).ToList(), [new Group(0, "ALLY", allies), new Group(1, "ENEMY", enemies)]);
+                _battle = BuildBattleFixture(count);
                 _ui.BuildPlayingUI(_battle);
                 _battle.TransitionTo(new ChooseNumberIndexState(_battle, 0));
                 _ui.UpdateGameMessage("Choose your number, then another number to add.");
                 var player = _ui.GetUIPlayer(0);
                 player.Number0Button.SetSelected(true);
-                VerifyNumberInput(player);
+                Guard("number input", () => VerifyNumberInput(player));
                 if (_screen == 7)
                     _ui.AddTutorialDialogue(new CampaignNode
                     {
@@ -253,6 +295,27 @@ sealed class PreviewGame : Game
                     });
                 break;
         }
+    }
+
+    /// <summary>A deterministic battle roster shared by the battle and modal screenshots.</summary>
+    private GameManager BuildBattleFixture(int count)
+    {
+        string[] names = { "ARITH", "MARA", "SENTINEL", "ALLY", "WITHERED KING", "WARDEN", "ECHO", "GUARD" };
+        string[] keys = { "arithmetist", "mara", "sentinel", "sentinel", "withered_king", "warden", "echo", "warden" };
+        var allies = Enumerable.Range(0, count).Select(i => new Player(i, names[i], 11, []) { PortraitKey = keys[i] }).ToList();
+        var enemies = Enumerable.Range(0, count).Select(i => new Player(i + count, names[i + 4], 11, []) { PortraitKey = keys[i + 4] }).ToList();
+        allies[0].Skills.AddRange(new[] { SkillType.DoubleAttack, SkillType.Shi, SkillType.Xue }.Select(SkillFactory.CreateSkill));
+        enemies[0].Skills.Add(SkillFactory.CreateSkill(SkillType.PlusDefence));
+        for (int i = 0; i < count; i++)
+        {
+            allies[i].Numbers[0] = i == 0 ? 6 : i * 2;
+            allies[i].Numbers[1] = i == 0 ? 6 : i * 2 + 1;
+            enemies[i].Numbers[0] = i + 2;
+            enemies[i].Numbers[1] = i + 3;
+        }
+        var battle = new GameManager { LocalPlayerId = 0 };
+        battle.Initialize(allies.Concat(enemies).ToList(), [new Group(0, "ALLY", allies), new Group(1, "ENEMY", enemies)]);
+        return battle;
     }
 
     private void VerifySkillGrid(UICampaignSkillWheel wrapper,HashSet<SkillType> selected)
@@ -413,7 +476,7 @@ sealed class PreviewGame : Game
         if (_frame >= 30 && time.TotalGameTime.TotalSeconds - _firstDraw >= 0.7)
         {
             if (_conceptOnly) Console.WriteLine($"UI render-target samples: {_ui.RenderSampleCount}");
-            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting", "paused", "victory", "defeat", "duel-draft", "duel-result", "companions", "chapters" }[_screen];
+            string name = new[] { "menu", "settings", "rules", "campaign", "loadout", "battle-3v3", "battle-4v4", "dialogue", "type-specimen", "lobby", "menu-connected", "online", "connection", "hosting", "connecting", "paused", "victory", "defeat", "duel-draft", "duel-result", "companions", "chapters", "online-direct", "hosting-direct", "battle-number-dialog", "battle-apply-dialog", "achievements" }[_screen];
             Save(name);
             if (_screen == 16) SaveButtonStates(time);
             if (_screen == 2) SaveRulesPages(time);
@@ -430,10 +493,10 @@ sealed class PreviewGame : Game
                 }
                 ClickMap(map, new Point(bounds.Left + bounds.Width / 4, bounds.Center.Y));
                 map.Update(new GameTime(time.TotalGameTime, TimeSpan.FromSeconds(1)));
-                if (_routeOnly) VerifyReferenceRoute(map, bounds);
+                if (_routeOnly) Guard("reference route", () => VerifyReferenceRoute(map, bounds));
                 _ui.Draw(time); _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero)); Save("campaign-route");
-                VerifyLockedChapterContrast();
-                VerifyLockedMissionAction();
+                Guard("locked chapter contrast", VerifyLockedChapterContrast);
+                Guard("locked mission action", VerifyLockedMissionAction);
             }
             if (_screen == 9)
             {
@@ -446,11 +509,11 @@ sealed class PreviewGame : Game
             if (_screen==4) SaveSkillVariants(time);
             if (_screen==20) SaveCompanionVariants(time);
             if (_screen==21) SaveChapterVariants(time);
-            if (_screen is 5 or 6) VerifyRenderedMotion(time, name);
+            if (_screen is 5 or 6) Guard("rendered motion", () => VerifyRenderedMotion(time, name));
             _screen = _conceptOnly ? _screen switch { 7 => 15, 15 => 16, 16 => 17, _ => 21 }
-                : _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, _ => 21 }
+                : _referenceOnly ? _screen switch { 2 => 11, 11 => 12, 12 => 13, 13 => 14, 14 => 22, 22 => 23, 23 => 24, _ => 21 }
                 : _menusOnly ? _screen switch { 0 => 1, 1 => 2, 2 => 3, 3 => 9, _ => _screen + 1 } : _screen + 1;
-            if (_skillsOnly || _routeOnly || _companionsOnly || _chaptersOnly || _screen > 21) Exit(); else Build();
+            if (_skillsOnly || _routeOnly || _companionsOnly || _chaptersOnly || _achievementsOnly || _screen > 26) Exit(); else Build();
         }
         base.Draw(time);
     }
@@ -508,7 +571,7 @@ sealed class PreviewGame : Game
             Save(name);
         }
 
-        VerifyRulesStructure(book);
+        Guard("rules structure", () => VerifyRulesStructure(book));
 
         // Empty discovery is a real state for a fresh profile; keep its copy honest.
         CampaignRuntime.UseStore(CampaignRuntime.Local,
@@ -715,6 +778,44 @@ sealed class PreviewGame : Game
         join.Update(MapMouse(Point.Zero,ButtonState.Released));
         join.Clicked -= Clicked; input.Submitted -= Submitted;
         Console.WriteLine("Verified room-code entry, length limit, Enter submission and Join gating.");
+    }
+
+    /// <summary>
+    /// Direct mode replaces the room-code box with a typed host address. The field must accept
+    /// an IP literal, submit on Enter, and stay clear of the Join button.
+    /// </summary>
+    private void VerifyAddressField()
+    {
+        var field = _ui.GetAddressFieldByName("addressInput")
+            ?? throw new Exception("The direct online screen is missing its address field.");
+        if (_ui.GetTextBoxByName("roomCodeInput") != null)
+            throw new Exception("Direct mode still shows the relay room-code box.");
+        var join = _ui.GetButtonByName("joinGame");
+        if (join == null) throw new Exception("The direct online screen is missing Join.");
+        if (join.GetScreenBounds(GraphicsDevice.Viewport) is { } joinBounds && field.Bounds.Intersects(joinBounds))
+            throw new Exception("The address field overlaps the Join button.");
+
+        var layout = new UIReferenceLayout(_width, _height);
+        int submitted = 0;
+        void Submitted(string value)
+        {
+            if (value != "192168178888") throw new Exception("The address field lost characters.");
+            submitted++;
+        }
+        field.Submitted += Submitted;
+        void Key(Keys key) { field.UpdateKeyboard(new KeyboardState(key)); field.UpdateKeyboard(new KeyboardState()); }
+
+        field.Update(MapMouse(layout.Code.Center, ButtonState.Pressed));
+        foreach (char digit in "192168178888") Key((Keys)('0' + (digit - '0')));
+        Key(Keys.OemPeriod);           // separators survive and do not break submission
+        Key(Keys.Back);
+        Key(Keys.Enter);
+        if (submitted != 1) throw new Exception("The address field did not submit on Enter.");
+
+        field.Clear();
+        field.UpdateKeyboard(new KeyboardState());
+        field.Submitted -= Submitted;
+        Console.WriteLine("Verified direct-connect address entry and Enter submission.");
     }
     private static void ClickMap(UICampaignMap map, Point p)
     {
@@ -958,6 +1059,9 @@ sealed class PreviewGame : Game
         if (!_chapterMap.TryLeaveFolder()) throw new Exception("Chapter III did not close.");
         if (!_chapterMap.TryEnterFolder("The Roofless Shelter")) throw new Exception("Shelter chapter is missing.");
         Redraw(time); Save("chapters-shelter");
+#if FIDA_ANDROID
+        CaptureMissionSheet(_chapterMap, time);
+#endif
         SaveSideDetail();
         void Redraw(GameTime now)
         {
@@ -966,9 +1070,54 @@ sealed class PreviewGame : Game
         }
     }
 
-    private void SaveSideDetail()
+#if FIDA_ANDROID
+    /// <summary>
+    /// The phone mission page keeps cleared rows and prints a paper sheet. This checks the
+    /// replay ticket starts the cleared mission and that a locked mission never does.
+    /// </summary>
+    private void CaptureMissionSheet(UICampaignMap map, GameTime time)
     {
-        var view = new UICampaignRouteView(_resources.Font, _resources.TitleFont, _resources.Pixel,
+        var rows = map.MobileRows;
+        var bounds = map.MobileRowBounds;
+        if (rows.Count == 0 || rows.Count != bounds.Count)
+            throw new Exception("The mission page printed no rows.");
+        int cleared = -1, locked = -1;
+        for (int i = 0; i < rows.Count; i++)
+        {
+            if (rows[i].State == CampaignMissionState.Cleared && cleared < 0) cleared = i;
+            if (rows[i].State == CampaignMissionState.Locked && locked < 0) locked = i;
+        }
+        if (cleared < 0)
+            throw new Exception("A cleared mission lost its row, so it cannot be replayed.");
+        if (locked < 0)
+            throw new Exception("A locked mission was dropped from the page.");
+
+        string clearedId = CampaignCatalog.Nodes[rows[cleared].Index].Id;
+        ClickMap(map, bounds[cleared].Center);
+        if (!map.MobileDetailsOpen) throw new Exception("Tapping a mission row did not open its sheet.");
+        _ui.Draw(time); _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero));
+        Save("chapters-mission-sheet");
+        ClickMap(map, map.MissionSheet.Action.Center);
+        if (!map.TryConsumeSelectedNode(out string replay) || replay != clearedId)
+            throw new Exception($"The cleared mission '{clearedId}' did not offer a replay ({replay}).");
+        ClickMap(map, map.MissionSheet.Close.Center);
+        if (map.MobileDetailsOpen) throw new Exception("The mission sheet did not close.");
+
+        ClickMap(map, bounds[locked].Center);
+        if (!map.MobileDetailsOpen) throw new Exception("A locked mission could not be inspected.");
+        _ui.Draw(time); _ui.Draw(new GameTime(time.TotalGameTime + TimeSpan.FromSeconds(1), TimeSpan.Zero));
+        Save("chapters-mission-sheet-locked");
+        ClickMap(map, map.MissionSheet.Action.Center);
+        if (map.TryConsumeSelectedNode(out _))
+            throw new Exception("A locked mission started a battle.");
+        ClickMap(map, map.MissionSheet.Close.Center);
+        Console.WriteLine($"Verified mission rows keep cleared ({clearedId}) and locked missions, " +
+            "the paper mission sheet, and its replay/locked tickets.");
+    }
+#endif
+
+    private void SaveSideDetail()
+    {        var view = new UICampaignRouteView(_resources.Font, _resources.TitleFont, _resources.Pixel,
             _resources.AntialiasedLine);
         var layout = new CampaignMapLayout(_width, _height);
         using var target = new RenderTarget2D(GraphicsDevice, _width, _height);

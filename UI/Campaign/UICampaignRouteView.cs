@@ -11,7 +11,7 @@ namespace Fida.UI.Campaign;
 
 public sealed record CampaignRouteDetails(string Id, string Title, string Story, int EnemyCount,
     int SkillBudget, string Reward, SkillType? RewardSkill, string Chapter, bool Locked = false,
-    int Tier = 0, IReadOnlyList<CampaignVow>? Vows = null, bool Side = false);
+    int Tier = 0, IReadOnlyList<CampaignVow>? Vows = null, bool Side = false, bool Completed = false);
 public sealed record CampaignChapterDetails(string Id, string Title, string Story, int Cleared,
     int Total, bool Side = false);
 
@@ -30,6 +30,25 @@ public sealed class UICampaignRouteView
 
     public UICampaignRouteView(SpriteFont body, SpriteFont heading, Texture2D pixel, Texture2D line)
     { _body = body; _heading = heading; _pixel = pixel; _line = line; }
+
+    /// <summary>
+    /// Draws text at an exact ink height. <see cref="Text"/> sizes from a line
+    /// box, which makes a pixel target depend on the font's leading; the mobile
+    /// list sizes type in dp, so it measures the glyph box instead.
+    /// </summary>
+    private void TextInk(SpriteBatch batch, string text, Rectangle area, float inkHeight, Color color,
+        bool heading = false, bool center = false)
+    {
+        SpriteFont font = heading ? _heading : _body;
+        string safe = UIFontGuard.Sanitize(font, text);
+        Vector2 size = font.MeasureString(safe);
+        if (size.X <= 0f || size.Y <= 0f || inkHeight <= 0f) return;
+        float scale = Math.Min(inkHeight / size.Y, area.Width / size.X);
+        if (scale <= 0f) return;
+        UITextRenderer.DrawString(batch, font, safe,
+            new Vector2(center ? area.Center.X - size.X * scale / 2 : area.Left, area.Center.Y - size.Y * scale / 2),
+            color, scale: scale);
+    }
 
     private void Text(SpriteBatch batch, string text, Rectangle area, float height, Color color, bool heading = false, bool center = false)
     {
@@ -85,31 +104,52 @@ public sealed class UICampaignRouteView
 
     private static Color Lighten(Color color) => Color.Lerp(color, Color.White, .35f);
 
+    private static string MetricText(int enemies, int skillBudget) =>
+        $"{enemies} {(enemies == 1 ? "enemy" : "enemies")}  /  {skillBudget} SP";
+
     private void DrawAction(SpriteBatch batch,CampaignMapLayout layout,string label,float hover,float press,
         bool enabled=true)
     {
         float s=layout.Scale;
+        ActionTicket(batch,layout.Action,label,hover,press,enabled,50*s,s);
+    }
+
+    /// <summary>
+    /// One printed action ticket: cut paper, one ink label and either the open-page arrow or
+    /// the lock stamp. Both route pages and the phone mission sheet print this same ticket.
+    /// </summary>
+    private void ActionTicket(SpriteBatch batch,Rectangle bounds,string label,float hover,float press,
+        bool enabled,float textHeight,float chrome)
+    {
         // Sheet tints come from the paper palette, so an unavailable ticket is dimmed by
         // opacity instead: the navy backing shows through and the paper reads as shut.
-        UIPaper.Button(batch,layout.Action,UIPaper.Face,hover,press,enabled,enabled ? 1f : .45f,
+        UIPaper.Button(batch,bounds,UIPaper.Face,hover,press,enabled,enabled ? 1f : .45f,
             shape:UIPaperShape.Ticket);
-        var text=layout.Action;text.Inflate(-(int)(25*s),-(int)(12*s));text.Width-=(int)(32*s);
-        Text(batch,label,text,50*s,enabled ? UIPaper.Ink : UIPaper.MutedInk,true,true);
-        Vector2 arrow=new(layout.Action.Right-35*s,layout.Action.Center.Y);
+        var text=bounds;text.Inflate(-(int)(25*chrome),-(int)(12*chrome));text.Width-=(int)(32*chrome);
+        Text(batch,label,text,textHeight,enabled ? UIPaper.Ink : UIPaper.MutedInk,true,true);
+        Vector2 arrow=new(bounds.Right-35*chrome,bounds.Center.Y);
         if(enabled) UISkillSymbols.Play(batch,_pixel,arrow,UIPaper.Ink);
         else
         {
-            int side=Math.Max(12,(int)(30*s));
+            int side=Math.Max(12,(int)(30*chrome));
             UISkillSymbols.Status(batch,_pixel,new Rectangle((int)(arrow.X-side/2f),(int)(arrow.Y-side/2f),side,side),
                 Fida.Campaign.CampaignSkillAvailability.Locked,UIPaper.MutedInk);
         }
     }
 
+    /// <summary>
+    /// Draws one chapter card. <paramref name="textScale"/> lets a caller keep the
+    /// type readable when cards are short (the Android list), while the card
+    /// geometry still follows <paramref name="bounds"/>; zero keeps the original
+    /// behaviour of deriving both from the card height.
+    /// </summary>
     public void DrawChapterCard(SpriteBatch batch,Rectangle bounds,string number,string title,int cleared,int total,
-        bool selected,bool locked,float hover,float press,ChapterStyle? style=null)
+        bool selected,bool locked,float hover,float press,ChapterStyle? style=null,float textScale=0f)
     {
         var look=style ?? ChapterStyle.Default;
         float s=bounds.Height/200f;
+        bool sized=textScale>0f;                       // caller sizes the type in pixels
+        float ts=sized ? textScale : s;
         if(selected)
         {
             var back=bounds;back.Offset(-(int)(5*s),(int)(4*s));
@@ -119,20 +159,57 @@ public sealed class UICampaignRouteView
         Color face=locked ? Color.Lerp(LockedFace,Color.White,hover*.06f)
             : Color.Lerp(stock,Color.White,hover*.08f);
         UIPaperFrame.Draw(batch,bounds,face,UIPaperFrameShape.Node,1.5f*s);
-        int pad=Math.Max(8,(int)(12*s)),header=Math.Max(32,(int)(46*s));
+        int pad=Math.Max(8,(int)(12*s));
         Color muted=locked ? Color.Lerp(UIPaper.MutedInk,LockedFace,.45f) : look.MutedInk;
         Color ink=locked ? UIPaper.MutedInk : look.Ink;
-        Text(batch,number,new Rectangle(bounds.Left+pad,bounds.Top+5,(int)(52*s),header-5),29*s,
-            locked ? muted : look.Side ? look.Accent : muted,true);
-        batch.Draw(_pixel,new Rectangle(bounds.Left+pad+(int)(54*s),bounds.Top+(int)(10*s),1,(int)(24*s)),muted*.45f);
-        Text(batch,title,new Rectangle(bounds.Left+pad+(int)(68*s),bounds.Top+5,bounds.Width-pad*2-(int)(68*s),header-5),33*s,
-            ink,true);
+        int header,numberAreaX,numberAreaWidth,dividerX,dividerY,dividerHeight,titleX,badgeWidth,badgeHeight;
+        if(sized)
+        {
+            // The strip must clear the requested type, not the card-height ratio.
+            header=(int)Math.Ceiling(33*ts)+14;
+            numberAreaX=bounds.Left+pad;
+            numberAreaWidth=(int)Math.Ceiling(44*ts);
+            dividerX=numberAreaX+numberAreaWidth;
+            dividerHeight=(int)Math.Ceiling(24*ts);
+            dividerY=bounds.Top+(header-dividerHeight)/2;
+            titleX=dividerX+(int)Math.Ceiling(10*ts);
+            badgeWidth=(int)Math.Ceiling(84*ts);
+            badgeHeight=(int)Math.Ceiling(34*ts);
+        }
+        else
+        {
+            // Desktop keeps its original card metrics exactly.
+            header=Math.Max(32,(int)(46*s));
+            numberAreaX=bounds.Left+pad;
+            numberAreaWidth=(int)(52*s);
+            dividerX=bounds.Left+pad+(int)(54*s);
+            dividerHeight=(int)(24*s);
+            dividerY=bounds.Top+(int)(10*s);
+            titleX=bounds.Left+pad+(int)(68*s);
+            badgeWidth=(int)(92*s);
+            badgeHeight=(int)(30*s);
+        }
+        var numberArea=new Rectangle(numberAreaX,bounds.Top+5,Math.Max(1,numberAreaWidth-4),header-5);
+        var titleArea=new Rectangle(titleX,bounds.Top+5,Math.Max(1,bounds.Right-pad-titleX),header-5);
+        if(sized)
+        {
+            TextInk(batch,number,numberArea,29*ts,locked ? muted : look.Side ? look.Accent : muted,true);
+            batch.Draw(_pixel,new Rectangle(dividerX,dividerY,1,dividerHeight),muted*.45f);
+            TextInk(batch,title,titleArea,33*ts,ink,true);
+        }
+        else
+        {
+            Text(batch,number,numberArea,29*ts,locked ? muted : look.Side ? look.Accent : muted,true);
+            batch.Draw(_pixel,new Rectangle(dividerX,dividerY,1,dividerHeight),muted*.45f);
+            Text(batch,title,titleArea,33*ts,ink,true);
+        }
         var image=new Rectangle(bounds.Left+pad,bounds.Top+header,bounds.Width-pad*2,Math.Max(1,bounds.Height-header-pad));
         UIPaper.ChapterLocation(batch,image,string.IsNullOrWhiteSpace(look.ArtKey) ? title : look.ArtKey);
-        var count=new Rectangle(image.Right-(int)(92*s),image.Bottom-(int)(30*s),(int)(92*s),(int)(30*s));
+        var count=new Rectangle(image.Right-badgeWidth,image.Bottom-badgeHeight,badgeWidth,badgeHeight);
         batch.Draw(_pixel,count,look.Side && !locked ? Color.Lerp(look.Ink,Color.Black,.12f) : new Color(15,29,39)*.88f);
-        Text(batch,$"{cleared} / {total}",count,26*s,
-            locked ? UITheme.InkMuted : look.Side ? look.Face : UITheme.Ink,true,true);
+        Color countColor=locked ? UITheme.InkMuted : look.Side ? look.Face : UITheme.Ink;
+        if(sized) TextInk(batch,$"{cleared} / {total}",count,26*ts,countColor,true,true);
+        else Text(batch,$"{cleared} / {total}",count,26*ts,countColor,true,true);
         if(locked)
         {
             // A locked chapter is unprinted stock: grey sheet, faded artwork and the same badge.
@@ -186,7 +263,7 @@ public sealed class UICampaignRouteView
         foreach (string divider in new[] { "DividerImage", "DividerStory", "DividerMetric" })
             batch.Draw(_pixel, E(divider), new Color(77,94,101));
         Paragraph(batch, detail.Story, E("Story"), 38 * s);
-        Text(batch, $"{detail.EnemyCount} enemies  /  {detail.SkillBudget} SP", E("Metric"), 33 * s, UITheme.Ink);
+        Text(batch, MetricText(detail.EnemyCount, detail.SkillBudget), E("Metric"), 33 * s, UITheme.Ink);
         Text(batch, "Reward", E("RewardLabel"), 27 * s, UITheme.InkMuted, true);
         if (detail.RewardSkill is SkillType reward)
         {
@@ -197,19 +274,170 @@ public sealed class UICampaignRouteView
             else UISkillArt.Draw(batch, reward, icon, UIPaper.Ink);
         }
         Text(batch, detail.Reward, E("RewardText"), 31 * s, UITheme.AccentYellow, true);
-        DrawAction(batch,layout,detail.Locked ? "Locked" : "Configure skills",hover,press,!detail.Locked);
+        // The action opens the whole preparation flow (companions, then loadout, or straight
+        // into battle), so it is named after the mission rather than one of those steps.
+        DrawAction(batch,layout,detail.Locked ? "Locked" : "Begin mission",hover,press,!detail.Locked);
+    }
+
+    /// <summary>
+    /// One mission row of the phone list. It keeps the chapter card's cut sheet, header strip
+    /// and artwork, so the second level of the browser prints on the same paper as the first.
+    /// The badge states whether the mission is still open, already cleared (replayable) or
+    /// still locked by its parents.
+    /// </summary>
+    public void DrawMissionCard(SpriteBatch batch, Rectangle bounds, string id, string name, string chapter,
+        CampaignMissionState state, bool selected, float hover, float press, ChapterStyle? style = null,
+        float textScale = 0f)
+    {
+        var look = style ?? ChapterStyle.Default;
+        float s = bounds.Height / 200f;
+        float ts = textScale > 0f ? textScale : s;
+        if (selected)
+        {
+            var back = bounds; back.Offset(-(int)(5 * s), (int)(4 * s));
+            UIPaperFrame.Draw(batch, back, look.Side ? look.Accent : Cyan, UIPaperFrameShape.Node, 1.5f * s);
+        }
+        bool locked = state == CampaignMissionState.Locked;
+        Color stock = look.Side ? look.Face : UIPaper.Face;
+        Color face = locked ? Color.Lerp(LockedFace, Color.White, hover * .06f)
+            : Color.Lerp(stock, Color.White, hover * .08f);
+        UIPaperFrame.Draw(batch, bounds, face, UIPaperFrameShape.Node, 1.5f * s);
+        int pad = Math.Max(8, (int)(12 * s));
+        Color muted = locked ? Color.Lerp(UIPaper.MutedInk, LockedFace, .45f) : look.MutedInk;
+        Color ink = locked ? UIPaper.MutedInk : look.Ink;
+        int header = (int)Math.Ceiling(33 * ts) + 14;
+        int numberWidth = (int)Math.Ceiling(44 * ts);
+        int dividerX = bounds.Left + pad + numberWidth;
+        int dividerHeight = (int)Math.Ceiling(24 * ts);
+        int dividerY = bounds.Top + (header - dividerHeight) / 2;
+        int titleX = dividerX + (int)Math.Ceiling(10 * ts);
+        var numberArea = new Rectangle(bounds.Left + pad, bounds.Top + 5, Math.Max(1, numberWidth - 4), header - 5);
+        var titleArea = new Rectangle(titleX, bounds.Top + 5, Math.Max(1, bounds.Right - pad - titleX), header - 5);
+        TextInk(batch, id, numberArea, 29 * ts, locked ? muted : look.Side ? look.Accent : muted, true);
+        batch.Draw(_pixel, new Rectangle(dividerX, dividerY, 1, dividerHeight), muted * .45f);
+        TextInk(batch, name, titleArea, 33 * ts, ink, true);
+
+        var art = new Rectangle(bounds.Left + pad, bounds.Top + header, bounds.Width - pad * 2,
+            Math.Max(1, bounds.Height - header - pad));
+        DrawMissionArt(batch, art, id, name, chapter, look);
+        if (locked) batch.Draw(_pixel, art, LockedWashColor * LockedWash);
+        if (selected)
+            batch.Draw(_pixel, new Rectangle(art.Left, art.Bottom + Math.Max(2, (int)(3 * s)), art.Width,
+                Math.Max(2, (int)(4 * s))), locked ? muted : look.Accent);
+        DrawMissionBadge(batch, art, state, pad);
+    }
+
+    /// <summary>
+    /// The phone mission sheet: the chapter detail pane's cut-paper stack, one artwork strip,
+    /// the vow stamp, the story, the encounter cost, the reward seal and one action ticket.
+    /// </summary>
+    public void DrawMissionSheet(SpriteBatch batch, CampaignMissionLayout layout, CampaignRouteDetails detail,
+        float hover, float press, ChapterStyle? style = null)
+    {
+        var look = style ?? ChapterStyle.Default;
+        var state = detail.Locked ? CampaignMissionState.Locked
+            : detail.Completed ? CampaignMissionState.Cleared
+            : CampaignMissionState.Open;
+        Rectangle sheet = layout.Sheet;
+        var far = sheet; far.Offset((int)Math.Round(-10 * layout.Scale), (int)Math.Round(16 * layout.Scale));
+        var near = sheet; near.Offset((int)Math.Round(6 * layout.Scale), (int)Math.Round(8 * layout.Scale));
+        UIPaperFrame.Stack(batch, sheet, far, near, layout.Scale);
+
+        string eyebrow = detail.Side ? $"{detail.Id}   ·   SIDE CHAPTER" : detail.Id;
+        Text(batch, eyebrow, layout.Eyebrow, layout.LineHeight(UITextRole.Small),
+            detail.Side ? Lighten(look.Accent) : UITheme.InkMuted);
+        Text(batch, detail.Title, layout.Title, layout.LineHeight(UITextRole.Heading), UITheme.Ink, heading: true);
+        if (detail.Side)
+            batch.Draw(_pixel, new Rectangle(layout.Title.Left, layout.Title.Bottom,
+                (int)(150 * layout.Scale), Math.Max(2, (int)(4 * layout.Scale))), look.Accent);
+
+        DrawMissionArt(batch, layout.Art, detail.Id, detail.Title, detail.Chapter, look);
+        DrawDifficultyBadge(batch, layout.Art, layout.PixelsPerDp * .7f, look, detail.Tier, detail.Vows,
+            UITypography.Scale(_body, UITextRole.Caption, batch.GraphicsDevice.Viewport));
+        if (state == CampaignMissionState.Cleared)
+            DrawClearedStamp(batch, layout.Art, layout.PixelsPerDp);
+        batch.Draw(_pixel, new Rectangle(layout.Art.Left, layout.Story.Top - Math.Max(2, (int)(6 * layout.Scale)),
+            layout.Art.Width, 1), new Color(77, 94, 101) * .6f);
+
+        Paragraph(batch, detail.Story, layout.Story, layout.LineHeight(UITextRole.Body));
+        Text(batch, MetricText(detail.EnemyCount, detail.SkillBudget), layout.Metric,
+            layout.LineHeight(UITextRole.Caption), UITheme.Ink);
+        Text(batch, "REWARD", layout.RewardLabel, layout.LineHeight(UITextRole.Small), UITheme.InkMuted);
+        if (detail.RewardSkill is SkillType reward)
+        {
+            Rectangle seal = layout.RewardIcon;
+            UIPaperFrame.Draw(batch, seal, new Color(242, 195, 117), UIPaperFrameShape.Seal, 2 * layout.Scale);
+            seal.Inflate(-(int)(seal.Width * .2f), -(int)(seal.Height * .26f));
+            if (reward == SkillType.DoubleAttack)
+                UIPaperFrame.Draw(batch, seal, UIPaper.Ink, UIPaperFrameShape.Bolt, 0);
+            else UISkillArt.Draw(batch, reward, seal, UIPaper.Ink);
+        }
+        Text(batch, detail.Reward, layout.RewardText, layout.LineHeight(UITextRole.Caption), UITheme.AccentYellow);
+        ActionTicket(batch, layout.Action, CampaignMissionList.ActionLabel(state), hover, press,
+            state != CampaignMissionState.Locked, layout.LineHeight(UITextRole.Name), layout.Scale);
+    }
+
+    /// <summary>Mission artwork: the node's own plate when it has one, else the chapter's plate.</summary>
+    private void DrawMissionArt(SpriteBatch batch, Rectangle area, string id, string name, string chapter,
+        ChapterStyle look)
+    {
+        if (UIPaper.CampaignNodeArtworkIndex(id) < 0 && !string.IsNullOrWhiteSpace(look.ArtKey))
+            UIPaper.ChapterLocation(batch, area, look.ArtKey);
+        else
+            UIPaper.CampaignNodeLocation(batch, area, id, name, chapter);
+    }
+
+    private void DrawMissionBadge(SpriteBatch batch, Rectangle art, CampaignMissionState state, int pad)
+    {
+        if (state == CampaignMissionState.Open) return;
+        string label = CampaignMissionList.BadgeLabel(state, 0);
+        float typeScale = UITypography.Scale(_body, UITextRole.Caption, batch.GraphicsDevice.Viewport);
+        Vector2 size = _body.MeasureString(UIFontGuard.Sanitize(_body, label)) * typeScale;
+        int icon = Math.Max(18, (int)Math.Round(size.Y));
+        int gap = Math.Max(6, icon / 3);
+        int height = icon + gap;
+        int width = (int)Math.Round(size.X) + icon + gap * 3;
+        var badge = new Rectangle(art.Right - width - pad / 2, art.Bottom - height - pad / 2, width, height);
+        batch.Draw(_pixel, badge, new Color(15, 29, 39) * .88f);
+        var mark = new Rectangle(badge.Left + gap, badge.Center.Y - icon / 2, icon, icon);
+        if (state == CampaignMissionState.Locked)
+            UISkillSymbols.Status(batch, _pixel, mark, CampaignSkillAvailability.Locked, UITheme.Ink);
+        else
+            UIPaper.Checkmark(batch, mark, UITheme.Ink);
+        UITextRenderer.DrawString(batch, _body, UIFontGuard.Sanitize(_body, label),
+            new Vector2(mark.Right + gap, badge.Center.Y - size.Y / 2), UITheme.Ink, scale: typeScale);
+    }
+
+    /// <summary>A cleared mission is stamped once on its artwork, above the vow strip.</summary>
+    private void DrawClearedStamp(SpriteBatch batch, Rectangle art, float pixelsPerDp)
+    {
+        const string label = "CLEARED";
+        float typeScale = UITypography.Scale(_body, UITextRole.Caption, batch.GraphicsDevice.Viewport);
+        Vector2 size = _body.MeasureString(UIFontGuard.Sanitize(_body, label)) * typeScale;
+        int icon = Math.Max(18, (int)Math.Round(size.Y));
+        int gap = Math.Max(6, icon / 3);
+        int inset = Math.Max(8, (int)Math.Round(8 * pixelsPerDp));
+        int width = (int)Math.Round(size.X) + icon + gap * 3;
+        int height = icon + gap;
+        var stamp = new Rectangle(art.Right - width - inset, art.Top + inset, width, height);
+        batch.Draw(_pixel, stamp, new Color(12, 27, 37) * .86f);
+        var mark = new Rectangle(stamp.Left + gap, stamp.Center.Y - icon / 2, icon, icon);
+        UIPaper.Checkmark(batch, mark, UIPaper.Face);
+        UITextRenderer.DrawString(batch, _body, UIFontGuard.Sanitize(_body, label),
+            new Vector2(mark.Right + gap, stamp.Center.Y - size.Y / 2), UIPaper.Face, scale: typeScale);
     }
 
     /// <summary>Difficulty diamonds and vows, printed on a dark strip over the location art.</summary>
-    private void DrawDifficultyBadge(SpriteBatch batch, Rectangle image, float s, ChapterStyle look,
-        int tier, IReadOnlyList<CampaignVow>? vows)
+    private void DrawDifficultyBadge(SpriteBatch batch, Rectangle image, float markScale, ChapterStyle look,
+        int tier, IReadOnlyList<CampaignVow>? vows, float typeScale = 0f)
     {
         int pips = tier is >= 1 and <= 4 ? tier : 0;
         string vowText = vows is { Count: > 0 } ? "VOW " + CampaignVows.Labels(vows) : "";
         if (pips == 0 && vowText.Length == 0) return;
         if (image.Width < 40) return;
 
-        float scale = MathHelper.Clamp(s * .62f, .4f, 1.1f);
+        float s = markScale;
+        float scale = typeScale > 0f ? typeScale : s * .62f;
         string safe = UIFontGuard.Sanitize(_body, vowText);
         Vector2 textSize = safe.Length == 0 ? Vector2.Zero : _body.MeasureString(safe) * scale;
         float pipRadius = Math.Max(2.5f, 4.5f * s);

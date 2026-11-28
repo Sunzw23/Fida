@@ -50,14 +50,25 @@ public sealed class UICampaignPartyStrip : UIControl
     /// <summary>Co-op hides the choice, so the strip says who actually joins instead.</summary>
     public string StatusOverride { get; set; } = "";
 
-    public Rectangle BarBounds => new SkillSelectionLayout(
-        _device.Viewport.Width, _device.Viewport.Height).Party;
+    public Rectangle BarBounds => Layout().Party;
 
     public IReadOnlyList<CampaignCompanion> Party => _party;
 
     public override Rectangle? GetScreenBounds(Viewport viewport) => IsVisible
         ? new SkillSelectionLayout(viewport.Width, viewport.Height).Party
         : null;
+
+    /// <summary>Same inset-aware geometry as the loadout grid, so the band lands in its slot.</summary>
+    private SkillSelectionLayout Layout()
+    {
+        Viewport viewport = _device.Viewport;
+        int bottomInset = 0;
+#if FIDA_ANDROID
+        Rectangle safe = UIMobileSafeArea.Get(viewport);
+        bottomInset = Math.Max(0, viewport.Height - safe.Bottom);
+#endif
+        return new SkillSelectionLayout(viewport.Width, viewport.Height, null, null, bottomInset);
+    }
 
     public void SetParty(IEnumerable<string>? companionIds)
     {
@@ -133,23 +144,28 @@ public sealed class UICampaignPartyStrip : UIControl
 
         // The whole ticket is the "change party" affordance, so it carries the hover/press.
         Surface(batch, bar, UIPaper.Face, true, 7);
-        var labelArea = new Rectangle(bar.Left + pad, bar.Top + pad,
-            Math.Max(1, LabelWidth(bar, scale)), Math.Max(1, bar.Height - pad * 2));
-        Text(batch, _captionFont, "PARTY", labelArea, UIPaper.MutedInk, true);
-        var counterArea = new Rectangle(labelArea.Right, labelArea.Top,
-            Math.Max(1, (int)(80 * scale)), labelArea.Height);
-        Text(batch, _captionFont, $"{_party.Count} / {_partyLimit}",
-            counterArea, UIPaper.MutedInk, true);
-        int divider = counterArea.Right + pad / 2;
+        // Party slots are diamonds, not "PARTY 1 / 2": one mark per slot, filled for each
+        // companion already invited. Names follow, and the swap mark closes the ticket.
+        float slot = Math.Max(7f, 10f * scale);
+        float slotStep = slot * 2.2f;
+        int slotsLeft = bar.Left + pad;
+        for (int i = 0; i < Math.Max(1, _partyLimit); i++)
+            Diamond(batch, new Vector2(slotsLeft + slot * .7f + i * slotStep, bar.Center.Y), slot,
+                i < _party.Count ? UIPaper.MutedInk : UIPaper.MutedInk * .35f);
+        int divider = slotsLeft + (int)(slotStep * Math.Max(1, _partyLimit)) + pad / 2;
         batch.Draw(_pixel, new Rectangle(divider, bar.Top + pad, 1, Math.Max(1, bar.Height - pad * 2)),
             UITheme.Line * 0.7f);
 
         int right = bar.Right - pad;
-        string status = string.IsNullOrWhiteSpace(StatusOverride) ? "CHANGE" : StatusOverride;
-        int statusWidth = Math.Min((int)(260 * scale), Math.Max(1, right - divider - gutter));
+        bool customStatus = !string.IsNullOrWhiteSpace(StatusOverride);
+        // The default affordance is a two-way swap mark; a co-op status keeps its words.
+        int statusWidth = customStatus
+            ? Math.Min((int)(260 * scale), Math.Max(1, right - divider - gutter))
+            : Math.Min((int)(72 * scale), Math.Max(1, right - divider - gutter));
         var changeArea = new Rectangle(right - statusWidth, bar.Center.Y - gutter / 2,
             statusWidth, gutter * 2 > bar.Height - pad * 2 ? Math.Max(1, bar.Height - pad * 2) : gutter * 2);
-        Text(batch, _captionFont, status, changeArea, UIPaper.MutedInk);
+        if (customStatus) Text(batch, _captionFont, StatusOverride, changeArea, UIPaper.MutedInk);
+        else Swap(batch, changeArea, UIPaper.MutedInk);
 
         int x = divider + gutter;
         int limit = changeArea.Left - gutter;
@@ -157,13 +173,14 @@ public sealed class UICampaignPartyStrip : UIControl
         int top = bar.Center.Y - height / 2;
         if (_party.Count == 0)
         {
-            Text(batch, _font, "No companion joins this battle", new Rectangle(x, top,
+            Text(batch, _font, "Traveling alone", new Rectangle(x, top,
                 Math.Max(1, limit - x), height), UIPaper.Ink, true);
         }
         foreach (var companion in _party)
         {
             if (_party.Count > 0 && x + gutter >= limit) break;
-            string label = $"{companion.Name}  ·  HP {companion.Health}";
+            // The strip names who comes; health and the party limit live on the roster screen.
+            string label = companion.Name;
             float measured = _captionFont.MeasureString(UIFontGuard.Sanitize(_captionFont, label)).X;
             float textScale = Math.Min(1f, Math.Max(1, height) * 0.45f / Math.Max(1f, _captionFont.LineSpacing));
             int width = Math.Clamp((int)(measured * textScale) + gutter + pad * 3,
@@ -182,8 +199,38 @@ public sealed class UICampaignPartyStrip : UIControl
         }
     }
 
-    private void Surface(SpriteBatch batch, Rectangle bounds, Color color, bool enabled, int cut)
+    /// <summary>Two opposing arrows: tapping the strip reopens the roster screen.</summary>
+    private void Swap(SpriteBatch batch, Rectangle area, Color color)
     {
+        Vector2 center = area.Center.ToVector2();
+        int arm = Math.Max(6, Math.Min(area.Width, area.Height) / 3);
+        int thickness = Math.Max(2, arm / 4);
+        float offset = arm * .45f;
+        Vector2 topLeft = new(center.X - arm, center.Y - offset);
+        Vector2 topRight = new(center.X + arm, center.Y - offset);
+        Line(batch, topLeft, topRight, color, thickness);
+        Line(batch, new Vector2(topRight.X - arm * .45f, topRight.Y - arm * .35f), topRight, color, thickness);
+        Line(batch, new Vector2(topRight.X - arm * .45f, topRight.Y + arm * .35f), topRight, color, thickness);
+        Vector2 bottomRight = new(center.X + arm, center.Y + offset);
+        Vector2 bottomLeft = new(center.X - arm, center.Y + offset);
+        Line(batch, bottomRight, bottomLeft, color, thickness);
+        Line(batch, new Vector2(bottomLeft.X + arm * .45f, bottomLeft.Y - arm * .35f), bottomLeft, color, thickness);
+        Line(batch, new Vector2(bottomLeft.X + arm * .45f, bottomLeft.Y + arm * .35f), bottomLeft, color, thickness);
+    }
+
+    private void Line(SpriteBatch batch, Vector2 start, Vector2 end, Color color, float thickness)
+    {
+        Vector2 delta = end - start;
+        if (delta.LengthSquared() < .01f) return;
+        batch.Draw(_pixel, start, null, color, MathF.Atan2(delta.Y, delta.X), new Vector2(0f, .5f),
+            new Vector2(delta.Length(), Math.Max(1f, thickness)), SpriteEffects.None, 0f);
+    }
+
+    private void Diamond(SpriteBatch batch, Vector2 center, float size, Color color) =>
+        batch.Draw(_pixel, center, null, color, MathHelper.PiOver4, new Vector2(.5f, .5f),
+            new Vector2(size, size), SpriteEffects.None, 0f);
+
+    private void Surface(SpriteBatch batch, Rectangle bounds, Color color, bool enabled, int cut)    {
         if (_motion.TryGetValue(bounds, out var state))
             UIPaper.Button(batch, bounds, color, state.Hover, state.Press, enabled && !InputBlocked, cut: cut);
         else

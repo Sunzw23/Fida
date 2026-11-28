@@ -54,6 +54,12 @@ public static class UISkillArt
                 Crest(); Cut(22,32, 78,32, 78,44, 50,66, 22,44); break;
             case SkillType.DoubleDefence:
                 Crest(); Cut(14,50, 86,50, 86,58, 14,58); break;
+            // A cracked crest with the piece that flew off: the shield breaks into a number.
+            case SkillType.Shatter:
+                Fill(10,14, 82,14, 82,56, 46,94, 10,56);
+                Cut(52,10, 58,42, 50,58, 60,88);
+                Fill(72,60, 94,66, 86,84, 68,76);
+                break;
             // A flat faceted block with two facet lines, not a crumpled outline.
             case SkillType.Shi:
                 Fill(24,78, 24,40, 50,16, 78,32, 76,72, 46,86);
@@ -73,6 +79,24 @@ public static class UISkillArt
             // Counter: damage returned along the same line.
             case SkillType.Mo:
                 Fill(8,50, 34,22, 34,42, 62,42, 62,28, 92,50, 62,72, 62,58, 34,58, 34,78);
+                break;
+            // A single barbed thorn: one point returned, not a whole strike.
+            case SkillType.Ci:
+                Fill(45,94, 55,94, 53,40, 50,14, 47,40);
+                Fill(20,62, 47,50, 47,60, 24,72);
+                Fill(53,50, 80,62, 76,72, 53,60);
+                break;
+            // A spike driven straight through a shield: the strike ignores the plate.
+            case SkillType.Po:
+                Fill(14,14, 86,14, 86,56, 50,94, 14,56);
+                Cut(41,6, 59,6, 59,74, 41,74);
+                Fill(45,2, 55,2, 53,56, 50,74, 47,56);
+                break;
+            // A ring with a solid core: the one number nothing can soften.
+            case SkillType.Zhen:
+                Fill(50,4, 88,50, 50,96, 12,50);
+                Cut(50,22, 76,50, 50,78, 24,50);
+                Fill(50,36, 64,50, 50,64, 36,50);
                 break;
             // Control: two number tiles for "both of your numbers".
             case SkillType.Tong:

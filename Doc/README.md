@@ -14,6 +14,8 @@
 | [CampaignExpansion.md](./CampaignExpansion.md) | 战役扩张设计：13 条支线章节与冷色配色、四档难度与誓约、20 个技能唯一来源（全部已落地） |
 | [CompanionSelectUI.md](./CompanionSelectUI.md) | 同伴名册界面：立绘名册、队伍条、输入与扩展方式 |
 | [CompanionAbilities.md](./CompanionAbilities.md) | 同伴能力：四人四种打法（自适应智能、双段攻击、条件免伤、召唤循环）与实现清单 |
+| [CombinationTable.md](./CombinationTable.md) | **草案**：数字组合表（第二张效果表）——彩蛋奖励的收集与替换系统、待定项与里程碑 |
+| [Achievements.md](./Achievements.md) | 成就系统：六条成就、效果表记录点、成就页与彩蛋解锁 |
 
 ## 项目简介
 

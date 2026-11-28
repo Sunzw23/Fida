@@ -1,6 +1,7 @@
 // UIManager.cs 文件
 #nullable enable
 using System.Collections.Generic;
+using System.Linq;
 using Fida.Logic;
 using Fida.Campaign;
 using Fida.UI.Campaign;
@@ -124,8 +125,13 @@ namespace Fida.UI
             _graphicsDevice.Clear(UITheme.BgTop);
             UIBatch.Begin(_spriteBatch, _uiRasterizerState);
             UITheme.DrawBackground(_spriteBatch, _resourceManager.Pixel, _graphicsDevice.Viewport, gameTime);
+#if !FIDA_ANDROID
+            // The illustrated battle art is desktop-only: on a portrait phone it
+            // competed with the cards instead of framing them, so Android keeps
+            // the plain paper theme background.
             foreach (var control in _uiControls)
                 if (control is UIPlayer) { UIPaper.BattleBackground(_spriteBatch, _graphicsDevice.Viewport); break; }
+#endif
             foreach (UIControl control in _uiControls)
             {
                 if (control.IsVisible) control.Draw(_spriteBatch, gameTime);
@@ -172,6 +178,7 @@ namespace Fida.UI
             {
                 if (blocked && control is UICampaignMap map) { map.SynchronizeInput(); continue; }
                 if (blocked && control is UIRoomCodeInput code) { code.SynchronizeInput(); continue; }
+                if (blocked && control is UIAddressField address) { address.SynchronizeInput(); continue; }
                 if (blocked && control is UICampaignSkillWheel wheel)
                 {
                     bool previous = wheel.InputBlocked;
@@ -215,12 +222,16 @@ namespace Fida.UI
             foreach(var control in _uiControls) if(control is UIPaperPause pause) pause.Backdrop=_pausedBattleFrame;
         }
         public void BuildSettingsScreen() => _screenBuilder.BuildSettingsScreen();
-        public void BuildRulesScreen(int page = 0, int indexPage = 0) =>
-            _screenBuilder.BuildRulesScreen(page, indexPage);
+        public void BuildRulesScreen(int page = 0, int indexPage = 0, bool marginsEditable = true,
+            int marginDigitA = 1, int marginDigitB = 7) =>
+            _screenBuilder.BuildRulesScreen(page, indexPage, marginsEditable, marginDigitA, marginDigitB);
+        public void BuildAchievementsScreen(int page = 0) =>
+            _screenBuilder.BuildAchievementsScreen(page);
         public void BuildOnlineMenu(bool connected = false, bool isHost = false,
-            string detailLabel = "Server", string detailValue = "") =>
-            _screenBuilder.BuildOnlineMenu(connected, isHost, detailLabel, detailValue);
-        public void BuildHostingScreen(string statusText, string roomCode = "") => _screenBuilder.BuildHostingScreen(statusText, roomCode);
+            string detailLabel = "Server", string detailValue = "", bool direct = false) =>
+            _screenBuilder.BuildOnlineMenu(connected, isHost, detailLabel, detailValue, direct);
+        public void BuildHostingScreen(string statusText, string roomCode = "", bool direct = false) =>
+            _screenBuilder.BuildHostingScreen(statusText, roomCode, direct);
         public void BuildConnectingScreen(string statusText) => _screenBuilder.BuildConnectingScreen(statusText);
         public void BuildOnlineLobby(bool isHost) => _screenBuilder.BuildOnlineLobby(isHost);
         public void BuildDuelDraft() => _screenBuilder.BuildDuelDraft();
@@ -312,7 +323,9 @@ namespace Fida.UI
         {
             if (IsPageTransitionActive) return;
             var mouseState = UIPointer.GetState();
-            foreach (UIControl control in _uiControls)
+            // Snapshot: a control's Update may rebuild the screen (a page that edits itself),
+            // and mutating the list while enumerating throws.
+            foreach (UIControl control in _uiControls.ToList())
             {
                 control.Update(mouseState);
             }
@@ -372,6 +385,17 @@ namespace Fida.UI
             {
                 if (control is UIRoomCodeInput tb && tb.Name == name)
                     return tb;
+            }
+            return null;
+        }
+
+        /// <summary>根据名称查找直连地址输入框</summary>
+        public UIAddressField? GetAddressFieldByName(string name)
+        {
+            foreach (var control in _uiControls)
+            {
+                if (control is UIAddressField field && field.Name == name)
+                    return field;
             }
             return null;
         }

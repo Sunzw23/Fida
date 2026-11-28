@@ -85,6 +85,25 @@ public class SkillGridTests
         Assert.Equal(rightEdge,grid.Focused);
     }
 
+    [Fact]
+    public void PhoneFooterPlacesPartyAndStartSideBySide()
+    {
+        var layout = new SkillSelectionLayout(1080, 2400, null, null, 0, true);
+        Assert.False(layout.Party.IsEmpty);
+        Assert.True(layout.Footer.Contains(layout.Party));
+        Assert.True(layout.Footer.Contains(layout.Start));
+        Assert.False(layout.Party.Intersects(layout.Start));
+        Assert.False(layout.Details.Intersects(layout.Footer));
+    }
+
+    [Fact]
+    public void PhoneFooterWithoutPartyGivesStartTheWholeRow()
+    {
+        var layout = new SkillSelectionLayout(1080, 2400, null, null, 0, false);
+        Assert.True(layout.Party.IsEmpty);
+        Assert.Equal(layout.Footer, layout.Start);
+        Assert.False(layout.Details.Intersects(layout.Footer));
+    }
     [Theory]
     [InlineData(1920,1200)]
     [InlineData(1600,1000)]

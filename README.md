@@ -1,6 +1,6 @@
 # Fida
 
-一个基于数字组合的回合制策略对战游戏：每个玩家持有两个数字，按顺序行动——选择自己的一个数字，再选择自己或对手的另一个数字将其叠加，数字组合触发攻击/治疗/防御效果，17 种技能改变攻防格局，生命值恰好归零者出局。支持本地（对战 AI）与联机（直连 / relay 穿透 NAT）。
+一个基于数字组合的回合制策略对战游戏：每个玩家持有两个数字，按顺序行动——选择自己的一个数字，再选择自己或对手的另一个数字将其叠加，数字组合触发攻击/治疗/防御效果，17 种技能改变攻防格局，生命值恰好归零者出局。支持本地（对战 AI）与联机（局域网广播/直填地址，零服务器；relay 仅作 NAT 兜底）。
 
 ## 技术栈
 
@@ -10,7 +10,7 @@
 | 游戏框架 | MonoGame.Framework.DesktopGL 3.8.4 |
 | AI 决策 | 统一 value table 评分 + 规则引擎模拟，可调实力，无推理库依赖 |
 | 测试 | xUnit 2.7 |
-| 联机 | TCP 直连 + 纯字节 relay 桥接 |
+| 联机 | TCP 直连（局域网广播 + 地址直填，无需服务器）+ 纯字节 relay 兜底 |
 
 ## 构建与运行
 
@@ -107,21 +107,28 @@ Lightweight agents ready, strength 65, table True
 
 ### 服务器列表 `server.csv`
 
-4 列：`地址,端口,名称,类型`，`relay` 标志（不区分大小写）决定走直连还是 relay：
+4 列：`地址,端口,名称,类型`。`relay` 标志（不区分大小写）决定**整局**的配对方式，客户端恒取第一有效行：
 
 ```csv
-# 注释行以 # 开头
-175.27.254.213,8888,游戏服务器,relay
-::1,8888,本地测试服务器
+# 直连（默认）：不需要任何服务器
+::1,8888,Direct (LAN or typed address)
+# relay 兜底：取消注释即切换回房间码模式
+# 175.27.254.213,8888,游戏服务器,relay
 ```
 
-> 注意：客户端恒取**第一有效行**（`GetServerAddress()` / `GetServerPort()` / `GetServerIsRelay()` 均取 `_servers[0]`）。
+> 直连模式下地址列不参与配对，端口列只作为默认游戏端口；relay 模式下地址/端口是 relay 的入口。
 
-### 直连
+### 直连（默认，零服务器）
 
-主机开房间（`GameServer`），客机加入（`GameClient`），TCP 直连。要求双方网络可达（同局域网或主机有公网入口）。
+`Create game` 直接在所有网卡的 8888 端口监听（`::` 双栈，IPv4 与 IPv6 都能进），同时每秒向 8890/UDP 广播一次 `FIDA1|<端口>`：
 
-### Relay 模式（NAT 穿透，房间码）
+- **同一局域网**：客机点 `Join game`，地址框**留空** → 监听广播 3 秒，听到主机即自动连上，双方都不需要填地址。
+- **跨网络（公网 IPv6）**：主机界面大号显示 `192.168.1.7:8888`，下方列出 `LAN …` 与 `IPV6 [2408:…]:8888`；把它发给对手，客机填进地址框按 `Join game`。
+- **地址格式**：`192.168.1.7:8888`、`192.168.1.7`（用默认端口）、`[2408::1]:8888`、`2408::1`，也接受粘贴的 `fida://[…]`；不接受域名（传输层只拨 IP 字面量）。
+- 首次监听时 Windows 会弹一次防火墙授权，勾选「专用网络」即可；8890/UDP 只需在局域网内可达。
+- 双方都在 CGNAT（手机热点、校园网、部分移动宽带）后面时直连必然不通——这时才需要下面的 relay，或者用免费隧道把主机端口暴露出去。
+
+### Relay 模式（可选兜底，NAT 穿透，房间码）
 
 两个 NAT 后的玩家无法直连时，双方都**出站**连入公网 relay；relay 用 Go 实现（`relay/`），分配 4 位房间码做配对，握手完成后双向字节桥接，不解析游戏协议（零帧协议改动）：
 
@@ -171,6 +178,8 @@ sudo ufw allow 8888/tcp   # 云安全组也需放行
 ```
 
 单文件静态二进制，无运行时依赖（Go 标准库）。
+
+不想维护 VPS 时有两个免费替代：一是用免费隧道（如 [playit.gg](https://playit.gg/)）把主机的 8888 端口暴露成公网地址，客机把该地址填进直连地址框即可，连 `relay/` 都不用跑；二是把 `relay/` 丢进免费层的容器/虚拟机。两者都只在 CGNAT 场景才有必要。
 
 ### 消息类型（`NetworkMessage`）
 
@@ -225,11 +234,13 @@ Fida/
 │   ├── GameEvent.cs         事件载荷
 │   └── *PlayerController.cs 本地/AI/远程 控制器
 ├── Network/
-│   ├── NetworkManager.cs    网络门面（relay/直连 统一 API）
+│   ├── NetworkManager.cs    网络门面（直连/relay 统一 API）
 │   ├── NetworkMessage.cs    帧编解码 + MessageType
-│   ├── GameServer.cs        直连主机端
+│   ├── GameServer.cs        直连主机端（`::` 双栈监听）
 │   ├── GameClient.cs        客机端（直连 + relay）
 │   ├── GameRelayHost.cs     relay 主机端（出站连 relay）
+│   ├── LanDiscovery.cs      局域网广播发现（主机 beacon / 客机 browser，8890/UDP）
+│   ├── EndpointAddress.cs   直连地址解析（IPv4/IPv6 字面量 + 可选端口）
 │   └── ServerConfig.cs      server.csv 解析
 ├── States/                  菜单状态（IMenuState 实现）
 ├── UI/                      按钮/标签/焦点/动画
@@ -247,7 +258,7 @@ Fida/
 dotnet test
 ```
 
-覆盖：数字组合结算、技能触发、玩家/分组、`ChooseNumberIndex` 状态机、`server.csv` 解析、relay 房间码握手（好码/错码）、端到端 relay 桥接。
+覆盖：数字组合结算、技能触发、玩家/分组、`ChooseNumberIndex` 状态机、`server.csv` 解析、直连地址解析、局域网 beacon/browser、relay 房间码握手（好码/错码）、端到端 relay 桥接。
 
 ## 约定
 

@@ -24,7 +24,14 @@ does not rewrite campaign JSON or persistence.
   stay close to the sheet, following the earlier chapter browser's shallow style.
 - `UI/Campaign/CampaignRouteDiagram.cs`: Chapter I presentation positions, card
   width ratios and decorative links. Other chapters retain their generated layout.
+- `UI/Campaign/CampaignMissionList.cs`: the phone mission rows (open / cleared /
+  locked) and the replay rule. A cleared mission keeps its row; a locked one prints
+  as grey stock instead of being dropped from the page.
+- `UI/Campaign/CampaignMissionLayout.cs`: the phone mission sheet geometry. Drawing
+  and hit testing share it, so the paper card and its ticket cannot drift apart.
 - `UI/Campaign/UICampaignMap.cs`: camera, selection, input and intent adapter.
+- `UI/Campaign/UICampaignRouteView.cs`: also draws the phone mission rows and sheet.
+  Both reuse the chapter sheet, difficulty strip, reward seal and action ticket.
 - `Content/paper/route_locations_concept.png`: four-cell, 2 x 2 scene atlas.
 
 The scene atlas is an image_gen reconstruction, not a pixel-identical extraction.

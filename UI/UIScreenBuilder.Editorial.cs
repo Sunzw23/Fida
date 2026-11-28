@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 
 namespace Fida.UI;
 
@@ -25,8 +25,8 @@ public partial class UIScreenBuilder
     {
         _uiControls.Add(new UIEditorialSurface(_resourceManager, UIEditorialScreen.Menu) { Name = "menu_art", Connected = connected });
         var items = connected
-            ? new[] { ("startGame", "Campaign"), ("duel", "Duel"), ("connectionSettings", "Connection"), ("rules", "Rules"), ("settings", "Settings"), ("disconnect", "Disconnect"), ("exit", "Exit") }
-            : new[] { ("startGame", "Campaign"), ("onlineMode", "Online"), ("rules", "Rules"), ("settings", "Settings"), ("exit", "Exit") };
+            ? new[] { ("startGame", "Campaign"), ("duel", "Duel"), ("connectionSettings", "Connection"), ("rules", "Rules"), ("achievements", "Achievements"), ("settings", "Settings"), ("disconnect", "Disconnect"), ("exit", "Exit") }
+            : new[] { ("startGame", "Campaign"), ("onlineMode", "Online"), ("rules", "Rules"), ("achievements", "Achievements"), ("settings", "Settings"), ("exit", "Exit") };
         for (int i = 0; i < items.Length; i++)
             EditorialButton(items[i].Item1, items[i].Item2, EditorialLayout.MenuButton(i, connected), primary: i == 0, left: true).MainMenuStyle = true;
         EditorialFocus();

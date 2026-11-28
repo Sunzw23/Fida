@@ -19,6 +19,13 @@ namespace Fida.UI.Campaign
         /// <summary>New grid presentation behind the established state-machine API.</summary>
         public UICampaignSkillGrid GridBrowser { get; private set; }
         public bool SelectionEnabled { get; set; } = true;
+        private bool _showParty = true;
+        /// <summary>Forwarded to the grid: false when the node has no companion step.</summary>
+        public bool ShowParty
+        {
+            get => _showParty;
+            set { _showParty = value; if (GridBrowser != null) GridBrowser.ShowParty = value; }
+        }
         private void SyncGrid()
         {
             GridBrowser.HeaderText = HeaderText;
@@ -60,8 +67,8 @@ namespace Fida.UI.Campaign
         private string _headerText;
         private string _statusText = "";
         private float _selectionReveal;
-        private string _availableActionText = "EQUIP SKILL";
-        private string _selectedActionText = "REMOVE SKILL";
+        private string _availableActionText = "EQUIP";
+        private string _selectedActionText = "REMOVE";
         private string _backActionText = "<";
         private string _startActionText;
 #if FIDA_ANDROID
@@ -123,7 +130,7 @@ namespace Fida.UI.Campaign
             SkillType? initial = selected.Count > 0 ? selected.First() : FindFirstAvailable(skills);
             _wheel = new SkillWheelModel(skills, initial);
             GridBrowser = new UICampaignSkillGrid(id, graphicsDevice, pixel, font, titleFont, node, progress,
-                selected, skills, captionFont, labelFont);
+                selected, skills, captionFont, labelFont) { ShowParty = _showParty };
         }
 
         public bool TryConsumeToggle(out SkillType skill)

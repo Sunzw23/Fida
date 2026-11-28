@@ -58,20 +58,31 @@ public sealed partial class UICampaignCompanionSelect : UIControl
         _node = node;
         _roster = roster ?? Array.Empty<CampaignCompanion>();
         _cards.AddRange(_roster.Select(companion => companion.Id));
-        HintText = PartyLimit <= 1 ? "ONE COMPANION" : $"UP TO {PartyLimit} COMPANIONS";
         Name = "companion_select";
     }
 
     /// <summary>Caption under the continue action, e.g. "Continue" or "Start battle".</summary>
     public string ContinueActionText { get; set; } = "CONTINUE";
     public string HeaderText { get; set; } = "Companions";
-    public string HintText { get; set; } = "";
-    /// <summary>Replaces the header hint while an online draft owns the ally slot.</summary>
+    /// <summary>Online draft status; the only header copy beside the title.</summary>
     public string StatusText { get; set; } = "";
     public bool InputBlocked { get; set; }
 
-    public CompanionSelectLayout Layout => new(_device.Viewport.Width, _device.Viewport.Height,
-        null, null, _cards.Count);
+    public CompanionSelectLayout Layout
+    {
+        get
+        {
+            var viewport = _device.Viewport;
+            int bottomInset = 0;
+#if FIDA_ANDROID
+            // The continue action used to sit under the system gesture bar.
+            Rectangle safe = UIMobileSafeArea.Get(viewport);
+            bottomInset = Math.Max(0, viewport.Height - safe.Bottom);
+#endif
+            return new CompanionSelectLayout(viewport.Width, viewport.Height,
+                null, null, _cards.Count, bottomInset);
+        }
+    }
     public IReadOnlyList<string> CardIds => _cards;
     public IReadOnlyList<string> SelectedIds => _selected;
     public string FocusedCardId => _cards.Count == 0 ? "" : _cards[Math.Clamp(_focus, 0, _cards.Count - 1)];
@@ -263,6 +274,12 @@ public sealed partial class UICampaignCompanionSelect : UIControl
         else if (target == "continue") _continueRequested = true;
         else if (target == "previous") ChangePage(-1, layout);
         else if (target == "next") ChangePage(1, layout);
+        else if (target.StartsWith("remove:", StringComparison.Ordinal))
+        {
+            string cardId = target["remove:".Length..];
+            FocusCard(cardId);
+            Toggle(cardId);
+        }
         else if (target.StartsWith("card:", StringComparison.Ordinal) &&
                  int.TryParse(target.AsSpan(5), out int index))
         {
@@ -270,12 +287,6 @@ public sealed partial class UICampaignCompanionSelect : UIControl
             if (index < 0 || index >= visible.Count) return;
             FocusCard(visible[index]);
             Toggle(visible[index]);
-        }
-        else if (target.StartsWith("remove:", StringComparison.Ordinal))
-        {
-            string cardId = target["remove:".Length..];
-            FocusCard(cardId);
-            Toggle(cardId);
         }
     }
 

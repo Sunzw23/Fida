@@ -12,10 +12,10 @@ screens share one Gum-authored header and back affordance.
 
 | Band | Desktop | Portrait |
 |---|---|---|
-| Roster | 4 columns × 2 rows, under the header | 2 columns × 2 rows |
-| Party bar | under the roster: `PARTY n / limit`, chips, pager | under the roster |
-| Detail sheet | right column: large art, name, stats, description, state | under the party bar: art left, text right |
-| Continue | right column, below the sheet | footer |
+| Roster | 4 columns × 2 rows, under the header | 2 columns × 2 rows, fills the space above the sheet |
+| Party bar | under the roster: `PARTY n / limit`, chips, pager | none: invited cards turn warm gold |
+| Detail sheet | right column: large art, name, stats, description, state | under the roster: compact horizontal card |
+| Continue | right column, below the sheet | footer, full width |
 
 A short roster keeps its cards large instead of leaving a hole: `CompanionSelectLayout`
 takes the card count, chooses 2 columns for one or two cards, and grows the used rows
@@ -26,18 +26,27 @@ the full grid.
 ## Cards
 
 `UICampaignCompanionSelect` draws exactly one paper card per roster entry: the screen shows
-companions, never a placeholder. A card carries art, the name, and one caption - `HP n`,
-`in the party`, or `party full`. The selected card carries a checkmark; the focused card
-carries the cyan outline and drives the detail sheet.
+companions, never a placeholder. A card carries art, the name and one caption, `HP n`.
+Invitation is a colour, not a separate summary row: an invited card turns warm gold and
+carries a check, while an inviteable card stays cream with a plus. The focused card keeps
+the cyan outline and drives the detail sheet. A full party dims the cards that can no
+longer be invited. The phone therefore has no party band or count; the cards above are
+the party. The desktop keeps its compact band under the roster for the chips and pager.
 
 "Travel alone" is a state, not a card: the party starts empty, clicking an invited card
-(or its chip in the party bar) dismisses that member, and the party bar then reads
-`0 / limit · Traveling alone`. That keeps the roster honest (every card is a person) while
-still allowing a solo battle.
+dismisses that member. On a phone the invited card itself is the state - gold face, check,
+dismiss on click - so there is no `PARTY 0 / limit` row to repeat it. The desktop band
+keeps the `PARTY n / limit` line and the removable chips.
 
 The detail sheet is the 立绘 showcase: `UICompanionArt` draws `artKey`/`artPath` art
 bottom-centred (cut-paper figures are cropped at the waist) or falls back to the shared
-roster atlas, so a companion with no dedicated asset still appears.
+roster atlas, so a companion with no dedicated asset still appears. On a phone the bust
+takes about a third of the sheet and the copy keeps the rest, instead of a full-height
+square that squeezed the text into a narrow column. The stats line carries the mechanical
+identity (`HP`, skills, `Gate ward`, `Ink Echo`); the description is flavour and is clamped
+to three lines on a phone (four on desktop), ending on a finished sentence or an ellipsis.
+The roster title stands alone; only an online draft adds a status line, so the party cap is
+not repeated in the header, the bar and the sheet at once.
 
 ## Input and contract
 

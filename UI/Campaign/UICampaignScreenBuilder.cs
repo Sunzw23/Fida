@@ -8,7 +8,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Fida.UI.Campaign
 {
-    /// <summary>战役专用页面构建器。页面布局依赖战役只读数据，不处理点击行为。</summary>
+    /// <summary>战役专用页面构建器。页面布局依赖战役只读数据，不处理点击行为。/summary>
     public sealed class UICampaignScreenBuilder
     {
         private readonly ResourceManager _resources;
@@ -56,13 +56,16 @@ namespace Fida.UI.Campaign
 #else
             CampaignSkillWheelOptions? options = null;
 #endif
+            bool hasCompanions = CampaignLoadout.HasCompanionChoices(node,
+                CampaignRuntime.GetProgress(online));
             _controls.Add(new UICampaignSkillWheel(0, _resources.GraphicsDevice, _resources.Pixel,
                 _resources.Font, _resources.TitleFont, node, CampaignRuntime.GetProgress(online),
                 GameSetup.SelectedLocalSkills, SkillFactory.SelectableSkills, options, _resources.CaptionFont, _resources.LabelFont)
             {
-                Name = "skill_wheel"
+                Name = "skill_wheel",
+                ShowParty = hasCompanions
             });
-            if (CampaignLoadout.HasCompanionChoices(node, CampaignRuntime.GetProgress(online)))
+            if (hasCompanions)
                 _controls.Add(new UICampaignPartyStrip(1, _resources.GraphicsDevice, _resources,
                     node, _resources.Font, _resources.CaptionFont,
                     CampaignCompanions.PartyLimitFor(node, CampaignRuntime.GetProgress(online)))

@@ -9,6 +9,9 @@ public sealed class UIEditorialLayout
 {
     public bool Portrait { get; }
     public float Scale { get; }
+    /// <summary>Viewport this layout was built for; type sizes are derived from it.</summary>
+    public int Width => _width;
+    public int Height => _height;
     private readonly Vector2 _offset;
     private readonly int _width, _height;
     public UIEditorialLayout(Viewport viewport) : this(viewport.Width, viewport.Height) { }

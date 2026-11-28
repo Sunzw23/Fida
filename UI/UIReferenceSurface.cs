@@ -12,6 +12,8 @@ public sealed class UIReferenceSurface : UIControl
     private readonly ResourceManager _resources;
     private readonly UIReferenceScreen _screen;
     public bool RoomCodeRequired { get; set; } = true;
+    /// <summary>Serverless session: the waiting screen shows an address instead of a room code.</summary>
+    public bool Direct { get; set; }
     /// <summary>Connected page: this player opened the session instead of joining it.</summary>
     public bool IsHost { get; set; }
     /// <summary>Connected page: caption for the endpoint row, "Room" for relay hosts.</summary>
@@ -30,15 +32,15 @@ public sealed class UIReferenceSurface : UIControl
         // Same layered backdrop as the menu, settings and lobby surfaces.
         UIPaper.Backdrop(batch, batch.GraphicsDevice.Viewport, time);
         UIPaper.Sheet(batch, p ? l.Rect(30, 30, 840, 135) : l.Rect(45, 30, 1830, 135), UITheme.Panel, 3, 9);
-        string title = _screen switch { UIReferenceScreen.Rules => "Rules", UIReferenceScreen.Hosting => "Create room", UIReferenceScreen.Connecting => "Connecting", UIReferenceScreen.Connection => "Connection", _ => "Online" };
+        string title = _screen switch { UIReferenceScreen.Rules => "Rules", UIReferenceScreen.Hosting => Direct ? "Create game" : "Create room", UIReferenceScreen.Connecting => "Connecting", UIReferenceScreen.Connection => "Connection", _ => "Online" };
         Text(batch, title, l.Header, 65);
         if (_screen == UIReferenceScreen.Online)
         {
             UIPaper.Sheet(batch, p ? l.Rect(50, 245, 800, 420) : l.Rect(110, 265, 780, 790), UITheme.Panel, 4, 9);
             UIPaper.Sheet(batch, p ? l.Rect(50, 755, 800, 650) : l.Rect(1030, 265, 780, 790), UITheme.Panel, 4, 9);
             Rule(batch, p ? l.Rect(80, 720, 740, 1) : l.Rect(960, 290, 1, 710));
-            Text(batch, "Create room", p ? l.Rect(80, 280, 740, 80) : l.Rect(150, 630, 700, 90), 42, true);
-            Paragraph(batch, "Start a session and share its code.", p ? l.Rect(80, 390, 740, 90) : l.Rect(260, 745, 480, 110));
+            Text(batch, Direct ? "Create game" : "Create room", p ? l.Rect(80, 280, 740, 80) : l.Rect(150, 630, 700, 90), 42, true);
+            Paragraph(batch, Direct ? "Start a session on this network." : "Start a session and share its code.", p ? l.Rect(80, 390, 740, 90) : l.Rect(260, 745, 480, 110));
             if (!p)
             {
                 // Two lobby identities, side by side. The previous version put both figures on a
@@ -56,12 +58,13 @@ public sealed class UIReferenceSurface : UIControl
                 batch.Draw(_resources.Pixel, l.Rect(487, 397, 26, 6), mark);
                 batch.Draw(_resources.Pixel, l.Rect(497, 387, 6, 26), mark);
             }
-            Text(batch, "Join room", p ? l.Rect(80, 790, 740, 80) : l.Rect(1070, 630, 700, 90), 42,true);
-            Paragraph(batch, RoomCodeRequired ? "Enter the code from your opponent." : "Connect to the configured server.",
+            Text(batch, Direct ? "Join game" : "Join room", p ? l.Rect(80, 790, 740, 80) : l.Rect(1070, 630, 700, 90), 42,true);
+            Paragraph(batch, RoomCodeRequired ? "Enter the code from your opponent." : "Type the host address, or leave it empty.",
                 p ? l.Rect(80, 900, 740, 80) : l.Rect(1180, 745, 480, 80));
             if (RoomCodeRequired)
                 Text(batch, "4 characters - letters or numbers", p ? l.Rect(80, 1170, 740, 65) : l.Rect(1070, 835, 700, 45), 26, true, muted: true);
-            else Text(batch, "Direct connection", layout.Code, 44, true);
+            else
+                Text(batch, "IP address, or blank to scan the network", p ? l.Rect(80, 1170, 740, 65) : l.Rect(1070, 835, 700, 45), 26, true, muted: true);
             return;
         }
         if (_screen == UIReferenceScreen.Connection)
@@ -96,8 +99,10 @@ public sealed class UIReferenceSurface : UIControl
         else if (_screen == UIReferenceScreen.Hosting)
         {
             UIPaper.Sheet(batch, p ? l.Rect(50, 260, 800, 1100) : l.Rect(220, 240, 1480, 820), UITheme.Panel, 4, 9);
-            Text(batch, "Room code", p ? l.Rect(80, 300, 740, 80) : l.Rect(600, 300, 720, 80), 38, true);
-            Text(batch,"Share this code to invite your opponent.",p ? l.Rect(80,960,740,100) : l.Rect(460,820,1000,60),30,true,muted:true);
+            Text(batch, Direct ? "Address" : "Room code", p ? l.Rect(80, 300, 740, 80) : l.Rect(600, 300, 720, 80), 38, true);
+            if (!Direct)
+                Text(batch, "Share this code to invite your opponent.",
+                    p ? l.Rect(80,960,740,100) : l.Rect(460,820,1000,60),30,true,muted:true);
         }
         else
         {
@@ -118,7 +123,21 @@ public sealed class UIReferenceSurface : UIControl
         var l = new UIEditorialLayout(batch.GraphicsDevice.Viewport);
         string safe = UIFontGuard.Sanitize(font, text);
         Vector2 size = font.MeasureString(safe);
-        float scale = UITextRenderer.FitScale(size, area.Width, area.Height, lineHeight * l.Scale / font.LineSpacing);
+#if FIDA_ANDROID
+        // The line height argument is a design size; the drawn size comes from the
+        // dp ramp, and the box grows to it instead of shrinking the type back down.
+        float lineBox = UITypography.LineHeight(UITypography.FromDesignPixels(lineHeight),
+            l.Width, l.Height);
+        float preferred = lineBox / font.LineSpacing;
+        if (lineBox > area.Height)
+        {
+            int grown = (int)System.Math.Ceiling(lineBox);
+            area = new Rectangle(area.X, area.Y - (grown - area.Height) / 2, area.Width, grown);
+        }
+#else
+        float preferred = lineHeight * l.Scale / font.LineSpacing;
+#endif
+        float scale = UITextRenderer.FitScale(size, area.Width, area.Height, preferred);
         Vector2 position = new(center ? area.Center.X - size.X * scale / 2 : area.Left, area.Center.Y - size.Y * scale / 2);
         Color ink = muted ? UITheme.InkMuted : UITheme.Ink;
         UITextRenderer.DrawString(batch, font, safe, position, color ?? ink, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
@@ -127,7 +146,12 @@ public sealed class UIReferenceSurface : UIControl
     {
         var font = _resources.CaptionFont;
         var l = new UIEditorialLayout(batch.GraphicsDevice.Viewport);
+#if FIDA_ANDROID
+        float scale = UITypography.LineHeight(UITypography.FromDesignPixels(lineHeight),
+            l.Width, l.Height) / font.LineSpacing;
+#else
         float scale = Math.Max(22, lineHeight * l.Scale) / font.LineSpacing;
+#endif
         string safe = UIFontGuard.Sanitize(font, text);
         var lines = UITextRenderer.WrapLines(safe, area.Width, value => font.MeasureString(value).X * scale);
         float row = font.LineSpacing * scale * 1.12f;

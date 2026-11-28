@@ -24,13 +24,30 @@ buttons; reduced motion stops numeric drift and portrait breathing.
 The desktop campaign browser keeps the original folder hierarchy, graph, camera
 and campaign unlock data. `CampaignMapLayout` reserves a persistent details pane
 beside the map, or below it in portrait windows. Clicking a mission only selects
-it; Configure skills (or Enter / controller A) confirms it. Locked missions can
+it; Begin mission (or Enter / controller A) confirms it. Locked missions can
 be inspected but cannot be entered, so their detail ticket is dimmed, reads
 "Locked" and carries the lock stamp instead of the action arrow. Folder actions
 open the selected chapter;
 Back returns through the hierarchy. Zoom and pan remain available. Node sizes
 are world units, avoiding a second viewport scale before the camera scales them.
-Android retains its touch-oriented mission list with simplified frames.
+
+Android prints the same browser on paper. The chapter page lists chapter cards and
+the mission page lists mission cards, both cut from the chapter stock with their own
+scene plate, a progress counter (`ROUTES 20 / 64` at the root, `MISSIONS 1 / 6` inside
+a chapter) and a printed state badge. Every mission keeps a row: clearing a mission no
+longer removes it from the page, so the cleared row (stamped `CLEARED`) stays the way
+back into that battle. A mission still closed by its parents prints as grey stock
+stamped `LOCKED` instead of disappearing, so the rest of the chapter stays readable.
+Tapping a row only inspects it; the row opens the mission sheet, which is the chapter
+detail pane's three-sheet stack with the mission artwork, the difficulty/vow strip, the
+story, `N enemies / N SP`, the reward seal and one action ticket (`Begin mission`,
+`Replay mission`, or a dimmed `Locked`). The ticket is the only start affordance.
+
+`UI/Campaign/CampaignMissionList.cs` owns the row states and the replay rule,
+`UI/Campaign/CampaignMissionLayout.cs` owns the sheet geometry, and
+`UI/Campaign/UICampaignRouteView.cs` draws both levels. A clear outranks the parent
+gate, and `GameSetup.SelectCampaignNode` accepts a cleared node, so a co-op clear that
+merged into a lane without its parents is still replayable.
 
 The main-menu numerals use a separately cached display-resolution mask of the
 existing numeral geometry; combat numerals retain their original atlas.
@@ -42,12 +59,19 @@ runner also exercises map inspect/confirm, locked mission rejection, locked
 chapter sheet colour, the locked detail ticket, cross-target mouse release and
 single-consumption of navigation events without modifying saves.
 
+The Android layout is previewed from the same source with `FIDA_ANDROID` defined.
+Its chapter pass also taps a mission row, draws the mission sheet, and asserts the
+cleared row's `Replay mission` ticket starts that node while the locked row's ticket
+never does:
+
 ```powershell
 dotnet test Fida.Tests/Fida.Tests.csproj -c UiReview --no-restore -m:1 -p:BuildInParallel=false
 dotnet build tools/UiPreview/UiPreview.csproj -c UiReview --no-restore -m:1 -p:BuildInParallel=false
 dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1600 1000 artifacts/editorial-ui --menus-only
 dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1280 720 artifacts/editorial-ui --menus-only
 dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 720 1280 artifacts/editorial-ui --menus-only
+dotnet build tools/UiPreview/UiPreview.csproj -c UiReview -p:DefineConstants=FIDA_ANDROID -p:SkipDotnetToolRestore=true -m:1
+dotnet tools/UiPreview/bin/UiReview/net8.0/UiPreview.dll 1080 2400 artifacts/android-paper --chapters-only --tolerant
 ```
 
 Screenshots include the normal and connected menus, settings, campaign chapters,

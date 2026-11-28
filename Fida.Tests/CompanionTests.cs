@@ -150,13 +150,18 @@ public class CompanionTests
         Assert.True(screen.Contains(layout.Roster));
         Assert.True(screen.Contains(layout.Details));
         Assert.True(screen.Contains(layout.Continue));
-        Assert.True(screen.Contains(layout.Party));
-        Assert.False(layout.Roster.Intersects(layout.Party));
         Assert.False(layout.Roster.Intersects(layout.Details));
-        Assert.False(layout.Party.Intersects(layout.Details));
         Assert.False(layout.Continue.Intersects(layout.Roster));
         Assert.False(layout.Continue.Intersects(layout.Details));
-        Assert.False(layout.Party.Intersects(layout.Back));
+        // The phone drops the party band and signals invitation with the card colour; the
+        // desktop keeps its band under the roster.
+        if (!layout.Portrait)
+        {
+            Assert.True(screen.Contains(layout.Party));
+            Assert.False(layout.Roster.Intersects(layout.Party));
+            Assert.False(layout.Party.Intersects(layout.Details));
+            Assert.False(layout.Party.Intersects(layout.Back));
+        }
 
         var cards = Enumerable.Range(0, layout.PageSize).Select(layout.Card).ToArray();
         Assert.Equal(layout.PageSize, cards.Length);

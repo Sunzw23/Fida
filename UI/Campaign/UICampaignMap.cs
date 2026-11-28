@@ -33,6 +33,12 @@ namespace Fida.UI.Campaign
         private IReadOnlyList<int> _visibleNodes = Array.Empty<int>();
         private readonly Dictionary<string, Vector2> _routePositions = new();
         private int _selectedFolder;
+        /// <summary>
+        /// Set by the Android list layout so chapter cards can hold an 18dp
+        /// equivalent title instead of inheriting the card-height ratio. Stays
+        /// zero on desktop, where each card sizes its own text from its height.
+        /// </summary>
+        private float _mobileTextScale = 0f;
 
         private MouseState _previousMouse;
         private KeyboardState _previousKeyboard;
@@ -67,12 +73,16 @@ namespace Fida.UI.Campaign
         }
 #if FIDA_ANDROID
         private readonly List<int> _mobileChoices = new();
+        /// <summary>Rows printed by the phone list; a cleared mission keeps its row so it can be replayed.</summary>
+        private IReadOnlyList<CampaignMissionEntry> _mobileEntries = Array.Empty<CampaignMissionEntry>();
         private readonly List<Rectangle> _mobileChoiceBounds = new();
         private Rectangle _mobileBackBounds;
-        private Rectangle _mobileModalBounds;
-        private Rectangle _mobileModalEnterBounds;
-        private Rectangle _mobileModalCloseBounds;
+        private CampaignMissionLayout? _mobileMissionLayout;
         private bool _mobileDetailsOpen;
+        private float _mobileScroll;
+        private float _mobileScrollMax;
+        private bool _mobileDragging;
+        private Rectangle _mobileListArea;
 #endif
 
         public float Zoom => _camera.Zoom;
@@ -81,6 +91,17 @@ namespace Fida.UI.Campaign
             : "";
         public string RemoteNodeId { get; set; } = "";
         public string RemoteStatusLabel { get; set; } = "";
+
+#if FIDA_ANDROID
+        /// <summary>Rows printed by the phone list, in screen order; previews tap these.</summary>
+        public IReadOnlyList<Rectangle> MobileRowBounds => _mobileChoiceBounds;
+        /// <summary>Mission rows with their printed state, in screen order.</summary>
+        public IReadOnlyList<CampaignMissionEntry> MobileRows => _mobileEntries;
+        public bool MobileDetailsOpen => _mobileDetailsOpen;
+        /// <summary>The mission sheet geometry, shared by drawing and hit testing.</summary>
+        public CampaignMissionLayout MissionSheet => _mobileMissionLayout ??=
+            new CampaignMissionLayout(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height);
+#endif
 
         public UICampaignMap(int id, GraphicsDevice graphicsDevice, Texture2D pixel,
             Texture2D antialiasedLine, SpriteFont font, SpriteFont titleFont,
@@ -311,66 +332,83 @@ namespace Fida.UI.Campaign
                 Math.Max(1, safe.Bottom - top - 8));
         }
 
+        /// <summary>
+        /// Portrait cards are sized from the viewport instead of being squeezed to
+        /// fit one screen: a title of about 18dp keeps the chapter list readable,
+        /// which no longer fits alongside every card, so the list scrolls.
+        /// </summary>
         private void LayoutMobile()
         {
             Rectangle panel = MobilePanel();
             _mobileChoiceBounds.Clear();
 
+            // Portrait cards size their type from the viewport instead of from the
+            // card height, so a short card cannot push titles below a readable
+            // size. A phone viewport is about 412dp wide, and the title face draws
+            // roughly 20px of ink at card scale 1, which calibrates the dp target
+            // against what actually renders; 16dp matches the main menu's labels.
+            const float titleInkAtScaleOne = 20f;
+            float pixelsPerDp = _graphicsDevice.Viewport.Width / 412f;
+            float titlePixels = 16f * pixelsPerDp;
+            _mobileTextScale = Math.Clamp(titlePixels / titleInkAtScaleOne, 0.9f, 2.6f);
+
+            // The chapter cards and the mission cards share one header strip; only the
+            // artwork band changes. Missions get a taller strip so their own scene plate
+            // reads as artwork instead of a hairline.
+            int header = (int)Math.Ceiling(33 * _mobileTextScale) + 14;
+            bool chapters = _folders.Count > 0;
+            int art = chapters ? Math.Clamp(panel.Width / 9, 84, 150)
+                : Math.Clamp(panel.Width / 5, 120, 210);
+            int cardHeight = header + art + 12;
+
             int cardTop = panel.Top + 102;
-            int footerHeight = 28;
             int gap = 12;
-            int available = Math.Max(1, panel.Bottom - cardTop - footerHeight);
-            int count = Math.Max(1, _folders.Count > 0 ? _folders.Count : _mobileChoices.Count);
-            int cardHeight = Math.Clamp(
-                (available - Math.Max(0, count - 1) * gap) / count, 94, 116);
+            int available = Math.Max(1, panel.Bottom - cardTop - 12);
+            int count = Math.Max(1, chapters ? _folders.Count : _mobileChoices.Count);
             int cardWidth = Math.Max(1, panel.Width - 40);
 
-            for (int i = 0; i < count && (_folders.Count > 0 || i < _mobileChoices.Count); i++)
+            float content = count * cardHeight + Math.Max(0, count - 1) * gap;
+            _mobileScrollMax = Math.Max(0f, content - available);
+            _mobileScroll = Math.Clamp(_mobileScroll, 0f, _mobileScrollMax);
+            _mobileListArea = new Rectangle(panel.Left, cardTop, panel.Width, available);
+
+            for (int i = 0; i < count && (chapters || i < _mobileChoices.Count); i++)
             {
                 _mobileChoiceBounds.Add(new Rectangle(panel.Left + 20,
-                    cardTop + i * (cardHeight + gap), cardWidth, cardHeight));
+                    cardTop + i * (cardHeight + gap) - (int)_mobileScroll, cardWidth, cardHeight));
             }
 
             Rectangle safe = UIMobileSafeArea.Get(_graphicsDevice.Viewport);
             _mobileBackBounds = new Rectangle(safe.Left + 8, safe.Top + 4, 64, 64);
-
-            int modalWidth = Math.Max(1, panel.Width - 48);
-            int modalHeight = Math.Min(620, Math.Max(1, panel.Height - 120));
-            _mobileModalBounds = new Rectangle(panel.Center.X - modalWidth / 2,
-                panel.Center.Y - modalHeight / 2, modalWidth, modalHeight);
-            _mobileModalCloseBounds = new Rectangle(_mobileModalBounds.Right - 80,
-                _mobileModalBounds.Top + 12, 68, 68);
-            _mobileModalEnterBounds = new Rectangle(_mobileModalBounds.Left + 28,
-                _mobileModalBounds.Bottom - 92, _mobileModalBounds.Width - 56, 64);
+            _mobileMissionLayout = new CampaignMissionLayout(_graphicsDevice.Viewport.Width,
+                _graphicsDevice.Viewport.Height);
         }
 
+        private void ScrollMobile(float delta)
+        {
+            _mobileScroll = Math.Clamp(_mobileScroll + delta, 0f, _mobileScrollMax);
+        }
+
+        /// <summary>
+        /// Every mission on the page keeps a row. Clearing a mission used to remove it from
+        /// the list, which hid the only way back into that battle; a locked mission now prints
+        /// as grey stock instead of disappearing, so the whole chapter stays legible.
+        /// </summary>
         private void RebuildMobileChoices()
         {
             _mobileChoices.Clear();
-            foreach (int i in _visibleNodes)
-            {
-                CampaignNode node = _nodes[i];
-                if (! _progress.IsCompleted(node.Id) && CampaignCatalog.IsUnlocked(_progress, node))
-                    _mobileChoices.Add(i);
-            }
+            _mobileEntries = CampaignMissionList.Build(_nodes, _visibleNodes, _progress);
+            foreach (var entry in _mobileEntries) _mobileChoices.Add(entry.Index);
+            int focus = CampaignMissionList.InitialFocus(_mobileEntries, _selectedIndex);
+            if (focus >= 0) _selectedIndex = focus;
+        }
 
-            // Once every open node is cleared, keep the browser useful with a small
-            // review list instead of showing the entire completed graph again.
-            if (_mobileChoices.Count == 0)
-            {
-                for (int j = _visibleNodes.Count - 1; j >= 0 && _mobileChoices.Count < 4; j--)
-                {
-                    int i = _visibleNodes[j];
-                    if (CampaignCatalog.IsUnlocked(_progress, _nodes[i]))
-                        _mobileChoices.Insert(0, i);
-                }
-            }
-
-            if (_mobileChoices.Count == 0 && _visibleNodes.Count > 0)
-                _mobileChoices.Add(_visibleNodes[0]);
-
-            if (_mobileChoices.Count > 0 && !_mobileChoices.Contains(_selectedIndex))
-                _selectedIndex = _mobileChoices[0];
+        /// <summary>Cleared and total missions of the page being browsed.</summary>
+        private (int Cleared, int Total) MobilePageProgress()
+        {
+            if (_scope.Count == 0) return (_progress.CompletedNodes.Count, _nodes.Count);
+            var descendants = CountedDescendants(_scope, _hierarchy.Descendants(_scope));
+            return (descendants.Count(index => _progress.IsCompleted(_nodes[index].Id)), descendants.Count);
         }
 
         private void DrawMobile(SpriteBatch spriteBatch, GameTime gameTime)
@@ -381,56 +419,56 @@ namespace Fida.UI.Campaign
             Rectangle safe = UIMobileSafeArea.Get(viewport);
             DrawCentered(spriteBatch, _titleFont, _scope.LastOrDefault() ?? "Campaign",
                 new Vector2(safe.Center.X, safe.Top + 32f), safe.Width - 150f,
-                0.60f, UITheme.Ink);
+                0.60f, UITheme.Ink, UITextRole.Heading);
             DrawBackIcon(spriteBatch, _mobileBackBounds);
             DrawRemotePresence(spriteBatch, panel);
 
-            spriteBatch.Draw(_pixel, panel, UITheme.Panel);
-            UIUtils.DrawRectangleOutlines(spriteBatch, panel, UITheme.Line, 1, _pixel);
-
-            int completed = _progress.CompletedNodes.Count;
-            DrawCentered(spriteBatch, _font, "ROUTES",
-                new Vector2(panel.Left + 86, panel.Top + 38), 120f,
-                0.56f, UITheme.GoldBright);
-            DrawCentered(spriteBatch, _font, $"{completed} / {_nodes.Count}",
-                new Vector2(panel.Right - 82, panel.Top + 38), 120f,
-                0.56f, UITheme.InkMuted);
+            // The list prints straight on the paper background, like the roster and loadout
+            // pages: chapter and mission cards carry their own cut sheets, so a flat panel
+            // behind them would read as a separate, non-paper table.
+            bool chapters = _folders.Count > 0;
+            var progress = MobilePageProgress();
+            // The counter always reports missions of the page being browsed; only the root
+            // page is the whole road, so it keeps the campaign-wide reading.
+            DrawCentered(spriteBatch, _font, _scope.Count == 0 ? "ROUTES" : "MISSIONS",
+                new Vector2(panel.Left + 86, panel.Top + 38), 160f,
+                0.56f, UITheme.GoldBright, UITextRole.Caption);
+            DrawCentered(spriteBatch, _font, $"{progress.Cleared} / {progress.Total}",
+                new Vector2(panel.Right - 82, panel.Top + 38), 140f,
+                0.56f, UITheme.InkMuted, UITextRole.Caption);
             Rectangle progressTrack = new(panel.Left + 30, panel.Top + 68,
                 Math.Max(1, panel.Width - 60), 5);
             spriteBatch.Draw(_pixel, progressTrack, UITheme.PanelDark);
-            float completion = _nodes.Count == 0 ? 0f :
-                MathHelper.Clamp(completed / (float)_nodes.Count, 0f, 1f);
+            float completion = progress.Total == 0 ? 0f :
+                MathHelper.Clamp(progress.Cleared / (float)progress.Total, 0f, 1f);
             spriteBatch.Draw(_pixel, new Rectangle(progressTrack.X, progressTrack.Y,
                 (int)(progressTrack.Width * completion), progressTrack.Height),
                 UITheme.AccentGreen);
+            spriteBatch.Draw(_pixel, new Rectangle(panel.Left + 30, panel.Top + 86,
+                Math.Max(1, panel.Width - 60), 1), UITheme.Line * 0.45f);
 
-            for (int i = 0; i < _mobileChoiceBounds.Count; i++)
+            // The list can be taller than the panel once cards keep a readable
+            // title, so clip it to its own area instead of painting over the
+            // header and the mission sheet.
+            using (UIBatchClip.Enter(spriteBatch, _mobileListArea))
             {
-                if (_folders.Count > 0)
+                for (int i = 0; i < _mobileChoiceBounds.Count; i++)
                 {
-                    DrawMobileFolder(spriteBatch, i);
-                    continue;
+                    if (chapters)
+                    {
+                        DrawMobileFolder(spriteBatch, i);
+                        continue;
+                    }
+                    if (i >= _mobileEntries.Count) continue;
+                    Rectangle bounds = _mobileChoiceBounds[i];
+                    if (!bounds.Intersects(_mobileListArea)) continue;
+                    CampaignMissionEntry entry = _mobileEntries[i];
+                    CampaignNode node = _nodes[entry.Index];
+                    var motion = ButtonMotion(bounds);
+                    _routeView.DrawMissionCard(spriteBatch, bounds, node.Id, node.Name, node.Chapter,
+                        entry.State, entry.Index == _selectedIndex, motion.Hover, motion.Press,
+                        ChapterStyle.For(node), _mobileTextScale);
                 }
-                CampaignNode node = _nodes[_mobileChoices[i]];
-                Rectangle bounds = _mobileChoiceBounds[i];
-                bool selected = _mobileChoices[i] == _selectedIndex;
-                bool completedNode = _progress.IsCompleted(node.Id);
-                Color background = selected ? UITheme.PanelPressed :
-                    completedNode ? UITheme.PanelDark : UITheme.PanelLight;
-                Color accent = completedNode ? UITheme.InkMuted : UITheme.RouteAccent(i);
-                Color border = selected ? UITheme.GoldBright : accent;
-                Color foreground = completedNode ? UITheme.InkMuted : UITheme.Ink;
-
-                spriteBatch.Draw(_pixel, bounds, background);
-                UIUtils.DrawRectangleOutlines(spriteBatch, bounds, border,
-                    selected ? 3 : 1, _pixel);
-                spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 6,
-                    bounds.Height), accent);
-                DrawCentered(spriteBatch, _font,
-                    $"{node.Id}  {node.Name}",
-                    new Vector2(bounds.Center.X - 8, bounds.Center.Y),
-                    bounds.Width - 92f, 0.78f, foreground);
-                DrawChevron(spriteBatch, new Vector2(bounds.Right - 34, bounds.Center.Y), accent);
             }
 
             CampaignNode? selectedNode = _selectedIndex >= 0 && _selectedIndex < _nodes.Count
@@ -445,114 +483,33 @@ namespace Fida.UI.Campaign
             DrawChapterCard(spriteBatch, bounds, index, index == _selectedFolder);
         }
 
-        private void DrawMobileButton(SpriteBatch spriteBatch, Rectangle bounds,
-            string text, bool enabled, Color accent)
-        {
-            DrawMapButton(spriteBatch, bounds, enabled ? UITheme.PanelLight : UITheme.PanelDark, enabled);
-            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(),
-                bounds.Width - 18f, 0.58f, enabled ? UITheme.Ink : UITheme.InkMuted);
-        }
-
         private void DrawBackIcon(SpriteBatch spriteBatch, Rectangle bounds)
         {
             DrawMapBack(spriteBatch, bounds);
         }
 
-        private void DrawChevron(SpriteBatch spriteBatch, Vector2 center, Color color)
-        {
-            DrawLine(spriteBatch, new Vector2(center.X - 6, center.Y - 11), center, color, 3);
-            DrawLine(spriteBatch, center, new Vector2(center.X - 6, center.Y + 11), color, 3);
-        }
-
-        private void DrawCloseIcon(SpriteBatch spriteBatch, Rectangle bounds)
-        {
-            var motion = ButtonMotion(bounds);
-            UIIconButton.DrawCloseButton(spriteBatch, _pixel, bounds, motion.Hover, motion.Press);
-        }
-
-        private void DrawMobileStructure(SpriteBatch spriteBatch, Rectangle panel)
-        {
-            int left = panel.Left + 16;
-            int right = panel.Right - 17;
-            int top = panel.Top + 124;
-            int bottom = panel.Bottom - 92;
-            spriteBatch.Draw(_pixel, new Rectangle(left, top, 1,
-                Math.Max(1, bottom - top)), UITheme.AccentBlue * 0.28f);
-            spriteBatch.Draw(_pixel, new Rectangle(right, top, 1,
-                Math.Max(1, bottom - top)), UITheme.AccentViolet * 0.28f);
-            for (int y = top + 36; y < bottom; y += 150)
-            {
-                spriteBatch.Draw(_pixel, new Rectangle(left - 3, y, 7, 7),
-                    UITheme.AccentBlue * 0.52f);
-                spriteBatch.Draw(_pixel, new Rectangle(right - 3, y + 48, 7, 7),
-                    UITheme.AccentGreen * 0.46f);
-            }
-        }
-
+        /// <summary>
+        /// The phone mission sheet replaces the old flat modal: the mission's own artwork,
+        /// vow stamp, story, cost and reward print on the same cut-paper stack as the
+        /// chapter detail pane, and the ticket offers the replay that the list kept a row for.
+        /// </summary>
         private void DrawMissionModal(SpriteBatch spriteBatch, Viewport viewport,
             CampaignNode node)
         {
+            CampaignMissionLayout layout = MissionSheet;
             spriteBatch.Draw(_pixel, new Rectangle(0, 0, viewport.Width, viewport.Height),
                 Color.Black * 0.72f);
-            Rectangle modal = _mobileModalBounds;
-            spriteBatch.Draw(_pixel, modal, UITheme.PanelDark);
-            UIUtils.DrawRectangleOutlines(spriteBatch, modal, UITheme.Line, 1, _pixel);
-            DrawCloseIcon(spriteBatch, _mobileModalCloseBounds);
-
-            DrawCentered(spriteBatch, _titleFont, $"{node.Id}  {node.Name}",
-                new Vector2(modal.Center.X, modal.Top + modal.Height * 0.20f),
-                modal.Width - 110, 0.70f, UITheme.Ink);
-            DrawCentered(spriteBatch, _font,
-                $"{node.SkillBudget} SP     /     {node.Enemies.Count} ENEMIES",
-                new Vector2(modal.Center.X, modal.Top + modal.Height * 0.43f),
-                modal.Width - 70, 0.65f, UITheme.GoldBright);
-            DrawCentered(spriteBatch, _font, $"REWARD  /  {node.RewardText}",
-                new Vector2(modal.Center.X, modal.Top + modal.Height * 0.64f),
-                modal.Width - 70, 0.65f, UITheme.AccentGreen);
-
-            bool enabled = CampaignCatalog.IsUnlocked(_progress, node);
-            DrawMobileButton(spriteBatch, _mobileModalEnterBounds,
-                enabled ? "Configure skills" : "Locked", enabled, UITheme.AccentGreen);
-            if (enabled)
-                DrawChevron(spriteBatch,
-                    new Vector2(_mobileModalEnterBounds.Right - 28,
-                        _mobileModalEnterBounds.Center.Y), UITheme.AccentGreen);
-        }
-
-        private void DrawDossierChip(SpriteBatch spriteBatch, Rectangle bounds,
-            string label, string value, Color accent)
-        {
-            spriteBatch.Draw(_pixel, bounds, UITheme.PanelLight);
-            UIUtils.DrawRectangleOutlines(spriteBatch, bounds, accent, 1, _pixel);
-            spriteBatch.Draw(_pixel, new Rectangle(bounds.Left, bounds.Top, 4,
-                bounds.Height), accent);
-            DrawCentered(spriteBatch, _font, label,
-                new Vector2(bounds.Center.X, bounds.Top + 17), bounds.Width - 14,
-                0.34f, UITheme.InkMuted);
-            DrawCentered(spriteBatch, _font, value,
-                new Vector2(bounds.Center.X, bounds.Top + 42), bounds.Width - 14,
-                0.48f, UITheme.Ink);
-        }
-
-        private string WrapText(string text, float maximumWidth, float scale, int maximumLines)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return "No mission briefing available.";
-            var lines = new List<string>();
-            string current = "";
-            foreach (string word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            {
-                string candidate = string.IsNullOrEmpty(current) ? word : current + " " + word;
-                if (_font.MeasureString(UIFontGuard.Sanitize(_font, candidate)).X * scale <= maximumWidth)
-                {
-                    current = candidate;
-                    continue;
-                }
-                if (!string.IsNullOrEmpty(current)) lines.Add(current);
-                current = word;
-                if (lines.Count == maximumLines - 1) break;
-            }
-            if (!string.IsNullOrEmpty(current) && lines.Count < maximumLines) lines.Add(current);
-            return string.Join("\n", lines);
+            CampaignMissionState state = CampaignMissionList.StateOf(_progress, node);
+            var details = new CampaignRouteDetails(node.Id, node.Name, node.Story, node.Enemies.Count,
+                node.SkillBudget, node.RewardText, node.Rewards.Count > 0 ? node.Rewards[0] : null,
+                node.Chapter, state == CampaignMissionState.Locked, node.Tier ?? 0, node.Vows,
+                CampaignChapters.IsSide(node), state == CampaignMissionState.Cleared);
+            var actionMotion = ButtonMotion(layout.Action, state != CampaignMissionState.Locked);
+            _routeView.DrawMissionSheet(spriteBatch, layout, details,
+                actionMotion.Hover, actionMotion.Press, ChapterStyle.For(node));
+            var closeMotion = ButtonMotion(layout.Close);
+            UIIconButton.DrawCloseButton(spriteBatch, _pixel, layout.Close,
+                closeMotion.Hover, closeMotion.Press);
         }
 
         private void UpdateMobileKeyboard(GameTime gameTime)
@@ -611,15 +568,39 @@ namespace Fida.UI.Campaign
             {
                 _pressPosition = position;
                 _pressedTarget = HitMobileTarget(position);
+                _mobileDragging = false;
             }
+            else if (mouse.LeftButton == ButtonState.Pressed && _pressedTarget.Length > 0)
+            {
+                // A drag scrubs the list; it must not also count as a tap when the
+                // finger lifts, so the press target is dropped once travel passes
+                // the slop distance. The sheet is modal, so it never scrubs the list
+                // that sits behind it.
+                if (!_mobileDetailsOpen && !_mobileDragging &&
+                    Math.Abs(position.Y - _pressPosition.Y) > 12)
+                {
+                    _mobileDragging = true;
+                    _pressedTarget = "";
+                }
+                if (_mobileDragging)
+                    ScrollMobile(_previousMouse.Y - position.Y);
+            }
+
+            int wheel = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
+            if (wheel != 0 && _mobileScrollMax > 0f)
+                ScrollMobile(-wheel / 4f);
 
             bool released = mouse.LeftButton == ButtonState.Released &&
                 _previousMouse.LeftButton == ButtonState.Pressed;
             if (released)
             {
-                string target = HitMobileTarget(position);
-                if (target == _pressedTarget) ActivateMobileTarget(target);
+                if (!_mobileDragging)
+                {
+                    string target = HitMobileTarget(position);
+                    if (target == _pressedTarget) ActivateMobileTarget(target);
+                }
                 _pressedTarget = "";
+                _mobileDragging = false;
             }
 
             _previousMouse = mouse;
@@ -638,11 +619,12 @@ namespace Fida.UI.Campaign
         {
             if (_mobileDetailsOpen)
             {
-                Rectangle closeTouch = _mobileModalCloseBounds;
+                CampaignMissionLayout layout = MissionSheet;
+                Rectangle closeTouch = layout.Close;
                 closeTouch.Inflate(10, 10);
                 if (closeTouch.Contains(point)) return "modal_close";
-                if (_mobileModalEnterBounds.Contains(point)) return "modal_enter";
-                return _mobileModalBounds.Contains(point) ? "" : "modal_close";
+                if (layout.Action.Contains(point)) return "modal_enter";
+                return layout.Sheet.Contains(point) ? "" : "modal_close";
             }
 
             Rectangle backTouch = _mobileBackBounds;
@@ -659,13 +641,15 @@ namespace Fida.UI.Campaign
             else if (target == "modal_close") _mobileDetailsOpen = false;
             else if (target == "back") GoBack();
             else if (target.StartsWith("node:", StringComparison.Ordinal) &&
-                int.TryParse(target.AsSpan(5), out int choice) &&
-                choice >= 0 && choice < _mobileChoiceBounds.Count)
+                int.TryParse(target.AsSpan(5), out int choice))
             {
-                if (_folders.Count > 0) EnterFolder(choice);
-                else
+                if (_folders.Count > 0)
                 {
-                    _selectedIndex = _mobileChoices[choice];
+                    if (choice >= 0 && choice < _folders.Count) EnterFolder(choice);
+                }
+                else if (choice >= 0 && choice < _mobileEntries.Count)
+                {
+                    _selectedIndex = _mobileEntries[choice].Index;
                     _mobileDetailsOpen = true;
                 }
             }
@@ -748,7 +732,7 @@ namespace Fida.UI.Campaign
             string node = string.IsNullOrWhiteSpace(RemoteNodeId) ? "—" : RemoteNodeId;
             string label = $"ALLY  ·  {RemoteStatusLabel.Replace("ALLY · ", "", StringComparison.OrdinalIgnoreCase)}  ·  {node}";
             DrawCentered(spriteBatch, _font, label, badge.Center.ToVector2(), badge.Width - 18,
-                mobile ? 0.42f : 0.37f, UITheme.AccentGreen);
+                mobile ? 0.42f : 0.37f, UITheme.AccentGreen, UITextRole.Small);
         }
 
         private void DrawFooter(SpriteBatch spriteBatch)
@@ -791,7 +775,7 @@ namespace Fida.UI.Campaign
 #endif
                     ),
 #if FIDA_ANDROID
-                    viewport.Width - 56f, 0.46f, UITheme.PanelLight);
+                    viewport.Width - 56f, 0.46f, UITheme.PanelLight, UITextRole.Caption);
 #else
                     viewport.Width - plus.Right - 80f, 0.40f, UITheme.Ink);
 #endif
@@ -845,21 +829,27 @@ namespace Fida.UI.Campaign
         private void DrawSmallButton(SpriteBatch spriteBatch, Rectangle bounds, string text)
         {
             DrawMapButton(spriteBatch, bounds, UITheme.PanelLight);
-            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12f, 0.44f, UITheme.Ink);
+            DrawCentered(spriteBatch, _font, text, bounds.Center.ToVector2(), bounds.Width - 12f, 0.44f, UITheme.Ink, UITextRole.Caption);
         }
 
         private void DrawCentered(SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 center,
-            float maximumWidth, float preferredScale, Color color)
+            float maximumWidth, float preferredScale, Color color, UITextRole role = UITextRole.Body)
         {
-            #if FIDA_ANDROID
-            // Mobile copy is deliberately shortened or wrapped; never trade
-            // legibility away just to squeeze an exceptional string onto one line.
-            const float floor = 0.30f;
-            #else
+#if FIDA_ANDROID
+            // The drawn size comes from the dp ramp; the authored sprite scale only
+            // describes the desktop layout these values were tuned against.
+            var viewport = _graphicsDevice.Viewport;
+            float scale = UITypography.LineHeight(role, viewport.Width, viewport.Height)
+                / Math.Max(1, font.LineSpacing);
+            // Copy is deliberately shortened or wrapped; never trade legibility
+            // away just to squeeze an exceptional string onto one line.
+            float floor = scale;
+#else
+            float scale = preferredScale;
             const float floor = 0.16f;
-            #endif
+#endif
             UIUtils.DrawCenteredFit(spriteBatch, font, text, center, maximumWidth,
-                preferredScale, color, floor);
+                scale, color, floor);
         }
 
         private void MoveSelection(Vector2 direction)
@@ -891,11 +881,9 @@ namespace Fida.UI.Campaign
             }
             if (_selectedIndex < 0 || _selectedIndex >= _nodes.Count) return;
             CampaignNode node = _nodes[_selectedIndex];
-#if FIDA_ANDROID
-            if (CampaignCatalog.IsUnlocked(_progress, node)) _pendingNodeId = node.Id;
-#else
-            if (CampaignCatalog.IsUnlocked(_progress, node)) _pendingNodeId = node.Id;
-#endif
+            // A cleared node is replayable even if this lane never recorded its parents.
+            if (_progress.IsCompleted(node.Id) || CampaignCatalog.IsUnlocked(_progress, node))
+                _pendingNodeId = node.Id;
         }
 
         private int HitNode(Point screenPoint)
@@ -980,6 +968,12 @@ namespace Fida.UI.Campaign
             if (index < 0 || index >= _folders.Count) return;
             _scope.Add(_folders[index]);
             _selectedFolder = 0;
+#if FIDA_ANDROID
+            // A new level starts at its own top and with no sheet left open.
+            _mobileDetailsOpen = false;
+            _mobileScroll = 0f;
+            _mobileDragging = false;
+#endif
             RefreshScope();
         }
 
@@ -1008,6 +1002,11 @@ namespace Fida.UI.Campaign
             if (_scope.Count == 0) { _backRequested = true; return; }
             string previous = _scope[^1];
             _scope.RemoveAt(_scope.Count - 1);
+#if FIDA_ANDROID
+            _mobileDetailsOpen = false;
+            _mobileScroll = 0f;
+            _mobileDragging = false;
+#endif
             RefreshScope();
             int restored = _folders.ToList().IndexOf(previous);
             if (restored >= 0) _selectedFolder = restored;

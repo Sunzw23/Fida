@@ -26,14 +26,17 @@ public sealed class SkillSelectionLayout
     public float Scale { get; }
 
     public SkillSelectionLayout(int width, int height)
-        : this(width, height, null, null) { }
+        : this(width, height, null, null, 0) { }
 
     /// <summary>
     /// <paramref name="header"/> and <paramref name="back"/> carry the route screen's Gum-authored
     /// header geometry so both screens stay aligned. Callers that only need the grid/detail geometry
     /// (layout checks) can supply it directly instead of loading the Gum project.
+    /// <paramref name="bottomInset"/> is the device's system-bar height, so the start action never
+    /// lands under the gesture bar.
     /// </summary>
-    public SkillSelectionLayout(int width, int height, Rectangle? header, Rectangle? back)
+    public SkillSelectionLayout(int width, int height, Rectangle? header, Rectangle? back,
+        int bottomInset = 0, bool hasParty = true)
     {
         Portrait = height > width;
         Scale = Portrait ? Math.Min(width / 1080f, height / 1920f) : UIDesktopLayout.Scale(width, height);
@@ -63,37 +66,71 @@ public sealed class SkillSelectionLayout
             Start = R(1260, 1040, 610, 90);
             Previous = R(480, 1070, 62, 48);
             Next = R(740, 1070, 62, 48);
+            return;
+        }
+
+        int pad = Math.Max(12, (int)(24 * Scale));
+        int headerHeight = Math.Max(94, (int)(132 * Scale));
+        int tabHeight = Math.Max(48, (int)(62 * Scale));
+        int pagerHeight = Math.Max(40, (int)(48 * Scale));
+        int safeBottom = Math.Max(pad * 2, height - Math.Max(0, bottomInset));
+        Panel = new Rectangle(pad, pad, width - pad * 2, Math.Max(1, safeBottom - pad * 2));
+        Back = new Rectangle(pad, pad, (int)(64 * Scale), (int)(64 * Scale));
+        Header = new Rectangle(Back.Right + pad, pad, Panel.Width - Back.Width - pad, headerHeight);
+        Tabs = new Rectangle(pad, pad + headerHeight + pad / 2, Panel.Width, tabHeight);
+        // The phone footer is one row: the party summary and the start ticket. The party
+        // ticket is the "change party" affordance; there is no separate back button.
+        int footerHeight = Math.Max(76, (int)(110 * Scale));
+        Footer = new Rectangle(pad, safeBottom - pad - footerHeight, Panel.Width, footerHeight);
+        if (hasParty)
+        {
+            int startWidth = Math.Max(210, (int)(Panel.Width * .36f));
+            Start = new Rectangle(Footer.Right - startWidth, Footer.Top, startWidth, footerHeight);
+            Party = new Rectangle(Footer.Left, Footer.Top,
+                Math.Max(1, Start.Left - pad / 2 - Footer.Left), footerHeight);
         }
         else
         {
-            int pad = Math.Max(12, (int)(24 * Scale));
-            int headerHeight = Math.Max(94, (int)(140 * Scale));
-            int tabHeight = Math.Max(48, (int)(70 * Scale));
-            int footerHeight = Math.Max(160, (int)(245 * Scale));
-            Panel = new Rectangle(pad, pad, width - pad * 2, height - pad * 2);
-            Back = new Rectangle(pad, pad, (int)(64 * Scale), (int)(64 * Scale));
-            Header = new Rectangle(Back.Right + pad, pad, Panel.Width - Back.Width - pad, headerHeight);
-            Tabs = new Rectangle(pad, pad + headerHeight, Panel.Width, tabHeight);
-            Grid = new Rectangle(pad, Tabs.Bottom + pad / 2, Panel.Width, (int)(height * 0.36f));
-            Previous = new Rectangle(width / 2 - (int)(130 * Scale), Grid.Bottom + pad / 2, (int)(60 * Scale), (int)(48 * Scale));
-            Next = new Rectangle(width / 2 + (int)(70 * Scale), Previous.Y, Previous.Width, Previous.Height);
-            Footer = new Rectangle(pad, height - pad - footerHeight, Panel.Width, footerHeight);
-            int partyHeight = Math.Max(64, (int)(120 * Scale));
-            Party = new Rectangle(pad, Previous.Bottom + pad / 2, Panel.Width, partyHeight);
-            Details = new Rectangle(pad, Party.Bottom + pad / 2, Panel.Width,
-                Math.Max(1, Footer.Top - Party.Bottom - pad * 2));
-            Action = new Rectangle(Details.Left + pad, Details.Bottom - (int)(70 * Scale) - pad,
-                Details.Width - pad * 2, (int)(70 * Scale));
-            Start = new Rectangle(pad, Footer.Bottom - (int)(80 * Scale), Panel.Width, (int)(80 * Scale));
-            Chips = new Rectangle(pad, Footer.Top + (int)(42 * Scale), Panel.Width, (int)(64 * Scale));
+            // No companion step: the start ticket owns the whole row.
+            Start = Footer;
+            Party = Rectangle.Empty;
         }
+        int chipsHeight = Math.Max(44, (int)(64 * Scale));
+        int detailsHeight = Math.Clamp((int)(width * 0.54f), 380, 560);
+        Details = new Rectangle(pad, Footer.Top - pad / 2 - detailsHeight, Panel.Width, detailsHeight);
+        int actionHeight = Math.Max(50, (int)(62 * Scale));
+        int actionWidth = Math.Max(150, (int)(190 * Scale));
+        // The equip ticket sits in the sheet header, so it no longer competes with the
+        // full-width start action at the foot of the page.
+        Action = new Rectangle(Details.Right - pad - actionWidth, Details.Top + pad,
+            actionWidth, actionHeight);
+        Chips = new Rectangle(Details.Left + pad, Details.Bottom - pad - chipsHeight,
+            Details.Width - pad * 2, chipsHeight);
+        Previous = new Rectangle(width / 2 - (int)(130 * Scale), Details.Top - pad / 2 - pagerHeight,
+            Math.Max(48, (int)(60 * Scale)), pagerHeight);
+        Next = new Rectangle(width / 2 + (int)(70 * Scale), Previous.Y, Previous.Width, Previous.Height);
+        int gridTop = Tabs.Bottom + pad / 2;
+        Grid = new Rectangle(pad, gridTop, Panel.Width, Math.Max(1, Previous.Top - pad / 2 - gridTop));
     }
-    public Rectangle Tile(int index)
+    /// <summary>Tile rectangle for a full page.</summary>
+    public Rectangle Tile(int index) => TileInPage(index, -1);
+
+    /// <summary>
+    /// Tile rectangle for a page-local index. <paramref name="count"/> is the number of
+    /// skills on the page; a partly filled page (a filtered category) centres its used rows
+    /// instead of hanging them from the top of the grid.
+    /// </summary>
+    public Rectangle TileInPage(int index, int count)
     {
         int gap = Math.Max(6, (int)(18 * Scale));
         int width = (Grid.Width - (Columns - 1) * gap) / Columns;
         int height = (Grid.Height - 2 * gap) / 3;
-        return new Rectangle(Grid.X + index % Columns * (width + gap), Grid.Y + index / Columns * (height + gap), width, height);
+        int items = count < 0 ? Columns * 3 : Math.Clamp(count, 1, Columns * 3);
+        int rows = (items + Columns - 1) / Columns;
+        int block = rows * height + Math.Max(0, rows - 1) * gap;
+        int top = Grid.Y + Math.Max(0, (Grid.Height - block) / 2);
+        return new Rectangle(Grid.X + index % Columns * (width + gap),
+            top + index / Columns * (height + gap), width, height);
     }
     public Rectangle Tab(int index) => new(Tabs.Left + index * Tabs.Width / 4, Tabs.Top, Tabs.Width / 4, Tabs.Height);
 }

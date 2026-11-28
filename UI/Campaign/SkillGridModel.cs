@@ -29,8 +29,8 @@ public sealed class SkillGridModel
     {
         if (skills == null) throw new ArgumentNullException(nameof(skills));
         SkillType[] order = { SkillType.PlusAttack,SkillType.DoubleAttack,SkillType.PlusDefence,SkillType.DoubleDefence,
-            SkillType.DoubleHealth,SkillType.TripleHealth,SkillType.Xue,SkillType.Shi,SkillType.Shen,SkillType.Xian,
-            SkillType.Long,SkillType.Bian,SkillType.Tong,SkillType.Mo,SkillType.Seng,SkillType.Dao,SkillType.Di,
+            SkillType.DoubleHealth,SkillType.TripleHealth,SkillType.Xue,SkillType.Shi,SkillType.Shatter,SkillType.Shen,SkillType.Xian,
+            SkillType.Long,SkillType.Bian,SkillType.Po,SkillType.Zhen,SkillType.Tong,SkillType.Mo,SkillType.Ci,SkillType.Seng,SkillType.Dao,SkillType.Di,
             SkillType.SuperGod,SkillType.SuperImmortal,SkillType.SuperEmperor };
         _all = skills.Distinct().OrderBy(skill => Array.IndexOf(order,skill) is int rank && rank>=0 ? rank : 1000+(int)skill).ToArray();
         _filtered = _all;
@@ -68,8 +68,8 @@ public sealed class SkillGridModel
     }
     public static SkillCategory CategoryOf(SkillType skill) => skill switch
     {
-        SkillType.PlusAttack or SkillType.DoubleAttack or SkillType.Bian or SkillType.Long => SkillCategory.Offense,
-        SkillType.PlusDefence or SkillType.DoubleDefence or SkillType.DoubleHealth or SkillType.TripleHealth or SkillType.Shi => SkillCategory.Defense,
+        SkillType.PlusAttack or SkillType.DoubleAttack or SkillType.Bian or SkillType.Long or SkillType.Po or SkillType.Zhen => SkillCategory.Offense,
+        SkillType.PlusDefence or SkillType.DoubleDefence or SkillType.DoubleHealth or SkillType.TripleHealth or SkillType.Shi or SkillType.Shatter => SkillCategory.Defense,
         _ => SkillCategory.Control
     };
 }

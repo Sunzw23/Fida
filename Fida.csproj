@@ -35,6 +35,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="Fida.ico" />
+    <!-- Content build outputs live under Content/bin; never publish them as loose files. -->
+    <None Remove="Content\bin\**" />
+    <None Remove="Content\obj\**" />
+    <Content Remove="Content\bin\**" />
+    <Content Remove="Content\obj\**" />
     <None Remove="FidaIcon.bmp" />
   </ItemGroup>
   <ItemGroup>

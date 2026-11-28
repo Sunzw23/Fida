@@ -76,7 +76,8 @@ public sealed partial class UICampaignMap
         var motion=ButtonMotion(bounds);
         bool locked=!descendants.Any(i=>CampaignCatalog.IsUnlocked(_progress,_nodes[i]));
         _routeView.DrawChapterCard(batch,bounds,FolderNumber(index, chapter),_folders[index],
-            cleared,descendants.Count, selected,locked,motion.Hover,motion.Press, ChapterStyle.ForPath(path));
+            cleared,descendants.Count, selected,locked,motion.Hover,motion.Press, ChapterStyle.ForPath(path),
+            _mobileTextScale);
     }
 
     private void DrawChapterPreview(SpriteBatch batch, IReadOnlyList<int> indices, Rectangle area, Color color)
