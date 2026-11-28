@@ -8,7 +8,7 @@ using Fida.Logic;
 namespace Fida.UI.Rules;
 
 /// <summary>Family reads as one word on the page; the order is the index order.</summary>
-public enum SkillFamily { Offense, Defense, Vitality, Counter, Control }
+public enum SkillFamily { Offense, Defense, Vitality, Counter, Control, Flaw }
 
 /// <summary>
 /// The single written source for a skill's codex page. One effect sentence, one worked example,
@@ -30,6 +30,12 @@ public static class SkillCodexText
                 "5 and 5 → 10 damage instead of 3"),
             [SkillType.Bian] = new(SkillFamily.Offense,
                 "When you commit an attack, set its damage to any value from 1 to 5.", "6 damage → 3"),
+            [SkillType.Po] = new(SkillFamily.Offense,
+                "Your attack lands through shields and ignores defense skills.",
+                "0 shield → the damage lands anyway"),
+            [SkillType.Zhen] = new(SkillFamily.Offense,
+                "Every attack you make is true damage.",
+                "5 damage → shield and defenses skipped"),
             [SkillType.PlusDefence] = new(SkillFamily.Defense,
                 "When you are hit, reduce the damage by 1, never below 1.", "5 damage → 4"),
             [SkillType.DoubleDefence] = new(SkillFamily.Defense,
@@ -37,6 +43,9 @@ public static class SkillCodexText
             [SkillType.Shi] = new(SkillFamily.Defense,
                 "After the first attack that hurts you in a turn, later attacks deal no damage.",
                 "First hit lands · second hit → 0"),
+            [SkillType.Shatter] = new(SkillFamily.Defense,
+                "When your shield breaks, set that number to anything from 1 to 9.",
+                "0 and 6 → 6 and 6 → 5 damage back"),
             [SkillType.DoubleHealth] = new(SkillFamily.Vitality,
                 "At battle start, double your maximum health and heal to it.", "11 HP → 22 HP"),
             [SkillType.TripleHealth] = new(SkillFamily.Vitality,
@@ -46,27 +55,37 @@ public static class SkillCodexText
             [SkillType.Mo] = new(SkillFamily.Counter,
                 "After you take damage, deal half of it, rounded up, as true damage to any target.",
                 "Take 3 → retaliate 2"),
+            [SkillType.Ci] = new(SkillFamily.Counter,
+                "After you take damage, deal 1 true damage to the attacker.",
+                "Take 3 → attacker loses 1"),
             [SkillType.Tong] = new(SkillFamily.Control,
                 "At turn start, take an extra number step and choose both of your numbers.",
                 "1 and 1 → choose any two"),
             [SkillType.Di] = new(SkillFamily.Control,
-                "At turn start, set one of your numbers to any value from 0 to 9.", "1 and 6 → 9 and 6"),
+                "At turn start, set one of your numbers to any value from 1 to 9.", "1 and 6 → 9 and 6"),
             [SkillType.Xian] = new(SkillFamily.Control,
-                "Once your attack is committed, set one number to any value from 0 to 9.", "2 and 5 → 2 and 0"),
+                "Once your attack is committed, set one number to any value from 1 to 9.", "2 and 5 → 2 and 1"),
             [SkillType.Shen] = new(SkillFamily.Control,
-                "After you take damage, set one of your numbers to any value from 0 to 9.", "4 and 7 → 9 and 7"),
+                "After you take damage, set one of your numbers to any value from 1 to 9.", "4 and 7 → 9 and 7"),
             [SkillType.Seng] = new(SkillFamily.Control,
                 "After you take damage, take one extra choose-and-add step.", "Extra step: 1 + 8 → 9"),
             [SkillType.Dao] = new(SkillFamily.Control,
                 "After your attack ends, take one extra choose-and-add step.", "Extra step: 2 + 6 → 8"),
             [SkillType.SuperGod] = new(SkillFamily.Control,
-                "After you take damage, set both of your numbers to any values from 0 to 9.",
+                "After you take damage, set both of your numbers to any values from 1 to 9.",
                 "2 and 8 → 7 and 7"),
             [SkillType.SuperImmortal] = new(SkillFamily.Control,
-                "Once your attack is committed, set both numbers to any values from 0 to 9.",
-                "2 and 8 → 0 and 5"),
+                "Once your attack is committed, set both numbers to any values from 1 to 9.",
+                "2 and 8 → 1 and 5"),
             [SkillType.SuperEmperor] = new(SkillFamily.Control,
-                "At turn start, set both numbers to any values from 0 to 9.", "2 and 8 → 0 and 5")
+                "At turn start, set both numbers to any values from 1 to 9.", "2 and 8 → 1 and 5"),
+            // Drawbacks: shown only if the card is ever unlocked; each returns budget.
+            [SkillType.HalfAttack] = new(SkillFamily.Flaw,
+                "Your attack damage is halved, rounded down.", "5 damage → 2 · 1 damage → 0"),
+            [SkillType.HalfHealth] = new(SkillFamily.Flaw,
+                "Your maximum health is halved.", "11 HP → 5 HP"),
+            [SkillType.Bleed] = new(SkillFamily.Flaw,
+                "At the start of each of your turns, lose 1 health.", "8 turns → 8 health lost")
         };
 
     public static Entry For(SkillType skill) =>
@@ -84,6 +103,7 @@ public static class SkillCodexText
         SkillFamily.Defense => "DEFENSE",
         SkillFamily.Vitality => "VITALITY",
         SkillFamily.Counter => "COUNTER",
+        SkillFamily.Flaw => "FLAW",
         _ => "CONTROL"
     };
 

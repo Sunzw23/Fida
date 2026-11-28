@@ -19,6 +19,12 @@ namespace Fida.Logic
         public int[]? Numbers { get; init; }
         public IEnumerator<Skill>? SkillEnumerator { get; set; }
         public bool OrderedAttackSkillsQueued { get; set; }
+        /// <summary>
+        /// Set by attack-time skills that make this strike bypass the target's shield and
+        /// <see cref="SkillTrigger.Defending"/> skills. It lives on the context, so it never
+        /// needs to be persisted or networked: one attack, one context.
+        /// </summary>
+        public bool Pierce { get; set; }
 
         public SkillContext(int sourcePlayerId)
         {
@@ -47,6 +53,7 @@ namespace Fida.Logic
                 Damage = this.Damage,
                 Healing = this.Healing,
                 SkillEnumerator = this.SkillEnumerator,
+                Pierce = this.Pierce,
             };
         }
 
@@ -93,7 +100,15 @@ namespace Fida.Logic
         SuperEmperor,
         Seng,
         Dao,
+        Ci,
+        Po,
+        Zhen,
+        Shatter,
 
+        // 反向技能（drawback）：只登记了名字与费用，尚未接入流程。
+        HalfAttack,
+        HalfHealth,
+        Bleed,
     }
 
     public enum SkillUsageLimit
@@ -161,7 +176,20 @@ namespace Fida.Logic
 
         public virtual bool CheckCondition(GameManager gameManager, Player player) => true;
 
-        public abstract GameState CreateState(GameManager gameManager, SkillContext context);
+        /// <summary>
+        /// True for passives that turn every attack their owner makes into true damage. Read by the
+        /// damage pipeline itself instead of a trigger, so such a skill needs no state: its
+        /// <see cref="CreateState"/> returns null and every dispatch site already skips that.
+        /// </summary>
+        public virtual bool MakesAttacksTrue => false;
+
+        /// <summary>
+        /// True for passives that let their owner choose the number a broken shield leaves behind
+        /// instead of always dropping to 1. Read by the shield stage, so no state is needed.
+        /// </summary>
+        public virtual bool ReforgesBrokenShield => false;
+
+        public abstract GameState? CreateState(GameManager gameManager, SkillContext context);
 
     }
 }

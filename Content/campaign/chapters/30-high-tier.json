@@ -124,7 +124,7 @@
       "CG"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [],
+    "rewards": ["Zhen"],
     "enemies": [
       {
         "name": "Ink Clerk A",

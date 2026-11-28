@@ -11,7 +11,7 @@ namespace Fida.UI;
 
 public partial class UIScreenBuilder
 {
-    private void BuildRulesPage(int page, int indexPage)
+    private void BuildRulesPage(int page, int indexPage, bool marginsEditable, int digitA, int digitB)
     {
         var book = RulesBook.Current();
         page = ClampPage(page, book.TotalPages);
@@ -31,6 +31,13 @@ public partial class UIScreenBuilder
         if (page == RulesBook.TimingPage)
         {
             _uiControls.Add(new UIRulesTimingPage(_resourceManager, book) { Name = "rules_timing" });
+        }
+        else if (page == 1)
+        {
+            // The Numbers page is always the live table; the egg only decides if rows respond.
+            bool editable = marginsEditable && Achievements.EasterEggUnlocked(CampaignRuntime.Progress);
+            _uiControls.Add(new UIRulesNumbersAssembly(_resourceManager, editable,
+                digitA, digitB) { Name = "rules_numbers" });
         }
         else if (page < RulesBook.ReferencePages)
         {

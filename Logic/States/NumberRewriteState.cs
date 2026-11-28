@@ -29,7 +29,7 @@ namespace Fida.Logic
             Steps.Add(new ActionStep
             {
                 RequiredType = ActionType.ChooseNumber,
-                ValidNumbers = Enumerable.Range(0, 10).ToList(),
+                ValidNumbers = Enumerable.Range(1, 9).ToList(),
                 Prompt = GameText.SkillActivatedNumberTurnInto(SourcePlayer.Name, _skillType)
             });
         }

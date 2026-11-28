@@ -17,7 +17,9 @@ namespace Fida.Logic
             _ctx = ctx;
             _attackerId = ctx.PipelineOriginId;
 
-            if (_ctx.SkillEnumerator == null)
+            // A piercing attack never builds the defense enumerator, so Enter falls straight
+            // through to ApplyDamage and no Defending skill is offered.
+            if (_ctx.SkillEnumerator == null && !_ctx.Pierce)
             {
                 var target = gameManager.Players.FirstOrDefault(p => p.PlayerId == ctx.TargetPlayerId);
                 _ctx.SkillEnumerator = target?.GetSkillsByTrigger(SkillTrigger.Defending);

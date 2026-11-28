@@ -1,4 +1,5 @@
 using Fida.Campaign;
+using Fida.Logic;
 using Fida.UI;
 using Fida.UI.Rules;
 using Fida.Network;
@@ -19,6 +20,8 @@ namespace Fida.States
         {
             _indexPage = _stateMachine.RulesIndexPage;
             _previousKeyboard = Keyboard.GetState();
+            Achievements.EnsureLoaded();
+            CombinationStore.EnsureLoaded();
             BindControls();
         }
 
@@ -31,6 +34,9 @@ namespace Fida.States
         public override void HandleInput(Microsoft.Xna.Framework.GameTime gameTime)
         {
             base.HandleInput(gameTime);
+            // A control may have queued a page rebuild while the UI was being updated; doing it
+            // there would mutate the control list mid-enumeration.
+            RunPendingRebuild();
 
             var keyboard = Keyboard.GetState();
             bool left = keyboard.IsKeyDown(Keys.Left) && !_previousKeyboard.IsKeyDown(Keys.Left);
@@ -67,6 +73,55 @@ namespace Fida.States
                 BindButton($"rulesTile{i}", () => SelectPage(page));
                 BindButton($"rulesLink{i}", () => SelectPage(page));
             }
+
+            BindNumbersAssembly();
+        }
+
+        /// <summary>
+        /// The Numbers page is a drawing surface, not buttons: it raises taps, and the rebuild is
+        /// deferred to the end of the input pass.
+        /// </summary>
+        private void BindNumbersAssembly()
+        {
+            var assembly = _uiManager.GetControlByName<UIRulesNumbersAssembly>("rules_numbers");
+            if (assembly == null) return;
+            assembly.RowTapped = row =>
+            {
+                int digit = UIRulesNumbersAssembly.DigitOf(row);
+                if (digit < 0) return;
+                _pendingRebuild = () =>
+                {
+                    CombinationLoadout.CycleRow(digit);
+                    CombinationStore.Save();
+                    Reload();
+                };
+            };
+            assembly.DigitTapped = which =>
+            {
+                _pendingRebuild = () =>
+                {
+                    UnbindAll();
+                    _stateMachine.CycleMarginDigit(which);
+                    BindControls();
+                };
+            };
+        }
+
+        private System.Action? _pendingRebuild;
+
+        private void RunPendingRebuild()
+        {
+            if (_pendingRebuild == null) return;
+            var rebuild = _pendingRebuild;
+            _pendingRebuild = null;
+            rebuild();
+        }
+
+        private void Reload()
+        {
+            UnbindAll();
+            _stateMachine.SetRulesPage(_stateMachine.RulesPage);
+            BindControls();
         }
 
         private void ChangePage(int offset) => SelectPage(_stateMachine.RulesPage + offset);

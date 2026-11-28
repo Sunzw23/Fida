@@ -27,6 +27,12 @@ namespace Fida.Logic
         public bool DoubleStrikeArmed { get; set; }
         public List<Skill> Skills { get; private set; } = []; // 玩家拥有的技能
 
+        /// <summary>True when a passive turns every attack this player makes into true damage.</summary>
+        public bool AttacksAreTrue => Skills.Exists(skill => skill.MakesAttacksTrue);
+
+        /// <summary>True when a passive lets this player choose the digit a broken shield leaves.</summary>
+        public bool ReforgesBrokenShield => Skills.Exists(skill => skill.ReforgesBrokenShield);
+
         public IEnumerator<Skill> GetSkillsByTrigger(SkillTrigger trigger)
         {
             // Skills are evaluated in the order they appear in the player's loadout.
@@ -113,6 +119,9 @@ namespace Fida.Logic
         {
             int old = Numbers[index];
             Numbers[index] = value;
+            // Zero is the shield digit. It has no row in ApplyingEffectState, so the "you held a
+            // shield" record is taken here, at the only moment a shield can appear.
+            if (value == 0) CombinationLedger.Record("0");
             NumberChanged?.Invoke(this, index, old, value);
         }
 

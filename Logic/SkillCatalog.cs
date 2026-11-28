@@ -35,17 +35,26 @@ namespace Fida.Logic
             new(SkillType.Seng, "Seng", "僧", () => new SengSkill()),
             new(SkillType.Dao, "Dao", "道", () => new DaoSkill()),
             new(SkillType.Mo, "Demon", "魔", () => new MoSkill()),
+            new(SkillType.Ci, "Thorn", "刺", () => new CiSkill()),
             new(SkillType.Xue, "Blood", "血", () => new XueSkill()),
             new(SkillType.Tong, "Same", "同", () => new TongSkill()),
             new(SkillType.Di, "Emperor", "帝", () => new DiSkill()),
             new(SkillType.Long, "Dragon", "龙", () => new LongSkill()),
             new(SkillType.Bian, "Transform", "变", () => new BianSkill()),
+            new(SkillType.Po, "Pierce", "破", () => new PoSkill()),
+            new(SkillType.Zhen, "Truth", "真", () => new ZhenSkill()),
+            new(SkillType.Shatter, "Shatter", "裂", () => new ShatterSkill()),
             new(SkillType.SuperGod, "Super God", "超神", () => new SuperGodSkill()),
             new(SkillType.SuperImmortal, "Super Immortal", "超仙", () => new SuperImmortalSkill()),
             new(SkillType.SuperEmperor, "Super Emperor", "超帝", () => new SuperEmperorSkill()),
             new(SkillType.Shi, "Stone", "石", () => new StoneSkill()),
             new(SkillType.Gui, "Ghost", null, null),
             new(SkillType.Huo, "Fire", null, null),
+            // Drawbacks: named and priced, deliberately without an implementation so they stay
+            // out of SelectableSkills and never reach a loadout. Wiring them is a separate step.
+            new(SkillType.HalfAttack, "Half Attack", "攻击减半", null),
+            new(SkillType.HalfHealth, "Half Health", "生命减半", null),
+            new(SkillType.Bleed, "Bleed", "失血", null),
         };
 
         private static readonly IReadOnlyDictionary<SkillType, SkillEntry> ByType =

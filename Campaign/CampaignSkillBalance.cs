@@ -18,12 +18,20 @@ namespace Fida.Campaign
                 [SkillType.TripleHealth] = 3,
                 [SkillType.Tong] = 3,
                 [SkillType.Mo] = 3,
+                [SkillType.Ci] = 2,
                 [SkillType.Xian] = 3,
                 [SkillType.Shen] = 3,
                 [SkillType.Seng] = 2,
                 [SkillType.Dao] = 2,
                 [SkillType.Di] = 3,
                 [SkillType.Bian] = 5,
+                [SkillType.Po] = 1,
+                [SkillType.Zhen] = 3,
+                [SkillType.Shatter] = 2,
+                // Drawbacks return budget instead of spending it. Not selectable yet.
+                [SkillType.HalfAttack] = -3,
+                [SkillType.HalfHealth] = -2,
+                [SkillType.Bleed] = -2,
                 [SkillType.Long] = 5,
                 [SkillType.SuperGod] = 6,
                 [SkillType.SuperImmortal] = 6,
@@ -41,6 +49,8 @@ namespace Fida.Campaign
         }
 
         public static bool Conflicts(IEnumerable<SkillType> selected, SkillType candidate) =>
+            (candidate == SkillType.Zhen && Contains(selected, SkillType.Xue)) ||
+            (candidate == SkillType.Xue && Contains(selected, SkillType.Zhen)) ||
             (candidate == SkillType.DoubleHealth && Contains(selected, SkillType.TripleHealth)) ||
             (candidate == SkillType.TripleHealth && Contains(selected, SkillType.DoubleHealth)) ||
             (candidate == SkillType.Long && Contains(selected, SkillType.Bian)) ||

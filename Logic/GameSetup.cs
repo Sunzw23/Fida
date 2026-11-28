@@ -28,6 +28,19 @@ namespace Fida.Logic
 
         public static void MarkNodeBriefingShown() => NodeBriefingShown = true;
 
+        /// <summary>
+        /// Forgets the campaign node that was last configured. Leaving the campaign kept the
+        /// node id, its skills and companions and the "briefing already shown" flag, so a Duel
+        /// started afterwards still resolved a campaign node instead of its own draft setup.
+        /// </summary>
+        public static void ClearCampaignSelection()
+        {
+            SelectedNodeId = "";
+            SelectedSkills.Clear();
+            SelectedCompanions.Clear();
+            NodeBriefingShown = false;
+        }
+
         /// <summary>当前选择的场景名（默认 DefaultScene）。</summary>
         public static string SelectedSceneName { get; set; } = "DefaultScene";
 
@@ -86,7 +99,11 @@ namespace Fida.Logic
         public static bool SelectCampaignNode(string nodeId, bool online = false)
         {
             var node = CampaignCatalog.GetNode(nodeId);
-            if (node == null || !CampaignCatalog.IsUnlocked(CampaignRuntime.GetProgress(online), node)) return false;
+            if (node == null) return false;
+            var progress = CampaignRuntime.GetProgress(online);
+            // A cleared mission stays playable even in a lane that never recorded its
+            // parents (co-op clears merge peer progress), so replay never needs an unlock.
+            if (!progress.IsCompleted(node.Id) && !CampaignCatalog.IsUnlocked(progress, node)) return false;
             SelectedNodeId = node.Id;
             SelectedSkills.Clear();
             // Every battle starts with an empty party; the player opts in on the companion screen.

@@ -14,102 +14,71 @@ namespace Fida.Logic
         public override void Enter()
         {
             var numbers = SourcePlayer.Numbers;
+            var outcome = CombinationTable.Match(numbers, CombinationLoadout.Active);
 
-            // 攻击 (数字变为 8 或 7)
-            if (numbers[0] == 8 || numbers[0] == 7)
+            if (!outcome.IsNone)
             {
-                HandleAttackEffect(0, 1);
-                return;
-            }
-            if (numbers[1] == 8 || numbers[1] == 7)
-            {
-                HandleAttackEffect(1, 1);
-                return;
-            }
-            // 攻击 (数字变为 1 和 6)
-            if ((numbers[0] == 1 && numbers[1] == 6) || (numbers[0] == 6 && numbers[1] == 1))
-            {
-                HandleAttackEffectBoth(2);
-                return;
-            }
-            // 攻击 (数字变为 5 和 5)
-            if (numbers[0] == 5 && numbers[1] == 5)
-            {
-                HandleAttackEffectBoth(3);
-                return;
-            }
-            // 攻击 (数字变为 6 和 6)
-            if (numbers[0] == 6 && numbers[1] == 6)
-            {
-                HandleAttackEffectBoth(5);
-                return;
-            }
-            // 治愈 (数字变为 9)
-            if (numbers[0] == 9)
-            {
-                HandleHealEffect(0, 1);
-                return;
-            }
-            if (numbers[1] == 9)
-            {
-                HandleHealEffect(1, 1);
-                return;
-            }
-            // 治愈 (两个数字都变为 0)
-            if (numbers[0] == 0 && numbers[1] == 0)
-            {
-                HandleHealEffectBoth(10);
+                Resolve(outcome);
                 return;
             }
 
             // 如果没有触发任何效果，则从状态栈中弹出下一个状态
+            CombinationLedger.RecordChain(GameManager.ChainDepth);
+            GameManager.ChainDepth = 0;
             GameManager.TransitionTo(new HandleStackState(GameManager));
         }
 
-        private void HandleAttackEffect(int numberIndex, int damage)
+        /// <summary>
+        /// Resolves whatever the table matched. A single-digit row consumes one number, a pair row
+        /// consumes both; either way the digits reset to 1 and the next check is queued, so a
+        /// freshly reset digit can pair with the other one (the "chain").
+        /// </summary>
+        private void Resolve(CombinationOutcome outcome)
         {
-            GameManager.SetGameMessage(GameText.AttackTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], damage));
-            int[] numbers = new int[2];
-            Array.Copy(SourcePlayer.Numbers, numbers, 2);
-            NotifyNumbersConsumed(numberIndex);
-            SourcePlayer.SetNumber(numberIndex, 1);
+            int[] snapshot = new int[2];
+            Array.Copy(SourcePlayer.Numbers, snapshot, 2);
+
+            if (outcome.ConsumesBoth)
+            {
+                NotifyNumbersConsumed(0, 1);
+                SourcePlayer.SetNumber(0, 1);
+                SourcePlayer.SetNumber(1, 1);
+            }
+            else
+            {
+                NotifyNumbersConsumed(outcome.FirstIndex);
+                SourcePlayer.SetNumber(outcome.FirstIndex, 1);
+            }
+
+            RecordCombination(outcome, snapshot);
+            GameManager.ChainDepth++;
             GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
-            var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
-            GameManager.TransitionTo(new OrderingAttackState(GameManager, ctx));
+
+            if (outcome.Kind == CombinationKind.Attack)
+            {
+                GameManager.SetGameMessage(outcome.ConsumesBoth
+                    ? GameText.AttackTriggeredByNumberPair(SourcePlayer.Name, outcome.Amount)
+                    : GameText.AttackTriggeredBySingleNumber(SourcePlayer.Name,
+                        snapshot[outcome.FirstIndex], outcome.Amount));
+                GameManager.TransitionTo(new OrderingAttackState(GameManager,
+                    new SkillContext(SourcePlayerId, outcome.Amount, numbers: snapshot)));
+            }
+            else
+            {
+                GameManager.SetGameMessage(outcome.ConsumesBoth
+                    ? GameText.HealTriggeredByNumberPair(SourcePlayer.Name, outcome.Amount)
+                    : GameText.HealTriggeredBySingleNumber(SourcePlayer.Name,
+                        snapshot[outcome.FirstIndex], outcome.Amount));
+                GameManager.TransitionTo(new TargetSelectionState(GameManager,
+                    new SkillContext(SourcePlayerId, 0, outcome.Amount)));
+            }
         }
 
-        private void HandleAttackEffectBoth(int damage)
+        /// <summary>Feeds the combination ledger (achievements) the rows this resolution used.</summary>
+        private void RecordCombination(CombinationOutcome outcome, int[] snapshot)
         {
-            GameManager.SetGameMessage(GameText.AttackTriggeredByNumberPair(SourcePlayer.Name, damage));
-            int[] numbers = new int[2];
-            Array.Copy(SourcePlayer.Numbers, numbers, 2);
-            NotifyNumbersConsumed(0, 1);
-            SourcePlayer.SetNumber(0, 1);
-            SourcePlayer.SetNumber(1, 1);
-            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
-            var ctx = new SkillContext(SourcePlayerId, damage, numbers: numbers);
-            GameManager.TransitionTo(new OrderingAttackState(GameManager, ctx));
-        }
-
-        private void HandleHealEffect(int numberIndex, int healing)
-        {
-            GameManager.SetGameMessage(GameText.HealTriggeredBySingleNumber(SourcePlayer.Name, SourcePlayer.Numbers[numberIndex], healing));
-            NotifyNumbersConsumed(numberIndex);
-            SourcePlayer.SetNumber(numberIndex, 1);
-            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
-            var ctx = new SkillContext(SourcePlayerId, 0, healing);
-            GameManager.TransitionTo(new TargetSelectionState(GameManager, ctx));
-        }
-
-        private void HandleHealEffectBoth(int healing)
-        {
-            GameManager.SetGameMessage(GameText.HealTriggeredByNumberPair(SourcePlayer.Name, healing));
-            NotifyNumbersConsumed(0, 1);
-            SourcePlayer.SetNumber(0, 1);
-            SourcePlayer.SetNumber(1, 1);
-            GameManager.PushState(new ApplyingEffectState(GameManager, SourcePlayerId));
-            var ctx = new SkillContext(SourcePlayerId, 0, healing);
-            GameManager.TransitionTo(new TargetSelectionState(GameManager, ctx));
+            if (outcome.ConsumesBoth) CombinationLedger.RecordPair(snapshot[0], snapshot[1]);
+            else CombinationLedger.Record(snapshot[outcome.FirstIndex].ToString());
         }
 
         private void NotifyNumbersConsumed(params int[] indices) =>

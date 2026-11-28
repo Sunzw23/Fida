@@ -12,7 +12,7 @@
       "D2"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [],
+    "rewards": ["Shatter"],
     "enemies": [
       {
         "name": "Scale Keeper",

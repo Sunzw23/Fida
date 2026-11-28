@@ -59,6 +59,12 @@ namespace Fida.Logic
         public GameState? CurrentState => _currentState;
 
         /// <summary>
+        /// Effects resolved since the last number change. A single change can fire twice (8 and 6
+        /// attacks, then the reset 1 pairs with the 6); the chain achievement reads this.
+        /// </summary>
+        public int ChainDepth { get; set; }
+
+        /// <summary>
         /// 状态信息查询对象 — 集中封装对当前状态/当前回合玩家的只读查询
         /// </summary>
         public GameQuery Query { get; private set; }

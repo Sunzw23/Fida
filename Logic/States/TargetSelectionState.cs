@@ -59,7 +59,11 @@ namespace Fida.Logic
             {
                 // Resolve post-attack skills only after damage, shields, and reactions finish.
                 GameManager.StateStack.Push(new AttackCompletedState(GameManager, SourcePlayerId));
-                GameManager.TransitionTo(new DamagingState(GameManager, _ctx));
+                // A true-damage passive skips the shield, the defense skills, the gate passive, and
+                // every post-damage reaction on both sides. Piercing only covers the first two.
+                GameManager.TransitionTo(SourcePlayer.AttacksAreTrue
+                    ? new TrueDamageState(GameManager, _ctx)
+                    : new DamagingState(GameManager, _ctx));
             }
             else
             {

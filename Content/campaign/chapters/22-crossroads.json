@@ -71,7 +71,7 @@
       "B3"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [],
+    "rewards": ["Ci"],
     "enemies": [
       {
         "name": "Mirror Captain",

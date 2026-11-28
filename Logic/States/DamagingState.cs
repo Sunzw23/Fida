@@ -25,9 +25,20 @@ namespace Fida.Logic
                 return;
             }
 
+            // A piercing attack passes straight through the shield digit: the digit stays at 0
+            // (the shield is not spent) and the damage continues to the defense stage.
             var (hasShield, shieldIndex) = targetPlayer.HasShield();
-            if (hasShield)
+            if (hasShield && !_ctx.Pierce)
             {
+                if (targetPlayer.ReforgesBrokenShield)
+                {
+                    // The shield still absorbs this attack; its owner chooses what the digit
+                    // becomes, and the usual effect check runs on the new pair.
+                    GameManager.TransitionTo(new ShieldReforgeState(
+                        GameManager, targetPlayer.PlayerId, shieldIndex));
+                    return;
+                }
+
                 targetPlayer.SetNumber(shieldIndex, 1); // 护盾数字变为1
                 GameManager.PushState(new ApplyingEffectState(GameManager, _ctx.TargetPlayerId));
                 GameManager.SetGameMessage(GameText.ShieldBreak(targetPlayer.Name));

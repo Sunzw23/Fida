@@ -64,7 +64,7 @@
       "AS1"
     ],
     "requiredCompletedParents": 1,
-    "rewards": [],
+    "rewards": ["Po"],
     "enemies": [
       {
         "name": "Straw Man",

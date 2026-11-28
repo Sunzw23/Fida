@@ -15,6 +15,13 @@ public static class ContentSource
     public static Func<string, Stream?>? OpenPackagedAsset { get; set; }
     public static Func<string, IReadOnlyList<string>>? ListPackagedAssets { get; set; }
 
+    /// <summary>
+    /// Absolute path to the Gum layout project. Desktop resolves it from the
+    /// output directory; hosts that package content as read-only assets set
+    /// this to a location the Gum loader can open as an ordinary file.
+    /// </summary>
+    public static string? GumProjectPath { get; set; }
+
     public static string? ReadText(string path)
     {
         if (File.Exists(path))

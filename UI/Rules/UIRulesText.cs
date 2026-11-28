@@ -9,9 +9,26 @@ namespace Fida.UI.Rules;
 /// <summary>Text fitting shared by the rules pages: one scale rule, one wrap rule.</summary>
 public static class UIRulesText
 {
-    /// <summary>Converts a design line height into the font's draw scale.</summary>
-    public static float ScaleFor(SpriteFont font, float lineHeight, float layoutScale) =>
-        font.LineSpacing <= 0 ? 0 : Math.Max(0f, lineHeight * layoutScale / font.LineSpacing);
+    /// <summary>
+    /// Converts a design line height into the font's draw scale. Android resolves
+    /// the design size to a <see cref="UITextRole"/> and takes the size from the dp
+    /// ramp, because the canvas ratio is not a physical unit; desktop keeps the
+    /// proportional scale it was designed against.
+    /// </summary>
+    public static float ScaleFor(SpriteFont font, float lineHeight, float layoutScale)
+    {
+        if (font.LineSpacing <= 0) return 0;
+        float target;
+#if FIDA_ANDROID
+        // The portrait rules canvas is 900 design px wide, so the current page
+        // width is 900 x layout scale; the ramp only needs it to derive px-per-dp.
+        int viewportWidth = (int)MathF.Round(900f * layoutScale);
+        target = UITypography.LineHeight(UITypography.FromDesignPixels(lineHeight), viewportWidth, 0);
+#else
+        target = lineHeight * layoutScale;
+#endif
+        return Math.Max(0f, target / font.LineSpacing);
+    }
 
     public static float Width(SpriteFont font, string text, float layoutScale, float lineHeight)
     {
@@ -24,6 +41,16 @@ public static class UIRulesText
     {
         if (area.Width <= 0 || area.Height <= 0 || string.IsNullOrEmpty(text)) return;
         float scale = ScaleFor(font, lineHeight, layoutScale);
+#if FIDA_ANDROID
+        // A single line owns its box: grow it to the role's height instead of
+        // letting FitScale shrink the type back to the authored design height.
+        float lineBox = font.LineSpacing * scale;
+        if (lineBox > area.Height)
+        {
+            int grown = (int)MathF.Ceiling(lineBox);
+            area = new Rectangle(area.X, area.Y - (grown - area.Height) / 2, area.Width, grown);
+        }
+#endif
         string safe = UIFontGuard.Sanitize(font, text);
         Vector2 size = font.MeasureString(safe);
         float fit = UITextRenderer.FitScale(size, area.Width, area.Height, scale);
