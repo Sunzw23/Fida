@@ -13,6 +13,9 @@ namespace Fida.Network
     /// </summary>
     public class GameServer : MessageTransportBase
     {
+        /// <summary>Listen on every adapter, accepting IPv4 and IPv6 guests through one socket.</summary>
+        public const string DualStackAddress = "::";
+
         private TcpListener _listener;
         private TcpClient _client = null!;
         private NetworkStream _clientStream = null!;
@@ -48,7 +51,9 @@ namespace Fida.Network
         {
             IPAddress addr = IPAddress.Parse(ipAddress);
             _listener = new TcpListener(addr, port);
-            _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+            // "::" listens dual-stack, so a same-network IPv4 guest and a remote IPv6 guest both reach it.
+            if (addr.AddressFamily == AddressFamily.InterNetworkV6)
+                _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
         }
 
         protected override TcpClient Connection => _client;

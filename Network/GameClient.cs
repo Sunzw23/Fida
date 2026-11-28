@@ -63,8 +63,10 @@ namespace Fida.Network
                 try
                 {
                     IPAddress addr = IPAddress.Parse(ipAddress);
-                    _tcpClient = new TcpClient(AddressFamily.InterNetworkV6);
-                    _tcpClient.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+                    _tcpClient = new TcpClient(addr.AddressFamily);
+                    // Dial the family we were given: a LAN host may listen on IPv4 only.
+                    if (addr.AddressFamily == AddressFamily.InterNetworkV6)
+                        _tcpClient.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
                     _tcpClient.NoDelay = true;
 
                     await _tcpClient.ConnectAsync(addr, port, _cts.Token);

@@ -4,6 +4,13 @@
 
 Hosting or joining creates a persistent session and returns both players to the main menu. Leaving a submenu does not disconnect. Only **Disconnect Session** tears the session down.
 
+The first `server.csv` row selects the pairing method for the whole session; it is not changeable mid-session:
+
+- **Direct (default, no server).** `Create game` opens `::` on all adapters (IPv4 and IPv6) and beacons `FIDA1|<port>` on `8890/UDP` once a second. `Join game` with an empty address field listens for three seconds and dials the first host it hears; a typed address (`192.168.1.7:8888`, `[2408::1]:8888`, bare literals fall back to the configured port) is dialled directly. The waiting screen prints the host's own addresses so a remote guest can be told where to connect: `LAN` first, then `IPV6`.
+- **Relay (`relay` flag, optional fallback).** Both players dial out to a relay and pair with a four-character room code. This is the only option when both players are behind CGNAT, and it is the only path that needs a server.
+
+LAN discovery is a convenience, not a dependency: it only reaches the local subnet, and the manual address path always works without it. Direct sessions carry the same frames as relay sessions, so lobby, draft, campaign presence and battle traffic are unchanged.
+
 Leaving a live battle from the pause menu is a concession, not a disconnect. The protocol carries a `BattleForfeit` frame; the opponent is awarded the win (a shared campaign battle instead keeps running for the surviving player) and both players end up on the connected main menu, ready to start another match. The same rule applies to the result screen: returning to the main menu never closes the socket.
 
 The connected main menu exposes two game intents:

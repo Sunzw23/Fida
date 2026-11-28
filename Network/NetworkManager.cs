@@ -2,6 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.IO;
 using Fida.Logic;
@@ -15,14 +18,20 @@ namespace Fida.Network
     /// </summary>
     public class NetworkManager : IDisposable
     {
+        /// <summary>How long the guest listens for a LAN beacon before asking for an address.</summary>
+        private static readonly TimeSpan LanSearchWindow = TimeSpan.FromSeconds(3);
+
         private GameServer? _gameServer;
         private GameClient? _gameClient;
         private GameRelayHost? _relayHost;
+        private LanBeacon? _lanBeacon;
+        private LanBrowser? _lanBrowser;
         private readonly ServerConfig _serverConfig;
         private bool _isHost;
         private bool _disposed;
         private readonly Queue<NetworkMessage> _pendingMessages = new();
         private CampaignPresence? _localCampaignPresence;
+        private string _directTarget = string.Empty;
 
         /// <summary>当前是否为主机</summary>
         public bool IsHost => _isHost;
@@ -40,15 +49,35 @@ namespace Fida.Network
         /// <summary>主机端：relay 分配的房间码（客机用此码加入）</summary>
         public string HostRoomCode => _relayHost?.RoomCode ?? string.Empty;
 
-        /// <summary>Connection screen caption: a relay host shares a room code, everyone else shows the server.</summary>
-        public string SessionDetailLabel => GetServerIsRelay() && IsHost ? "Room" : "Server";
+        /// <summary>
+        /// Direct hosting: the address the host reads out on the waiting screen. Picked from the
+        /// machine's own adapters, so a relay (or any configured server) is not involved.
+        /// Empty until <see cref="StartHostingDirect"/> picks one.
+        /// </summary>
+        public string HostShareAddress { get; private set; } = string.Empty;
 
-        /// <summary>Room code (relay host) or "[address]:port" for the connected session page.</summary>
+        /// <summary>Waiting screen: room code for a relay session, address for a direct one.</summary>
+        public string HostShareValue => GetServerIsRelay() ? HostRoomCode : HostShareAddress;
+
+        /// <summary>True while the guest is listening for a LAN beacon.</summary>
+        public bool IsSearchingLan => _lanBrowser != null;
+
+        /// <summary>Connection screen caption: relay hosts share a room code, direct sessions share an address.</summary>
+        public string SessionDetailLabel => !GetServerIsRelay() ? "Address"
+            : IsHost ? "Room" : "Server";
+
+        /// <summary>Room code, host address or "[address]:port" for the connected session page.</summary>
         public string SessionDetailValue
         {
             get
             {
-                if (GetServerIsRelay() && IsHost)
+                if (!GetServerIsRelay())
+                {
+                    if (IsHost)
+                        return string.IsNullOrEmpty(HostShareAddress) ? "Direct" : HostShareAddress;
+                    return string.IsNullOrEmpty(_directTarget) ? "Direct" : _directTarget;
+                }
+                if (IsHost)
                     return string.IsNullOrEmpty(HostRoomCode) ? "----" : HostRoomCode;
                 string address = GetServerAddress();
                 return (address.Contains(':') ? $"[{address}]" : address) + ":" + GetServerPort();
@@ -101,6 +130,26 @@ namespace Fida.Network
         {
             LocalLobbyVote = -1;
             RemoteLobbyVote = -1;
+        }
+
+        /// <summary>
+        /// Drops the campaign half of a session while keeping the connection.
+        ///
+        /// Leaving the campaign map used to keep the co-op session token, the shared-battle
+        /// flag, the last campaign presence and a pending battle snapshot, so a Duel started
+        /// afterwards inherited them: it could be routed as a campaign shared battle, or wait
+        /// for a partner that was already on the duel lobby. Duel never reads this state, so
+        /// clearing it on the way in cannot affect campaign play.
+        /// </summary>
+        public void ResetCampaignSession()
+        {
+            CampaignSessionId = string.Empty;
+            IsCampaignSharedBattle = false;
+            IsCampaignBattleContinuingLocally = false;
+            _localCampaignPresence = null;
+            PendingBattleSnapshot = null!;
+            RemoteCampaignPresence = new CampaignPresence(
+                RemoteCampaignPresence.PlayerId, CampaignOnlinePhase.Map, "", false);
         }
 
         /// <summary>双方投票状态文案（-1=未选）</summary>
@@ -275,7 +324,7 @@ namespace Fida.Network
         public bool GetServerIsRelay() => _serverConfig?.GetServers()?.FirstOrDefault()?.IsRelay ?? false;
 
         /// <summary>启动主机模式：直连监听 或 连接 relay 作为主机端</summary>
-        public void StartHosting(string ipAddress, int port, bool isRelay = false)
+        public bool StartHosting(string ipAddress, int port, bool isRelay = false)
         {
             _isHost = true;
 
@@ -285,14 +334,100 @@ namespace Fida.Network
                 _relayHost.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
                 _relayHost.Start(ipAddress, port);
                 StatusText = $"Waiting for opponent...\nrelay: {ipAddress}:{port}";
-                return;
+                return true;
             }
 
-            _gameServer = new GameServer(ipAddress, port);
-            _gameServer.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
-            _gameServer.Start();
+            return StartDirectListener(ipAddress, port, advertiseOnLan: false);
+        }
 
-            StatusText = $"Waiting for opponent...\naddress: [{ipAddress}]:{port}";
+        /// <summary>
+        /// Starts serverless hosting: listens on every adapter (dual-stack) so both a same-room
+        /// IPv4 guest and a remote IPv6 guest can dial in, and broadcasts a LAN beacon so the
+        /// guest can join without typing an address.
+        /// </summary>
+        public bool StartHostingDirect(int port)
+        {
+            _isHost = true;
+            return StartDirectListener(GameServer.DualStackAddress, port, advertiseOnLan: true);
+        }
+
+        private bool StartDirectListener(string bindAddress, int port, bool advertiseOnLan)
+        {
+            try
+            {
+                _gameServer = new GameServer(bindAddress, port);
+                _gameServer.ClientDisconnected += (msg) => Disconnected?.Invoke(msg);
+                _gameServer.Start();
+            }
+            catch (Exception ex)
+            {
+                _gameServer = null;
+                _isHost = false;
+                ReportStatus($"Could not host on port {port}: {ex.Message}");
+                return false;
+            }
+
+            (string Label, string Value)[] endpoints = DescribeLocalEndpoints(port);
+            HostShareAddress = endpoints.Length > 0 ? endpoints[0].Value : string.Empty;
+            if (advertiseOnLan)
+            {
+                _lanBeacon = new LanBeacon(port);
+                _lanBeacon.Start();
+            }
+
+            var lines = new List<string> { "Waiting for opponent..." };
+            if (endpoints.Length == 0) lines.Add("no network address found");
+            foreach ((string label, string value) in endpoints) lines.Add($"{label} {value}");
+            StatusText = string.Join("\n", lines);
+            return true;
+        }
+
+        /// <summary>Formats this machine's dialable addresses, best candidate first.</summary>
+        private static (string Label, string Value)[] DescribeLocalEndpoints(int port)
+        {
+            var result = new List<(string Label, string Value)>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void Add(string label, IPAddress address)
+            {
+                string value = EndpointAddress.Format(address, port);
+                if (seen.Add(value)) result.Add((label, value));
+            }
+
+            List<IPAddress> ipv4 = LocalAddresses(AddressFamily.InterNetwork);
+            List<IPAddress> ipv6 = LocalAddresses(AddressFamily.InterNetworkV6);
+            // IPv4 first: a guest on the same network can always use it, while the host's IPv6
+            // address is only dialable when both sides have a global prefix.
+            foreach (IPAddress address in ipv4) Add("LAN", address);
+            foreach (IPAddress address in ipv6) Add("IPV6", address);
+            return result.ToArray();
+        }
+
+        private static List<IPAddress> LocalAddresses(AddressFamily family)
+        {
+            var result = new List<IPAddress>();
+            NetworkInterface[] interfaces;
+            try { interfaces = NetworkInterface.GetAllNetworkInterfaces(); }
+            catch (NetworkInformationException) { return result; }
+
+            foreach (NetworkInterface nic in interfaces)
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up) continue;
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
+                IPInterfaceProperties properties;
+                try { properties = nic.GetIPProperties(); }
+                catch (NetworkInformationException) { continue; }
+
+                foreach (UnicastIPAddressInformation info in properties.UnicastAddresses)
+                {
+                    IPAddress address = info.Address;
+                    if (address.AddressFamily != family) continue;
+                    if (IPAddress.IsLoopback(address)) continue;
+                    if (address.IsIPv6LinkLocal || address.IsIPv6SiteLocal || address.IsIPv6Multicast) continue;
+                    result.Add(address);
+                }
+            }
+            return result;
         }
 
         /// <summary>启动客机模式：直连服务器 或 连接 relay 作为客机端</summary>
@@ -308,6 +443,63 @@ namespace Fida.Network
             StatusText = isRelay
                 ? $"Connecting via relay {ipAddress}:{port} (room code: {roomCode})"
                 : $"Connecting to [{ipAddress}]:{port} ...";
+        }
+
+        /// <summary>Joins a direct session by typing the address the host is displaying.</summary>
+        public bool StartConnectingDirect(string addressText)
+        {
+            if (!EndpointAddress.TryParse(addressText, out EndpointAddress endpoint, GetServerPort()))
+            {
+                ReportStatus("Enter the host address, for example 192.168.1.7:8888");
+                return false;
+            }
+            _directTarget = endpoint.ToString();
+            StartConnecting(endpoint.HostText, endpoint.Port);
+            return true;
+        }
+
+        /// <summary>Listens for a LAN beacon; the host needs no address exchange for this to work.</summary>
+        public bool StartLanSearch()
+        {
+            CancelLanSearch();
+            _isHost = false;
+            try { _lanBrowser = new LanBrowser(); }
+            catch (Exception ex)
+            {
+                ReportStatus($"Could not search the local network: {ex.Message}");
+                return false;
+            }
+            ReportStatus("Searching the local network...\nStart a game on the host machine to be found");
+            return true;
+        }
+
+        /// <summary>Frame pump for <see cref="StartLanSearch"/>: dials the first host it hears.</summary>
+        public void PollLanSearch()
+        {
+            if (_lanBrowser == null) return;
+
+            if (_lanBrowser.TryTakeHost(out LanHost found))
+            {
+                CancelLanSearch();
+                bool parsed = IPAddress.TryParse(found.Address, out IPAddress? address);
+                _directTarget = parsed
+                    ? EndpointAddress.Format(address!, found.Port)
+                    : $"{found.Address}:{found.Port}";
+                StartConnecting(found.Address, found.Port);
+                return;
+            }
+
+            if (_lanBrowser.Elapsed > LanSearchWindow)
+            {
+                CancelLanSearch();
+                ReportStatus("No game found on this network\nType the host address and press Join");
+            }
+        }
+
+        private void CancelLanSearch()
+        {
+            _lanBrowser?.Dispose();
+            _lanBrowser = null;
         }
 
         /// <summary>主机每帧调用：检查是否有客户端连入</summary>
@@ -609,7 +801,13 @@ namespace Fida.Network
             _relayHost?.Stop();
             _relayHost = null;
 
+            _lanBeacon?.Dispose();
+            _lanBeacon = null;
+            CancelLanSearch();
+
             _isHost = false;
+            HostShareAddress = string.Empty;
+            _directTarget = string.Empty;
             CampaignSessionId = string.Empty;
             _localCampaignPresence = null;
             IsCampaignSharedBattle = false;

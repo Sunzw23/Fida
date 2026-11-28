@@ -1,9 +1,15 @@
-# Fida multiplayer server configuration
+# Fida multiplayer configuration
 # Format: Address,Port,Name,relay(optional)
-# Set the relay column to "relay" to connect through the VPS relay; leave it blank for a direct connection
-# Lines beginning with # are comments
+# The client always uses the first valid row.
 #
-# Examples:
-175.27.254.213,8888,Game Server,relay
-::1,8888,Local Test Server
-# 2001:db8::1,8888,Remote Server 1
+# Direct play (default, no server): Create game listens on every adapter and broadcasts
+# on the LAN (8890/UDP). The guest joins that beacon, or types the address the host shows.
+# The port column is the default game port; the address column is unused in this mode.
+::1,8888,Direct (LAN or typed address)
+#
+# Relay fallback (optional): pair through a relay when both players are behind NAT.
+# Requires the relay server in relay/ and the "relay" flag in the fourth column.
+# 175.27.254.213,8888,Game Server,relay
+#
+# Local loopback example for testing both roles on one machine:
+# ::1,8888,Local Test Server

@@ -7,6 +7,7 @@ namespace Fida.States
     public class OnlineLobbyState : StateBase
     {
         private bool _gameStarting;
+        private double _resendAge;
 
         public OnlineLobbyState(UI.UIManager uiManager, Network.NetworkManager networkManager,
             GameStateMachine stateMachine) : base(uiManager, networkManager, stateMachine) { }
@@ -14,6 +15,11 @@ namespace Fida.States
         public override void OnEnter()
         {
             _gameStarting = false;
+            // Defensive reset: a duel always starts from a clean online session, so
+            // leftovers from a campaign route cannot leak into it (shared-battle flag,
+            // co-op token, pending snapshot, last campaign presence, node selection).
+            _networkManager.ResetCampaignSession();
+            Logic.GameSetup.ClearCampaignSelection();
             _networkManager.ResetLobbyVotes();
             _networkManager.SendLobbyVote(-1);
             _networkManager.LobbyVoteReceived += OnRemoteVote;
@@ -56,6 +62,11 @@ namespace Fida.States
         private void OnRemoteVote(int mode)
         {
             UpdateStatus();
+            // Entering the lobby resets the peer's record of our vote, so a Ready pressed
+            // before the peer arrived would otherwise be lost and the two peers would wait
+            // for each other forever. Re-assert it whenever the peer reports "no vote".
+            if (mode < 0 && !_gameStarting && _networkManager.LocalLobbyVote >= 0)
+                _networkManager.SendLobbyVote(_networkManager.LocalLobbyVote);
             TryStartMatchedMode();
         }
 
@@ -101,6 +112,16 @@ namespace Fida.States
             base.HandleInput(gameTime);
             _networkManager.ProcessLobbyMessages();
             UpdateStatus();
+
+            // Heartbeat: while we are ready and the peer still reports no vote, repeat our
+            // vote about once a second so a dropped or reset packet cannot strand the lobby.
+            _resendAge += gameTime.ElapsedGameTime.TotalSeconds;
+            if (!_gameStarting && _networkManager.LocalLobbyVote >= 0 &&
+                _networkManager.RemoteLobbyVote < 0 && _resendAge >= 1.0)
+            {
+                _resendAge = 0;
+                _networkManager.SendLobbyVote(_networkManager.LocalLobbyVote);
+            }
 
             if (!_gameStarting) return;
             UnsubscribeEvents();

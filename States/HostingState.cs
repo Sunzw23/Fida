@@ -32,13 +32,14 @@ namespace Fida.States
         {
             base.HandleInput(gameTime);
 
-            // 房间码一旦分配即刷新到 label（属性轮询，避免事件耦合）
-            string code = _networkManager.HostRoomCode;
+            // Room code (relay) or own address (direct) once hosting is up. Property polling keeps
+            // the label in sync without coupling the network layer to UI events.
+            string code = _networkManager.HostShareValue;
             if (code != _lastShownCode)
             {
                 _lastShownCode = code;
                 _uiManager.GetLabelByName("roomCodeLabel")?.Update(
-                    code.Length == 4 ? code : "----");
+                    code.Length > 0 ? code : "----");
             }
 
             if (_networkManager.StatusText != _lastShownStatus)
@@ -47,7 +48,9 @@ namespace Fida.States
                 string[] statusLines = (_lastShownStatus ?? string.Empty)
                     .Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
                 string status = statusLines.Length > 0 ? statusLines[0] : "WAITING FOR OPPONENT";
-                string address = statusLines.Length > 1 ? statusLines[1].ToUpperInvariant() : string.Empty;
+                string address = statusLines.Length > 1
+                    ? string.Join("\n", statusLines[1..])
+                    : string.Empty;
 #if FIDA_ANDROID
                 status = status.ToUpperInvariant();
 #endif

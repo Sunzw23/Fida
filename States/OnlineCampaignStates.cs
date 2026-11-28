@@ -49,6 +49,13 @@ public sealed class OnlineCampaignMapState : StateBase
 
         if (map.ConsumeBackRequest())
         {
+            // Leaving the campaign must not leave its session behind: a Duel started
+            // next inherited the co-op token, the shared-battle flag and the last
+            // presence, which could route the duel as a campaign battle.
+            _networkManager.SendCampaignPresence(new CampaignPresence(
+                _networkManager.GetLocalPlayerId(), CampaignOnlinePhase.Map, "", false));
+            _networkManager.ResetCampaignSession();
+            GameSetup.ClearCampaignSelection();
             _stateMachine.SwitchToState(State.MainMenu);
             return;
         }
