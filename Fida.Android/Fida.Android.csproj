@@ -29,9 +29,13 @@
       <SetTargetFramework>TargetFramework=net10.0</SetTargetFramework>
       <GlobalPropertiesToRemove>RuntimeIdentifier;RuntimeIdentifiers;SelfContained</GlobalPropertiesToRemove>
     </ProjectReference>
-    <PackageReference Include="MonoGame.Framework.Android" Version="3.8.4.1" />
+    <!-- Keep the Android runtime on the same MonoGame release as the desktop
+         target and the mgcb tool restored from .config/dotnet-tools.json.
+         Content is compiled by that tool, so an older runtime here rejects the
+         effect binaries with "MGFX effect seems to be for a newer release". -->
+    <PackageReference Include="MonoGame.Framework.Android" Version="3.8.5.1" />
     <PackageReference Include="Gum.MonoGame" Version="2026.7.22.1" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.4.1" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.5.1" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Agent\AgentManager.cs" Link="Agent\AgentManager.cs" />

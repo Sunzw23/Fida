@@ -23,6 +23,15 @@ public sealed class MainActivity : AndroidGameActivity
     {
         base.OnCreate(bundle);
         AndroidAssetContent.Initialize(Assets!);
+        // Gum cannot read its layout out of the APK, so the host extracts it and
+        // redirects Gum's file loader at the copy. See AndroidGumContent.
+        string? filesDirectory = FilesDir?.AbsolutePath;
+        if (!string.IsNullOrEmpty(filesDirectory))
+        {
+            global::Fida.Logic.ContentSource.GumProjectPath =
+                AndroidGumContent.Materialize(Assets!, filesDirectory);
+            AndroidGumFileHook.Install(filesDirectory);
+        }
         _game = new global::Fida.Game1();
         var gameView = (View)_game.Services.GetService(typeof(View))!;
         SetContentView(gameView);

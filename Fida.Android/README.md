@@ -8,6 +8,12 @@ Only platform adapters live here:
 
 - `MainActivity` owns the Android lifecycle and locks the game to a portrait host view.
 - `AndroidAssetContent` exposes APK assets through the shared `ContentSource` API.
+- `AndroidGumContent` and `AndroidGumFileHook` unpack the Gum layout XML into the app's
+  private data directory and point Gum's file loader at that copy. Gum cannot read the
+  project out of the APK: it resolves the project and every screen through
+  `FileManager.CustomGetStreamFromFile`, and the relative paths it composes pick up a
+  second `Content/` prefix (`./Content/Content/Gum/Screens/*.gusx`), so startup used to
+  throw before the first frame.
 - Lightweight AI and its embedded compressed Q table are shared through `Fida.Core`.
   `Content/agent-settings.json` controls strength on both platforms. ONNX is no longer
   required; `AndroidOnnxInference` is an unused legacy adapter.
@@ -40,9 +46,18 @@ and OpenJDK components are selected. Then open the project's Android settings an
 Android SDK location. The SDK directory must contain `platform-tools\adb.exe`.
 
 This machine already has a full JDK supplied by Visual Studio at:
-`E:\Program Files (x86)\Microsoft Visual Studio\Shared\Android\openjdk\jdk-21.0.8`.
+`C:\Program Files\Android\openjdk\jdk-21.0.8`.
 The IntelliJ JBR found on PATH is not a valid replacement because it does not contain
 `bin\jar.exe`.
+
+A Debug build deploys through Visual Studio's fast deployment, so the assemblies are pushed
+to the device separately from the APK. To produce an `adb install`-able Debug APK, embed them:
+
+```text
+dotnet build Fida.Android/Fida.Android.csproj -f net10.0-android -p:EmbedAssembliesIntoApk=true
+```
+
+Release builds embed the assemblies and sign the APK automatically.
 
 Useful checks before building:
 
