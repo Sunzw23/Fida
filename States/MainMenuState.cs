@@ -39,6 +39,7 @@ namespace Fida.States
                 _networkManager.IsConnected ? State.OnlineLobby : State.OnlineMenu));
             BindButton("settings", () => _stateMachine.SwitchToState(State.Settings));
             BindButton("rules", _stateMachine.OpenRules);
+            BindButton("achievements", _stateMachine.OpenAchievements);
             BindButton("exit", () => Environment.Exit(0));
         }
 

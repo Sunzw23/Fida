@@ -10,6 +10,7 @@ namespace Fida
     {
         MainMenu,
         Rules,
+        Achievements,
         Skills,
         Settings,
         LevelSelect,

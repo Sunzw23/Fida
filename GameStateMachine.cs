@@ -20,9 +20,17 @@ namespace Fida
         public State CurrentState { get; private set; }
         private State _settingsReturnState = State.MainMenu;
         private State _rulesReturnState = State.MainMenu;
+        private State _achievementsReturnState = State.MainMenu;
         public State RulesReturnState => _rulesReturnState;
         public int RulesPage { get; private set; }
         public int RulesIndexPage { get; private set; }
+        public int AchievementsPage { get; private set; }
+        /// <summary>The two digits the Numbers page simulator is showing (0-9 each).</summary>
+        public int MarginDigitA { get; private set; } = 1;
+        public int MarginDigitB { get; private set; } = 7;
+        /// <summary>Editing the combination table is a between-battles activity only.</summary>
+        public bool MarginsEditable =>
+            _rulesReturnState is not (State.Paused or State.Playing or State.OnlinePlaying);
         /// <summary>Outcome of the last finished battle, produced by the session manager for the result screen. Null until a battle ends.</summary>
         public Logic.BattleOutcome? LastBattleOutcome { get; private set; }
 
@@ -77,7 +85,8 @@ namespace Fida
             switch (newState)
             {
                 case State.MainMenu:      _uiManager.BuildMainMenu(_networkManager.IsConnected, _networkManager.IsHost); break;
-                case State.Rules:         _uiManager.BuildRulesScreen(); break;
+                case State.Rules:         _uiManager.BuildRulesScreen(0, 0, MarginsEditable, MarginDigitA, MarginDigitB); break;
+                case State.Achievements:  _uiManager.BuildAchievementsScreen(AchievementsPage); break;
                 case State.Settings:      _uiManager.BuildSettingsScreen(); break;
                 case State.LevelSelect:   _uiManager.BuildLevelSelect(); break;
                 case State.CompanionSelect: _uiManager.BuildCompanionSelect(); break;
@@ -92,6 +101,7 @@ namespace Fida
                     break;
                 case State.Paused:        _uiManager.BuildPauseMenu(); break;
                 case State.GameOver:
+                    Fida.Campaign.Achievements.Save();
                     if (LastBattleOutcome is { } outcome)
                     {
                         if (outcome.WasOnlineDuel)
@@ -101,8 +111,10 @@ namespace Fida
                     }
                     break;
                 case State.OnlineMenu:    _uiManager.BuildOnlineMenu(_networkManager.IsConnected,
-                    _networkManager.IsHost, _networkManager.SessionDetailLabel, _networkManager.SessionDetailValue); break;
-                case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText, _networkManager.HostRoomCode); break;
+                    _networkManager.IsHost, _networkManager.SessionDetailLabel, _networkManager.SessionDetailValue,
+                    direct: !_networkManager.GetServerIsRelay()); break;
+                case State.Hosting:       _uiManager.BuildHostingScreen(_networkManager.StatusText,
+                    _networkManager.HostShareValue, direct: !_networkManager.GetServerIsRelay()); break;
                 case State.Connecting:    _uiManager.BuildConnectingScreen(_networkManager.StatusText); break;
                 case State.OnlineLobby:   _uiManager.BuildOnlineLobby(_networkManager.IsHost); break;
                 case State.DuelDraft:     _uiManager.BuildDuelDraft(); break;
@@ -128,13 +140,40 @@ namespace Fida
         public void CloseRules() => SwitchToState(
             _rulesReturnState == State.Rules ? State.MainMenu : _rulesReturnState);
 
+        public void OpenAchievements()
+        {
+            if (CurrentState == State.Achievements) return;
+            _achievementsReturnState = CurrentState;
+            AchievementsPage = 0;
+            SwitchToState(State.Achievements);
+        }
+
+        public void SetAchievementsPage(int page)
+        {
+            if (CurrentState != State.Achievements) return;
+            AchievementsPage = Math.Max(0, page);
+            _uiManager.BuildAchievementsScreen(AchievementsPage);
+        }
+
+        public void CloseAchievements() => SwitchToState(
+            _achievementsReturnState == State.Achievements ? State.MainMenu : _achievementsReturnState);
+
         public void SetRulesPage(int page, int indexPage = 0)
         {
             if (CurrentState != State.Rules) return;
             int total = Math.Max(1, _uiManager.RulesPageCount);
             RulesPage = (page % total + total) % total;
             RulesIndexPage = indexPage;
-            _uiManager.BuildRulesScreen(RulesPage, RulesIndexPage);
+            _uiManager.BuildRulesScreen(RulesPage, RulesIndexPage, MarginsEditable, MarginDigitA, MarginDigitB);
+        }
+
+        /// <summary>Cycles one of the Numbers-page simulator digits and repaints the page.</summary>
+        public void CycleMarginDigit(int which)
+        {
+            if (CurrentState != State.Rules) return;
+            if (which == 0) MarginDigitA = (MarginDigitA + 1) % 10;
+            else MarginDigitB = (MarginDigitB + 1) % 10;
+            _uiManager.BuildRulesScreen(RulesPage, RulesIndexPage, MarginsEditable, MarginDigitA, MarginDigitB);
         }
 
         public void ReturnFromSettings() => SwitchToState(

@@ -25,6 +25,7 @@ namespace Fida
                 { State.MainMenu,    (ui, net, machine) => new MainMenuState(ui, net, machine) },
                 { State.Paused,      (ui, net, machine) => new PausedState(ui, net, machine) },
                 { State.Rules,       (ui, net, machine) => new RulesState(ui, net, machine) },
+                { State.Achievements,(ui, net, machine) => new AchievementsState(ui, net, machine) },
                 { State.Settings,    (ui, net, machine) => new SettingsState(ui, net, machine) },
                 { State.LevelSelect, (ui, net, machine) => new LevelSelectState(ui, net, machine) },
                 { State.CompanionSelect, (ui, net, machine) => new CompanionSelectState(ui, net, machine) },

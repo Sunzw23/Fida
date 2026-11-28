@@ -55,6 +55,10 @@ namespace Fida.States
         private readonly List<(UIRoomCodeInput box, Action<string> handler)> _boundTextBoxes
             = new List<(UIRoomCodeInput, Action<string>)>();
 
+        /// <summary>Direct-connect address fields bound by the current state.</summary>
+        private readonly List<(UIAddressField field, Action<string> handler)> _boundAddressFields
+            = new List<(UIAddressField, Action<string>)>();
+
         protected StateBase(UIManager uiManager, Network.NetworkManager networkManager, GameStateMachine stateMachine)
         {
             _uiManager = uiManager;
@@ -93,6 +97,19 @@ namespace Fida.States
         }
 
         /// <summary>
+        /// 绑定直连地址输入框的提交事件 - 子类在 OnEnter 中调用
+        /// </summary>
+        protected void BindAddressField(string name, Action<string> handler)
+        {
+            var field = _uiManager.GetAddressFieldByName(name);
+            if (field != null)
+            {
+                field.Submitted += handler;
+                _boundAddressFields.Add((field, handler));
+            }
+        }
+
+        /// <summary>
         /// 解绑所有已绑定的按钮事件 - 在 OnExit 中调用
         /// </summary>
         protected void UnbindAll()
@@ -109,6 +126,12 @@ namespace Fida.States
                 box.Submitted -= handler;
             }
             _boundTextBoxes.Clear();
+
+            foreach (var (field, handler) in _boundAddressFields)
+            {
+                field.Submitted -= handler;
+            }
+            _boundAddressFields.Clear();
         }
 
         /// <summary>
